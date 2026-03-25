@@ -1,8 +1,8 @@
 web_service.py
 from flask import Flask, render_template_string, request, redirect
 import requests
-app = Flask(__name__)
-API_URL = "https://hello-cloud4.onrender.com"
+app =Flask (__name__)
+API_URL = "https://name-quhn.onrender.com
 HTML = """
 <!doctype html>
 <html>
