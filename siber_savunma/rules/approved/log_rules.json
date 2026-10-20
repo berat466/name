@@ -1,0 +1,195 @@
+[
+  {
+    "id": "R001",
+    "name": "SSH parola tahmin saldirisi (brute force)",
+    "source": "Genel iyi uygulama: SSH parola tahmin saldirilari (Cisco savunma konulari ile uyumlu). Kendi Cisco icerigini kaynak olarak ekle.",
+    "attack": "T1110",
+    "severity": "high",
+    "type": "threshold",
+    "where": {
+      "kind": "ssh_fail"
+    },
+    "group_by": "src_ip",
+    "count": 5,
+    "window_s": 60,
+    "actions": [
+      "alert",
+      "suggest_block"
+    ],
+    "tests": [
+      {
+        "lines": [
+          "Oct 20 10:15:00 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:01 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:02 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:03 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:04 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2"
+        ],
+        "expect_alert": true
+      },
+      {
+        "lines": [
+          "Oct 20 10:15:00 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:01 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:02 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2"
+        ],
+        "expect_alert": false
+      },
+      {
+        "lines": [
+          "Oct 20 10:15:00 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:20 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:40 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:16:01 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:16:22 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:16:43 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2"
+        ],
+        "expect_alert": false
+      }
+    ]
+  },
+  {
+    "id": "R002",
+    "name": "Cisco IOS yonetim girisi basarisiz denemeleri",
+    "source": "Genel iyi uygulama: SSH parola tahmin saldirilari (Cisco savunma konulari ile uyumlu). Kendi Cisco icerigini kaynak olarak ekle.",
+    "attack": "T1110",
+    "severity": "high",
+    "type": "threshold",
+    "where": {
+      "kind": "ios_login_fail"
+    },
+    "group_by": "src_ip",
+    "count": 3,
+    "window_s": 120,
+    "actions": [
+      "alert",
+      "suggest_block"
+    ],
+    "tests": [
+      {
+        "lines": [
+          "*Oct 20 10:30:00: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 203.0.113.7] [localport: 22] [Reason: Login Authentication Failed] at 10:30:00 UTC Tue Oct 20 2026",
+          "*Oct 20 10:30:05: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 203.0.113.7] [localport: 22] [Reason: Login Authentication Failed] at 10:30:05 UTC Tue Oct 20 2026",
+          "*Oct 20 10:30:10: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 203.0.113.7] [localport: 22] [Reason: Login Authentication Failed] at 10:30:10 UTC Tue Oct 20 2026"
+        ],
+        "expect_alert": true
+      },
+      {
+        "lines": [
+          "*Oct 20 10:30:00: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 203.0.113.7] [localport: 22] [Reason: Login Authentication Failed] at 10:30:00 UTC Tue Oct 20 2026",
+          "*Oct 20 10:30:10: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 203.0.113.7] [localport: 22] [Reason: Login Authentication Failed] at 10:30:10 UTC Tue Oct 20 2026"
+        ],
+        "expect_alert": false
+      }
+    ]
+  },
+  {
+    "id": "R003",
+    "name": "Port taramasi (ASA deny, cok farkli hedef port)",
+    "source": "Genel iyi uygulama: kesif/port tarama tespiti.",
+    "attack": "T1046",
+    "severity": "medium",
+    "type": "distinct",
+    "where": {
+      "kind": "asa_deny"
+    },
+    "group_by": "src_ip",
+    "distinct_field": "dst_port",
+    "count": 10,
+    "window_s": 60,
+    "actions": [
+      "alert",
+      "suggest_block"
+    ],
+    "tests": [
+      {
+        "lines": [
+          "Oct 20 10:20:00 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/20 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:01 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/21 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:02 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:03 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/23 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:04 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/24 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:05 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/25 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:06 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/26 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:07 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/27 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:08 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/28 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:09 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/29 by access-group \"OUTSIDE_IN\""
+        ],
+        "expect_alert": true
+      },
+      {
+        "lines": [
+          "Oct 20 10:20:00 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:01 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:02 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:03 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:04 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:05 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:06 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:07 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:08 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:09 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\""
+        ],
+        "expect_alert": false
+      },
+      {
+        "lines": [
+          "Oct 20 10:20:00 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/20 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:01 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/21 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:02 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/22 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:03 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/23 by access-group \"OUTSIDE_IN\"",
+          "Oct 20 10:20:04 fw : %ASA-4-106023: Deny tcp src outside:203.0.113.9/4444 dst inside:10.0.0.5/24 by access-group \"OUTSIDE_IN\""
+        ],
+        "expect_alert": false
+      }
+    ]
+  },
+  {
+    "id": "R004",
+    "name": "Cok basarisiz denemeden sonra basarili SSH girisi",
+    "source": "Genel iyi uygulama: SSH parola tahmin saldirilari (Cisco savunma konulari ile uyumlu). Kendi Cisco icerigini kaynak olarak ekle.",
+    "attack": "T1078",
+    "severity": "critical",
+    "type": "sequence",
+    "group_by": "src_ip",
+    "first": {
+      "kind": "ssh_fail"
+    },
+    "first_count": 5,
+    "then": {
+      "kind": "ssh_success"
+    },
+    "window_s": 300,
+    "actions": [
+      "alert",
+      "suggest_block"
+    ],
+    "tests": [
+      {
+        "lines": [
+          "Oct 20 10:15:00 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:01 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:02 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:03 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:04 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:10 host sshd[123]: Accepted password for admin from 203.0.113.5 port 4242 ssh2"
+        ],
+        "expect_alert": true
+      },
+      {
+        "lines": [
+          "Oct 20 10:15:00 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:01 host sshd[123]: Failed password for invalid user admin from 203.0.113.5 port 4242 ssh2",
+          "Oct 20 10:15:10 host sshd[123]: Accepted password for admin from 203.0.113.5 port 4242 ssh2"
+        ],
+        "expect_alert": false
+      },
+      {
+        "lines": [
+          "Oct 20 10:15:10 host sshd[123]: Accepted password for admin from 203.0.113.5 port 4242 ssh2"
+        ],
+        "expect_alert": false
+      }
+    ]
+  }
+]

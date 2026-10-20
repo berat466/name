@@ -1,0 +1,186 @@
+[
+  {
+    "id": "C001",
+    "name": "VTY uzerinde Telnet acik (acik metin yonetim)",
+    "source": "Genel iyi uygulama: Cisco IOS sertlestirme. Kendi Cisco icerigine gore sayfa/bolum ekle.",
+    "attack": "T1040",
+    "severity": "high",
+    "type": "config",
+    "present_regex": "^\\s*transport input .*telnet",
+    "actions": [
+      "alert"
+    ],
+    "tests": [
+      {
+        "lines": [
+          "line vty 0 4",
+          " transport input telnet ssh"
+        ],
+        "expect_alert": true
+      },
+      {
+        "lines": [
+          "line vty 0 4",
+          " transport input ssh"
+        ],
+        "expect_alert": false
+      }
+    ]
+  },
+  {
+    "id": "C002",
+    "name": "service password-encryption kapali",
+    "source": "Genel iyi uygulama: Cisco IOS sertlestirme. Kendi Cisco icerigine gore sayfa/bolum ekle.",
+    "attack": "T1552",
+    "severity": "medium",
+    "type": "config",
+    "absent_regex": "^service password-encryption",
+    "actions": [
+      "alert"
+    ],
+    "tests": [
+      {
+        "lines": [
+          "hostname R1"
+        ],
+        "expect_alert": true
+      },
+      {
+        "lines": [
+          "service password-encryption"
+        ],
+        "expect_alert": false
+      }
+    ]
+  },
+  {
+    "id": "C003",
+    "name": "SNMP varsayilan community (public/private)",
+    "source": "Genel iyi uygulama: Cisco IOS sertlestirme. Kendi Cisco icerigine gore sayfa/bolum ekle.",
+    "attack": "T1602",
+    "severity": "high",
+    "type": "config",
+    "present_regex": "^snmp-server community (public|private)\\b",
+    "actions": [
+      "alert"
+    ],
+    "tests": [
+      {
+        "lines": [
+          "snmp-server community public RO"
+        ],
+        "expect_alert": true
+      },
+      {
+        "lines": [
+          "snmp-server community Xk9!aQ2 RO"
+        ],
+        "expect_alert": false
+      }
+    ]
+  },
+  {
+    "id": "C004",
+    "name": "HTTP yonetim sunucusu acik",
+    "source": "Genel iyi uygulama: Cisco IOS sertlestirme. Kendi Cisco icerigine gore sayfa/bolum ekle.",
+    "attack": "T1190",
+    "severity": "medium",
+    "type": "config",
+    "present_regex": "^ip http server\\s*$",
+    "actions": [
+      "alert"
+    ],
+    "tests": [
+      {
+        "lines": [
+          "ip http server"
+        ],
+        "expect_alert": true
+      },
+      {
+        "lines": [
+          "no ip http server"
+        ],
+        "expect_alert": false
+      }
+    ]
+  },
+  {
+    "id": "C005",
+    "name": "AAA (aaa new-model) tanimli degil",
+    "source": "Genel iyi uygulama: Cisco IOS sertlestirme. Kendi Cisco icerigine gore sayfa/bolum ekle.",
+    "attack": "T1078",
+    "severity": "medium",
+    "type": "config",
+    "absent_regex": "^aaa new-model",
+    "actions": [
+      "alert"
+    ],
+    "tests": [
+      {
+        "lines": [
+          "hostname R1"
+        ],
+        "expect_alert": true
+      },
+      {
+        "lines": [
+          "aaa new-model"
+        ],
+        "expect_alert": false
+      }
+    ]
+  },
+  {
+    "id": "C006",
+    "name": "Uzak log sunucusu tanimli degil",
+    "source": "Genel iyi uygulama: Cisco IOS sertlestirme. Kendi Cisco icerigine gore sayfa/bolum ekle.",
+    "attack": "T1562",
+    "severity": "low",
+    "type": "config",
+    "absent_regex": "^logging host ",
+    "actions": [
+      "alert"
+    ],
+    "tests": [
+      {
+        "lines": [
+          "hostname R1"
+        ],
+        "expect_alert": true
+      },
+      {
+        "lines": [
+          "logging host 10.0.0.9"
+        ],
+        "expect_alert": false
+      }
+    ]
+  },
+  {
+    "id": "C007",
+    "name": "enable password (secret yerine) kullaniliyor",
+    "source": "Genel iyi uygulama: Cisco IOS sertlestirme. Kendi Cisco icerigine gore sayfa/bolum ekle.",
+    "attack": "T1552",
+    "severity": "high",
+    "type": "config",
+    "present_regex": "^enable password ",
+    "actions": [
+      "alert"
+    ],
+    "tests": [
+      {
+        "lines": [
+          "enable password cisco123"
+        ],
+        "expect_alert": true
+      },
+      {
+        "lines": [
+          "enable secret 9 $9$abc"
+        ],
+        "expect_alert": false
+      }
+    ]
+  }
+]

@@ -1,0 +1,30 @@
+Oct 20 10:15:00 web01 sshd[2211]: Failed password for invalid user admin from 203.0.113.5 port 5000 ssh2
+Oct 20 10:15:03 web01 sshd[2211]: Failed password for invalid user admin from 203.0.113.5 port 5100 ssh2
+Oct 20 10:15:06 web01 sshd[2211]: Failed password for invalid user admin from 203.0.113.5 port 5200 ssh2
+Oct 20 10:15:09 web01 sshd[2211]: Failed password for invalid user admin from 203.0.113.5 port 5300 ssh2
+Oct 20 10:15:12 web01 sshd[2211]: Failed password for invalid user admin from 203.0.113.5 port 5400 ssh2
+Oct 20 10:15:15 web01 sshd[2211]: Failed password for invalid user admin from 203.0.113.5 port 5500 ssh2
+Oct 20 10:15:18 web01 sshd[2211]: Failed password for invalid user admin from 203.0.113.5 port 5600 ssh2
+Oct 20 10:15:30 web01 sshd[2211]: Accepted password for admin from 203.0.113.5 port 5900 ssh2
+Oct 20 10:16:00 web01 CRON[99]: session opened for user root
+Oct 20 10:17:00 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/20 by access-group "OUTSIDE_IN"
+Oct 20 10:17:01 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/21 by access-group "OUTSIDE_IN"
+Oct 20 10:17:02 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/22 by access-group "OUTSIDE_IN"
+Oct 20 10:17:03 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/23 by access-group "OUTSIDE_IN"
+Oct 20 10:17:04 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/24 by access-group "OUTSIDE_IN"
+Oct 20 10:17:05 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/25 by access-group "OUTSIDE_IN"
+Oct 20 10:17:06 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/26 by access-group "OUTSIDE_IN"
+Oct 20 10:17:07 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/27 by access-group "OUTSIDE_IN"
+Oct 20 10:17:08 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/28 by access-group "OUTSIDE_IN"
+Oct 20 10:17:09 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/29 by access-group "OUTSIDE_IN"
+Oct 20 10:17:10 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/30 by access-group "OUTSIDE_IN"
+Oct 20 10:17:11 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/31 by access-group "OUTSIDE_IN"
+Oct 20 10:17:12 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/32 by access-group "OUTSIDE_IN"
+Oct 20 10:17:13 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/33 by access-group "OUTSIDE_IN"
+Oct 20 10:17:14 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/34 by access-group "OUTSIDE_IN"
+Oct 20 10:17:15 fw1 : %ASA-4-106023: Deny tcp src outside:198.51.100.77/40000 dst inside:10.0.0.5/35 by access-group "OUTSIDE_IN"
+*Oct 20 10:18:00: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: cisco] [Source: 192.0.2.44] [localport: 22] [Reason: Login Authentication Failed] at 10:18:00 UTC Tue Oct 20 2026
+*Oct 20 10:18:10: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: cisco] [Source: 192.0.2.44] [localport: 22] [Reason: Login Authentication Failed] at 10:18:10 UTC Tue Oct 20 2026
+*Oct 20 10:18:20: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: cisco] [Source: 192.0.2.44] [localport: 22] [Reason: Login Authentication Failed] at 10:18:20 UTC Tue Oct 20 2026
+*Oct 20 10:18:30: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: cisco] [Source: 192.0.2.44] [localport: 22] [Reason: Login Authentication Failed] at 10:18:30 UTC Tue Oct 20 2026
+Oct 20 10:19:00 Oct 20 10:19:99 bozuk zaman damgasi satiri
