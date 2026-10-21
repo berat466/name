@@ -11,3 +11,6 @@ Her fikir: tek cumle, nasil test edilir, durum.
 3. **Delta (ΔW tahmincisi).** Ayri proje (kullanicinin bilgisayarinda). Hiz kazanci yok; deger = kalici
    bellek hipotezi. Durum: ASAMA 1 kapali, genel egitim bekliyor.
 4. **Kalan aday formul:** `tanh(m/(sqrt(v)+v))` gercek veri/GPU'da dogrulanacak.
+5. **Capa / eski degeri formule vermek (kullanici fikri).** TEST EDILDI: `Adam + 0.1*(w - capa)` ardisik gorevlerde
+   Adam'dan %53 iyi. Siradaki: gorev siniri bilinmiyorsa capa = agirligin yavas hareketli ortalamasi (EMA); replay ve
+   gercek EWC ile karsilastirma; gercek veri.

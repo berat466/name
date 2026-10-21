@@ -22,6 +22,7 @@ from optim_search import BASELINES, crossover, evaluate, mutate, rand_tree, size
 
 LRS = [0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3]
 CLIP = 5.0
+ANCHOR_FIRST_PHASE = "init"   # "init": ilk gorevde capa=baslangic agirligi; "none": ilk gorevde capa cekmez (w-a=0)
 
 
 # ------------------------------------------------------------------ gorev uretici
@@ -131,10 +132,13 @@ def run_task(expr, lr, task):
     l0 = [net.loss_grad(X, y, reg, False) for X, y, _ in task["phases"]]
     m = np.zeros_like(net.w); v = np.zeros_like(net.w); gp = np.zeros_like(net.w); t = 0
     with np.errstate(all="ignore"):
-        for X, y, _ in task["phases"]:
+        for pi, (X, y, _) in enumerate(task["phases"]):
             anchor = net.w.copy()          # capa: bu gorev baslamadan onceki (eski) agirliklar
+            follow = (pi == 0 and ANCHOR_FIRST_PHASE == "none")   # ilk gorevde capa agirligi izler -> cekme yok
             for _ in range(task["steps"]):
                 t += 1
+                if follow:
+                    anchor = net.w
                 _, g = net.loss_grad(X, y, reg)
                 m = 0.9 * m + 0.1 * g; v = 0.999 * v + 0.001 * g * g
                 env = {"g": g, "m": m / (1 - 0.9 ** t), "v": v / (1 - 0.999 ** t), "w": net.w, "d": g - gp, "a": anchor}

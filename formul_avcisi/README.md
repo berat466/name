@@ -50,3 +50,13 @@ farkli gorevler. Sonuc (`sonuc_suite.md`, `kontrol_suite.py`):
   korumali Adam gibi. Yeni ilke degil; bu testte islediginin kaniti.
 - SINIRLAR: kucuk tanh MLP'ler, yapay gorevler, <=500 adim, olculen sey EGITIM kaybi (genelleme degil).
   Gercek veri ve buyuk ag icin DOGRULANMADI.
+
+## Capa (eski deger formule verilir) - unutmaya karsi ilk saglam sonuc
+Fikir (kullanici): guncellerken eski degeri de formule ver. `a` = gorev baslamadan onceki agirlik.
+Kural: `w <- w - lr * ( Adam(m,v) + 0.1 * (w - a) )`  (capa yalniz gorev DEGISIMINDEN sonra aktif).
+200 gorunmemis gorev (93 ardisik), tek ortak lr (`capa_ilk_faz_testi.py`, `plastisite_kontrol.py`):
+- Ardisik gorevlerde kalan kayip Adam'dan **%53 dusuk**; eski gorev kaybi 0.87 -> 0.46, YENI gorev ogrenmesi bozulmadi (0.087 -> 0.063).
+- Tek-gorevli ornekte capa=0 oldugundan Adam ile ayni; "tum gorevler" kazanci (%30) ardisik gorevlerden gelir.
+- Evrimsel arama bu insan yapimi capali baseline'i GECEMEDI (en iyi kesif: Adam+m, %30 ardisik).
+- SINIRLAR: gorev siniri BILINIYOR varsayildi; kucuk tanh MLP; yapay gorevler; tekrar (replay) ve gercek EWC ile
+  karsilastirilmadi. SGD eskiyi daha iyi tutar (0.35) ama yeniyi kotu ogrenir (0.21).
