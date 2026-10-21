@@ -38,3 +38,15 @@ izgara genisletilince uzun spiral gorevinde avantaj kayboldu, (2) kazanc yalnizc
 tutarli, (3) unutma 3 testin 2'sinde kotulesti. Sonuc: genel bir optimizer kesfi DEGIL, gorev
 ozel bir etki. Ders: tek gorevde arama, bench'i somuruyor; baseline'lar adil ayarlanmali.
 Betikler: `stres_testi.py`, `kontrol_testi.py`.
+
+## Cok gorevli simulasyon (`optim_suite.py`) - ilk dayanikli sonuc
+200 gorunmemis rastgele gorev (8 tur: spiral, daire, ay, kume, xor, 3 regresyon; farkli gurultu, genislik,
+uzunluk; yarisinda ardisik gorev), her formul icin TEK ortak ogrenme orani (0.003..10 izgarasi), her nesil
+farkli gorevler. Sonuc (`sonuc_suite.md`, `kontrol_suite.py`):
+- Cikan formullerin cogu Adam'in epsilon'u oynatilmis kopyasi (+%1-3, yazi-tura duzeyi): gurultu.
+- Tek tutarli aday: `tanh(m / (sqrt(v) + v))` -> Adam'a gore **+%16 daha az kalan kayip**, 200 gorevin %64'unde
+  daha iyi. Parca parca: yalniz tanh +%5.5, yalniz ek payda `+v` +%9.9, ikisi +%16 (toplamsal).
+  Yorum: buyuk gradyanlarda adimi kucultup (payda) adimi sinirlayan (tanh) bir Adam; gradyan-patlama
+  korumali Adam gibi. Yeni ilke degil; bu testte islediginin kaniti.
+- SINIRLAR: kucuk tanh MLP'ler, yapay gorevler, <=500 adim, olculen sey EGITIM kaybi (genelleme degil).
+  Gercek veri ve buyuk ag icin DOGRULANMADI.
