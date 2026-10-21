@@ -26,3 +26,15 @@ python search.py --n 2 --rank 6 --restarts 400                          # imkans
 - Az carpma = hizli GPU degildir: Strassen sayisal olarak daha kararsiz, GPU'da yogun matmul
   (Tensor Core) ve bellek hizi cogu zaman belirleyicidir. Hakem simdilik yalnizca carpma/toplama sayar.
 - 3x3 (en iyi bilinen 23) ve buyuk n icin bu basit arama yetmeyebilir.
+
+## Optimizer formul simulatoru (`optim_search.py`)
+Semboller (`g m v w Δg`, `sign tanh sqrt ...`) rastgele birlestirilir; her formul mini sinir agi
+egitiminde puanlanir (ogrenme hizi + yeni gorevden sonra eskiyi unutma). Referanslar: SGD, Momentum,
+RMSprop, Adam, AdamW, Lion-benzeri; hepsi ayni ogrenme orani izgarasinda taranir.
+
+**Bulgu (dogrulama + kontrol testleriyle):** Arama `Adam + sign(1.1 - 2w)` gibi bir formul buldu.
+Dar testte Adam'dan %15-20 iyi gorundu, ama (1) Adam'in ogrenme orani izgarasi alt uctan eksikti;
+izgara genisletilince uzun spiral gorevinde avantaj kayboldu, (2) kazanc yalnizca "daire" gorevinde
+tutarli, (3) unutma 3 testin 2'sinde kotulesti. Sonuc: genel bir optimizer kesfi DEGIL, gorev
+ozel bir etki. Ders: tek gorevde arama, bench'i somuruyor; baseline'lar adil ayarlanmali.
+Betikler: `stres_testi.py`, `kontrol_testi.py`.
