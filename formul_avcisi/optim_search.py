@@ -23,7 +23,7 @@ from multiprocessing import Pool
 import numpy as np
 
 LR_GRID = [0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3]  # alt uc onemli: uzun egitimde Adam 0.001 ister
-VARS = ["g", "m", "v", "w", "d"]
+VARS = ["g", "m", "v", "w", "d", "a"]
 UN = ["neg", "sign", "tanh", "sqrt", "abs", "sq"]
 BIN = ["+", "-", "*", "/"]
 CONSTS = [0.01, 0.05, 0.1, 0.5, 0.9, 1.0, 2.0, 1e-8]
@@ -68,7 +68,7 @@ def evaluate(e, env):
 
 def to_str(e):
     k = e[0]
-    if k == "v": return {"d": "Δg"}.get(e[1], e[1])
+    if k == "v": return {"d": "Δg", "a": "çapa"}.get(e[1], e[1])
     if k == "c": return f"{e[1]:g}"
     if k == "u":
         s = to_str(e[2])
@@ -124,6 +124,11 @@ BASELINES = {
     "Adam": B("/", V("m"), B("+", U("sqrt", V("v")), C(1e-8))),
     "AdamW": B("+", B("/", V("m"), B("+", U("sqrt", V("v")), C(1e-8))), B("*", C(0.01), V("w"))),
     "Lion-benzeri": B("+", U("sign", V("m")), B("*", C(0.01), V("w"))),
+    # insan yapimi capali referanslar (EWC benzeri): bulunan formuller bunlari da gecmek zorunda
+    "Adam+Capa(0.1)": B("+", B("/", V("m"), B("+", U("sqrt", V("v")), C(1e-8))),
+                        B("*", C(0.1), B("-", V("w"), V("a")))),
+    "Adam+Capa(sqrt v)": B("+", B("/", V("m"), B("+", U("sqrt", V("v")), C(1e-8))),
+                           B("*", B("*", C(2.0), U("sqrt", V("v"))), B("-", V("w"), V("a")))),
 }
 
 
@@ -194,12 +199,13 @@ def run_once(expr, lr, kind, seed, H=24, steps=100):
     out = {}
     with np.errstate(all="ignore"):
         for phase, (X, y) in (("A", (XA, yA)), ("B", (XB, yB))):
+            anchor = net.w.copy()
             for _ in range(steps):
                 t += 1
                 loss, g = net.loss_grad(X, y)
                 m = 0.9 * m + 0.1 * g
                 v = 0.999 * v + 0.001 * g * g
-                env = {"g": g, "m": m / (1 - 0.9 ** t), "v": v / (1 - 0.999 ** t), "w": net.w, "d": g - gp}
+                env = {"g": g, "m": m / (1 - 0.9 ** t), "v": v / (1 - 0.999 ** t), "w": net.w, "d": g - gp, "a": anchor}
                 gp = g
                 net.w = net.w - lr * evaluate(expr, env)
                 if not np.isfinite(net.w).all():

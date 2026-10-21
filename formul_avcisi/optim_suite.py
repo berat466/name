@@ -132,11 +132,12 @@ def run_task(expr, lr, task):
     m = np.zeros_like(net.w); v = np.zeros_like(net.w); gp = np.zeros_like(net.w); t = 0
     with np.errstate(all="ignore"):
         for X, y, _ in task["phases"]:
+            anchor = net.w.copy()          # capa: bu gorev baslamadan onceki (eski) agirliklar
             for _ in range(task["steps"]):
                 t += 1
                 _, g = net.loss_grad(X, y, reg)
                 m = 0.9 * m + 0.1 * g; v = 0.999 * v + 0.001 * g * g
-                env = {"g": g, "m": m / (1 - 0.9 ** t), "v": v / (1 - 0.999 ** t), "w": net.w, "d": g - gp}
+                env = {"g": g, "m": m / (1 - 0.9 ** t), "v": v / (1 - 0.999 ** t), "w": net.w, "d": g - gp, "a": anchor}
                 gp = g
                 net.w = net.w - lr * evaluate(expr, env)
                 if not np.isfinite(net.w).all():
@@ -211,14 +212,18 @@ def main(argv=None):
         res = pool.map(suite_scores, [(e, val_seeds) for _, e in cands])
 
     adam = res[[n for n, _ in cands].index("Adam")]
-    rows = ["| Ad | Formul | lr | geo.ort. kalan kayip | Adam'a gore | gorev kazanma orani vs Adam | en kotu gorev |",
-            "|---|---|---|---|---|---|---|"]
+    cont = np.array([len(make_task(sd)["phases"]) > 1 for sd in val_seeds])   # ardisik (unutma) gorevleri
+
+    def gm(x): return float(np.exp(np.mean(np.log(np.maximum(x, 1e-4)))))
+    rows = ["| Ad | Formul | lr | TUM gorevler | Adam'a gore | SADECE ardisik (unutma) gorevler | Adam'a gore | kazanma% (ardisik) |",
+            "|---|---|---|---|---|---|---|---|"]
     for (name, e), (g, lr, rs) in zip(cands, res):
-        win = float(np.mean(rs < adam[2] - 1e-9)) * 100
-        rows.append(f"| {name} | `{to_str(e)[:70]}` | {lr} | {g:.4f} | {(1 - g / adam[0]) * 100:+.1f}% | "
-                    f"%{win:.0f} | {rs.max():.2f} |")
+        gc, ac = gm(rs[cont]), gm(adam[2][cont])
+        win = float(np.mean(rs[cont] < adam[2][cont] - 1e-9)) * 100
+        rows.append(f"| {name} | `{to_str(e)[:60]}` | {lr} | {g:.4f} | {(1 - g / adam[0]) * 100:+.1f}% | "
+                    f"{gc:.4f} | {(1 - gc / ac) * 100:+.1f}% | %{win:.0f} |")
     text = "\n".join(rows)
-    print(f"\nDOGRULAMA: {a.val_tasks} gorunmemis rastgele gorev\n")
+    print(f"\nDOGRULAMA: {a.val_tasks} gorunmemis rastgele gorev ({int(cont.sum())} ardisik)\n")
     print(text)
     if a.out:
         open(a.out, "w", encoding="utf-8").write(text + "\n")
