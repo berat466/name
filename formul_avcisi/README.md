@@ -111,3 +111,16 @@ Uygulama: A gorevi ogrenilir, dondurulur; B icin yeni gizli blok + A'nin gizli o
 | Hn=H/4, yanal YOK | 0.013 | 0.088 | 0.070 | 1.3x |
 Referans Adam+capa 0.244. Kazancin cogu yanal baglantidan degil, eskiyi dondurup YENI blok eklemekten geliyor.
 Bedel: her yeni gorevde +%27 (H/4) buyume, kimlik/yonlendirme sart.
+
+## Anahtarla ust uste bindirme (superposition) - `anahtar_ust_uste.py`
+Fikir (kullanici, guvenlikteki tuzlamadan): ayni agirlik, her gorevde farkli rastgele +-1 anahtar: `W_etkin = W (.) K_gorev`.
+Parametre BUYUMEZ; gorev kimligi (anahtar) biliniyor. 93 ardisik gorev, kalan kayip orani (dusuk iyi), tek ortak lr:
+| genislik | anahtarsiz ince ayar | anahtarsiz+capa | ANAHTARLI | ANAHTARLI+capa |
+|---|---|---|---|---|
+| x1 (kucuk ag) | 0.287 | 0.244 | 0.308 | 0.296 |
+| x4 | 0.297 | 0.293 | 0.222 | 0.208 |
+| x8 | 0.323 | 0.318 | 0.180 | 0.176 |
+- Kucuk aglarda fayda yok (kapasite yok); ag genisledikce anahtar unutmayi kesiyor: eski gorev 0.44 -> 0.145 (x8).
+- x8'de anahtarli ~%45 daha az kalan kayip; lr izgarasinin alt ucu genisletilince degismedi.
+- Yine de ekleme zincirinin (0.030, ama +%27..+%770 parametre) gerisinde; anahtar parametre buyumeden geliyor.
+- Sinirlar: kimlik biliniyor; kucuk-orta tanh MLP; yapay gorevler; cok sayida gorev (>2) test edilmedi.
