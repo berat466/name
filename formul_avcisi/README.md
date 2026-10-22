@@ -207,3 +207,8 @@ Derleme: `g++ -O3 -march=native -fopenmp -o tek_hamle tek_hamle.cpp`; veri: `pyt
   (1024 gizli: 2 epok Adam %96.48 @8.2sn vs melez 1 epok %96.28 @8.2sn; 3 epok Adam %97.14 @11.7sn vs melez 2 epok %97.11 @12.5sn).
 - SONUC: zor/orta veride tek-hamle hiz kazandirmiyor. Gecerli kalan yerler: kucuk/kolay veri, toplanabilir istatistikle
   unutmasiz ardisik ogrenme, katman-katman kapali-form cozumler (GPTQ benzeri sikistirma/duzenleme).
+
+## Gradyansiz iki katman cozumu (MNIST)
+`mnist_iki_katman_cozum.py`: 2. katman kapali formda (ridge), 1. katman hedefe gore. Saf hedef-yayilim ELM duzeyinde kalir ve tur arttikca bozulur
+(H=256 ~%88, H=1024 ~%93). Gercek delta1 yonu + (XtX+lam I)^-1 on kosullu adim duzenli iyilesir (H=1024: %93.7 -> %95.6, 43 sn) ama Adam'in
+%97.8 @41 sn'sinin altinda. Detay: FIKIRLER.md madde 10.

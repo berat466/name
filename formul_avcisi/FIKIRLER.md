@@ -23,3 +23,9 @@ Her fikir: tek cumle, nasil test edilir, durum.
 8. **FRIDAY guncelleyici (taslak).** Adimda K aday guncelleme uret, 2-3 adim ileri kafada oynat, en iyisini uygula; maliyet-esit karsilastir.
 9. **Tek-hamle ogrenme MNIST'te (yapildi, olumsuz).** Hiz avantaji yalniz kucuk/kolay veride; MNIST'te esit dogrulukta klasikten yavas
    (ELM 8192 oz. 55 sn vs Adam 18-41 sn). Melez de esit. Kalan deger: unutmasiz ardisik ogrenme, katman-katman kapali form.
+10. **Gradyansiz iki katman (kullanici: once 2. katmani coz, sonra 1. katmani ona gore) — yapildi, olumsuz/kismi.** `mnist_iki_katman_cozum.py`.
+    MNIST test dogrulugu (60k/10k): (a) saf hedef-yayilim (W1'i pseudo-inverse hedefe coz): H=256 ~%87.5, H=1024 ~%92, tur arttikca DUSER.
+    (b) duzeltme surumu: %89 / %93.7, yine tur arttikca duser. (c) dogru delta1 yonu + (XtX+lam I)^-1 on kosullu adim + cikis katmani ridge ile
+    kapali form: H=256 %88.1->%93.3 (11 sn), H=1024 %93.7->%95.6 (43 sn). Referans Adam: %97.5 @18 sn (H=256), %97.8 @41 sn (H=1024).
+    Sonuc: "2. katman once, sonra 1." zaten geri yayilimin yapisi; gradyan yonunu cikarinca kaybediyor, yonu tutup adimi kapali formla
+    on kosullayinca yavas ama duzenli iyilesiyor; Adam'i gecmiyor.
