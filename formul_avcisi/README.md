@@ -181,3 +181,15 @@ sonuc olcekle geri carpilir. El yazisi rakamlar, 5 egitim/bolme, TEST:
 | 2 bit | %92.6 | 2.9 KB | 6.4x |
 - 3-4 bit kayipsiz, 2 bit belirgin kayip. Islem SAYISI ayni; kazanc bellek + bellek hizi + (FP8/FP4 tensor) aritmetik.
 - Gercek LLM'lerde ayni aile: llama.cpp/GGUF, GPTQ, AWQ (aykiri kanallar icin ozel is gerekir).
+
+## C++ tek-hamle ogrenici (`cpp/tek_hamle.cpp`, `cpp/veri_hazirla.py`)
+Kullanici sorusu: tek seferde agirlik ureten yontemin C++ algoritmasi, egitimden hizli olur mu? Cevap: EVET bu veride.
+Ayni basit C++ donguleriyle (BLAS yok, OpenMP 4 cekirdek), el yazisi rakamlar, TEST dogrulugu, 3 farkli bolme:
+| yontem | dogruluk | ogrenme suresi |
+|---|---|---|
+| Adam MLP 64-64-10 (300 adim, sabit lr 0.01) | %96.1 / 96.3 / 96.7 | ~1.1-1.2 sn |
+| ELM tek hamle Hf=256 (lambda 1.0) | %96.7 / 96.3 / 96.3 | **0.02-0.035 sn (~35-60x hizli)** |
+| ELM tek hamle Hf=1024 | **%97.6 / 97.6 / 97.6** | **~0.2 sn (~5-6x hizli)** |
+Derleme: `g++ -O3 -march=native -fopenmp -o tek_hamle tek_hamle.cpp`; veri: `python veri_hazirla.py KLASOR [tohum]`.
+- Sabit hiperparametre (lr, lambda) ile ADIL sure; ikisinde de ayar aramasi eklenirse iki taraf da ~aynı oranda uzar.
+- SINIRLAR: kolay/kucuk veri (1.8K ornek); ozellikler ogrenilmiyor; Hf buyudukce zaman Hf^3, bellek Hf^2.
