@@ -76,3 +76,12 @@ tum=0.0507, ardisik=0.5523 (kalan kayip, dusuk iyi).
 - Rastgele sabit geri baglanti (geri yayilimsiz kredi atama) bu kucuk aglarda sadece ~%18 kotu (0.135 vs 0.114).
 - En iyi yerel kural Adam'dan ~2.7x kotu: eksik parca "buyukluk hafizasi" (v).
 - UYARI: feedback alignment'in geri matrisi carpimi de geri yayilimla ayni maliyette; hesap tasarrufu yok, kazanc bellek/agirlik tasima.
+
+## Geri yayilimsiz yerel kural aramasi (`lokal_arama.py`)
+Gizli katmana hata SABIT rastgele geri baglantiyla tasinir (feedback alignment). 120 gorunmemis gorev (57 ardisik).
+Referans klasik Adam(bp): tum 0.046, ardisik 0.439. Sonuclar: `sonuc_lokal_indep.md`, `sonuc_lokal_full.md`.
+- Adam-FA 0.081 (%74 kotu); **Adam-FA + capa 0.069 (%48 kotu) ama ardisikte 0.297 (klasikten %32 iyi)**.
+- Tam rastgele baslangicli bagimsiz arama (Adam'in `m` degiskeni yok): klasik NLMS'i (`g/(giris gucu*c)`) yeniden buldu;
+  buyukluk hafizasi (`q`) ve eski degisim (`u`) kullanan bir sey bulamadi (kucuk butce).
+- Tohumlu arama: Adam-FA'nin epsilon kopyalari; insan yapimi capali baseline'i gecemedi.
+- Sinirlar: tek gizli katman, yapay gorevler; hata tasima matmul'u hala var (islem tasarrufu yok).
