@@ -85,3 +85,19 @@ Referans klasik Adam(bp): tum 0.046, ardisik 0.439. Sonuclar: `sonuc_lokal_indep
   buyukluk hafizasi (`q`) ve eski degisim (`u`) kullanan bir sey bulamadi (kucuk butce).
 - Tohumlu arama: Adam-FA'nin epsilon kopyalari; insan yapimi capali baseline'i gecemedi.
 - Sinirlar: tek gizli katman, yapay gorevler; hata tasima matmul'u hala var (islem tasarrufu yok).
+
+## Ekleme-yalniz ag (append-only / progressive) - `ekleme_agi.py`, `ekleme_kontrol.py`
+Fikir (kullanici): eski hesap/agirlik korunur, yeni islem+agirlik zincire EKLENIR; yeni islem eski ciktilari kullanir.
+Uygulama: A gorevi ogrenilir, dondurulur; B icin yeni gizli blok + A'nin gizli ozelliklerinden yanal baglanti.
+93 ardisik gorev (200 gorunmemisten), kalan kayip orani (dusuk iyi), tek ortak lr:
+| yontem | ESKI gorev | YENI gorev | ortalama |
+|---|---|---|---|
+| Adam ince ayar | 0.386 | 0.117 | 0.287 |
+| Adam + capa(0.1) | 0.366 | 0.066 | 0.244 |
+| **EKLEME, gorev kimligi biliniyor** | **0.013** | 0.031 | **0.030** |
+| EKLEME, merkez-uzakligi yonlendirici | 0.028 | 0.081 | 0.070 |
+| EKLEME, kimliksiz toplam | 0.396 | 0.075 | 0.267 |
+- Kapasite aciklamiyor: ~11x genis (esit parametreli) ince ayar ag da 0.32-0.33 (ekleme agi 0.030).
+- Kimlik/yonlendirme olmadan (toplam) unutma geri geliyor: 0.267 ~ ince ayar.
+- BEDEL: parametre ORTALAMA 11.4x (yanal baglanti H*H) TEK ek gorev icin; her gorevde buyur.
+- Sinir: regresyon fazlari birbirine benzer fonksiyonlar oldugu icin yonlendirici testi sorunu hafife aliyor.
