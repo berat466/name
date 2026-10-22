@@ -1,0 +1,12 @@
+./tek_hamle_v4 v3_1024 1 0.125 1	/tmp/v4log/v3_1024_g0.125_l1_s1.txt	rc=0	wall_s=0.53	user_cpu_s=1.43	sys_cpu_s=0.17	maxrss_MB=221
+./tek_hamle_v4 v3_2048 1 0.125 1	/tmp/v4log/v3_2048_g0.125_l1_s1.txt	rc=0	wall_s=0.56	user_cpu_s=1.54	sys_cpu_s=0.16	maxrss_MB=221
+./tek_hamle_v4 v3_1024 2 0.125 1	/tmp/v4log/v3_1024_g0.125_l1_s2.txt	rc=0	wall_s=0.53	user_cpu_s=1.44	sys_cpu_s=0.17	maxrss_MB=221
+./tek_hamle_v4 v3_2048 2 0.125 1	/tmp/v4log/v3_2048_g0.125_l1_s2.txt	rc=0	wall_s=0.59	user_cpu_s=1.61	sys_cpu_s=0.18	maxrss_MB=221
+./tek_hamle_v4 v3_1024 3 0.125 1	/tmp/v4log/v3_1024_g0.125_l1_s3.txt	rc=0	wall_s=0.54	user_cpu_s=1.45	sys_cpu_s=0.17	maxrss_MB=221
+./tek_hamle_v4 v3_2048 3 0.125 1	/tmp/v4log/v3_2048_g0.125_l1_s3.txt	rc=0	wall_s=0.61	user_cpu_s=1.60	sys_cpu_s=0.20	maxrss_MB=221
+./tek_hamle_v4 v3_1024 1 0.25 10	/tmp/v4log/v3_1024_g0.25_l10_s1.txt	rc=0	wall_s=0.51	user_cpu_s=1.36	sys_cpu_s=0.16	maxrss_MB=221
+./tek_hamle_v4 v3_2048 1 0.25 10	/tmp/v4log/v3_2048_g0.25_l10_s1.txt	rc=0	wall_s=0.51	user_cpu_s=1.42	sys_cpu_s=0.13	maxrss_MB=221
+./tek_hamle_v4 v3_1024 2 0.25 10	/tmp/v4log/v3_1024_g0.25_l10_s2.txt	rc=0	wall_s=0.54	user_cpu_s=1.47	sys_cpu_s=0.16	maxrss_MB=221
+./tek_hamle_v4 v3_2048 2 0.25 10	/tmp/v4log/v3_2048_g0.25_l10_s2.txt	rc=0	wall_s=0.54	user_cpu_s=1.48	sys_cpu_s=0.16	maxrss_MB=221
+./tek_hamle_v4 v3_1024 3 0.25 10	/tmp/v4log/v3_1024_g0.25_l10_s3.txt	rc=0	wall_s=0.57	user_cpu_s=1.61	sys_cpu_s=0.14	maxrss_MB=221
+./tek_hamle_v4 v3_2048 3 0.25 10	/tmp/v4log/v3_2048_g0.25_l10_s3.txt	rc=0	wall_s=0.58	user_cpu_s=1.56	sys_cpu_s=0.17	maxrss_MB=221

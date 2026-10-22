@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
 
     if (aile.rfind("sabit", 0) == 0 || aile.rfind("v3_", 0) == 0) {
         // ------- sabit ozellik + birikimli hafiza (mu=1). sabit*: W1 yalniz gorev-1 verisinden; v3_*: W1 tum siniflardan (V3 referansi, gelecegi gormus)
-        int H = atoi(aile.substr(aile.find_first_of("0123456789")).c_str()); bool v3 = aile.rfind("v3_", 0) == 0;
+        bool v3 = aile.rfind("v3_", 0) == 0; int H = atoi(aile.substr(v3 ? 3 : 5).c_str());
         Feat f; f.blocks.push_back(make_block(v3 ? cls_of(0, 5) : TASKS[0], H, mkseed(1, 0))); rebuild(f); int m = H + 1;
         vector<double> S((size_t)m * m, 0.0), R((size_t)m * NC, 0.0), W; string name = (v3 ? "V3_" : "SABIT_") + to_string(H);
         for (int t = 1; t <= T; t++) {
