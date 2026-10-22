@@ -167,3 +167,17 @@ Fikir (kullanici): algoritma kucuk sayilarla hesap yapsin, donusturucu tam (buyu
 - ~5-10x kucultme kucuk kayipla; >20x'te kalite cokuyor. Bu EN ZAYIF donusturucu (rastgele dogrusal); ogrenilmis (LoRA, hiper-ag) daha iyi.
 - GPU'nun ileri hesabi DEGISMEZ (tam agirlik). Kazanc: guncellenen/optimizer durumu sayisi (bellek), gradyan zinciri hala tam agirlikta.
 - Pratik uyari: P'yi saklayamazsin (7B x 7M); tohumdan uretilen yapisal donusturucu gerekir.
+
+## Calistirma icin kucuk tam sayi + olcek (`nicemleme_deney.py`) - kullanici fikri: "GPU kucuk sayiyla carpsin, donusturucu olcegi geri versin"
+Egitilmis ag SONRADAN: blok (32) basina olcek = max|w|/(2^(b-1)-1), w_int = round(w/olcek); calisirken kucuk tam sayilarla carpilir,
+sonuc olcekle geri carpilir. El yazisi rakamlar, 5 egitim/bolme, TEST:
+| bicim | test dogruluk | boyut | kucultme |
+|---|---|---|---|
+| 16 bit | %96.5 | 18.5 KB | 1x |
+| 8 bit | %96.5 | 9.8 KB | 1.9x |
+| 6 bit | %96.5 | 7.5 KB | 2.5x |
+| 4 bit | %96.5 | 5.2 KB | 3.6x |
+| 3 bit | %96.5 | 4.0 KB | 4.6x |
+| 2 bit | %92.6 | 2.9 KB | 6.4x |
+- 3-4 bit kayipsiz, 2 bit belirgin kayip. Islem SAYISI ayni; kazanc bellek + bellek hizi + (FP8/FP4 tensor) aritmetik.
+- Gercek LLM'lerde ayni aile: llama.cpp/GGUF, GPTQ, AWQ (aykiri kanallar icin ozel is gerekir).
