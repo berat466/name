@@ -21,3 +21,5 @@ Her fikir: tek cumle, nasil test edilir, durum.
    dusuk rutbe/hash ile dogruluk-sikistirma egrisi. Durum: TASLAK.
 7. **Hafiza gibi / tek-hamle ogrenme (yapildi).** Bkz README: ELM/kNN/istatistik biriktirme. Acik: zor veride sinir, bellek Hf^2.
 8. **FRIDAY guncelleyici (taslak).** Adimda K aday guncelleme uret, 2-3 adim ileri kafada oynat, en iyisini uygula; maliyet-esit karsilastir.
+9. **Tek-hamle ogrenme MNIST'te (yapildi, olumsuz).** Hiz avantaji yalniz kucuk/kolay veride; MNIST'te esit dogrulukta klasikten yavas
+   (ELM 8192 oz. 55 sn vs Adam 18-41 sn). Melez de esit. Kalan deger: unutmasiz ardisik ogrenme, katman-katman kapali form.

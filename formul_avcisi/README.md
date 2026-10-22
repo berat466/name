@@ -193,3 +193,17 @@ Ayni basit C++ donguleriyle (BLAS yok, OpenMP 4 cekirdek), el yazisi rakamlar, T
 Derleme: `g++ -O3 -march=native -fopenmp -o tek_hamle tek_hamle.cpp`; veri: `python veri_hazirla.py KLASOR [tohum]`.
 - Sabit hiperparametre (lr, lambda) ile ADIL sure; ikisinde de ayar aramasi eklenirse iki taraf da ~aynı oranda uzar.
 - SINIRLAR: kolay/kucuk veri (1.8K ornek); ozellikler ogrenilmiyor; Hf buyudukce zaman Hf^3, bellek Hf^2.
+
+## DUZELTME: MNIST'te tek-hamle klasigi gecmiyor (`mnist_olcek.py`, `mnist_melez.py`)
+60k egitim / 10k test, test dogrulugu, duvar saati (numpy, 4 cekirdek):
+| yontem | dogruluk | sure |
+|---|---|---|
+| Adam MLP 256 gizli, 10 epok | %97.46 | 18 sn |
+| Adam MLP 1024 gizli, 10 epok | %97.82 | 41 sn |
+| Tek hamle ELM Hf=1024 / 2048 / 4096 / 8192 | %93.6 / 95.2 / 96.8 / 97.7 | 1.1 / 3.4 / 14.6 / 55 sn |
+- Rakam verisindeki (1.8K ornek) 6-85x hiz avantaji MNIST'te YOK: ayni dogruluk (~%97.5) icin ELM 8192 ozellik ve 55 sn ister
+  (klasik 18-41 sn). Ozellikler rastgele -> zor veride cok ozellik; maliyet n*Hf^2 + Hf^3, bellek Hf^2 (537 MB).
+- MELEZ (ozellik katmanini kisa gradyanla egit + cikis katmanini tek hamlede coz): ayni sure/epokta klasik Adam ile ~esit
+  (1024 gizli: 2 epok Adam %96.48 @8.2sn vs melez 1 epok %96.28 @8.2sn; 3 epok Adam %97.14 @11.7sn vs melez 2 epok %97.11 @12.5sn).
+- SONUC: zor/orta veride tek-hamle hiz kazandirmiyor. Gecerli kalan yerler: kucuk/kolay veri, toplanabilir istatistikle
+  unutmasiz ardisik ogrenme, katman-katman kapali-form cozumler (GPTQ benzeri sikistirma/duzenleme).
