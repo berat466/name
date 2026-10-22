@@ -134,3 +134,19 @@ Parametre BUYUMEZ; gorev kimligi (anahtar) biliniyor. 93 ardisik gorev, kalan ka
 - Anahtarli yontem ~5 gorev mertebesine kadar fayda veriyor, 10 gorevde kazanc kayboluyor (gurultu birikiyor).
 - Capa, 2'den fazla gorevde neredeyse fark yaratmiyor (yalniz bir onceki fazin basina capalar).
 - DERS: lr izgarasinin alt ucu eksik oldugunda anahtarsiz referans %24'e kadar haksiz kotu gorundu. Izgara artik 0.0003'ten basliyor.
+
+## Hafiza gibi / tek-hamle ogrenme (`hafiza_ogrenme.py`, `hafiza_digits.py`, `hafiza_ardisik.py`)
+Fikir (kullanici): agirligi dongusuz, tek seferde uret; ogrenmek = depolamak; cevap = hafizadan bulmak.
+Uygulama: ELM (rastgele ozellik + halka cozum, tek hamle) ve kNN (saklama). Hep TEST verisinde.
+- **Oyuncak gorevler (107 tek-fazli):** ELM Adam kalitesinde (+%3.7), ogrenme islemi benzer; kNN ogrenmesi bedava ama cok daha kotu.
+- **GERCEK veri, el yazisi rakamlar (5 bolme, dogrulamayla secilen hiperparametre):**
+  | yontem | test dogruluk | ogrenme islemi |
+  |---|---|---|
+  | Adam MLP | %96.6 | 1.1e10 |
+  | ELM tek hamle (256) | %96.1 | 1.3e8 (~85x az) |
+  | ELM tek hamle (1024) | %97.9 | 1.8e9 (~6x az) |
+  | kNN (saklama) | %96.8 | ~0 (sorgu maliyeti n*64) |
+- **Ardisik gorevler (93, TEST):** istatistik biriktirme `S += F^T F, R += F^T T` ESKI 0.092 / YENI 0.065 / ortalama **0.127**;
+  Adam ince ayar (ayricalikli lr) 0.217; yalniz son gorevle ELM 0.319. Unutmayi cozen sey toplanabilir istatistik.
+- SINIRLAR: kucuk/kolay veri; ozellikler ogrenilmiyor (rastgele) -> karmasik algida zayiflar; ELM maliyeti Hf^2..Hf^3;
+  biriktirilen ozet Hf^2 sayi (agin parametresinden cok daha buyuk); RLS/analitik surekli ogrenme ailesine yakin.
