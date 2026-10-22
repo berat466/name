@@ -1,0 +1,6 @@
+  [faz1 gamma=0.0625 bitti 4s]
+  [faz1 gamma=0.1250 bitti 9s]
+  [faz1 gamma=0.2500 bitti 14s]
+  [faz1 gamma=0.5000 bitti 18s]
+  [faz1 gamma=1.0000 bitti 23s]
+  [faz1 gamma=2.0000 bitti 28s]
