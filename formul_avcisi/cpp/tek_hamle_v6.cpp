@@ -285,6 +285,31 @@ int main(int argc, char** argv) {
     auto mkseed = [&](int task, int tag) { return (uint64_t)seed * 100003ULL + task * 131 + tag; };
     Feat f; f.blocks.push_back(make_block(TASKS[0], H, mkseed(1, 0))); rebuild(f); const int m = H + 1;
     printf("V6 mod=%s H=%d tohum=%d gamma=%g lambda=%g gorev=%d zorla_fb=%d maxit=%d (%d cekirdek)\n", mode.c_str(), H, seed, GAM, LAM, T, forcefb, maxit, omp_get_max_threads());
+
+    if (mode == "mikro") {
+        // MIKRO KIYAS: k yeni satir geldiginde  (a) rank-k Cholesky guncelleme + cozum   vs   (b) V4 yolu: dS=F^T F (syrk) + S'e ekle + yeniden Cholesky + cozum.
+        // Eski durum: gorev-1 verisinden S0/U0. Yeni satirlar: gorev-2'den k adet. Her k icin 5 tekrar, medyan sure.
+        mt19937_64 gsh(seed + 99); vector<int> r1 = rows_of(TASKS[0]); vector<float> Xb, F; vector<int> yb; vector<double> S0((size_t)m * m, 0.0), R0((size_t)m * NC, 0.0);
+        { int n = r1.size(); Xb.resize((size_t)n * D); yb.resize(n); for (int i = 0; i < n; i++) { memcpy(&Xb[(size_t)i * D], &Xtr[(size_t)r1[i] * D], D * sizeof(float)); yb[i] = ytr[r1[i]]; }
+          for (int s0 = 0; s0 < n; s0 += CH) { int nn = min(CH, n - s0); features(&Xb[(size_t)s0 * D], nn, f, F); syrk_add(F.data(), nn, m, S0.data()); rhs_add(F.data(), &yb[s0], nn, m, R0.data()); } }
+        vector<double> A0 = S0; for (int i = 0; i < m; i++) A0[(size_t)i * m + i] += LAM; cholesky(A0, m); vector<double> U0; lower_to_upper(A0, m, U0);
+        vector<int> r2 = rows_of(TASKS[1]); shuffle(r2.begin(), r2.end(), gsh);
+        int ks[] = {4, 16, 64, 256, 1024, 4096}; auto med5 = [](vector<double> v) { sort(v.begin(), v.end()); return v[v.size() / 2]; };
+        printf("MIKRO|H=%d|k|rank_k_guncelleme_sn|V4_dS+Cholesky_sn|oran(rank_k/V4)|W_goreli_fark(rank_k vs V4)\n", H);
+        for (int k : ks) {
+            Xb.resize((size_t)k * D); yb.resize(k); for (int i = 0; i < k; i++) { memcpy(&Xb[(size_t)i * D], &Xtr[(size_t)r2[i] * D], D * sizeof(float)); yb[i] = ytr[r2[i]]; }
+            features(Xb.data(), k, f, F); vector<double> ta, tb, Wa, Wb;
+            for (int rep = 0; rep < 5; rep++) {
+                double t0 = now(); vector<double> U = U0, R = R0; rhs_add(F.data(), yb.data(), k, m, R.data());
+                for (int g0 = 0; g0 < k; g0 += 256) { int g = min(256, k - g0); vector<double> Xg((size_t)g * m); for (int v = 0; v < g; v++) for (int j = 0; j < m; j++) Xg[(size_t)v * m + j] = F[(size_t)(g0 + v) * m + j]; chol_rank_update(U, m, Xg, g); }
+                solveU(U, m, R, Wa); ta.push_back(now() - t0);
+                t0 = now(); vector<double> S = S0, R2 = R0; syrk_add(F.data(), k, m, S.data()); rhs_add(F.data(), yb.data(), k, m, R2.data()); for (int i = 0; i < m; i++) S[(size_t)i * m + i] += LAM; cholesky(S, m); chol_solve(S, m, R2, Wb); tb.push_back(now() - t0);
+            }
+            double num = 0, den = 0; for (size_t i = 0; i < Wa.size(); i++) { num += (Wa[i] - Wb[i]) * (Wa[i] - Wb[i]); den += Wb[i] * Wb[i]; }
+            printf("MIKRO|%d|%d|%.5f|%.5f|%.2f|%.2e\n", H, k, med5(ta), med5(tb), med5(ta) / med5(tb), sqrt(num / den));
+        }
+        return 0;
+    }
     string tag = mode + "_H" + to_string(H) + "_s" + to_string(seed);
     double T0 = now(); mt19937_64 gsh(seed + 99);
     const bool is_v4 = (mode == "v4f32" || mode == "v4f64" || mode == "v4f32c256"), is_chol = (mode == "v6chol"), is_dw = (mode == "v6dw_ref" || mode == "v6dw_pcg");
