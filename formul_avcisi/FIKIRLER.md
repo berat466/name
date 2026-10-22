@@ -29,3 +29,5 @@ Her fikir: tek cumle, nasil test edilir, durum.
     kapali form: H=256 %88.1->%93.3 (11 sn), H=1024 %93.7->%95.6 (43 sn). Referans Adam: %97.5 @18 sn (H=256), %97.8 @41 sn (H=1024).
     Sonuc: "2. katman once, sonra 1." zaten geri yayilimin yapisi; gradyan yonunu cikarinca kaybediyor, yonu tutup adimi kapali formla
     on kosullayinca yavas ama duzenli iyilesiyor; Adam'i gecmiyor.
+11. **Derinlik testi (gradyansiz katman-katman, L=1..4 gizli, H=256, MNIST) — olumsuz.** `mnist_derin_gradyansiz.py`. Rastgele alt katman + kapali cikis ~%87;
+    hedef yayilimi 1 turda +0.5..1 puan, sonra COKER (L=2: %88->%43, L=3: %88.6->%30, L=4: %87.8->%17); Adam 5 epokta %97.2-97.6. Derinlik arttikca daha hizli bozuluyor.
