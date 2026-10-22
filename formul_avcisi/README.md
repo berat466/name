@@ -150,3 +150,20 @@ Uygulama: ELM (rastgele ozellik + halka cozum, tek hamle) ve kNN (saklama). Hep 
   Adam ince ayar (ayricalikli lr) 0.217; yalniz son gorevle ELM 0.319. Unutmayi cozen sey toplanabilir istatistik.
 - SINIRLAR: kucuk/kolay veri; ozellikler ogrenilmiyor (rastgele) -> karmasik algida zayiflar; ELM maliyeti Hf^2..Hf^3;
   biriktirilen ozet Hf^2 sayi (agin parametresinden cok daha buyuk); RLS/analitik surekli ogrenme ailesine yakin.
+
+## Kucuk uzayda egit, tam agirligi uret (`altuzay_deney.py`)
+Fikir (kullanici): algoritma kucuk sayilarla hesap yapsin, donusturucu tam (buyuk) agirligi uretsin, GPU tam agirlikla calissin.
+`theta = theta0 + P z`: yalniz d sayi (z) egitilir, ag HEP D=4810 agirlikla calisir. El yazisi rakamlar, TEST dogrulugu, 3 bolme:
+| egitilen d | kucultme | test dogruluk |
+|---|---|---|
+| 4810 (tam) | 1x | %96.4 |
+| 2000 | 2.4x | %95.5 |
+| 1000 | 4.8x | %94.4 |
+| 500 | 9.6x | %93.0 |
+| 250 | 19x | %90.5 |
+| 100 | 48x | %76.1 |
+| 50 | 96x | %61.7 |
+| 20 | 240x | %34.3 |
+- ~5-10x kucultme kucuk kayipla; >20x'te kalite cokuyor. Bu EN ZAYIF donusturucu (rastgele dogrusal); ogrenilmis (LoRA, hiper-ag) daha iyi.
+- GPU'nun ileri hesabi DEGISMEZ (tam agirlik). Kazanc: guncellenen/optimizer durumu sayisi (bellek), gradyan zinciri hala tam agirlikta.
+- Pratik uyari: P'yi saklayamazsin (7B x 7M); tohumdan uretilen yapisal donusturucu gerekir.
