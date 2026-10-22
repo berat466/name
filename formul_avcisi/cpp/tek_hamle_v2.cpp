@@ -7,7 +7,7 @@
 // Hiperparametreler (gamma, lambda) 5000 ornekli DOGRULAMA kumesinde secilir (55000 fit / 5000 dogrulama).
 // Cift secimi yalniz fit kumesinden; test verisi yalniz sonda, secilen ayarla BIR kez kullanilir.
 // Derleme: g++ -O3 -march=native -fopenmp -o tek_hamle_v2 tek_hamle_v2.cpp
-// Calistirma: ./tek_hamle_v2 cift|rastgele H [tohum=1] [veri_klasoru=/tmp/mnist_bin]
+// Calistirma: ./tek_hamle_v2 cift|rastgele H [tohum=1] [veri_klasoru=/tmp/mnist_bin] [gamma listesi a,b,c,d (ek tarama)]
 #include <bits/stdc++.h>
 #include <omp.h>
 #include <sys/resource.h>
@@ -99,7 +99,8 @@ int main(int argc, char** argv) {
     auto Xtr = readbin<float>(dir + "/Xtr.f32", (size_t)NTR * D); auto Xte = readbin<float>(dir + "/Xte.f32", (size_t)NTE * D);
     auto ytr = readbin<int>(dir + "/ytr.i32", NTR); auto yte = readbin<int>(dir + "/yte.i32", NTE);
     const int m = H + 1;
-    const double gammas[] = {0.5, 1, 2, 4}, lams[] = {1, 10, 100, 1000};
+    double gammas[4] = {0.5, 1, 2, 4}; const double lams[] = {1, 10, 100, 1000};
+    if (argc > 5) { double a, b, c, d; if (sscanf(argv[5], "%lf,%lf,%lf,%lf", &a, &b, &c, &d) == 4) { gammas[0] = a; gammas[1] = b; gammas[2] = c; gammas[3] = d; } }   // yalniz ek tarama icin
     printf("MOD=%s H=%d tohum=%d  (%d cekirdek)  fit=%d dogrulama=%d test=%d\n", mod.c_str(), H, seed, omp_get_max_threads(), NFIT, NTR - NFIT, NTE);
     double T0 = now();
 
