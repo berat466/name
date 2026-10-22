@@ -124,3 +124,13 @@ Parametre BUYUMEZ; gorev kimligi (anahtar) biliniyor. 93 ardisik gorev, kalan ka
 - x8'de anahtarli ~%45 daha az kalan kayip; lr izgarasinin alt ucu genisletilince degismedi.
 - Yine de ekleme zincirinin (0.030, ama +%27..+%770 parametre) gerisinde; anahtar parametre buyumeden geliyor.
 - Sinirlar: kimlik biliniyor; kucuk-orta tanh MLP; yapay gorevler; cok sayida gorev (>2) test edilmedi.
+
+### Anahtar: 2 / 5 / 10 ardisik gorev (`anahtar_cok_gorev.py`, genislik x8, 30 dizi, lr alt ucu genis)
+| gorev sayisi | anahtarsiz | ANAHTARLI | anahtarli kazanc |
+|---|---|---|---|
+| 2 | 0.302 | 0.226 | %25 |
+| 5 | 0.495 | 0.359 | %28 |
+| 10 | 0.442 | 0.424 | %4 (yok) |
+- Anahtarli yontem ~5 gorev mertebesine kadar fayda veriyor, 10 gorevde kazanc kayboluyor (gurultu birikiyor).
+- Capa, 2'den fazla gorevde neredeyse fark yaratmiyor (yalniz bir onceki fazin basina capalar).
+- DERS: lr izgarasinin alt ucu eksik oldugunda anahtarsiz referans %24'e kadar haksiz kotu gorundu. Izgara artik 0.0003'ten basliyor.
