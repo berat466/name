@@ -216,6 +216,7 @@ static GS class_stats(double gam, const W1b& P, int H, const vector<vector<int>>
 }
 static void add_scaled(vector<double>& dst, const vector<double>& src, double a) { for (size_t i = 0; i < dst.size(); i++) dst[i] += a * src[i]; }
 
+static vector<double> MUS = {0, 0.5, 1, 2, 5};   // argv[6] ile daraltilabilir (orn. "0,1")
 static void run_hafiza(const string& feat, int H, int seed) {
     const int m = H + 1; double T0 = now();
     vector<int> allowed; for (int c = 0; c < (feat == "cift_A" ? 5 : NC); c++) allowed.push_back(c);
@@ -226,9 +227,9 @@ static void run_hafiza(const string& feat, int H, int seed) {
     groups.push_back({"g5", {{0, 1}, {2, 3}, {4, 5}, {6, 7}, {8, 9}}});
     groups.push_back({"g2", {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}}});
     if (feat == "cift_A") groups.erase(groups.begin());                      // 5 gorevli bolme bu ozellikle anlamsiz: cift_A yalniz g2
-    const double MUS[5] = {0, 0.5, 1, 2, 5};
+    const int NM = MUS.size();
     struct Sel { double val = -1, gam = 0, lam = 0; int gi = -1; };
-    vector<array<Sel, 5>> sel(groups.size());
+    vector<vector<Sel>> sel(groups.size(), vector<Sel>(NM));
     const int* yv = &ytr[NFIT]; int nval = NTR - NFIT;
     double tcls_total = 0;
     // ---- FAZ 1: yalniz DOGRULAMA ile (gamma, lambda) secimi, her (grup, mu) icin ayri
@@ -237,7 +238,7 @@ static void run_hafiza(const string& feat, int H, int seed) {
         for (size_t g = 0; g < groups.size(); g++) {
             int T = groups[g].tasks.size(); vector<vector<double>> St(T, vector<double>((size_t)m * m, 0.0)), Rt(T, vector<double>((size_t)m * NC, 0.0));
             for (int t = 0; t < T; t++) for (int c : groups[g].tasks[t]) { add_scaled(St[t], gs.S[c], 1); add_scaled(Rt[t], gs.R[c], 1); }
-            for (int mi = 0; mi < 5; mi++) {
+            for (int mi = 0; mi < NM; mi++) {
                 vector<double> Sa((size_t)m * m, 0.0), Ra((size_t)m * NC, 0.0);
                 for (int t = 0; t < T; t++) { double w = pow(MUS[mi], T - 1 - t); if (MUS[mi] == 0) w = (t == T - 1) ? 1 : 0; add_scaled(Sa, St[t], w); add_scaled(Ra, Rt[t], w); }   // S_t + mu S_{t-1}  ->  sum mu^(T-1-t) S_t
                 for (int li = 0; li < 4; li++) {
@@ -256,7 +257,7 @@ static void run_hafiza(const string& feat, int H, int seed) {
         GS gs = class_stats(GAMMAS[gi], P, H, byc);
         for (size_t g = 0; g < groups.size(); g++) {
             int T = groups[g].tasks.size();
-            for (int mi = 0; mi < 5; mi++) {
+            for (int mi = 0; mi < NM; mi++) {
                 Sel& s = sel[g][mi]; if (s.gi != gi) continue;
                 vector<double> Sa((size_t)m * m, 0.0), Ra((size_t)m * NC, 0.0); vector<vector<double>> acc(T, vector<double>(T, -1));
                 double t_steps = 0; vector<int> seen; array<long, NC> cF, tF; double acc_final_total = 0, acc_old = 0, acc_new = 0;
@@ -291,7 +292,7 @@ static void run_hafiza(const string& feat, int H, int seed) {
         }
     }
     printf("HAFIZA_SURE|%s|%d|%d|arama(faz1)=%.1fs|toplam=%.1fs|RAM=%.0fMB|sinif_istatistik_toplam_6gamma=%.1fs\n", feat.c_str(), H, seed, t_search, now() - T0, peak_mb(), tcls_total);
-    for (size_t g = 0; g < groups.size(); g++) for (int mi = 0; mi < 5; mi++) printf("SEC|%s|%d|%d|%s|mu=%.1f|gamma=%.4f|lambda=%.0f|val=%.4f%s\n", feat.c_str(), H, seed, groups[g].name.c_str(), MUS[mi], sel[g][mi].gam, sel[g][mi].lam, sel[g][mi].val, (sel[g][mi].gi == 0 || sel[g][mi].gi == 5) ? " [IZGARA KENARI]" : "");
+    for (size_t g = 0; g < groups.size(); g++) for (int mi = 0; mi < NM; mi++) printf("SEC|%s|%d|%d|%s|mu=%.1f|gamma=%.4f|lambda=%.0f|val=%.4f%s\n", feat.c_str(), H, seed, groups[g].name.c_str(), MUS[mi], sel[g][mi].gam, sel[g][mi].lam, sel[g][mi].val, (sel[g][mi].gi == 0 || sel[g][mi].gi == 5) ? " [IZGARA KENARI]" : "");
 }
 
 int main(int argc, char** argv) {
@@ -299,6 +300,7 @@ int main(int argc, char** argv) {
     string cmd = argv[1], mod = argv[2]; int H = atoi(argv[3]), seed = atoi(argv[4]); string dir = argc > 5 ? argv[5] : "/tmp/mnist_bin";
     Xtr = readbin<float>(dir + "/Xtr.f32", (size_t)NTR * D); Xte = readbin<float>(dir + "/Xte.f32", (size_t)NTE * D);
     ytr = readbin<int>(dir + "/ytr.i32", NTR); yte = readbin<int>(dir + "/yte.i32", NTE);
+    if (argc > 6) { MUS.clear(); stringstream ss(argv[6]); string t; while (getline(ss, t, ',')) MUS.push_back(stod(t)); }
     if (cmd == "yon") run_yon(mod, H, seed); else if (cmd == "hafiza") run_hafiza(mod, H, seed); else { cerr << "yon|hafiza\n"; return 1; }
     return 0;
 }
