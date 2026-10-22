@@ -101,3 +101,13 @@ Uygulama: A gorevi ogrenilir, dondurulur; B icin yeni gizli blok + A'nin gizli o
 - Kimlik/yonlendirme olmadan (toplam) unutma geri geliyor: 0.267 ~ ince ayar.
 - BEDEL: parametre ORTALAMA 11.4x (yanal baglanti H*H) TEK ek gorev icin; her gorevde buyur.
 - Sinir: regresyon fazlari birbirine benzer fonksiyonlar oldugu icin yonlendirici testi sorunu hafife aliyor.
+
+### Buyumeyi kucultme (`ekleme_kucuk.py`, kimlik biliniyor, 93 ardisik gorev)
+| ekleme bicimi | ESKI | YENI | ortalama | toplam param (temel=1) |
+|---|---|---|---|---|
+| tam (Hn=H, yanal tam) | 0.013 | 0.031 | 0.030 | 8.7x |
+| Hn=H/2, yanal rutbe 4 | 0.027 | 0.033 | 0.038 | 2.7x |
+| Hn=H/4, yanal rutbe 2 | 0.013 | 0.061 | 0.047 | 1.8x |
+| Hn=H/4, yanal YOK | 0.013 | 0.088 | 0.070 | 1.3x |
+Referans Adam+capa 0.244. Kazancin cogu yanal baglantidan degil, eskiyi dondurup YENI blok eklemekten geliyor.
+Bedel: her yeni gorevde +%27 (H/4) buyume, kimlik/yonlendirme sart.
