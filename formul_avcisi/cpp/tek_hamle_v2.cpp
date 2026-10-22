@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
             vector<double> W; bool ok = cholesky(A, m); double va = -1;
             if (ok) chol_solve(A, m, Rf, W);
             if (ok) { va = accuracy(&Xtr[(size_t)NFIT * D], &ytr[NFIT], NTR - NFIT, gam, W); }
-            printf("  %5.1f  %7.0f   %.4f%s\n", gam, lams[li], va, ok ? "" : "  (Cholesky basarisiz)"); fflush(stdout);
+            printf("  %6.3f  %7.0f   %.4f%s\n", gam, lams[li], va, ok ? "" : "  (Cholesky basarisiz)"); fflush(stdout);
             if (va > best.val) best = {va, gam, lams[li]};
         }
         for (size_t i = 0; i < Sf.size(); i++) Sf[i] += Sv[i]; for (size_t i = 0; i < Rf.size(); i++) Rf[i] += Rv[i];
@@ -171,12 +171,12 @@ int main(int argc, char** argv) {
     double test = accuracy(Xte.data(), yte.data(), NTE, best.gam, W);
     double T1 = now() - T0;
     double t_fit_single = t_w + t_stats[bg] + t_final_solve;   // tek model: W1 + (fit+dogr. istatistik) + 1 cozum
-    printf("\nSECILEN (dogrulamaya gore): gamma=%.1f lambda=%.0f  dogrulama=%.4f\n", best.gam, best.lam, best.val);
+    printf("\nSECILEN (dogrulamaya gore): gamma=%.3f lambda=%.0f  dogrulama=%.4f\n", best.gam, best.lam, best.val);
     printf("TEST DOGRULUGU: %.4f\n", test);
     printf("W1,b1 uretim suresi: %.2f sn\n", t_w);
     printf("TEK MODEL egitim suresi (W1 + 60k istatistik + 1 Cholesky; ayar aramasi HARIC): %.1f sn\n", t_fit_single);
     printf("TOPLAM sure (ayar izgarasi 16 nokta + son cozum + test): %.1f sn\n", T1);
     printf("Tepe RAM (RSS): %.0f MB   | S matrisi (double) %.0f MB x (4 gamma saklanan + calisma kopyalari)\n", peak_mb(), (double)m * m * 8 / 1e6);
-    printf("OZET|%s|%d|%d|%.1f|%.0f|%.4f|%.4f|%.1f|%.1f|%.0f\n", mod.c_str(), H, seed, best.gam, best.lam, best.val, test, t_fit_single, T1, peak_mb());
+    printf("OZET|%s|%d|%d|%.3f|%.0f|%.4f|%.4f|%.1f|%.1f|%.0f\n", mod.c_str(), H, seed, best.gam, best.lam, best.val, test, t_fit_single, T1, peak_mb());
     return 0;
 }
