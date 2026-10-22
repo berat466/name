@@ -60,3 +60,19 @@ Kural: `w <- w - lr * ( Adam(m,v) + 0.1 * (w - a) )`  (capa yalniz gorev DEGISIM
 - Evrimsel arama bu insan yapimi capali baseline'i GECEMEDI (en iyi kesif: Adam+m, %30 ardisik).
 - SINIRLAR: gorev siniri BILINIYOR varsayildi; kucuk tanh MLP; yapay gorevler; tekrar (replay) ve gercek EWC ile
   karsilastirilmadi. SGD eskiyi daha iyi tutar (0.35) ama yeniyi kotu ogrenir (0.21).
+
+## Yerel kural + eski degisim hafizasi (`lokal_kural.py`)
+Kural: `D_t = ort(giris * hata) + mu * D_{t-1}`; `w <- w - lr*D`. Gizli katman hatasi: `bp` (geri yayilim),
+`fa` (sabit rastgele geri baglanti), `none` (gizli katman ogrenmez). 200 gorunmemis gorev; referans Adam(bp)
+tum=0.0507, ardisik=0.5523 (kalan kayip, dusuk iyi).
+| gizli yol | eski degisim | tum | ardisik |
+|---|---|---|---|
+| bp | yok | 0.279 | 0.318 |
+| bp | 0.9 | 0.114 | 0.728 |
+| fa | yok | 0.239 | 0.295 |
+| fa | 0.9 | 0.135 | 0.329 |
+| none | yok / 0.9 | 0.367 / 0.298 | 0.395 / 0.396 |
+- Eski degisim hafizasi tum gorevlerde buyuk kazanc (momentum etkisi) ama ardisikte daha cok unutuyor (bp: 0.32 -> 0.73).
+- Rastgele sabit geri baglanti (geri yayilimsiz kredi atama) bu kucuk aglarda sadece ~%18 kotu (0.135 vs 0.114).
+- En iyi yerel kural Adam'dan ~2.7x kotu: eksik parca "buyukluk hafizasi" (v).
+- UYARI: feedback alignment'in geri matrisi carpimi de geri yayilimla ayni maliyette; hesap tasarrufu yok, kazanc bellek/agirlik tasima.
