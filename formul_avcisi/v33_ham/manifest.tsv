@@ -1,0 +1,9 @@
+./tek_hamle_v33 2 512 1 1 1 0.5 Z 1 Y - 100 100 3000	../v33_ham/eski_r1.txt	rc=0	wall_s=24.41	user_cpu_s=61.98	sys_cpu_s=7.44	maxrss_MB=1298
+./tek_hamle_v33 2 512 1 1 1 0.5 Z 1 Y - 100 100 3000	../v33_ham/yeni_r1.txt	rc=0	wall_s=9.64	user_cpu_s=19.11	sys_cpu_s=4.92	maxrss_MB=1184
+./tek_hamle_v33 2 512 1 1 1 0.5 Z 1 Y - 100 100 3000	../v33_ham/eski_r2.txt	rc=0	wall_s=23.27	user_cpu_s=63.07	sys_cpu_s=6.41	maxrss_MB=1298
+./tek_hamle_v33 2 512 1 1 1 0.5 Z 1 Y - 100 100 3000	../v33_ham/yeni_r2.txt	rc=0	wall_s=9.84	user_cpu_s=19.39	sys_cpu_s=5.20	maxrss_MB=1184
+./tek_hamle_v33 2 512 1 1 1 0.5 Z 1 Y - 100 100 3000	../v33_ham/eski_r3.txt	rc=0	wall_s=22.90	user_cpu_s=63.36	sys_cpu_s=6.15	maxrss_MB=1298
+./tek_hamle_v33 2 512 1 1 1 0.5 Z 1 Y - 100 100 3000	../v33_ham/yeni_r3.txt	rc=0	wall_s=9.77	user_cpu_s=19.58	sys_cpu_s=4.95	maxrss_MB=1184
+./tek_hamle_v33 2 512 1 1 1 0.5 Z 1 Y - 100 100 3000	../v33_ham/yeni_iplik1.txt	rc=0	wall_s=15.93	user_cpu_s=10.96	sys_cpu_s=4.75	maxrss_MB=1131
+./tek_hamle_v33 2 512 1 1 1 0.5 Z 1 Y - 100 100 3000	../v33_ham/yeni_iplik2.txt	rc=0	wall_s=11.36	user_cpu_s=13.44	sys_cpu_s=5.16	maxrss_MB=1176
+./tek_hamle_v33 2 512 1 1 1 0.5 Z 1 Y - 100 100 3000	../v33_ham/eski_iplik1.txt	rc=0	wall_s=76.68	user_cpu_s=69.28	sys_cpu_s=6.72	maxrss_MB=1256

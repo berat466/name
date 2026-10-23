@@ -31,10 +31,11 @@ for ep in range(80):
     dt=time.time()-ta; T_train+=dt; tb=time.time(); v=ce(m,'val'); dv=time.time()-tb; T_val+=dv
     ep_log.append((ep+1,dt,dv,float(np.exp(v))))
     if t_to_q is None and np.exp(v)<=147.0: t_to_q=time.time()-t_all0   # V31 dogrulama PPL = 147.0 seviyesine ilk ulasma (egitim+dogrulama suresi dahil)
-    if v<best-1e-4: best=v; bad=0
+    if v<best-1e-4: best=v; bad=0; best_state={k:t.clone() for k,t in m.state_dict().items()}   # V33 duzeltmesi: en iyi checkpoint saklanir
     else:
         bad+=1
         if bad>=6: break
 T_run=time.time()-t_all0
+m.load_state_dict(best_state)   # V33 duzeltmesi: test oncesi EN IYI dogrulama checkpoint'i geri yuklenir (V32 ile ayni davranis)
 tt=time.time(); te=ce(m,'test'); t_test=time.time()-tt
 print(json.dumps(dict(torch_import_s=t_imp,veri_yukleme_s=t_load,model_kurma_s=t_init,epok=ep+1,agirlik_guncelleme=updates,batch=256,egitim_adim_s=T_train,dogrulama_degerlendirme_s=T_val,egitim_kosusu_toplam_s=T_run,test_degerlendirme_s=t_test,test_PPL=float(np.exp(te)),en_iyi_dogr_PPL=float(np.exp(best)),V31_dogr_PPL_seviyesine_ilk_ulasma_s=t_to_q,epok_ayrintisi=ep_log),ensure_ascii=False))
