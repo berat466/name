@@ -11,7 +11,7 @@ V17'nin seçtiği (γ,λ): H=1024: tohum 1 (4,10), tohum 2 (4,100), tohum 3 (2,1
 
 ## Açık cevap
 **Evet: tek bir CE düzeltmesi perplexity'yi düşürdü (3/3 tohum, her iki H'de), ama top-1 doğruluğu H=1024'te düştü.**
-- [Kesin] **H=1024:** PPL **206.8 → 199.9** (−7.0, ≈ %3.4); test CE 5.3318 → 5.2976 nat. 200'ün altı hedefi (araştırma hedefi) tohum 2 ve 1,3'te 198,5 / 200,9 / 200,2 ile sınırda: ortalama 199.9.
+- [Kesin] **H=1024:** PPL **206.8 → 199.9** (−7.0, ≈ %3.4); test CE 5.3318 → 5.2976 nat. Araştırma hedefi olan 200'ün altı **ortalamada** sağlandı (199,9); tohumlar 200,90 / 198,46 / 200,23.
 - [Kesin] **H=512:** PPL 212.3 → 202.8 (−9.6, ≈ %4.5).
 - [Kesin] **Top-1 düştü (H=1024):** %16.2 → %14.9; top-5 arttı (%30,0 → %30,4–30,7). H=512'de top-1 aynı kaldı (%15,3–15,4), top-5 arttı. CE düzeltmesi olasılık kalitesini (CE) iyileştirirken en olası kelimeyi seçme isabetini H=1024'te bozdu.
 - [Kesin] **Aşırı uyum artıyor:** eğitim CE'si H=1024'te 5,12 → 4,53–4,65 düşüyor (alt örnek, kalibre), doğrulama CE'si 5,418 → 5,371, yani gap büyüyor; test yine de iyileşti. Seçilen η=0,01 ağırlıkları büyük değiştiriyor (‖ηΔW‖/‖W₀‖ ≈ %32–39).
@@ -48,7 +48,7 @@ Unigram PPL 281,15; trigram PPL 137,4, top-1 %16,0, top-5 %36,2. V17 referansı 
 | H=512, tohum 1 | 1 | 32.1 | 5.6162 | α=0.05, T=0.1 | 5.5935 | spec |
 | H=512, tohum 1 | 2 | 64.2 | 5.6144 | α=0.05, T=0.25 | 5.5876 | spec |
 
-- [Kesin] η=0,01 her koşuda en iyi η (6/6); η=0,001 ve 10⁻⁴ (genişletme) daha az kazandırdı, η ≥ 0,1 kaybı belirgin kötüleştirdi (CE 5,55–5,62 > ridge 5,42; η≥0,5'te model unigramdan bile kötüye yaklaşıyor). Ayrı η ızgarası (0,001–0,1 arası ara değerler) taranmadı: optimum 0,003–0,05 arasında olabilir [Tahmin].
+- [Kesin] η=0,01 her koşuda en iyi η (6/6); η=0,001 ve 10⁻⁴ (genişletme) daha az kazandırdı, η ≥ 0,1 kaybı belirgin kötüleştirdi (CE 5,55–5,62 > ridge 5,42; η≥0,5'te kalibre doğrulama CE'si unigram düzeyine (5,69) yaklaşıyor, yani model katkısı siliniyor). Ayrı η ızgarası (0,001–0,1 arası ara değerler) taranmadı: optimum 0,003–0,05 arasında olabilir [Tahmin].
 - [Muhtemel] η ≈ T²/ölçek düzeyinde (0,01) çalışması, `1/T²` eğrilikli CE'ye uygun bir Gauss–Newton boyutuna yakın olmasıyla uyumlu; ölçülmedi.
 
 ## Süre, gradyan normu ve RAM
