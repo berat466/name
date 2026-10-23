@@ -15,7 +15,7 @@ V17'nin seçtiği (γ,λ): H=1024: tohum 1 (4,10), tohum 2 (4,100), tohum 3 (2,1
 - [Kesin] **H=512:** PPL 212.3 → 202.8 (−9.6, ≈ %4.5).
 - [Kesin] **Top-1 düştü (H=1024):** %16.2 → %14.9; top-5 arttı (%30,0 → %30,4–30,7). H=512'de top-1 aynı kaldı (%15,3–15,4), top-5 arttı. CE düzeltmesi olasılık kalitesini (CE) iyileştirirken en olası kelimeyi seçme isabetini H=1024'te bozdu.
 - [Kesin] **Aşırı uyum artıyor:** eğitim CE'si H=1024'te 5,12 → 4,53–4,65 düşüyor (alt örnek, kalibre), doğrulama CE'si 5,418 → 5,371, yani gap büyüyor; test yine de iyileşti. Seçilen η=0,01 ağırlıkları büyük değiştiriyor (‖ηΔW‖/‖W₀‖ ≈ %32–39).
-- [Kesin] **Hız maliyeti ağır:** H=1024'te Ridge ≈ 0,5 sn iken düzeltme ek ≈ 9–11 sn (bir ileri gemm + softmax + bir geri gemm; n·m·V ≈ 8·10¹⁰ çarpma-toplama iki kez); H=512'de 0,13 → 3,4 sn. Toplam ağırlık üretimi ~20× yavaş (tablodaki süreler).
+- [Kesin] **Hız maliyeti ağır:** H=1024'te Ridge (istatistik+Cholesky+çözüm) 1,1–1,9 sn iken düzeltme ek 6,1–6,7 sn (bir ileri gemm + softmax + bir geri gemm, n·m·V ≈ 8·10¹⁰ çarpma-toplama iki kez); H=512'de Ridge 0,33–0,56 sn, düzeltme ek 3,0–3,5 sn. Ağırlık üretimi toplamda H=1024'te ≈ 4,5–7×, H=512'de ≈ 7–11× yavaşladı (son modelde düzeltme eğitim+doğrulama için tekrarlandığından toplam iş yaklaşık iki katı; tablo süreleri tek geçiş).
 - Trigram hedefi (PPL 137) uzak (≈ 200).
 
 ## Sonuçlar (3 tohum, c=2)
