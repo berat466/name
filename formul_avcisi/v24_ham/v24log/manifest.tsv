@@ -1,0 +1,4 @@
+./tek_hamle_v24 2 1024 1 4 10	/tmp/v24log/v24_c2_H1024_s1.txt	rc=0	wall_s=128.81	user_cpu_s=409.73	sys_cpu_s=18.60	maxrss_MB=791
+./tek_hamle_v24 2 512 1 1 1	/tmp/v24log/v24_c2_H512_s1.txt	rc=0	wall_s=77.82	user_cpu_s=242.20	sys_cpu_s=13.47	maxrss_MB=644
+./tek_hamle_v24 2 1024 2 4 100	/tmp/v24log/v24_c2_H1024_s2.txt	rc=0	wall_s=119.93	user_cpu_s=387.32	sys_cpu_s=17.11	maxrss_MB=791
+./tek_hamle_v24 2 1024 3 2 1	/tmp/v24log/v24_c2_H1024_s3.txt	rc=0	wall_s=126.11	user_cpu_s=399.18	sys_cpu_s=19.47	maxrss_MB=791
