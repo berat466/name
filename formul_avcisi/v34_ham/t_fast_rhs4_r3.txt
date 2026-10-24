@@ -1,0 +1,37 @@
+V34_MOD|FAST=1 RHS_GRUPLARI=4 CHOL_BLOKLARI=1
+V33_MOD|cekirdekler=OPENBLAS (sgemm/dpotrf/dtrsm/dgemm)|OpenMP=4|OpenBLAS iplik=4
+ZAMAN|veri dosyalarini okuma=0.031s
+ZAMAN|expand_s (X'e fark bloku ekleme)=0.044s
+V27 c=2 H=512 tohum=1 gamma1=1 lambda=1 gamma2(F2..F4)=0.5 mod=Z (4 cekirdek); yalniz egitim; dogrusal okuma (alpha,eps dogrulamayla)
+ZAMAN|n-gram ogretici sayimlari+EM (yalniz kategori/rapor icin; agirlik uretimi DEGIL)=0.017s
+OLCEK|V31_KIMLIK+4F(4x128)|F2 girdisi|X(genislik 192): ham satir-norm RMS=1.8634 uygulanan olcek=0.5366 ; F1(genislik 128): ham satir-norm RMS=3.1351 uygulanan olcek=0.3190 ; toplam giris boyutu=320
+OLCEK|V31_KIMLIK+4F(4x128)|F3 girdisi|X(genislik 192): ham satir-norm RMS=1.8634 uygulanan olcek=0.5366 ; F1(genislik 128): ham satir-norm RMS=3.1351 uygulanan olcek=0.3190 ; F2(genislik 128): ham satir-norm RMS=2.0727 uygulanan olcek=0.4825 ; toplam giris boyutu=448
+OLCEK|V31_KIMLIK+4F(4x128)|F4 girdisi|X(genislik 192): ham satir-norm RMS=1.8634 uygulanan olcek=0.5366 ; F1(genislik 128): ham satir-norm RMS=3.1351 uygulanan olcek=0.3190 ; F2(genislik 128): ham satir-norm RMS=2.0727 uygulanan olcek=0.4825 ; F3(genislik 128): ham satir-norm RMS=3.2648 uygulanan olcek=0.3063 ; toplam giris boyutu=576
+V31_ZINCIR_OZELLIK|V31_KIMLIK+4F(4x128)|hazirlik=0.98s
+V31_HAZIRLIK|F bloku=513 sutun (yogun), C blogu=4002 seyrek sutun (yogun one-hot veri matrisi YOK; C^TC yogun 4002x4002 yalniz Gram, 128 MB)|sure=0.21s
+YALNIZ_KIMLIK_TARAMA|lamC=100|dogr CE=5.0317 PPL=153.2 (alpha=0.7 eps=1e-05)
+SURE|lamC=100 Cholesky(C blogu)+Schur hazirlik=1.57s
+ORTAK_TARAMA|lamC=100 lamF=3000|dogr CE=4.9903 PPL=147.0 (alpha=0.8 eps=1e-05)|sure=0.85s
+SECIM|yalniz kimlik: lamC=100 (dogr CE=5.0317)|ortak (kimlik+4F): lamC=100 lamF=3000 (dogr CE=4.9903)
+SONUC|YALNIZ_KIMLIK(secilen)|lamC=100 lamF=0|alpha=0.7 eps=1e-05|egitim PPL=46.6|dogr CE=5.0317 PPL=153.2|test CE=4.9732 PPL=144.49 top1=0.1554 top5=0.3556|egitim-dogr CE farki=1.1905|baglam GORULDU: PPL=146.8 top1=0.1533 (n=3392)|yalniz bigram: PPL=139.7 top1=0.1599 (n=1588)|olasilik_toplam_sapma=1.1e-13
+SONUC|ORTAK_KIMLIK+4F(secilen)|lamC=100 lamF=3000|alpha=0.8 eps=1e-05|egitim PPL=51.5|dogr CE=4.9903 PPL=147.0|test CE=4.9401 PPL=139.78 top1=0.1560 top5=0.3568|egitim-dogr CE farki=1.0483|baglam GORULDU: PPL=143.5 top1=0.1548 (n=3392)|yalniz bigram: PPL=132.1 top1=0.1587 (n=1588)|olasilik_toplam_sapma=8.4e-14
+SONUC|  ayni W: yalniz C kismi (logit)|lamC=100 lamF=3000|alpha=0.5 eps=1e-05|egitim PPL=56.2|dogr CE=5.1667 PPL=175.3|test CE=5.1199 PPL=167.33 top1=0.1514 top5=0.3398|egitim-dogr CE farki=1.1376|baglam GORULDU: PPL=173.2 top1=0.1506 (n=3392)|yalniz bigram: PPL=155.3 top1=0.1530 (n=1588)|olasilik_toplam_sapma=7.8e-14
+SONUC|  ayni W: yalniz F kismi (logit)|lamC=100 lamF=3000|alpha=0.8 eps=1e-05|egitim PPL=186.8|dogr CE=5.3861 PPL=218.3|test CE=5.3491 PPL=210.42 top1=0.1006 top5=0.2651|egitim-dogr CE farki=0.1563|baglam GORULDU: PPL=223.9 top1=0.0982 (n=3392)|yalniz bigram: PPL=184.2 top1=0.1058 (n=1588)|olasilik_toplam_sapma=4.8e-14
+COZUM_REZIDUSU|||Z^T(ZW-Y)+Lambda W||/||Z^T Y|| = 6.053e-08 (float gemm ile olculdu; blok eliminasyon Cholesky cift duyarlik, cozum float)
+V31_TOPLAM|sure=7.7s
+TT|E1 yalniz-kimlik dogrulama degerlendirmesi (logit+alpha/eps+PPL)|0.086s
+TT|E2 ortak cozum dogrulama degerlendirmesi|0.357s
+TT|E3 final degerlendirme: egitim+dogr+test logit/PPL/kategori + parca okumalari (rapor icin)|4.905s
+TT|M1 A_CC kopya+lambda_C|0.000s
+TT|M2 Cholesky(A_CC+lC I) 4002x4002|0.218s
+TT|M3 Y0=A_CC^-1 R_C cozum (2001 sag taraf) = yalniz-kimlik agirliklari|1.048s
+TT|M4 X=A_CC^-1 A_CF cozum (513 sag taraf)|0.166s
+TT|M5 T=A_FC X, U=A_FC Y0 (Schur parcalari)|0.053s
+TT|M6 Schur sistemi (513) Cholesky+cozum + W_C=Y0-X W_F (lambda_F basina)|0.497s
+TT|P1 dogrulama logitleri|0.109s
+TT|P2 TEST logitleri (tahmin)|0.201s
+TT|P3 egitim logitleri (yalniz rapor)|2.963s
+TT|P4 egitim PPL/Top-k (yalniz rapor)|0.597s
+TT|P5 TEST PPL/Top-1/Top-5 hesabi (tahmin)|0.071s
+ZINCIR_BITTI|V31_KIMLIK+4F(4x128)|toplam=8.7s tepe_RAM=1221MB
+TOPLAM sure=8.8s tepe_RAM=1221MB

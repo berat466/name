@@ -1,0 +1,63 @@
+OZET_V9|unigram|mod=cift_s0_A|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v16.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_s0_A|c=2|H=512|tohum=1|alpha=1.0|T=0.02|val_CE=6.3596|test_CE=6.2559|PPL=521.09|top1=0.1502|top5=0.3371|mse_olasilik=0.000501|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_s0_A|c=2|H=512|tohum=1|alpha=0|T=0.25|val_CE=5.6947|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_s0_A|c=2|H=512|tohum=1|alpha=0.25|T=0.01|val_CE=5.4671|test_CE=5.3791|PPL=216.82|top1=0.1492|top5=0.2900|mse_olasilik=0.000483|olasilik_toplami=1.000000
+CPU_SURE|cift_s0_A_c2_H512_s1|kalibrasyon_cpu_sn=3.70|duvar_sn=3.79|RAM_MB=341
+OZET_V9|unigram|mod=cift_s0_1|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v16.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_s0_1|c=2|H=512|tohum=1|alpha=1.0|T=0.1|val_CE=6.3278|test_CE=6.2359|PPL=510.74|top1=0.1317|top5=0.3181|mse_olasilik=0.000514|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_s0_1|c=2|H=512|tohum=1|alpha=0|T=0.25|val_CE=5.6947|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_s0_1|c=2|H=512|tohum=1|alpha=0.15|T=0.05|val_CE=5.5395|test_CE=5.4560|PPL=234.15|top1=0.1323|top5=0.2697|mse_olasilik=0.000486|olasilik_toplami=1.000000
+CPU_SURE|cift_s0_1_c2_H512_s1|kalibrasyon_cpu_sn=3.02|duvar_sn=2.98|RAM_MB=341
+OZET_V9|unigram|mod=cift_s0_2|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v16.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_s0_2|c=2|H=512|tohum=1|alpha=1.0|T=0.07|val_CE=6.3186|test_CE=6.2274|PPL=506.43|top1=0.1317|top5=0.3181|mse_olasilik=0.000508|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_s0_2|c=2|H=512|tohum=1|alpha=0|T=0.25|val_CE=5.6947|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_s0_2|c=2|H=512|tohum=1|alpha=0.15|T=0.03|val_CE=5.5430|test_CE=5.4598|PPL=235.04|top1=0.1319|top5=0.2703|mse_olasilik=0.000486|olasilik_toplami=1.000000
+CPU_SURE|cift_s0_2_c2_H512_s1|kalibrasyon_cpu_sn=3.28|duvar_sn=3.20|RAM_MB=341
+OZET_V9|unigram|mod=cift_s8_A|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v16.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_s8_A|c=2|H=512|tohum=1|alpha=1.0|T=0.02|val_CE=6.3856|test_CE=6.2763|PPL=531.82|top1=0.1452|top5=0.3333|mse_olasilik=0.000501|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_s8_A|c=2|H=512|tohum=1|alpha=0|T=0.25|val_CE=5.6947|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_s8_A|c=2|H=512|tohum=1|alpha=0.2|T=0.01|val_CE=5.4969|test_CE=5.4016|PPL=221.76|top1=0.1466|top5=0.2801|mse_olasilik=0.000483|olasilik_toplami=1.000000
+CPU_SURE|cift_s8_A_c2_H512_s1|kalibrasyon_cpu_sn=3.66|duvar_sn=3.67|RAM_MB=341
+OZET_V9|unigram|mod=cift_s8_1|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v16.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_s8_1|c=2|H=512|tohum=1|alpha=1.0|T=0.1|val_CE=6.3570|test_CE=6.2622|PPL=524.35|top1=0.1321|top5=0.3177|mse_olasilik=0.000516|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_s8_1|c=2|H=512|tohum=1|alpha=0|T=0.25|val_CE=5.6947|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_s8_1|c=2|H=512|tohum=1|alpha=0.15|T=0.05|val_CE=5.5504|test_CE=5.4602|PPL=235.14|top1=0.1327|top5=0.2645|mse_olasilik=0.000486|olasilik_toplami=1.000000
+CPU_SURE|cift_s8_1_c2_H512_s1|kalibrasyon_cpu_sn=3.71|duvar_sn=3.79|RAM_MB=341
+OZET_V9|unigram|mod=cift_s8_2|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v16.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_s8_2|c=2|H=512|tohum=1|alpha=1.0|T=0.07|val_CE=6.3471|test_CE=6.2530|PPL=519.54|top1=0.1321|top5=0.3177|mse_olasilik=0.000510|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_s8_2|c=2|H=512|tohum=1|alpha=0|T=0.25|val_CE=5.6947|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_s8_2|c=2|H=512|tohum=1|alpha=0.15|T=0.03|val_CE=5.5539|test_CE=5.4632|PPL=235.84|top1=0.1317|top5=0.2653|mse_olasilik=0.000486|olasilik_toplami=1.000000
+CPU_SURE|cift_s8_2_c2_H512_s1|kalibrasyon_cpu_sn=2.65|duvar_sn=2.65|RAM_MB=341
+OZET_V9|unigram|mod=cift_s32_A|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v16.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_s32_A|c=2|H=512|tohum=1|alpha=1.0|T=0.02|val_CE=6.4641|test_CE=6.3583|PPL=577.26|top1=0.1307|top5=0.3133|mse_olasilik=0.000501|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_s32_A|c=2|H=512|tohum=1|alpha=0|T=0.25|val_CE=5.6947|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_s32_A|c=2|H=512|tohum=1|alpha=0.2|T=0.01|val_CE=5.5281|test_CE=5.4427|PPL=231.06|top1=0.1323|top5=0.2691|mse_olasilik=0.000486|olasilik_toplami=1.000000
+CPU_SURE|cift_s32_A_c2_H512_s1|kalibrasyon_cpu_sn=4.25|duvar_sn=4.20|RAM_MB=341
+OZET_V9|unigram|mod=cift_s32_1|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v16.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_s32_1|c=2|H=512|tohum=1|alpha=1.0|T=0.1|val_CE=6.4878|test_CE=6.3957|PPL=599.28|top1=0.1096|top5=0.2839|mse_olasilik=0.000503|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_s32_1|c=2|H=512|tohum=1|alpha=0|T=0.25|val_CE=5.6947|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_s32_1|c=2|H=512|tohum=1|alpha=0.1|T=0.05|val_CE=5.6315|test_CE=5.5550|PPL=258.52|top1=0.1100|top5=0.2376|mse_olasilik=0.000489|olasilik_toplami=1.000000
+CPU_SURE|cift_s32_1_c2_H512_s1|kalibrasyon_cpu_sn=3.43|duvar_sn=3.42|RAM_MB=341
+OZET_V9|unigram|mod=cift_s32_2|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v16.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_s32_2|c=2|H=512|tohum=1|alpha=1.0|T=0.07|val_CE=6.4699|test_CE=6.3519|PPL=573.60|top1=0.1241|top5=0.3050|mse_olasilik=0.000515|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_s32_2|c=2|H=512|tohum=1|alpha=0|T=0.25|val_CE=5.6947|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_s32_2|c=2|H=512|tohum=1|alpha=0.15|T=0.03|val_CE=5.5855|test_CE=5.4877|PPL=241.70|top1=0.1231|top5=0.2578|mse_olasilik=0.000487|olasilik_toplami=1.000000
+CPU_SURE|cift_s32_2_c2_H512_s1|kalibrasyon_cpu_sn=3.52|duvar_sn=3.54|RAM_MB=341

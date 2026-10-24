@@ -1,0 +1,9 @@
+off_beta0 lamC=20 lamF=10000 valCE=4.9253 valPPL=137.7 testPPL=131.25 top1=0.1677 top5=0.3665 | F hazirlik=2.40s havuz=- | V31_TOPLAM=20.5
+real_b0.3 lamC=20 lamF=3000 valCE=4.9221 valPPL=137.3 testPPL=130.83 top1=0.1685 top5=0.3667 | F hazirlik=2.07s havuz=0.28 | V31_TOPLAM=15.5
+shuf_b0.3 lamC=20 lamF=3000 valCE=4.9254 valPPL=137.7 testPPL=131.33 top1=0.1689 top5=0.3665 | F hazirlik=1.38s havuz=0.20 | V31_TOPLAM=16.1
+real_b0.6 lamC=100 lamF=3000 valCE=4.9106 valPPL=135.7 testPPL=128.99 top1=0.1610 top5=0.3645 | F hazirlik=1.42s havuz=0.22 | V31_TOPLAM=17.2
+shuf_b0.6 lamC=20 lamF=3000 valCE=4.9253 valPPL=137.7 testPPL=131.52 top1=0.1683 top5=0.3647 | F hazirlik=1.44s havuz=0.25 | V31_TOPLAM=16.1
+real_b0.9 lamC=100 lamF=3000 valCE=4.8930 valPPL=133.4 testPPL=126.87 top1=0.1586 top5=0.3639 | F hazirlik=1.43s | V31_TOPLAM=19.0
+shuf_b0.9 lamC=20 lamF=3000 valCE=4.9301 valPPL=138.4 testPPL=132.51 top1=0.1635 top5=0.3631 | F hazirlik=1.39s | V31_TOPLAM=15.4
+real_b1.0 lamC=100 lamF=3000 valCE=4.8931 valPPL=133.4 testPPL=126.93 top1=0.1568 top5=0.3622 | F hazirlik=1.32s | V31_TOPLAM=17.8
+shuf_b1.0 lamC=20 lamF=3000 valCE=4.9332 valPPL=138.8 testPPL=132.84 top1=0.1653 top5=0.3661 | F hazirlik=1.38s | V31_TOPLAM=16.0

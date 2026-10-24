@@ -1,0 +1,9 @@
+./tek_hamle_v28 2 512 1 1 1 1 SCVJ	/tmp/v28log/v28_c2_H512_s1_g2_1.txt	rc=0	wall_s=56.89	user_cpu_s=111.33	sys_cpu_s=27.37	maxrss_MB=899
+./tek_hamle_v28 2 512 1 1 1 2 SCVJ	/tmp/v28log/v28_c2_H512_s1_g2_2.txt	rc=0	wall_s=56.27	user_cpu_s=111.07	sys_cpu_s=26.70	maxrss_MB=899
+./tek_hamle_v28 2 512 1 1 1 0.5 SCVJ	/tmp/v28log/v28_c2_H512_s1_g2_0.5.txt	rc=0	wall_s=56.71	user_cpu_s=111.44	sys_cpu_s=27.10	maxrss_MB=899
+./tek_hamle_v28 2 512 1 1 1 0.25 SCVJ	/tmp/v28log/v28_c2_H512_s1_g2_0.25.txt	rc=0	wall_s=57.78	user_cpu_s=114.72	sys_cpu_s=27.05	maxrss_MB=899
+./tek_hamle_v28 2 512 2 2 1 0.5 SCVJ	/tmp/v28log/v28_c2_H512_s2_g2_0.5.txt	rc=0	wall_s=53.82	user_cpu_s=113.91	sys_cpu_s=23.73	maxrss_MB=899
+./tek_hamle_v28 2 512 3 1 1 0.5 SCVJ	/tmp/v28log/v28_c2_H512_s3_g2_0.5.txt	rc=0	wall_s=55.46	user_cpu_s=111.94	sys_cpu_s=25.80	maxrss_MB=899
+./tek_hamle_v28 2 1024 1 4 10 0.5 SCVJ	/tmp/v28log/v28_c2_H1024_s1_g2_0.5.txt	rc=0	wall_s=76.39	user_cpu_s=202.03	sys_cpu_s=22.30	maxrss_MB=1021
+./tek_hamle_v28 2 1024 2 4 100 0.5 SCVJ	/tmp/v28log/v28_c2_H1024_s2_g2_0.5.txt	rc=0	wall_s=74.46	user_cpu_s=201.38	sys_cpu_s=20.81	maxrss_MB=1021
+./tek_hamle_v28 2 1024 3 2 1 0.5 SCVJ	/tmp/v28log/v28_c2_H1024_s3_g2_0.5.txt	rc=0	wall_s=83.45	user_cpu_s=206.85	sys_cpu_s=27.68	maxrss_MB=1021

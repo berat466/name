@@ -1,0 +1,5 @@
+./tek_hamle_v5 ref64 256 1 0.125 1 0	/tmp/v5log2/ref64_H256_b0_rep1.txt	rc=0	wall_s=0.67	user_cpu_s=1.89	sys_cpu_s=0.19	maxrss_MB=226
+./tek_hamle_v5 ref64 512 1 0.125 1 0	/tmp/v5log2/ref64_H512_b0_rep1.txt	rc=0	wall_s=1.53	user_cpu_s=4.79	sys_cpu_s=0.27	maxrss_MB=233
+./tek_hamle_v5 kesin 256 1 0.125 1 0 5	/tmp/v5log2/T5_kesin_H256_b0_rep1.txt	rc=0	wall_s=1.00	user_cpu_s=3.25	sys_cpu_s=0.17	maxrss_MB=226
+./tek_hamle_v5 bastan 256 1 0.125 1 0 5	/tmp/v5log2/T5_bastan_H256_b0_rep1.txt	rc=0	wall_s=2.03	user_cpu_s=7.25	sys_cpu_s=0.18	maxrss_MB=227
+./tek_hamle_v5 rls 256 1 0.125 1 16 5	/tmp/v5log2/T5_rls_H256_b16_rep1.txt	rc=0	wall_s=2.12	user_cpu_s=7.70	sys_cpu_s=0.18	maxrss_MB=227

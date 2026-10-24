@@ -1,0 +1,10 @@
+HAFIZA|cyon_rbias|1024|3|g5|1.0|0.1250|1|0.9718|0.9678|0.9541|0.9651|0.0195|0.57|0.9887|0.9598|0.9600|0.9612|0.9541
+DENKLIK|cyon_rbias|1024|3|g5|S_goreli_fark=3.264e-07|W_goreli_fark=1.524e-03|test_birikimli_V2=0.9651|test_V3_mu1=0.9651|birikimli_yeniden_egitim=2.60s|artimli_adim_ort=0.57s
+HAFIZA|cyon_rbias|1024|3|g2|0.0|0.1250|1|0.4888|0.0000|0.9817|0.4772|0.9899|1.26|0.0000|0.9817
+HAFIZA|cyon_rbias|1024|3|g2|1.0|0.1250|1|0.9718|0.9718|0.9580|0.9651|0.0181|1.26|0.9718|0.9580
+HAFIZA|cyon_rbias|1024|3|g5|0.0|0.2500|1|0.1946|0.0000|0.9889|0.1961|0.9981|0.55|0.0000|0.0000|0.0000|0.0000|0.9889
+HAFIZA_SURE|cyon_rbias|1024|3|arama(faz1)=27.4s|toplam=37.3s|RAM=421MB|sinif_istatistik_toplam_6gamma=13.9s
+SEC|cyon_rbias|1024|3|g5|mu=0.0|gamma=0.2500|lambda=1|val=0.1946
+SEC|cyon_rbias|1024|3|g5|mu=1.0|gamma=0.1250|lambda=1|val=0.9718
+SEC|cyon_rbias|1024|3|g2|mu=0.0|gamma=0.1250|lambda=1|val=0.4888
+SEC|cyon_rbias|1024|3|g2|mu=1.0|gamma=0.1250|lambda=1|val=0.9718

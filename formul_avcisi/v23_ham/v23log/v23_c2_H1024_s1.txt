@@ -1,0 +1,77 @@
+V23 c=2 H=1024 tohum=1 gamma=4 lambda_V17=10 Top1*=0.2 Top5*=0.4 (4 cekirdek); modeller egitim-yalniz; dogrulama secim/kontrol, test bagimsiz
+OGRETICI b=1 egitim-LOO CE=6.5795 (PPL 720.2)
+OGRETICI b=2 egitim-LOO CE=6.1715 (PPL 478.9)
+OGRETICI b=4 egitim-LOO CE=5.8267 (PPL 339.2)
+OGRETICI b=8 egitim-LOO CE=5.5523 (PPL 257.8)
+OGRETICI b=16 egitim-LOO CE=5.3504 (PPL 210.7)
+OGRETICI b=32 egitim-LOO CE=5.2187 (PPL 184.7)
+OGRETICI b=64 egitim-LOO CE=5.1514 (PPL 172.7)
+OGRETICI b=128 egitim-LOO CE=5.1408 (PPL 170.9)
+OGRETICI SECILEN b=128 ; kappa=0 ogretici (saf sayim, LOO): egitim CE=5.1408 (PPL 170.9) Top-1=0.1295 Top-5=0.3325 ; unigram CE=5.8496 (PPL 347.1) ; ogretici hazirlama sure=0.50s
+CFG|ridge_hot_lamV17|kappa=0.00000|lambda=10|ogretici_egitim_CE=nan|ogretici_Top1=nan|ogretici_Top5=nan|alpha=0.2|T=0.01|egitim CE=5.1176 PPL=166.9 top1=0.2204 top5=0.3279|dogr CE=5.4179 PPL=225.4 top1=0.1492 top5=0.2787|test CE=5.3401 PPL=208.53 top1=0.1572 top5=0.2996|genelleme(dogr-egitim CE)=0.3003|sure=5.80s
+CP|ridge_hot_Cp|lam=1:SSE=36570.8,df=1022.5,Cp=38497.5 lam=3:SSE=36571.0,df=1017.6,Cp=38488.5 lam=10:SSE=36572.3,df=1001.2,Cp=38458.8 lam=30:SSE=36580.6,df=959.0,Cp=38387.6 lam=100:SSE=36633.7,df=847.3,Cp=38230.2 lam=300:SSE=36806.1,df=667.8,Cp=38064.3 lam=1000:SSE=37189.1,df=437.4,Cp=38013.2 -> lambda*=1000
+CFG|ridge_hot_Cp|kappa=0.00000|lambda=1000|ogretici_egitim_CE=nan|ogretici_Top1=nan|ogretici_Top5=nan|alpha=0.2|T=0.01|egitim CE=5.3473 PPL=210.0 top1=0.1830 top5=0.2872|dogr CE=5.4385 PPL=230.1 top1=0.1420 top5=0.2731|test CE=5.3641 PPL=213.60 top1=0.1550 top5=0.2940|genelleme(dogr-egitim CE)=0.0912|sure=8.04s
+HEDEF_KAPPA|PPL=200|CE*=5.29832|kappa_CE=-0.65540
+CP|A_PPL200|lam=1:SSE=12.4,df=1022.5,Cp=13.0 lam=3:SSE=12.4,df=1017.6,Cp=13.0 lam=10:SSE=12.4,df=1001.2,Cp=13.0 lam=30:SSE=12.5,df=959.0,Cp=13.1 lam=100:SSE=12.8,df=847.3,Cp=13.3 lam=300:SSE=13.6,df=667.8,Cp=14.1 lam=1000:SSE=16.2,df=437.4,Cp=16.5 -> lambda*=3
+CFG|A_PPL200|kappa=-0.65540|lambda=3|ogretici_egitim_CE=5.2983|ogretici_Top1=nan|ogretici_Top5=nan|alpha=0.15|T=0.005|egitim CE=5.7558 PPL=316.0 top1=0.0783 top5=0.2046|dogr CE=5.5957 PPL=269.3 top1=0.1006 top5=0.2331|test CE=5.5203 PPL=249.70 top1=0.1116 top5=0.2478|genelleme(dogr-egitim CE)=-0.1601|sure=11.99s
+HEDEF_KAPPA|PPL=150|CE*=5.01064|kappa_CE=0.00004
+CP|A_PPL150|lam=1:SSE=104.3,df=1022.5,Cp=109.8 lam=3:SSE=104.3,df=1017.6,Cp=109.8 lam=10:SSE=104.3,df=1001.2,Cp=109.7 lam=30:SSE=104.6,df=959.0,Cp=109.8 lam=100:SSE=106.5,df=847.3,Cp=111.1 lam=300:SSE=113.7,df=667.8,Cp=117.3 lam=1000:SSE=134.8,df=437.4,Cp=137.2 -> lambda*=10
+CFG|A_PPL150|kappa=0.00004|lambda=10|ogretici_egitim_CE=5.0106|ogretici_Top1=0.1295|ogretici_Top5=0.3332|alpha=0.15|T=0.005|egitim CE=5.6544 PPL=285.5 top1=0.1210 top5=0.2301|dogr CE=5.5355 PPL=253.5 top1=0.1211 top5=0.2530|test CE=5.4568 PPL=234.34 top1=0.1297 top5=0.2703|genelleme(dogr-egitim CE)=-0.1189|sure=12.48s
+HEDEF_KAPPA|PPL=100|CE*=4.60517|kappa_CE=0.00072
+CP|A_PPL100|lam=1:SSE=104.3,df=1022.5,Cp=109.8 lam=3:SSE=104.3,df=1017.6,Cp=109.8 lam=10:SSE=104.3,df=1001.2,Cp=109.7 lam=30:SSE=104.6,df=959.0,Cp=109.8 lam=100:SSE=106.5,df=847.3,Cp=111.1 lam=300:SSE=113.7,df=667.8,Cp=117.3 lam=1000:SSE=134.9,df=437.4,Cp=137.2 -> lambda*=10
+CFG|A_PPL100|kappa=0.00072|lambda=10|ogretici_egitim_CE=4.6052|ogretici_Top1=0.1302|ogretici_Top5=0.3389|alpha=0.15|T=0.005|egitim CE=5.6537 PPL=285.3 top1=0.1211 top5=0.2301|dogr CE=5.5352 PPL=253.5 top1=0.1215 top5=0.2532|test CE=5.4564 PPL=234.25 top1=0.1299 top5=0.2701|genelleme(dogr-egitim CE)=-0.1185|sure=12.05s
+HEDEF_KAPPA|CE*=ln100: kappa_CE=0.00072 kappa_Top1(>=0.2)=0.01725 kappa_Top5(>=0.4)=0.00791 -> kappa=max=0.01725
+CP|B_PPL100_Top1_Top5|lam=1:SSE=114.7,df=1022.5,Cp=120.8 lam=3:SSE=114.7,df=1017.6,Cp=120.7 lam=10:SSE=114.8,df=1001.2,Cp=120.7 lam=30:SSE=115.1,df=959.0,Cp=120.8 lam=100:SSE=117.1,df=847.3,Cp=122.1 lam=300:SSE=124.5,df=667.8,Cp=128.5 lam=1000:SSE=146.5,df=437.4,Cp=149.1 -> lambda*=10
+CFG|B_PPL100_Top1_Top5|kappa=0.01725|lambda=10|ogretici_egitim_CE=3.3655|ogretici_Top1=0.2000|ogretici_Top5=0.5639|alpha=0.15|T=0.005|egitim CE=5.6377 PPL=280.8 top1=0.1289 top5=0.2321|dogr CE=5.5284 PPL=251.7 top1=0.1261 top5=0.2546|test CE=5.4479 PPL=232.26 top1=0.1351 top5=0.2707|genelleme(dogr-egitim CE)=-0.1093|sure=11.38s
+CP|K0_saf_sayim_ogretici|lam=1:SSE=104.3,df=1022.5,Cp=109.8 lam=3:SSE=104.3,df=1017.6,Cp=109.8 lam=10:SSE=104.3,df=1001.2,Cp=109.7 lam=30:SSE=104.6,df=959.0,Cp=109.8 lam=100:SSE=106.5,df=847.3,Cp=111.1 lam=300:SSE=113.7,df=667.8,Cp=117.3 lam=1000:SSE=134.8,df=437.4,Cp=137.2 -> lambda*=10
+CFG|K0_saf_sayim_ogretici|kappa=0.00000|lambda=10|ogretici_egitim_CE=5.1408|ogretici_Top1=0.1295|ogretici_Top5=0.3325|alpha=0.15|T=0.005|egitim CE=5.6544 PPL=285.6 top1=0.1210 top5=0.2301|dogr CE=5.5355 PPL=253.5 top1=0.1211 top5=0.2530|test CE=5.4568 PPL=234.34 top1=0.1297 top5=0.2703|genelleme(dogr-egitim CE)=-0.1189|sure=12.39s
+CFG|A_PPL100_lamV17|kappa=0.00072|lambda=10|ogretici_egitim_CE=4.6052|ogretici_Top1=0.1302|ogretici_Top5=0.3389|alpha=0.15|T=0.005|egitim CE=5.6537 PPL=285.3 top1=0.1211 top5=0.2301|dogr CE=5.5352 PPL=253.5 top1=0.1215 top5=0.2532|test CE=5.4564 PPL=234.25 top1=0.1299 top5=0.2701|genelleme(dogr-egitim CE)=-0.1185|sure=9.03s
+CFG|B_PPL100_Top1_Top5_lamV17|kappa=0.01725|lambda=10|ogretici_egitim_CE=3.3655|ogretici_Top1=0.2000|ogretici_Top5=0.5639|alpha=0.15|T=0.005|egitim CE=5.6377 PPL=280.8 top1=0.1289 top5=0.2321|dogr CE=5.5284 PPL=251.7 top1=0.1261 top5=0.2546|test CE=5.4479 PPL=232.26 top1=0.1351 top5=0.2707|genelleme(dogr-egitim CE)=-0.1093|sure=9.36s
+CFG|K0_lamV17|kappa=0.00000|lambda=10|ogretici_egitim_CE=5.1408|ogretici_Top1=0.1295|ogretici_Top5=0.3325|alpha=0.15|T=0.005|egitim CE=5.6544 PPL=285.6 top1=0.1210 top5=0.2301|dogr CE=5.5355 PPL=253.5 top1=0.1211 top5=0.2530|test CE=5.4568 PPL=234.34 top1=0.1297 top5=0.2703|genelleme(dogr-egitim CE)=-0.1189|sure=8.85s
+AGIRLIK_FARKI (||Wa-Wb||_F/||Wb||_F)
+WDIFF|ridge_hot_lamV17|ridge_hot_Cp|2.1038
+WDIFF|ridge_hot_lamV17|A_PPL200|11.0207
+WDIFF|ridge_hot_lamV17|A_PPL150|4.2556
+WDIFF|ridge_hot_lamV17|A_PPL100|4.2498
+WDIFF|ridge_hot_lamV17|B_PPL100_Top1_Top5|4.0971
+WDIFF|ridge_hot_lamV17|K0_saf_sayim_ogretici|4.2562
+WDIFF|ridge_hot_lamV17|A_PPL100_lamV17|4.2498
+WDIFF|ridge_hot_lamV17|B_PPL100_Top1_Top5_lamV17|4.0971
+WDIFF|ridge_hot_lamV17|K0_lamV17|4.2562
+WDIFF|ridge_hot_Cp|A_PPL200|3.6253
+WDIFF|ridge_hot_Cp|A_PPL150|1.4030
+WDIFF|ridge_hot_Cp|A_PPL100|1.3999
+WDIFF|ridge_hot_Cp|B_PPL100_Top1_Top5|1.3221
+WDIFF|ridge_hot_Cp|K0_saf_sayim_ogretici|1.4032
+WDIFF|ridge_hot_Cp|A_PPL100_lamV17|1.3999
+WDIFF|ridge_hot_Cp|B_PPL100_Top1_Top5_lamV17|1.3221
+WDIFF|ridge_hot_Cp|K0_lamV17|1.4032
+WDIFF|A_PPL200|A_PPL150|0.6441
+WDIFF|A_PPL200|A_PPL100|0.6444
+WDIFF|A_PPL200|B_PPL100_Top1_Top5|0.6519
+WDIFF|A_PPL200|K0_saf_sayim_ogretici|0.6442
+WDIFF|A_PPL200|A_PPL100_lamV17|0.6444
+WDIFF|A_PPL200|B_PPL100_Top1_Top5_lamV17|0.6519
+WDIFF|A_PPL200|K0_lamV17|0.6442
+WDIFF|A_PPL150|A_PPL100|0.0029
+WDIFF|A_PPL150|B_PPL100_Top1_Top5|0.0717
+WDIFF|A_PPL150|K0_saf_sayim_ogretici|0.0006
+WDIFF|A_PPL150|A_PPL100_lamV17|0.0029
+WDIFF|A_PPL150|B_PPL100_Top1_Top5_lamV17|0.0717
+WDIFF|A_PPL150|K0_lamV17|0.0006
+WDIFF|A_PPL100|B_PPL100_Top1_Top5|0.0689
+WDIFF|A_PPL100|K0_saf_sayim_ogretici|0.0031
+WDIFF|A_PPL100|A_PPL100_lamV17|0.0000
+WDIFF|A_PPL100|B_PPL100_Top1_Top5_lamV17|0.0689
+WDIFF|A_PPL100|K0_lamV17|0.0031
+WDIFF|B_PPL100_Top1_Top5|K0_saf_sayim_ogretici|0.0734
+WDIFF|B_PPL100_Top1_Top5|A_PPL100_lamV17|0.0703
+WDIFF|B_PPL100_Top1_Top5|B_PPL100_Top1_Top5_lamV17|0.0000
+WDIFF|B_PPL100_Top1_Top5|K0_lamV17|0.0734
+WDIFF|K0_saf_sayim_ogretici|A_PPL100_lamV17|0.0031
+WDIFF|K0_saf_sayim_ogretici|B_PPL100_Top1_Top5_lamV17|0.0719
+WDIFF|K0_saf_sayim_ogretici|K0_lamV17|0.0000
+WDIFF|A_PPL100_lamV17|B_PPL100_Top1_Top5_lamV17|0.0689
+WDIFF|A_PPL100_lamV17|K0_lamV17|0.0031
+WDIFF|B_PPL100_Top1_Top5_lamV17|K0_lamV17|0.0734
+SURE gram(F^TF,F^TY)=1.39s TOPLAM=104.3s tepe_RAM=734MB

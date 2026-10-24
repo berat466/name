@@ -1,0 +1,6 @@
+OZET_NGRAM|c=2|n=1|val_CE=5.6947|mse_olasilik=0.000492|CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|egitim_sn=0.28|degerlendirme_sn=0.11|lambda=[1.0, 0.0]|RAM_MB=29
+OZET_NGRAM|c=2|n=2|val_CE=5.0128|mse_olasilik=0.000480|CE=4.9512|PPL=141.35|top1=0.1562|top5=0.3480|egitim_sn=0.43|degerlendirme_sn=0.42|lambda=[0.465, 0.53, 0.005]|RAM_MB=32
+OZET_NGRAM|c=2|n=3|val_CE=4.9951|mse_olasilik=0.000478|CE=4.9226|PPL=137.36|top1=0.1600|top5=0.3616|egitim_sn=0.71|degerlendirme_sn=0.53|lambda=[0.465, 0.484, 0.046, 0.005]|RAM_MB=48
+OZET_NGRAM|c=4|n=1|val_CE=5.6965|mse_olasilik=0.000492|CE=5.6368|PPL=280.57|top1=0.0901|top5=0.2254|egitim_sn=0.26|degerlendirme_sn=0.11|lambda=[1.0, 0.0]|RAM_MB=48
+OZET_NGRAM|c=4|n=2|val_CE=5.0136|mse_olasilik=0.000480|CE=4.9512|PPL=141.35|top1=0.1560|top5=0.3480|egitim_sn=0.43|degerlendirme_sn=0.39|lambda=[0.465, 0.53, 0.005]|RAM_MB=48
+OZET_NGRAM|c=4|n=5|val_CE=4.9959|mse_olasilik=0.000479|CE=4.9232|PPL=137.44|top1=0.1597|top5=0.3615|egitim_sn=1.19|degerlendirme_sn=0.51|lambda=[0.465, 0.484, 0.046, 0.0, 0.0, 0.005]|RAM_MB=118

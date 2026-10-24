@@ -1,0 +1,27 @@
+YON mod=cyon_rbias H=2048 tohum=3  sigma_b(cift ciftlerinden)=3.107 ort_b=0.011
+  gamma=0.0625 lambda=   1 val=0.9754
+  gamma=0.0625 lambda=  10 val=0.9672
+  gamma=0.0625 lambda= 100 val=0.9460
+  gamma=0.0625 lambda=1000 val=0.9140
+  gamma=0.1250 lambda=   1 val=0.9796
+  gamma=0.1250 lambda=  10 val=0.9782
+  gamma=0.1250 lambda= 100 val=0.9710
+  gamma=0.1250 lambda=1000 val=0.9572
+  gamma=0.2500 lambda=   1 val=0.9766
+  gamma=0.2500 lambda=  10 val=0.9764
+  gamma=0.2500 lambda= 100 val=0.9752
+  gamma=0.2500 lambda=1000 val=0.9710
+  gamma=0.5000 lambda=   1 val=0.9758
+  gamma=0.5000 lambda=  10 val=0.9756
+  gamma=0.5000 lambda= 100 val=0.9750
+  gamma=0.5000 lambda=1000 val=0.9738
+  gamma=1.0000 lambda=   1 val=0.9730
+  gamma=1.0000 lambda=  10 val=0.9728
+  gamma=1.0000 lambda= 100 val=0.9726
+  gamma=1.0000 lambda=1000 val=0.9714
+  gamma=2.0000 lambda=   1 val=0.9688
+  gamma=2.0000 lambda=  10 val=0.9686
+  gamma=2.0000 lambda= 100 val=0.9684
+  gamma=2.0000 lambda=1000 val=0.9692
+SECILEN gamma=0.1250 lambda=1 val=0.9796  TEST=0.9740  tek_model=7.0s  arama_dahil_toplam=57.1s  RAM=554MB
+OZET|cyon_rbias|2048|3|0.1250|1|0.9796|0.9740|7.0|57.1|554|0
