@@ -1,0 +1,30 @@
+ref 1 F+havuz+Gram=1.65 Chol+Y0+X+Schur=3.03 lamF-cozum(M6)=1.18 toplam=5.86 ('124.92', '0.1610', '0.3673')
+ref 2 F+havuz+Gram=0.99 Chol+Y0+X+Schur=2.50 lamF-cozum(M6)=0.66 toplam=4.15 ('124.92', '0.1610', '0.3673')
+ref 3 F+havuz+Gram=0.88 Chol+Y0+X+Schur=1.41 lamF-cozum(M6)=0.12 toplam=2.41 ('124.92', '0.1610', '0.3673')
+ref 4 F+havuz+Gram=0.88 Chol+Y0+X+Schur=1.35 lamF-cozum(M6)=0.12 toplam=2.35 ('124.92', '0.1610', '0.3673')
+ref 5 F+havuz+Gram=0.94 Chol+Y0+X+Schur=1.74 lamF-cozum(M6)=0.70 toplam=3.38 ('124.92', '0.1610', '0.3673')
+ref 6 F+havuz+Gram=0.95 Chol+Y0+X+Schur=1.89 lamF-cozum(M6)=0.37 toplam=3.21 ('124.92', '0.1610', '0.3673')
+ref 7 F+havuz+Gram=0.92 Chol+Y0+X+Schur=2.54 lamF-cozum(M6)=0.36 toplam=3.82 ('124.92', '0.1610', '0.3673')
+ref 8 F+havuz+Gram=0.83 Chol+Y0+X+Schur=2.31 lamF-cozum(M6)=0.39 toplam=3.53 ('124.92', '0.1610', '0.3673')
+ref 9 F+havuz+Gram=0.92 Chol+Y0+X+Schur=2.23 lamF-cozum(M6)=0.13 toplam=3.28 ('124.92', '0.1610', '0.3673')
+grp 1 F+havuz+Gram=0.84 Chol+Y0+X+Schur=0.39 lamF-cozum(M6)=0.13 toplam=1.36 ('124.92', '0.1610', '0.3673')
+grp 2 F+havuz+Gram=0.85 Chol+Y0+X+Schur=0.36 lamF-cozum(M6)=0.12 toplam=1.33 ('124.92', '0.1610', '0.3673')
+grp 3 F+havuz+Gram=0.87 Chol+Y0+X+Schur=1.11 lamF-cozum(M6)=0.66 toplam=2.63 ('124.92', '0.1610', '0.3673')
+grp 4 F+havuz+Gram=0.97 Chol+Y0+X+Schur=1.02 lamF-cozum(M6)=0.65 toplam=2.64 ('124.92', '0.1610', '0.3673')
+grp 5 F+havuz+Gram=0.87 Chol+Y0+X+Schur=2.64 lamF-cozum(M6)=0.81 toplam=4.32 ('124.92', '0.1610', '0.3673')
+grp 6 F+havuz+Gram=0.92 Chol+Y0+X+Schur=1.56 lamF-cozum(M6)=0.75 toplam=3.23 ('124.92', '0.1610', '0.3673')
+grp 7 F+havuz+Gram=1.01 Chol+Y0+X+Schur=1.72 lamF-cozum(M6)=0.63 toplam=3.36 ('124.92', '0.1610', '0.3673')
+grp 8 F+havuz+Gram=0.95 Chol+Y0+X+Schur=2.20 lamF-cozum(M6)=0.84 toplam=3.99 ('124.92', '0.1610', '0.3673')
+grp 9 F+havuz+Gram=0.86 Chol+Y0+X+Schur=1.22 lamF-cozum(M6)=0.11 toplam=2.19 ('124.92', '0.1610', '0.3673')
+ref F+havuz+Gram min=0.83 medyan=0.92 maks=1.65
+ref Chol+Y0+X+Schur min=1.35 medyan=2.23 maks=3.03
+ref M6 min=0.12 medyan=0.37 maks=1.18
+ref TOPLAM min=2.35 medyan=3.38 maks=5.86
+grp F+havuz+Gram min=0.84 medyan=0.87 maks=1.01
+grp Chol+Y0+X+Schur min=0.36 medyan=1.22 maks=2.64
+grp M6 min=0.11 medyan=0.65 maks=0.84
+grp TOPLAM min=1.33 medyan=2.64 maks=4.32
+ASAMA ref Cholesky+Y0+X cozum (M2+M3+M4) min=1.071 medyan=1.637 maks=2.326
+ASAMA ref M5 (T,U gemm) min=0.068 medyan=0.085
+ASAMA grp Cholesky+Y0+X cozum (M2+M3+M4) min=0.135 medyan=0.621 maks=1.167
+ASAMA grp M5 (T,U gemm) min=0.071 medyan=0.097
