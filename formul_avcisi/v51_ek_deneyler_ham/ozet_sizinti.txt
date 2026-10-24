@@ -1,0 +1,24 @@
+== L_oof0_rk0.txt cekirdek=3.87s hazirlik=6.03s RSS=1507MB
+  B  rho=0     a=0.2  val=4.8316 test=119.30 T1=0.1629 T5=0.3703 | a=0 val=4.8655 | sabit a=0.2: ('4.8316', '119.30') | t_coz=0.18 t_log=0.13 t_fuse=0.03
+  Bs rho=0     a=0    val=4.8655 test=123.85 T1=0.1633 T5=0.3701 | a=0 val=4.8655 | sabit a=0.2: ('4.9570', '136.53') | t_coz=0.16 t_log=0.14 t_fuse=0.03
+  C  rho=-0.25 a=0.1  val=4.8352 test=119.71 T1=0.1590 T5=0.3695 | a=0 val=4.8400 | sabit a=0.2: ('4.8391', '120.05') | t_coz=0.24 t_log=0.13 t_fuse=0.03
+  Cs rho=-0.25 a=0    val=4.8400 test=120.43 T1=0.1604 T5=0.3689 | a=0 val=4.8400 | sabit a=0.2: ('4.9360', '133.25') | t_coz=0.18 t_log=0.12 t_fuse=0.02
+  A  rho=-0.25 a=0    val=4.8400 test=120.43 T1=0.1604 T5=0.3689 | a=0 val=4.8400 | sabit a=0.2: - | t_coz=0.21 t_log=0.14 t_fuse=0.02
+== L_oof1_rk0.txt cekirdek=2.16s hazirlik=3.46s RSS=1506MB
+  B  rho=0     a=0.2  val=4.8318 test=119.71 T1=0.1612 T5=0.3693 | a=0 val=4.8749 | sabit a=0.2: ('4.8318', '119.71') | t_coz=0.17 t_log=0.13 t_fuse=0.04
+  Bs rho=0     a=0    val=4.8749 test=125.43 T1=0.1637 T5=0.3691 | a=0 val=4.8749 | sabit a=0.2: ('4.9672', '138.40') | t_coz=0.26 t_log=0.18 t_fuse=0.05
+  C  rho=-0.25 a=0.1  val=4.8374 test=120.13 T1=0.1588 T5=0.3679 | a=0 val=4.8457 | sabit a=0.2: ('4.8392', '120.18') | t_coz=0.59 t_log=0.28 t_fuse=0.03
+  Cs rho=-0.25 a=0    val=4.8457 test=121.31 T1=0.1590 T5=0.3681 | a=0 val=4.8457 | sabit a=0.2: ('4.9434', '134.51') | t_coz=0.19 t_log=0.14 t_fuse=0.03
+  A  rho=-0.25 a=0    val=4.8457 test=121.31 T1=0.1590 T5=0.3681 | a=0 val=4.8457 | sabit a=0.2: - | t_coz=0.23 t_log=0.13 t_fuse=0.03
+== L_oof0_rk1.txt cekirdek=2.22s hazirlik=3.47s RSS=1506MB
+  B  rho=0     a=0.2  val=4.8316 test=119.30 T1=0.1629 T5=0.3703 | a=0 val=4.8655 | sabit a=0.2: ('4.8316', '119.30') | t_coz=0.22 t_log=0.16 t_fuse=0.04
+  Bs rho=0     a=0    val=4.8655 test=123.85 T1=0.1633 T5=0.3701 | a=0 val=4.8655 | sabit a=0.2: ('4.9570', '136.53') | t_coz=0.22 t_log=0.18 t_fuse=0.03
+  C  rho=-0.25 a=0.1  val=4.8310 test=119.29 T1=0.1608 T5=0.3705 | a=0 val=4.8376 | sabit a=0.2: ('4.8339', '119.54') | t_coz=0.21 t_log=0.14 t_fuse=0.03
+  Cs rho=-0.25 a=0    val=4.8376 test=120.19 T1=0.1620 T5=0.3691 | a=0 val=4.8376 | sabit a=0.2: ('4.9341', '133.08') | t_coz=0.19 t_log=0.14 t_fuse=0.03
+  A  rho=-0.25 a=0    val=4.8376 test=120.19 T1=0.1620 T5=0.3691 | a=0 val=4.8376 | sabit a=0.2: - | t_coz=0.88 t_log=0.30 t_fuse=0.04
+== L_oof1_rk1.txt cekirdek=2.48s hazirlik=3.71s RSS=1507MB
+  B  rho=0     a=0.2  val=4.8318 test=119.71 T1=0.1612 T5=0.3693 | a=0 val=4.8749 | sabit a=0.2: ('4.8318', '119.71') | t_coz=0.20 t_log=0.12 t_fuse=0.04
+  Bs rho=0     a=0    val=4.8749 test=125.43 T1=0.1637 T5=0.3691 | a=0 val=4.8749 | sabit a=0.2: ('4.9672', '138.40') | t_coz=0.20 t_log=0.13 t_fuse=0.03
+  C  rho=-0.25 a=0.1  val=4.8326 test=119.64 T1=0.1610 T5=0.3679 | a=0 val=4.8425 | sabit a=0.2: ('4.8338', '119.64') | t_coz=0.21 t_log=0.13 t_fuse=0.03
+  Cs rho=-0.25 a=0    val=4.8425 test=120.94 T1=0.1598 T5=0.3671 | a=0 val=4.8425 | sabit a=0.2: ('4.9403', '134.13') | t_coz=0.17 t_log=0.12 t_fuse=0.02
+  A  rho=-0.25 a=0    val=4.8425 test=120.94 T1=0.1598 T5=0.3671 | a=0 val=4.8425 | sabit a=0.2: - | t_coz=0.22 t_log=0.14 t_fuse=0.03
