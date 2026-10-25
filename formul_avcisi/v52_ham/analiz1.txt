@@ -1,0 +1,14 @@
+== v52P F blok (39840, 512) sabit sutun min/max 0.9999998 1.0000001
+ |F|>0.999: 0.0000%  |F|>0.99999: 0.00000%  |F|>1-1.2e-7 (float32 doygun): 0.00000%  max|F|=0.9205675
+ sutun ort: min -0.410 maks 0.357 ; ort |mu| 0.103 ; std ort 0.1219
+ kovaryans ozdegerleri: maks 5.561  medyan 4.144e-06  min 4.85e-07 ; sayisal rank(>1e-6*max)=228 ; rank(>1e-3*max)=33 ; efektif rank(PR)=2.2
+ Gram float32-parca vs float64: bagil Frobenius fark 4.356e-08 ; maks bagil eleman farki 7.933e-08
+ F-only ridge (lam=3000) agirlik farki G32 vs G64: bagil 2.514e-07
+ kosul sayisi (G+lam I): 1.124e+02 ; (G) kovaryans+sabit: maks/min=1.147e+07
+== v52B F blok (39840, 512) sabit sutun min/max 0.9999998 1.0000001
+ |F|>0.999: 0.1215%  |F|>0.99999: 0.12100%  |F|>1-1.2e-7 (float32 doygun): 0.12099%  max|F|=22.0687695
+ sutun ort: min -0.284 maks 0.350 ; ort |mu| 0.032 ; std ort 0.1619
+ kovaryans ozdegerleri: maks 2.919  medyan 0.0006955  min 4.59e-06 ; sayisal rank(>1e-6*max)=512 ; rank(>1e-3*max)=133 ; efektif rank(PR)=11.3
+ Gram float32-parca vs float64: bagil Frobenius fark 5.936e-08 ; maks bagil eleman farki 1.368e-07
+ F-only ridge (lam=3000) agirlik farki G32 vs G64: bagil 1.557e-07
+ kosul sayisi (G+lam I): 4.142e+01 ; (G) kovaryans+sabit: maks/min=6.365e+05
