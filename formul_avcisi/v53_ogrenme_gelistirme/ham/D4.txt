@@ -1,0 +1,13 @@
+cift>=1 lam=50 (sabit)                               NC=39947 | lamF=9000 okuma 4.6476 son 4.6108
+cift>=1 lam0=50 count-aware alpha=-0.50 kappa=20     NC=39947 | lamF=9000 okuma 4.6351 son 4.6079
+cift>=1 lam0=100 count-aware alpha=-0.50 kappa=20    NC=39947 | lamF=9000 okuma 4.6462 son 4.6219
+cift>=1 lam0=50 count-aware alpha=-0.25 kappa=20     NC=39947 | lamF=9000 okuma 4.6393 son 4.6081
+cift>=1 lam0=100 count-aware alpha=-0.25 kappa=20    NC=39947 | lamF=9000 okuma 4.6444 son 4.6183
+cift>=1 lam0=50 count-aware alpha=0.25 kappa=20      NC=39947 | lamF=9000 okuma 4.6583 son 4.6140
+cift>=1 lam0=100 count-aware alpha=0.25 kappa=20     NC=39947 | lamF=9000 okuma 4.6525 son 4.6185
+cift>=1 lam0=50 count-aware alpha=0.50 kappa=20      NC=39947 | lamF=9000 okuma 4.6690 son 4.6225
+cift>=1 lam0=100 count-aware alpha=0.50 kappa=20     NC=39947 | lamF=9000 okuma 4.6603 son 4.6204
+cift>=1 + uclu top5000 count>=2 lam=85               NC=44947 | lamF=9000 okuma 4.6455 son 4.6080
+cift>=1 + uclu top5000 count>=2 lam=170              NC=44947 | lamF=9000 okuma 4.6456 son 4.6086
+cift>=1 + uclu top20000 count>=2 lam=170             NC=51259 | lamF=9000 okuma 4.6449 son 4.6080
+cift>=1 + uclu top20000 count>=1 lam=340             NC=59947 | lamF=9000 okuma 4.6458 son 4.6090

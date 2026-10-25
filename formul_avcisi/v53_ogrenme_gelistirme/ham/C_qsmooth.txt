@@ -1,0 +1,15 @@
+model okuma val CE 4.6644 (a=0.90 e=1e-05)
+Q mevcut: hedefe sifir kutle (val satiri) 0.078 ; Q satir-ici sifir sutun orani 0.639 ; son karisim (np.float64(4.633329182550252), 0.2)
+4.6321 mutlak-indirim(kendi kismi)    KN-devam  param=0.9    alpha=0.20 hedef-sifir=0.000
+4.6322 Dirichlet-kendi                KN-devam  param=3      alpha=0.20 hedef-sifir=0.000
+4.6324 mutlak-indirim(kendi kismi)    KN-devam  param=0.7    alpha=0.20 hedef-sifir=0.000
+4.6324 Dirichlet-kendi+komsu          KN-devam  param=30     alpha=0.20 hedef-sifir=0.000
+4.6324 Dirichlet-kendi+komsu          KN-devam  param=100    alpha=0.20 hedef-sifir=0.000
+4.6325 Dirichlet-kendi                KN-devam  param=1      alpha=0.20 hedef-sifir=0.000
+4.6326 mutlak-indirim(kendi kismi)    KN-devam  param=0.5    alpha=0.20 hedef-sifir=0.000
+4.6328 Dirichlet-kendi                unigram   param=3      alpha=0.20 hedef-sifir=0.000
+4.6329 Dirichlet-kendi                unigram   param=1      alpha=0.20 hedef-sifir=0.000
+4.6329 Dirichlet-kendi+komsu          KN-devam  param=10     alpha=0.20 hedef-sifir=0.000
+4.6329 mutlak-indirim(kendi kismi)    KN-devam  param=0.3    alpha=0.20 hedef-sifir=0.000
+4.6329 Dirichlet-kendi+komsu          unigram   param=30     alpha=0.20 hedef-sifir=0.000
+en kotu: 4.6515

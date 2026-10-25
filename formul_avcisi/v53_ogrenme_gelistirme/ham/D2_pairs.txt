@@ -1,0 +1,7 @@
+cift count>=5 lam_cift=85 | NC=5868 kapsam(val)=0.539 | lamF=3000 okuma 4.6563 son 4.6268(a=0.20) ; lamF=9000 okuma 4.6583 son 4.6265(a=0.20) | kurulum+cozum 2.7s
+cift count>=3 lam_cift=85 | NC=9502 kapsam(val)=0.618 | lamF=3000 okuma 4.6506 son 4.6217(a=0.20) ; lamF=9000 okuma 4.6525 son 4.6213(a=0.20) | kurulum+cozum 4.7s
+cift count>=2 lam_cift=85 | NC=15166 kapsam(val)=0.680 | lamF=3000 okuma 4.6470 son 4.6183(a=0.20) ; lamF=9000 okuma 4.6488 son 4.6179(a=0.20) | kurulum+cozum 7.1s
+cift count>=2 lam_cift=170 | NC=15166 kapsam(val)=0.680 | lamF=3000 okuma 4.6526 son 4.6281(a=0.20) ; lamF=9000 okuma 4.6545 son 4.6278(a=0.20) | kurulum+cozum 5.3s
+cift count>=2 lam_cift=50 | NC=15166 kapsam(val)=0.680 | lamF=3000 okuma 4.6495 son 4.6148(a=0.25) ; lamF=9000 okuma 4.6515 son 4.6142(a=0.25) | kurulum+cozum 5.3s
+cift count>=1 lam_cift=170 | NC=39947 kapsam(val)=0.782 | lamF=3000 okuma 4.6506 son 4.6263(a=0.20) ; lamF=9000 okuma 4.6526 son 4.6260(a=0.20) | kurulum+cozum 16.7s
+cift count>=1 lam_cift=340 | NC=39947 kapsam(val)=0.782 | lamF=3000 okuma 4.6622 son 4.6394(a=0.20) ; lamF=9000 okuma 4.6644 son 4.6394(a=0.20) | kurulum+cozum 14.3s

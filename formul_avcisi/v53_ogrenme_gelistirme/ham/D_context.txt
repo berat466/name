@@ -1,0 +1,13 @@
+taban: kelime+2000 cift (V51b)                 NC=4002   kapsam(val)={'pair2000': 0.457} | lamF=9000 okuma 4.6644 son 4.6322 | Fit 4.8s bellek(ACC)=128MB
+cift top-5000                                  NC=7002   kapsam(val)={'pair5000': 0.57} | lamF=9000 okuma 4.6568 son 4.6252 | Fit 9.3s bellek(ACC)=392MB
+cift top-10000                                 NC=12002  kapsam(val)={'pair10000': 0.652} | lamF=9000 okuma 4.6502 son 4.6191 | Fit 27.1s bellek(ACC)=1152MB
+taban+w_{t-2} slotu                            NC=6003   kapsam(val)={'pair2000': 0.457, 'skip20': 1.0} | lamF=9000 okuma 4.7118 son 4.6531 | Fit 4.1s bellek(ACC)=288MB
+taban+uclu top-2000 lam=85                     NC=6002   kapsam(val)={'pair2000': 0.457, 'tri2000': 0.133} | lamF=9000 okuma 4.6623 son 4.6295 | Fit 3.9s bellek(ACC)=288MB
+taban+uclu top-2000 lam=170                    NC=6002   kapsam(val)={'pair2000': 0.457, 'tri2000': 0.133} | lamF=9000 okuma 4.6622 son 4.6299 | Fit 4.0s bellek(ACC)=288MB
+taban+uclu top-2000 lam=340                    NC=6002   kapsam(val)={'pair2000': 0.457, 'tri2000': 0.133} | lamF=9000 okuma 4.6628 son 4.6306 | Fit 4.8s bellek(ACC)=288MB
+taban+uclu top-5000 lam=85                     NC=9002   kapsam(val)={'pair2000': 0.457, 'tri5000': 0.175} | lamF=9000 okuma 4.6610 son 4.6282 | Fit 16.6s bellek(ACC)=648MB
+taban+uclu top-5000 lam=170                    NC=9002   kapsam(val)={'pair2000': 0.457, 'tri5000': 0.175} | lamF=9000 okuma 4.6614 son 4.6291 | Fit 11.3s bellek(ACC)=648MB
+taban+uclu top-5000 lam=340                    NC=9002   kapsam(val)={'pair2000': 0.457, 'tri5000': 0.175} | lamF=9000 okuma 4.6623 son 4.6302 | Fit 11.2s bellek(ACC)=648MB
+taban+uclu3000+dortlu3000 lam=85               NC=10002  kapsam(val)={'pair2000': 0.457, 'tri3000': 0.153, 'quad3000': 0.032} | lamF=9000 okuma 4.6614 son 4.6285 | Fit 14.9s bellek(ACC)=800MB
+taban+uclu3000+dortlu3000 lam=170              NC=10002  kapsam(val)={'pair2000': 0.457, 'tri3000': 0.153, 'quad3000': 0.032} | lamF=9000 okuma 4.6615 son 4.6292 | Fit 13.8s bellek(ACC)=800MB
+taban+uclu3000+dortlu3000 lam=340              NC=10002  kapsam(val)={'pair2000': 0.457, 'tri3000': 0.153, 'quad3000': 0.032} | lamF=9000 okuma 4.6623 son 4.6302 | Fit 13.7s bellek(ACC)=800MB
