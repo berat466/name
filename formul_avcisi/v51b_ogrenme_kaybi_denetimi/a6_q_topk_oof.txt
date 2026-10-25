@@ -1,0 +1,34 @@
+graf+Q 0.8 s
+== SON KARISIM DOGRULAMASI: model okuma CE val 4.8527 ; P_son=0.8P+0.2Q CE val 4.8242 (C++ 4.8242) ; test 4.7783
+
+== TOP-K / KOMSULUK (V39 grafi: Hellinger-kosinus, aday=egitim sayimi>=5, K=10)
+   adaylar: 948 kelime (sayim>=5) / 2001 ; 1053 kelime (52.6% kelime, egitim token payi 6.9%) HIC KOMSU OLAMAZ
+   benzerlik: 1.komsu medyan 0.596 ; 10. komsu 0.441 ; 11. (ilk atilan) 0.433 ; 30. 0.362 ; son aday 0.000
+   top-10'un toplam benzerlik kutlesi payi (tum adaylar icinde): kelime ort. 0.108 ; token-agirlikli 0.054
+   top-10 siniri: 10.-11. fark medyan 0.0033 ; 11. komsu 10.nun %98'inden buyuk olan kelime orani 70.5% (sinir yakini adaylar neredeyse ayni benzerlikte)
+   farkli komsu listesi sayisi: 1670 / 2001 kelime ; en buyuk ayni-liste grubu 57 kelime ; ayni listeyi paylasan kelime sayisi (grup>=2): 434
+   komsu olarak kullanilan farkli kelime: 935 / 948 aday ; en cok kullanilan kelime 211 kez (toplam 20010 baglanti)
+   en buyuk komsu agirligi: medyan 0.118 ; 0.1 (tekduze) uzerinde 80.1%
+   nadir kelimeler (sayim<5, 1053 adet): kendi benzerlik vektoru <5 ornekten -> 1.komsu benzerlik medyan 0.632 (siki kelimelerde 0.571)
+
+== Q TABLOSU KALITESI (yalniz son asama; K ve b degisimi) val CE ; model sabit (lamF=3000)
+/home/user/name/formul_avcisi/v51b_ogrenme_kaybi_denetimi/a6_q_topk_oof.py:30: RuntimeWarning: divide by zero encountered in log
+  ce=lambda P,y: -np.log(P[np.arange(len(y)),y]).mean()
+   Q yalniz (val) CE: mix(b=0.9,K=10) inf ; P_w tek basina 6.8234 ; unigram 5.6947
+   K=1    : Q yalniz val CE inf ; son karisim (alpha=.2) val CE 4.8536
+   K=3    : Q yalniz val CE inf ; son karisim (alpha=.2) val CE 4.8303
+   K=5    : Q yalniz val CE inf ; son karisim (alpha=.2) val CE 4.8234
+   K=10   : Q yalniz val CE inf ; son karisim (alpha=.2) val CE 4.8242
+   K=20   : Q yalniz val CE inf ; son karisim (alpha=.2) val CE 4.8240
+   K=40   : Q yalniz val CE inf ; son karisim (alpha=.2) val CE 4.8257
+   K=948  : Q yalniz val CE inf ; son karisim (alpha=.2) val CE 4.8573
+   val satirlarinda Q[w][y]==0 (hedefe sifir kutle): 14.9% ; test 14.4%
+
+== OOF (5 kat, belge/blok bazli: blok index %% 5)
+   kat buyuklukleri: [7968 7968 7968 7968 7968]
+   egitim satirlari icin kat-disi sayim kaybi: kelime sayimlarinin %20'i kullanilamaz (kendi kat) ; K=10 graf adayi (sayim>=5): tam 948, OOF ort 813
+   satirin son kelimesi OOF bellekte HIC gorulmeyen (n_w=0): ort 0.99% (val/test icin tam egitimde: 0.00% / 0.00%)
+   OOF Q[w][y]==0 (hedefe sifir kutle): egitim ort 19.5% ; val (tam tablo) 14.9%
+   Q CE: egitim OOF 8.8943 ; val (tam tablo) inf -> OOF Q kalitesi val ile farkli
+   C blogu: cift slotu (top-2000 cift) olan satir: train 46.2% val 43.4% test 45.4% ; slotu olmayan satirlar yalniz kelime+sabit ile temsil edilir
+   egitimde HIC gorulmeyen (w_{t-2},w_{t-1}) cifti: val 33.3%, test 31.9% ; egitimde en az 1 kez: 19646 farkli cift

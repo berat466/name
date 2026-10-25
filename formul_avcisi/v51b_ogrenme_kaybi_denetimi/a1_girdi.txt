@@ -1,0 +1,23 @@
+== TOKENLESTIRME (metin_hazirla.py: kucuk harf + regex [a-z]+('[a-z]+)?)
+govde karakter sayisi 694457 ; kitap toplam token 123625 ; kullanilan ilk 50000 (kalan 73625 token kullanilmiyor = 59.6% kitap)
+kullanilan metinde: rakam 79, noktalama/ozel karakter 10820 (cumle siniri/virgul bilgisi tamamen atiliyor), buyuk harf 5839 (kucultuluyor -> "The"/"the", "Mr"/"mr" ayni), kesme isareti 0, ascii-disi 2001
+ham tur (buyuk/kucuk ayri) 4536 -> kucuk harf tur 4304 ; birlestirilen tur sayisi 232
+
+== SOZLUK: egitimde 3848 farkli tur; 2000 en sik tutuluyor + <unk>
+egitimde sozluk disi kalan tur: 1848 (egitim tokenlarinin 4.86%); en sik sozluk-disi sayim 2; sozluk son kelime sayimi 2
+train: token 40000 ; UNK token 1943 (4.86%) ; UNK olan farkli tur 1848 ; egitimde hic gorulmeyen tur: 0 token (0.00%)
+val: token 5000 ; UNK token 405 (8.10%) ; UNK olan farkli tur 378 ; egitimde hic gorulmeyen tur: 227 token (4.54%)
+test: token 5000 ; UNK token 452 (9.04%) ; UNK olan farkli tur 400 ; egitimde hic gorulmeyen tur: 284 token (5.68%)
+Uc bolmede UNK sinifina giren toplam farkli tur: 2304
+sozlukte egitim sayimi <=2: 556 kelime, <5: 1052, <10: 1478, >=100: 67 ; kelimelerin %50 sikligi: en sik 44 kelime tokenlarin %50'sini kaplar
+
+== BAGLAM: c=2 (w_{t-2},w_{t-1}); her 500 tokenluk blokta ilk 2 token HEDEF OLMAZ (satir yok), blok sinirini asan baglam yok
+train: token 40000 -> satir 39840 ; hedef olarak hic kullanilmayan token 160 (0.40%)
+val: token 5000 -> satir 4980 ; hedef olarak hic kullanilmayan token 20 (0.40%)
+test: token 5000 -> satir 4980 ; hedef olarak hic kullanilmayan token 20 (0.40%)
+daha eski kelimeler (w_{t-3}..): X, C, F ve Q hicbirinde yok (c=2 sabit)
+
+== Kesme isareti (U+2019) ve ascii-disi karakterler
+kitapta sagkesme/egri tirnak: ’ 733, “ 1829, ” 1797 ; ascii ' = 0
+regex yalniz ascii ' kabul ettiginden egri apostrof kelimeyi BOLER: tek-harf/kisa parca tokenler (s,t,d,ll,re,ve,m):  {'s': 253, 't': 6, 'd': 0, 'll': 0, 're': 1, 've': 0, 'm': 5}  toplam 265 = ilk 50000 tokenin 0.53%
+tek harfli token toplami 2005 (a ve i dogal sayilir)

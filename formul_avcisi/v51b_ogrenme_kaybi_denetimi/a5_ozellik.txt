@@ -1,0 +1,34 @@
+taban val CE (okuma sabit a=0.85 eps=1e-05): 4.8527
+
+== OZELLIK TURLERI (V49: 170 taban x {A,A^2,A^3} + 2 A) ablation (lamF=3000)
+   yalniz A (172 sutun)     val CE 4.8616  (df=9.4)
+   A + A^2 (342)            val CE 4.8557  (df=21.6)
+   A + A^3 (342)            val CE 4.8556  (df=21.5)
+   A^2 + A^3 (340)          val CE 4.8711  (df=25.9)
+   A^2 (170)                val CE 4.8919  (df=15.5)
+   A^3 (170)                val CE 4.8837  (df=15.6)
+   hepsi (512)              val CE 4.8527  (df=30.7)
+   rastgele %25 sutun: val CE 4.8773 +- 0.0010
+   rastgele %50 sutun: val CE 4.8608 +- 0.0007
+   rastgele %75 sutun: val CE 4.8550 +- 0.0005
+
+== SUTUN BAZINDA MARJINAL KATKI: her sutunu tek tek cikar (512 yeniden cozum), delta val CE
+   sure 126s
+   delta CE: min -4.38e-04 medyan 1.37e-05 maks 3.12e-04 ; toplam (tek tek) 0.0086
+   sutun sayisi: cikarilinca CE IYILESIR (delta<-1e-5): 164 ; |delta|<1e-5 (etkisiz): 74 ; zarar >1e-5: 274 ; >1e-4: 62 ; >1e-3: 0
+   tur A   : medyan delta 3.14e-05 ; etkisiz(|d|<1e-5) 16/170 ; iyilestirme-ile-cikarilan 39
+   tur A^2 : medyan delta -1.48e-06 ; etkisiz(|d|<1e-5) 31/170 ; iyilestirme-ile-cikarilan 74
+   tur A^3 : medyan delta 1.22e-05 ; etkisiz(|d|<1e-5) 27/170 ; iyilestirme-ile-cikarilan 51
+
+== YEDEKLILIK / ILISKI
+   olu sutun (std<1e-6): 0 ; |r|>0.99 ciftleri: 0 ; |r|>0.9: 13 ; |r|>0.5: 11117 (toplam cift 130816)
+   her sutunun baska bir sutunla maks |r| >0.99 olan: 0 ; >0.9: 22 ; medyan maks|r| 0.771
+   ham F kovaryans: PR 11.33 ; rank(>1e-6 maks) 512 ; ilk PC varyans payi 0.214 ; ilk 10 PC 0.738 ; ilk 50 PC 0.9394
+   tur A    kendi icinde PR 4.57, rank(>1e-6) 170
+   tur A^2  kendi icinde PR 9.92, rank(>1e-6) 170
+   tur A^3  kendi icinde PR 11.62, rank(>1e-6) 170
+   F sutunlarinin son-kelimeyle (w_{t-1}) aciklanan varyans orani eta^2: ortalama 0.841 ; medyan 0.853 ; min 0.460 ; maks 0.978 (egitim, kelime sayimi kucuk oldugundan ust yanli)
+   dogrulamada egitim kelime-ortalamasiyla aciklanan varyans (hold-out eta^2) ortalama 0.647
+
+== AGIRLIK KATKI YOGUNLUGU (sum|W_j| * std_j): ilk 10 sutun 0.033, ilk 50 0.149, ilk 128 0.345, ilk 256 0.611 ; son 256 sutun payi 0.389
+   sutun-agirlik norm orani maks/medyan 1.8
