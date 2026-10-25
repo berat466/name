@@ -26,7 +26,7 @@
 #include <immintrin.h>
 #include <sys/resource.h>
 #include "tanhf_vec.h"
-static bool g_v54tanh = false, g_v54gate = false, g_v54topk = false, g_v54reuse = false;
+static bool g_v54tanh = false, g_v54gate = false, g_v54topk = false, g_v54reuse = false, g_v54utab = false, g_v54sparseq = false;
 using namespace std;
 using Clock = chrono::steady_clock;
 static double now() { return chrono::duration<double>(Clock::now().time_since_epoch()).count(); }
@@ -540,7 +540,9 @@ static vector<int> g_fold51;                  // egitim satiri -> fold
 static vector<float> g_Utr, g_Uva, g_Ute;     // sabit projeksiyon U = std(s(K)) * P  (n x 512)
 static double g_qkap53 = 0; static int g_qpi53 = 1;   // V53/C: Q sifir-kutle duzeltmesi: q <- lam q + (1-lam) pi, lam = n_w/(n_w+kappa); pi = Kneser-Ney devam eden unigram (1) ya da egitim unigrami (0)
 static vector<double> v53_pi(const vector<double>& nwv, const vector<double>& Pn_or_Cn_nz_rowmajor, const vector<double>& uni) { return uni; }
-static void v53_smooth(vector<double>& Qt, const vector<double>& nw, const vector<double>& pi) { if (g_qkap53 <= 0) return; for (int w = 0; w < V; w++) { if (nw[w] <= 0) continue; double lam = nw[w] / (nw[w] + g_qkap53); double* q = &Qt[(size_t)w * V]; double sum = 0; for (int v = 0; v < V; v++) { q[v] = lam * q[v] + (1 - lam) * pi[v]; sum += q[v]; } for (int v = 0; v < V; v++) q[v] /= sum; } }
+static void v53_smooth(vector<double>& Qt, const vector<double>& nw, const vector<double>& pi) { if (g_qkap53 <= 0) return;
+#pragma omp parallel for schedule(static)
+    for (int w = 0; w < V; w++) { if (nw[w] <= 0) continue; double lam = nw[w] / (nw[w] + g_qkap53); double* q = &Qt[(size_t)w * V]; double sum = 0; for (int v = 0; v < V; v++) { q[v] = lam * q[v] + (1 - lam) * pi[v]; sum += q[v]; } for (int v = 0; v < V; v++) q[v] /= sum; } }
 // merkezi cekirdek tablosu: K(w) = (1-b) P_w + b sum_v a_wv P_v  (sayimlar Cn'den; graf Cn'den; unigram yedegi)
 static vector<double> v51_qtab(const vector<float>& Cn, const vector<double>& Ptr_, bool shuf, Pool39* outP = nullptr) {
     double tq_a = now(); Pool39 P = v51_graph_cn(Cn); TH["k1 v51 graf (6 tablo toplam)"] += now() - tq_a; tq_a = now(); if (outP) *outP = P; vector<double> nw(V, 0.0);
@@ -549,12 +551,21 @@ static vector<double> v51_qtab(const vector<float>& Cn, const vector<double>& Pt
     TH["kq1 nw"] += now() - tq_a; tq_a = now();
     mt19937_64 gs(9001); vector<int> pm(V); iota(pm.begin(), pm.end(), 0); if (shuf) shuffle(pm.begin(), pm.end(), gs);
     vector<double> Qt((size_t)V * V, 0.0); TH["kq2 Qt tahsis"] += now() - tq_a; tq_a = now();
+    vector<int> csr_off(V + 1, 0), csr_v; if (g_v54sparseq) { vector<int> rc(V, 0);
+#pragma omp parallel for schedule(static)
+        for (int w = 0; w < V; w++) { int c = 0; const float* row = &Cn[(size_t)w * V]; for (int v = 0; v < V; v++) c += row[v] != 0.f; rc[w] = c; }
+        for (int w = 0; w < V; w++) csr_off[w + 1] = csr_off[w] + rc[w]; csr_v.resize(csr_off[V]);
+#pragma omp parallel for schedule(static)
+        for (int w = 0; w < V; w++) { int e = csr_off[w]; const float* row = &Cn[(size_t)w * V]; for (int v = 0; v < V; v++) if (row[v] != 0.f) csr_v[e++] = v; } }
 #pragma omp parallel for schedule(dynamic, 8)
-    for (int w = 0; w < V; w++) { double* q = &Qt[(size_t)w * V]; vector<double> N(V, 0.0); double ws = 0; for (int qk = 0; qk < g_knn39; qk++) { int nb = P.nb[(size_t)w * g_knn39 + qk]; if (nb < 0) continue; nb = pm[nb]; if (nw[nb] <= 0) continue; double a = P.wt[(size_t)w * g_knn39 + qk]; ws += a; for (int v = 0; v < V; v++) N[v] += a * Cn[(size_t)nb * V + v] / nw[nb]; }
+    for (int w = 0; w < V; w++) { double* q = &Qt[(size_t)w * V]; vector<double> N(V, 0.0); double ws = 0; for (int qk = 0; qk < g_knn39; qk++) { int nb = P.nb[(size_t)w * g_knn39 + qk]; if (nb < 0) continue; nb = pm[nb]; if (nw[nb] <= 0) continue; double a = P.wt[(size_t)w * g_knn39 + qk]; ws += a; if (g_v54sparseq) { for (int e = csr_off[nb]; e < csr_off[nb + 1]; e++) { int v = csr_v[e]; N[v] += a * Cn[(size_t)nb * V + v] / nw[nb]; } } else for (int v = 0; v < V; v++) N[v] += a * Cn[(size_t)nb * V + v] / nw[nb]; }   /* V54: Cn satiri %98 sifir; +0 terimleri atlamak ayni sonucu verir */
         bool hasN = ws > 0; if (hasN) for (int v = 0; v < V; v++) N[v] /= ws; double bq = g_bq46, sum = 0;
         if (nw[w] > 0 && hasN) for (int v = 0; v < V; v++) q[v] = (1 - bq) * Cn[(size_t)w * V + v] / nw[w] + bq * N[v]; else if (nw[w] > 0) for (int v = 0; v < V; v++) q[v] = Cn[(size_t)w * V + v] / nw[w]; else if (hasN) for (int v = 0; v < V; v++) q[v] = N[v]; else for (int v = 0; v < V; v++) q[v] = Ptr_[v];
         for (int v = 0; v < V; v++) sum += q[v]; if (!(sum > 0)) for (int v = 0; v < V; v++) q[v] = Ptr_[v]; else for (int v = 0; v < V; v++) q[v] /= sum; }
-    if (g_qkap53 > 0) { vector<double> pi(V, 0.0); if (g_qpi53 == 1) { double t = 0; for (int w = 0; w < V; w++) for (int v = 0; v < V; v++) if (Cn[(size_t)w * V + v] > 0) pi[v] += 1.0; for (int v = 0; v < V; v++) { pi[v] += 1.0; t += pi[v]; } for (int v = 0; v < V; v++) pi[v] /= t; } else pi = Ptr_; v53_smooth(Qt, nw, pi); }
+    if (g_qkap53 > 0) { vector<double> pi(V, 0.0); if (g_qpi53 == 1) { double t = 0;
+#pragma omp parallel
+        { int nt_ = omp_get_num_threads(), t_ = omp_get_thread_num(); int v0 = (int)((long)V * t_ / nt_), v1 = (int)((long)V * (t_ + 1) / nt_); for (int w = 0; w < V; w++) { const float* row = &Cn[(size_t)w * V]; for (int v = v0; v < v1; v++) if (row[v] > 0) pi[v] += 1.0; } }
+        for (int v = 0; v < V; v++) { pi[v] += 1.0; t += pi[v]; } for (int v = 0; v < V; v++) pi[v] /= t; } else pi = Ptr_; v53_smooth(Qt, nw, pi); }
     TH["k2 v51 qtab (6 tablo toplam)"] += now() - tq_a;
     return Qt; }
 static void v39_mix(const Pool39& P, vector<vector<float>>& Fs, const vector<int>& wd, const vector<int>& last, int n, const vector<vector<float>>& Mean, const vector<int>& has, double beta) {
@@ -626,12 +637,12 @@ static void h_fuse(const vector<float>& Z, int n, const vector<int>& y, const ve
 // Gecerlilik her calismada uretim sekliyle (M=513, K=mc) cekirdege karsi calisma zamaninda dogrulanir; uymazsa yogun dgemm'e donulur.
 static vector<int> h_dgemm_kblocks(int K, int Q = 384) { vector<int> b; for (int ls = 0; ls < K;) { int l = K - ls; if (l >= 2 * Q) l = Q; else if (l > Q) l = l / 2; b.push_back(ls); ls += l; } b.push_back(K); return b; }
 // U[j*V + y] (j<mf, y in [ya,yb)) = sum_k ACF[k*mf+j] * Y0[k][y]   (Y0 kompakt: slot k satiri, kolonlar sy[g(k)] sirali)
-static void h_u_sparse(int mf, int V, int mc, const double* ACF, const vector<int>& gidv, const vector<vector<int>>& sy, const vector<size_t>& roff, const double* Y0c, double* U, int ya, int yb, const vector<int>& kb) {
+static void h_u_sparse(int mf, int V, int mc, const double* ACF, const vector<int>& gidv, const vector<vector<int>>& sy, const vector<size_t>& roff, const double* Y0c, double* U, int ya, int yb, const vector<int>& kb, int JBsel = 0) {
     int nt = omp_get_max_threads(); int ny = yb - ya; vector<long> cnt(ny, 0); for (int g = 0; g < V; g++) for (int y : sy[g]) if (y >= ya && y < yb) cnt[y - ya]++;
     long tot = 0; for (long c : cnt) tot += c; vector<int> yq(nt + 1, ya); { long run = 0; int t = 1; for (int y = 0; y < ny && t < nt; y++) { run += cnt[y]; if (run >= tot * t / nt) { yq[t] = ya + y + 1; t++; } } for (; t <= nt; t++) yq[t] = yb; yq[nt] = yb; }
 #pragma omp parallel num_threads(nt)
     { int t = omp_get_thread_num(); int y0 = yq[t], y1 = yq[t + 1]; int w = y1 - y0;
-      if (w > 0) { const int JB = 128; vector<double> acc((size_t)w * JB), Cc((size_t)w * JB); vector<int> lo(V), hi(V);
+      if (w > 0) { const int JB = JBsel > 0 ? JBsel : 128; vector<double> acc((size_t)w * JB), Cc((size_t)w * JB); vector<int> lo(V), hi(V);
         for (int g = 0; g < V; g++) { lo[g] = (int)(lower_bound(sy[g].begin(), sy[g].end(), y0) - sy[g].begin()); hi[g] = (int)(lower_bound(sy[g].begin(), sy[g].end(), y1) - sy[g].begin()); }
         for (int jb = 0; jb < mf; jb += JB) { int jw = min(JB, mf - jb); fill(acc.begin(), acc.end(), 0.0); fill(Cc.begin(), Cc.end(), 0.0);
           size_t b = 0; auto flush = [&]() { for (int y = 0; y < w; y++) { double* c = &Cc[(size_t)y * JB]; double* a = &acc[(size_t)y * JB]; for (int j = 0; j < jw; j++) { c[j] = fma(1.0, a[j], c[j]); a[j] = 0.0; } } };
@@ -655,7 +666,7 @@ int main(int argc, char** argv) {
     if (argc < 7) { cerr << "kullanim: tek_hamle_v27 c H TOHUM gamma1 lambda gamma2 [mod=SCJ] [veri]\n"; return 1; }
     int c = atoi(argv[1]), H = atoi(argv[2]), seed = atoi(argv[3]); double gam = atof(argv[4]), gam2 = atof(argv[6]); vector<double> lams; { string ls = argv[5]; size_t p0 = 0; while (p0 <= ls.size()) { size_t p1 = ls.find(',', p0); if (p1 == string::npos) p1 = ls.size(); lams.push_back(atof(ls.substr(p0, p1 - p0).c_str())); p0 = p1 + 1; } } double lam = lams[0]; double sidm = argc > 8 ? atof(argv[8]) : 1.0; string tgt = argc > 9 ? argv[9] : "YQ"; bool hasQ = tgt.find('Q') != string::npos; auto plist = [&](const char* a) { vector<double> v; string ls = a; size_t p0 = 0; while (p0 <= ls.size()) { size_t p1 = ls.find(',', p0); if (p1 == string::npos) p1 = ls.size(); if (p1 > p0) v.push_back(atof(ls.substr(p0, p1 - p0).c_str())); p0 = p1 + 1; } return v; }; vector<double> lamC_id = plist(argc > 11 ? argv[11] : "1,10,20,100"), lamC_cb = plist(argc > 12 ? argv[12] : "1,10,100"), lamF_l = plist(argc > 13 ? argv[13] : "1,20,100,1000,1e9"); bool v31mode = false; string mod = argc > 7 ? argv[7] : "SC"; string dir = argc > 10 && string(argv[10]) != "-" ? argv[10] : "/tmp/v8data";
     int ntr, nva, nte; { ifstream mf(dir + "/meta_c" + to_string(c) + ".txt"); mf >> V >> K >> ntr >> nva >> nte; }
-    g_v54tanh = !(getenv("V54_TANH") && atoi(getenv("V54_TANH")) == 0); g_v54gate = !(getenv("V54_GATE") && atoi(getenv("V54_GATE")) == 0); if (g_v54tanh && !tv_selftest()) { g_v54tanh = false; printf("V54_TANH|oz-denetim BASARISIZ -> libm tanhf\n"); } g_v54topk = !(getenv("V54_TOPK") && atoi(getenv("V54_TOPK")) == 0); g_v54reuse = !(getenv("V54_REUSE") && atoi(getenv("V54_REUSE")) == 0); g_hlean = getenv("V53H_LEAN") && atoi(getenv("V53H_LEAN")) == 1; g_hfast = getenv("V53H_FAST") && atoi(getenv("V53H_FAST")) == 1; g_htest = !(getenv("V53H_TEST") && atoi(getenv("V53H_TEST")) == 0); g_hhash = getenv("V53H_HASH") && atoi(getenv("V53H_HASH")) == 1; g_hsplit = getenv("V53H_SPLIT") && atoi(getenv("V53H_SPLIT")) == 1; g_hu = 2; if (getenv("V53H_U")) g_hu = atoi(getenv("V53H_U")); if (getenv("V53H_DUMP")) g_hdump = getenv("V53H_DUMP"); g_hnoavx = getenv("V53H_NOAVX") && atoi(getenv("V53H_NOAVX")) == 1;
+    g_v54tanh = !(getenv("V54_TANH") && atoi(getenv("V54_TANH")) == 0); g_v54gate = !(getenv("V54_GATE") && atoi(getenv("V54_GATE")) == 0); if (g_v54tanh && !tv_selftest()) { g_v54tanh = false; printf("V54_TANH|oz-denetim BASARISIZ -> libm tanhf\n"); } g_v54sparseq = getenv("V54_SPARSEQ") && atoi(getenv("V54_SPARSEQ")) == 1; g_v54utab = !(getenv("V54_UTAB") && atoi(getenv("V54_UTAB")) == 0); g_v54topk = !(getenv("V54_TOPK") && atoi(getenv("V54_TOPK")) == 0); g_v54reuse = !(getenv("V54_REUSE") && atoi(getenv("V54_REUSE")) == 0); g_hlean = getenv("V53H_LEAN") && atoi(getenv("V53H_LEAN")) == 1; g_hfast = getenv("V53H_FAST") && atoi(getenv("V53H_FAST")) == 1; g_htest = !(getenv("V53H_TEST") && atoi(getenv("V53H_TEST")) == 0); g_hhash = getenv("V53H_HASH") && atoi(getenv("V53H_HASH")) == 1; g_hsplit = getenv("V53H_SPLIT") && atoi(getenv("V53H_SPLIT")) == 1; g_hu = 0; if (getenv("V53H_U")) g_hu = atoi(getenv("V53H_U"));   /* V54: varsayilan 0 = yogun dgemm (tam bit-ozdes U; ilk-dokunus maliyeti dusunce seyrek-emulasyondan hizli). 2 = dusuk-RAM modu */ if (getenv("V53H_DUMP")) g_hdump = getenv("V53H_DUMP"); g_hnoavx = getenv("V53H_NOAVX") && atoi(getenv("V53H_NOAVX")) == 1;
     if (getenv("V53_PMIN")) g_pmin53 = atoi(getenv("V53_PMIN")); if (getenv("V53_LAMP")) g_lamp53 = atof(getenv("V53_LAMP"));
     if (getenv("V53_QKAP")) g_qkap53 = atof(getenv("V53_QKAP")); if (getenv("V53_QPI")) g_qpi53 = atoi(getenv("V53_QPI"));
     g_bias = getenv("V37_BIAS") && atoi(getenv("V37_BIAS")) == 1; g_v38 = getenv("V38") && atoi(getenv("V38")) == 1; if (getenv("V38_EPS")) g_eps38 = atof(getenv("V38_EPS")); g_passes = getenv("V43_PASSES") ? atoi(getenv("V43_PASSES")) : 1; g_res = getenv("V43_RES") ? atoi(getenv("V43_RES")) : 0; g_tau45 = getenv("V45_TAU") ? atof(getenv("V45_TAU")) : 0; g_norho45 = getenv("V45_NORHO") ? atoi(getenv("V45_NORHO")) : 0; g_cmode45 = getenv("V45_C") ? atoi(getenv("V45_C")) : 0; if (getenv("V45_KAPPA")) g_kap45 = atof(getenv("V45_KAPPA")); if (getenv("V45_F")) g_f45 = atof(getenv("V45_F")); if (getenv("V45_BMAX")) g_bmax45 = atof(getenv("V45_BMAX")); g_rho50 = getenv("V50_RHO") ? atof(getenv("V50_RHO")) : -0.25; if (getenv("V52_KNN")) g_knn39 = atoi(getenv("V52_KNN")); g_oofpool = getenv("V51_OOFPOOL") && atoi(getenv("V51_OOFPOOL")) == 1; if (getenv("V51_MSEED")) g_mseed = atoi(getenv("V51_MSEED")); g_v51 = getenv("V51") && atoi(getenv("V51")) == 1; g_v51shuf = getenv("V51_SHUF") && atoi(getenv("V51_SHUF")) == 1; g_ridgeK = getenv("V51_RIDGEK") && atoi(getenv("V51_RIDGEK")) == 1; g_gF = getenv("V51_GF") ? atof(getenv("V51_GF")) : 0; g_gP = getenv("V51_GP") ? atof(getenv("V51_GP")) : 0; g_v50 = getenv("V50") && atoi(getenv("V50")) == 1; g_v49 = getenv("V49") ? atoi(getenv("V49")) : 0; if (getenv("V49_S")) g_s49 = atof(getenv("V49_S")); g_only0 = getenv("V46_ONLY0") && atoi(getenv("V46_ONLY0")) == 1; g_v46 = getenv("V46") && atoi(getenv("V46")) == 1; if (getenv("V46_BQ")) g_bq46 = atof(getenv("V46_BQ")); g_v41 = !(getenv("V41_GRP") && atoi(getenv("V41_GRP")) == 0);   /* V42: C0 tabaninda varsayilan ACIK (yapi denetimi + rezidu denetimi basarisizsa otomatik yogun yola doner) */ g_v39 = getenv("V39") && atoi(getenv("V39")) == 1; g_v39shuf = getenv("V39_SHUF") && atoi(getenv("V39_SHUF")) == 1; if (getenv("V39_BETA")) g_beta39 = atof(getenv("V39_BETA")); g_pca = getenv("V37_PCA") && atoi(getenv("V37_PCA")) == 1;
@@ -800,7 +811,7 @@ int main(int argc, char** argv) {
 #pragma omp parallel for schedule(static)
                     for (int a = 0; a < mc; a++) { double* row = &Yp[(size_t)a * PW]; memset(row, 0, PW * sizeof(double)); int g = gidv[a]; for (int q = 0; q < nsc[g]; q++) { int y = sy[g][q]; if (y >= ya && y < ya + PW) row[y - ya] = Y0c[roff[a] + q]; } }
                     scipy_cblas_dgemm(101, 112, 111, mf, PW, mc, 1.0, ACF.data(), mf, Yp.data(), PW, 0.0, Cp.data(), PW);
-                    h_u_sparse(mf, V, mc, ACF.data(), gidv, sy, roff, Y0c.data(), U.data(), ya, ya + PW, kb);
+                    h_u_sparse(mf, V, mc, ACF.data(), gidv, sy, roff, Y0c.data(), U.data(), ya, ya + PW, kb, mf);
                     for (int j = 0; j < mf && ok; j++) for (int y = ya; y < ya + PW; y++) if (U[(size_t)j * V + y] != Cp[(size_t)j * PW + (y - ya)]) { ok = false; break; } }
                 TH["g9c U dogrulama (model hazir disi sayilmaz? hayir: sure dahil)"] = now() - tck_;
                 if (ok) { h_u_sparse(mf, V, mc, ACF.data(), gidv, sy, roff, Y0c.data(), U.data(), 0, V, kb); printf("V54_U|seyrek-tam-esdeger U (dgemm K-blok emulasyonu, %zu blok) dogrulandi\n", kb.size() - 1); }
@@ -1053,6 +1064,33 @@ if (g_blas) { double tT_ = now(); scipy_cblas_dgemm(101, 112, 111, mf, mf, mc, 1
                 vector<float> Sf[6]; for (int f = 0; f < 6; f++) { vector<float> Qf32(g_Qf[f].begin(), g_Qf[f].end()); Sf[f].assign((size_t)V * 64, 0.f); gemm_f(Qf32.data(), V, V, Et.data(), 64, Sf[f].data(), 64); }
                 int NBf = wd[0] - 1; vector<float> Pm((size_t)64 * NBf); { mt19937_64 gp(g_mseed); normal_distribution<double> Nd(0, 1); for (auto& x : Pm) x = (float)(Nd(gp) / 8.0); }
                 auto make_s = [&](const Data& d, int n, bool isTrain, vector<float>& sOut) { sOut.assign((size_t)n * 64, 0.f); for (int i = 0; i < n; i++) { int w = d.ctx[(size_t)i * c + c - 1]; int f = isTrain ? g_fold51[i] : 5; memcpy(&sOut[(size_t)i * 64], &Sf[f][(size_t)w * 64], 64 * sizeof(float)); } };
+                const bool utab = g_v54gate && g_v54utab && g_gF > 0 && g_gP <= 0;
+                if (utab) {   // V54: U satiri yalniz (kat,kelime) anahtarina bagli -> benzersiz anahtarlar icin bir kez (gemm, standardizasyon, tanh); n x 512'lik g_U* dizileri hic olusmaz
+                    vector<int> ktr(ntr), kva(nva), kte(nte); for (int i = 0; i < ntr; i++) ktr[i] = g_fold51[i] * V + tr.ctx[(size_t)i * c + c - 1]; for (int i = 0; i < nva; i++) kva[i] = 5 * V + va.ctx[(size_t)i * c + c - 1]; for (int i = 0; i < nte; i++) kte[i] = 5 * V + te.ctx[(size_t)i * c + c - 1];
+                    vector<int> rowOf(6 * V, -1), ukey; for (const vector<int>* kv : {&ktr, &kva, &kte}) for (int k : *kv) if (rowOf[k] < 0) { rowOf[k] = (int)ukey.size(); ukey.push_back(k); } int nu = (int)ukey.size();
+                    vector<double> sm(64, 0.0), ss(64, 0.0);   // orijinalle ayni islem sirasi (egitim satirlari i artan)
+                    for (int i = 0; i < ntr; i++) { const float* row = &Sf[g_fold51[i]][(size_t)tr.ctx[(size_t)i * c + c - 1] * 64]; for (int j = 0; j < 64; j++) sm[j] += row[j]; } for (auto& x : sm) x /= ntr;
+                    for (int i = 0; i < ntr; i++) { const float* row = &Sf[g_fold51[i]][(size_t)tr.ctx[(size_t)i * c + c - 1] * 64]; for (int j = 0; j < 64; j++) { double d = row[j] - sm[j]; ss[j] += d * d; } } for (auto& x : ss) x = sqrt(x / ntr) + 1e-9;
+                    vector<float> Su((size_t)nu * 64); for (int u = 0; u < nu; u++) { const float* row = &Sf[ukey[u] / V][(size_t)(ukey[u] % V) * 64]; for (int j = 0; j < 64; j++) Su[(size_t)u * 64 + j] = (float)((row[j] - sm[j]) / ss[j]); }
+                    TH["k4 Et,Sf,make_s,stdz"] = now() - tkk_; tkk_ = now();
+                    vector<float> Uu((size_t)nu * NBf); gemm_f(Su.data(), nu, 64, Pm.data(), NBf, Uu.data(), NBf); TH["k5 proj gemm"] = now() - tkk_; tkk_ = now();
+                    vector<double> um(NBf, 0.0), us(NBf, 0.0);
+#pragma omp parallel
+                    { int nt_ = omp_get_num_threads(), t_ = omp_get_thread_num(); int j0 = (int)((long)NBf * t_ / nt_), j1 = (int)((long)NBf * (t_ + 1) / nt_);
+                      for (int i = 0; i < ntr; i++) { const float* r = &Uu[(size_t)rowOf[ktr[i]] * NBf]; for (int j = j0; j < j1; j++) um[j] += r[j]; } for (int j = j0; j < j1; j++) um[j] /= ntr;
+                      for (int i = 0; i < ntr; i++) { const float* r = &Uu[(size_t)rowOf[ktr[i]] * NBf]; for (int j = j0; j < j1; j++) { double d = r[j] - um[j]; us[j] += d * d; } } for (int j = j0; j < j1; j++) us[j] = sqrt(us[j] / ntr) + 1e-9; }
+                    TH["k6 um/us"] = now() - tkk_; tkk_ = now();
+#pragma omp parallel for schedule(static)
+                    for (int u = 0; u < nu; u++) for (int j = 0; j < NBf; j++) Uu[(size_t)u * NBf + j] = (float)((Uu[(size_t)u * NBf + j] - um[j]) / us[j]);
+                    TH["k7 ustd"] = now() - tkk_; tkk_ = now();
+                    vector<double> Tt((size_t)nu * NBf);
+#pragma omp parallel for schedule(static)
+                    for (int u = 0; u < nu; u++) for (int j = 0; j < NBf; j++) Tt[(size_t)u * NBf + j] = tanh(g_gF * Uu[(size_t)u * NBf + j]);
+                    auto gate3 = [&](vector<float>& Fm, int n, const vector<int>& key) { int m = wd[0];
+#pragma omp parallel for schedule(static)
+                        for (int i = 0; i < n; i++) { float* r = &Fm[(size_t)i * m + 1]; const double* tr_ = &Tt[(size_t)rowOf[key[i]] * NBf]; for (int j = 0; j < NBf; j++) { double f = max(-0.999999, min(0.999999, (double)r[j])); double t = tr_[j]; r[j] = (float)((f + t) / (1.0 + f * t)); } } };
+                    gate3(Ft[0], ntr, ktr); gate3(Fv[0], nva, kva); gate3(Fe[0], nte, kte); TH["k8 gate atanh/tanh"] = now() - tkk_;
+                } else {
                 vector<float> str, sva, ste; make_s(tr, ntr, true, str); make_s(va, nva, false, sva); make_s(te, nte, false, ste);
                 vector<double> sm(64, 0.0), ss(64, 0.0); for (int i = 0; i < ntr; i++) for (int j = 0; j < 64; j++) sm[j] += str[(size_t)i * 64 + j]; for (auto& x : sm) x /= ntr; for (int i = 0; i < ntr; i++) for (int j = 0; j < 64; j++) { double d = str[(size_t)i * 64 + j] - sm[j]; ss[j] += d * d; } for (auto& x : ss) x = sqrt(x / ntr) + 1e-9;
                 auto stdz = [&](vector<float>& sv, int n) { for (int i = 0; i < n; i++) for (int j = 0; j < 64; j++) sv[(size_t)i * 64 + j] = (float)((sv[(size_t)i * 64 + j] - sm[j]) / ss[j]); }; stdz(str, ntr); stdz(sva, nva); stdz(ste, nte);
@@ -1072,6 +1110,7 @@ if (g_blas) { double tT_ = now(); scipy_cblas_dgemm(101, 112, 111, mf, mf, mc, 1
                         vector<int> ktr(ntr), kva(nva), kte(nte); for (int i = 0; i < ntr; i++) ktr[i] = g_fold51[i] * V + tr.ctx[(size_t)i * c + c - 1]; for (int i = 0; i < nva; i++) kva[i] = 5 * V + va.ctx[(size_t)i * c + c - 1]; for (int i = 0; i < nte; i++) kte[i] = 5 * V + te.ctx[(size_t)i * c + c - 1];
                         gate2(Ft[0], ntr, g_Utr, ktr); gate2(Fv[0], nva, g_Uva, kva); gate2(Fe[0], nte, g_Ute, kte); }
                     else { gate(Ft[0], ntr, g_Utr); gate(Fv[0], nva, g_Uva); gate(Fe[0], nte, g_Ute); } TH["k8 gate atanh/tanh"] = now() - tkk_; }
+                }
                 printf("V51_CEKIRDEK|K tablolari (5 OOF + 1 tam) + s(K) 64D + sabit 64->%d esleme: tek sefer, sure=%.2fs ; kapilar g_F=%g g_P=%g ridge_K=%d %s ; U std~1 (egitimden)\n", NBf, now() - tk0, g_gF, g_gP, (int)g_ridgeK, g_v51shuf ? "KARISIK_CEKIRDEK" : "GERCEK_CEKIRDEK"); }
         phase_mark("OOF/Q: K-tablolari+kapi"); TH["f2 V51 K-tablolari+kapi"] = now() - tv0; double th0_ = now(); Pool39 P = (g_v54reuse && g_v51 && g_Pf51.size() == 6) ? g_Pf51[5] : v39_graph(tr, c); g_Pq = P;   /* V54: V39 grafi = V51 tam-egitim tablosunun grafi (ayni sayimlar, ayni islev) */ TH["f3 V39 graf"] = now() - th0_; th0_ = now();
             if (g_v39shuf) { mt19937_64 gs(4242); vector<int> pm(V); iota(pm.begin(), pm.end(), 0); shuffle(pm.begin(), pm.end(), gs); for (auto& x : P.nb) if (x >= 0) x = pm[x]; }   // baglanti hedefleri karistirilir (agirliklar ayni)

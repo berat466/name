@@ -15,7 +15,7 @@ fl = {  # faz adi -> (aciklama, FLOP, tur)  tur: f32 / f64 / bellek
  'Gram: F^T Y': ('n x 513 skaler ekleme', n * m, 'bellek'),
  'Gram: slot sayimi (ACC,ACF,RC)': ('n x 2 slot x 513 ekleme', 2 * n * m, 'bellek'),
  'grup Cholesky + Y0 + X': ('Cholesky sum sg^3/3 + Y0 (yoluk) + X (513 sutun)', 2 * (s3 + y0sp_madd + 513 * s2), 'f64'),
- "T=ACF'X + U=ACF'Y0": ('T dgemm 513x513xmc + U (seyrek-tam-esdeger: nz x 513)', 2 * m * m * mc + 2 * nz * m, 'f64'),
+ "T=ACF'X + U=ACF'Y0": ('T dgemm 513x513xmc + U YOGUN dgemm 513 x 2001 x mc (varsayilan, bit-ozdes); matematiksel asgari U = nz x 513', 2 * m * m * mc + 2 * m * V * mc, 'f64'),
  'Schur: W_F': ('Cholesky 513 + 513^2 x 2001 cozum', m ** 3 / 3 * 2 + 2 * m * m * V, 'f64'),
  'W_C = Y0 - X W_F': ('sgemm mc x 513 x 2001', 2 * mc * m * V, 'f32'),
  'Q_havuz tablosu': ('~10 komsu x V x V', 2 * 10 * V * V, 'bellek'),
@@ -33,4 +33,4 @@ for ph, (ac, f, tur) in fl.items():
     ratio = f'%{100 * ach / PK[tur]:.0f} ({tur} tepe {PK[tur]:.0f})' if tur != 'bellek' else '(bellek/ozel fonksiyon)'
     print(f'| {ph} | {ac} | {gf:.2f} | {w:.3f} | {c:.2f} | {c / w:.2f} | {ach:.1f} | {ratio} |'); tot_f += f; tot_t += w
 print(f'| **Toplam** | | **{tot_f / G:.1f}** | **{tot_t:.2f}** | | | **{tot_f / G / tot_t:.1f}** | sgemm tepe 546 GF/s |')
-print(f'\nV53 oncesi (yogun Y0 cozumu + yogun U dgemm) ek is yuku: +{dense_extra / G:.1f} GF (yogun/seyrek FLOP orani Y0: {y0dense_madd / y0sp_madd:.1f}x, U: {2 * m * V * mc / (2 * nz * m):.1f}x)')
+print(f'\nV53-oncesi yogun Y0 cozumu ek is yuku: +{2 * (y0dense_madd - y0sp_madd) / G:.1f} GF (Y0 yogun/seyrek: {y0dense_madd / y0sp_madd:.1f}x). U icin yurutulen yogun dgemm {2 * m * V * mc / G:.1f} GF; matematiksel asgari (yalniz sifir-olmayan) {2 * nz * m / G:.1f} GF ({2 * m * V * mc / (2 * nz * m):.1f}x). Yurutulen toplam {tot_f / G:.1f} GF, asgari toplam {(tot_f - 2 * m * V * mc + 2 * nz * m) / G:.1f} GF.')
