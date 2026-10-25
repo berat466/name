@@ -1,0 +1,2 @@
+full {'okuma': 0.05, 'ozellik': 4.06, 'gram': 0.64, 'schur': 11.37, 'w': 1.19, 'q': 0.09, 'model': 18.04, 'g234': 7.24, 'toplam': 65.0, 'ram': 7304.0} model hazir tum: [19.0, 18.0, 16.2]
+hafif {'okuma': 0.05, 'ozellik': 4.38, 'gram': 0.33, 'schur': 2.04, 'w': 1.53, 'q': 0.09, 'model': 8.21, 'g234': 1.51, 'toplam': 31.1, 'ram': 3578.0} model hazir tum: [8.7, 7.9, 8.2]
