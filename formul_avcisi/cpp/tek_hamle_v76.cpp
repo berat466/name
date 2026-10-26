@@ -111,8 +111,11 @@ static void rhs_add(const float* F, const int* y, int n, int m, int V, double* R
           for (int k = 0; k < n; k++) { const float* row = F + (size_t)k * m; double* d = &L[(size_t)y[k] * m];
             #pragma omp simd
             for (int j = 0; j < m; j++) d[j] += (double)row[j]; } }
-        #pragma omp parallel for schedule(static)
-        for (int j = 0; j < m; j++) for (int c = 0; c < V; c++) { double a = R[(size_t)j * V + c]; for (int t = 0; t < nt; t++) a += loc[t][(size_t)c * m + j]; R[(size_t)j * V + c] = a; }
+        const int TB = 64; int ncb = (V + TB - 1) / TB;   // V76: [c][j] -> [j][c] tasima 64x64 karolarla (iki taraf da onbellek dostu); her elemanda toplama sirasi ayni (R, sonra t=0..nt-1)
+        #pragma omp parallel for schedule(dynamic, 4)
+        for (int cb = 0; cb < ncb; cb++) { int c0 = cb * TB, c1 = min(V, c0 + TB);
+            for (int j0 = 0; j0 < m; j0 += TB) { int j1 = min(m, j0 + TB);
+                for (int c = c0; c < c1; c++) for (int j = j0; j < j1; j++) { double a = R[(size_t)j * V + c]; for (int t = 0; t < nt; t++) a += loc[t][(size_t)c * m + j]; R[(size_t)j * V + c] = a; } } }
         return; }
     int nt = omp_get_max_threads(); vector<vector<double>> loc(nt, vector<double>((size_t)m * V, 0.0));
     #pragma omp parallel
@@ -816,7 +819,7 @@ void* operator new(std::size_t n) { void* p = v76_alloc(n); if (!p) throw std::b
 void operator delete(void* p) noexcept { free(p); }
 void operator delete(void* p, std::size_t n) noexcept { v76_free(p, n); }
 int main(int argc, char** argv) {
-    g_prefault = getenv("V54_PREFAULT") && atoi(getenv("V54_PREFAULT")) == 1;
+    g_prefault = getenv("V54_PREFAULT") ? atoi(getenv("V54_PREFAULT")) == 1 : !(getenv("V76_LEGACY") && atoi(getenv("V76_LEGACY")) == 1);   /* V76: >=4 MB tahsislerde sayfalar tum cekirdeklerle onceden dokunulur (seri sifirlama/ilk-dokunus yerine paralel) */
     if (getenv("V54_MALLOPT") && atoi(getenv("V54_MALLOPT")) == 1) { mallopt(M_MMAP_THRESHOLD, 1 << 30); mallopt(M_TRIM_THRESHOLD, 1 << 30); mallopt(M_TOP_PAD, 64 << 20); }   // V54: buyuk tamponlar yigindan; serbest birakilinca isletim sistemine donmez -> ayni boyutlu gecici tamponlar yeniden sayfa hatasi uretmez
     if (argc < 7) { cerr << "kullanim: tek_hamle_v27 c H TOHUM gamma1 lambda gamma2 [mod=SCJ] [veri]\n"; return 1; }
     int c = atoi(argv[1]), H = atoi(argv[2]), seed = atoi(argv[3]); double gam = atof(argv[4]), gam2 = atof(argv[6]); vector<double> lams; { string ls = argv[5]; size_t p0 = 0; while (p0 <= ls.size()) { size_t p1 = ls.find(',', p0); if (p1 == string::npos) p1 = ls.size(); lams.push_back(atof(ls.substr(p0, p1 - p0).c_str())); p0 = p1 + 1; } } double lam = lams[0]; double sidm = argc > 8 ? atof(argv[8]) : 1.0; string tgt = argc > 9 ? argv[9] : "YQ"; bool hasQ = tgt.find('Q') != string::npos; auto plist = [&](const char* a) { vector<double> v; string ls = a; size_t p0 = 0; while (p0 <= ls.size()) { size_t p1 = ls.find(',', p0); if (p1 == string::npos) p1 = ls.size(); if (p1 > p0) v.push_back(atof(ls.substr(p0, p1 - p0).c_str())); p0 = p1 + 1; } return v; }; vector<double> lamC_id = plist(argc > 11 ? argv[11] : "1,10,20,100"), lamC_cb = plist(argc > 12 ? argv[12] : "1,10,100"), lamF_l = plist(argc > 13 ? argv[13] : "1,20,100,1000,1e9"); bool v31mode = false; string mod = argc > 7 ? argv[7] : "SC"; string dir = argc > 10 && string(argv[10]) != "-" ? argv[10] : "/tmp/v8data";
@@ -831,6 +834,8 @@ int main(int argc, char** argv) {
     { bool legacy = getenv("V76_LEGACY") && atoi(getenv("V76_LEGACY")) == 1; if (!legacy) { auto on = [&](const char* k) { return !(getenv(k) && atoi(getenv(k)) == 0); };   /* V76 varsayilan: bayrak acikca 0 verilmedikce ACIK */
         if (!getenv("V63_ARROW")) g_v63arrow = 2; if (!getenv("V64_IMPL")) g_v64imp = true; if (!getenv("V64_SPQ")) g_v64spq = true; if (!getenv("V72_UCSC")) g_v72u = true; if (!getenv("V73_RHS")) g_v73rhs = true; if (!getenv("V73_SYRK")) g_v73syrk = true; if (!getenv("V75_STREAM")) g_v75 = true; if (!getenv("V76_VEC")) g_v76vec = true; 
         if (!getenv("V64_COMPACT") && g_v63arrow >= 1) g_v64cmp = true; if (!getenv("V53H_LEAN")) g_hlean = true; if (!getenv("V53H_FAST")) g_hfast = true; (void)on; } }
+    printf("V76_YOL|ok-basi=%d(2=seyrek U) ortuk_WC=%d seyrek_Q=%d kompakt=%d CSC_U=%d RHS=%d SYRK=%d akis_val_test=%d AVX512_8alfa=%d THP=%d ZCACHE=%d POOL=%d|lean=%d fast=%d|seyrek K-graf=%d seyrek Q/Cn=%d\n", g_v63arrow, (int)g_v64imp, (int)g_v64spq, (int)g_v64cmp, (int)g_v72u, (int)g_v73rhs, (int)g_v73syrk, (int)g_v75, (int)g_v76vec, (int)g_v76thp, (int)g_v76zc, (int)g_v76pool, (int)g_hlean, (int)g_hfast, (int)g_v60spk, (int)g_v61);
+    if (!(g_v63arrow >= 2 && g_v64imp && g_v64spq && g_v72u && g_hlean && g_hfast && g_v60spk && g_v61) && !(getenv("V76_LEGACY"))) { printf("V76_UYARI|hizli yollardan biri KAPALI -> eski/yogun yol riski\n"); }
     double Tp0 = now(); g_hT0 = Tp0; phase_mark("basla"); Data tr = load(dir, c, "train", ntr), va = load(dir, c, "val", nva), te = load(dir, c, "test", nte); printf("ZAMAN|veri dosyalarini okuma=%.3fs\n", now() - Tp0); double Tp1 = now();
     { expand_s(tr, c); expand_s(va, c); expand_s(te, c); K = (int)(tr.X.size() / tr.n); BASEA = K; BASEB = K + V; BASEP = K + 2 * V; KT = K + 2 * V + HB; }
     printf("ZAMAN|expand_s (X'e fark bloku ekleme)=%.3fs\n", now() - Tp1);
@@ -1382,7 +1387,7 @@ if (g_blas) { double tT_ = now(); scipy_cblas_dgemm(101, 112, 111, mf, mf, mc, 1
                     for (int i = 0; i < ntr; i++) { const float* row = &Sf[g_fold51[i]][(size_t)tr.ctx[(size_t)i * c + c - 1] * 64]; for (int j = 0; j < 64; j++) { double d = row[j] - sm[j]; ss[j] += d * d; } } for (auto& x : ss) x = sqrt(x / ntr) + 1e-9;
                     vector<float> Su((size_t)nu * 64); for (int u = 0; u < nu; u++) { const float* row = &Sf[ukey[u] / V][(size_t)(ukey[u] % V) * 64]; for (int j = 0; j < 64; j++) Su[(size_t)u * 64 + j] = (float)((row[j] - sm[j]) / ss[j]); }
                     TH["k4 Et,Sf,make_s,stdz"] = now() - tkk_; tkk_ = now();
-                    vector<float> Uu((size_t)nu * NBf); gemm_f(Su.data(), nu, 64, Pm.data(), NBf, Uu.data(), NBf); TH["k5 proj gemm"] = now() - tkk_; tkk_ = now();
+                    ubuf<float> Uu((size_t)nu * NBf); TH["k5a Uu tahsis (nu satir)"] = now() - tkk_; TH["k5c nu"] = nu; gemm_f(Su.data(), nu, 64, Pm.data(), NBf, Uu.data(), NBf); TH["k5 proj gemm"] = now() - tkk_; tkk_ = now();
                     vector<double> um(NBf, 0.0), us(NBf, 0.0);
 #pragma omp parallel
                     { int nt_ = omp_get_num_threads(), t_ = omp_get_thread_num(); int j0 = (int)((long)NBf * t_ / nt_), j1 = (int)((long)NBf * (t_ + 1) / nt_);
@@ -1392,7 +1397,7 @@ if (g_blas) { double tT_ = now(); scipy_cblas_dgemm(101, 112, 111, mf, mf, mc, 1
 #pragma omp parallel for schedule(static)
                     for (int u = 0; u < nu; u++) for (int j = 0; j < NBf; j++) Uu[(size_t)u * NBf + j] = (float)((Uu[(size_t)u * NBf + j] - um[j]) / us[j]);
                     TH["k7 ustd"] = now() - tkk_; tkk_ = now();
-                    vector<double> Tt((size_t)nu * NBf);
+                    ubuf<double> Tt((size_t)nu * NBf);   /* V76: tamami paralel yazilir -> seri sifirlama yok */
 #pragma omp parallel for schedule(static)
                     for (int u = 0; u < nu; u++) for (int j = 0; j < NBf; j++) Tt[(size_t)u * NBf + j] = tanh(g_gF * Uu[(size_t)u * NBf + j]);
                     auto gate3 = [&](vector<float>& Fm, int n, const vector<int>& key) { int m = wd[0];
