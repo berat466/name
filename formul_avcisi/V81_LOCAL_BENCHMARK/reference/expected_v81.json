@@ -1,0 +1,40 @@
+{
+ "aciklama": "V81 sunucu referansi (Linux x86-64, glibc 2.39, scipy OpenBLAS SkylakeX, g++ 13.3 -O3 -march=native, 4 is parcacigi, V78_AUTO=0). 'beklenen' alanlari verify.sh/check_ref.py ile bire bir karsilastirilir.",
+ "kaynak_commit": "4ca93fa (V81)",
+ "beklenen": {
+  "val_CE": "5.441941",
+  "test_CE": "5.571887",
+  "test_PPL": "262.930",
+  "test_top1": "0.1370",
+  "test_top5": "0.3112",
+  "alpha_Q": "0.3",
+  "okuma_alpha": "0.85",
+  "eps": "1e-05",
+  "n_egitim": "294816",
+  "n_val": "36852",
+  "n_test": "36852",
+  "W_F_hash": "d54c462f219c825b",
+  "skK_hashleri": "734c4478eb4aabd3,dd99574892a97762,dd37148d67343820,4880fe3ac6a23ddc,836cac92ede66d52,95f5a3bfe61d9c9e",
+  "graf_hashleri": "nb=2758073ad27b7c43 wt=6fba532267968c62 bw=2c05abe09928bf00,nb=04bcb491d4667c4e wt=fe37e98ec8bbfe62 bw=6d8e6b10843e52b4,nb=4b5f23f1f2956620 wt=36061bc157c58643 bw=3461f01c315793a0,nb=adc609dad5a6b589 wt=14af25b3a83cd448 bw=7104f72fef8f3fb1,nb=5509002925380573 wt=5e457db18eceaefc bw=8feebf59635f9415,nb=fd2d4f28fde8d77a wt=a842591174d0fab4 bw=483df2b6b5424e7e"
+ },
+ "tam_karma_modu_V53H_HASH_1": {
+  "Fc": "4efe8a827d220399",
+  "AFF": "26401df5ea0b1dea",
+  "RF": "18b4555f8bd71339",
+  "ACF": "8ea5f941b27af912",
+  "RC": "2092be167205cbbb",
+  "Y0f": "75427dcfc6ac872c",
+  "X": "e2858fa1ad353f51",
+  "T": "5eb9247a5661ec43 (sunucu OpenBLAS 0.3.2x dgemm; Debian OpenBLAS 0.3.26: ebc5f198a97d4e1b -- BLAS surumune bagli, W_F ayni)",
+  "U": "bc55ec1d32364d8d",
+  "WF": "d54c462f219c825b"
+ },
+ "sunucu_zamanlari_s": {
+  "not": "yalniz BAGLAM (sunucu VM, 4 CPU, gurultulu); yerel olcumle dogrudan karsilastirmayin",
+  "V80_tam_program_medyan": 7.63,
+  "V81_tam_program_medyan": 7.46,
+  "V80_model_medyan": 4.32,
+  "V81_model_medyan": 3.99,
+  "tepe_RSS_MB": 1532
+ }
+}
