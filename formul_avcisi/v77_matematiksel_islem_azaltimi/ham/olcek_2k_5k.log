@@ -1,0 +1,14 @@
+s2k_76: WALL 7.598 USER 17.765 SYS 3.882 MAXRSS_KB 1443456  hazir=5.893 V53H_SONUC|TEST CE=4.487430 PPL=88.893 VAL CE=4.503665
+s2k_77: WALL 6.421 USER 16.579 SYS 3.225 MAXRSS_KB 1443564  hazir=5.140 V53H_SONUC|TEST CE=4.487430 PPL=88.893 VAL CE=4.503665
+--- s2k: lin hari? her sey ---
+BIT-OZDES
+V77_SECIM|en iyi (alfa,eps) ile ikinci arasindaki CE boslugu=4.482e-04 (toplama sirasi farki ~1e-14 mertebesinde; bosluk >> 1e-9 ise secim ayni)
+V77_SPEK|blok=6 yeniden_hesaplanan_blok=0 (0/36852 ornek) (spekulasyon TAM basarili: ikinci logit gecisi YOK)|secilen okuma alpha=0.9 eps=1e-05
+V77_MADD|eval-gemm madd: val_asama1=3.7829e+10 val_yeniden=0.0000e+00 test=3.7829e+10 toplam=7.5658e+10
+s5k_76: WALL 13.621 USER 26.620 SYS 16.928 MAXRSS_KB 3231996  hazir=10.350 V53H_SONUC|TEST CE=5.158058 PPL=173.827 VAL CE=5.079437
+s5k_77: WALL 13.308 USER 26.265 SYS 16.370 MAXRSS_KB 3231744  hazir=10.350 V53H_SONUC|TEST CE=5.158058 PPL=173.827 VAL CE=5.079437
+--- s5k: lin hari? her sey ---
+BIT-OZDES
+V77_SECIM|en iyi (alfa,eps) ile ikinci arasindaki CE boslugu=1.033e-03 (toplama sirasi farki ~1e-14 mertebesinde; bosluk >> 1e-9 ise secim ayni)
+V77_SPEK|blok=7 yeniden_hesaplanan_blok=4 (7680/36852 ornek) (kismi yeniden hesap)|secilen okuma alpha=0.85 eps=1e-05
+V77_MADD|eval-gemm madd: val_asama1=9.4544e+10 val_yeniden=1.9703e+10 test=9.4544e+10 toplam=2.0879e+11
