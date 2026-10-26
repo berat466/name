@@ -1,0 +1,3 @@
+Q_OLCEKLEME_TESTI|V=10000 nnz=372264|uretim=0.15s|seyrek kNN=0.50s (0.5 GF)|s(K)=Q.E (Q olusmadan)=0.34s sonlu=1|tepe RAM=20 MB|yogun Q tablosu olsaydi: 0.8 GB/tablo (x6 = 5 GB)|yogun Cn(float): 0.4 GB
+Q_OLCEKLEME_TESTI|V=50000 nnz=1854862|uretim=0.82s|seyrek kNN=13.33s (8.6 GF)|s(K)=Q.E (Q olusmadan)=7.03s sonlu=1|tepe RAM=83 MB|yogun Q tablosu olsaydi: 20.0 GB/tablo (x6 = 120 GB)|yogun Cn(float): 10.0 GB
+Q_OLCEKLEME_TESTI|V=100000 nnz=3684840|uretim=1.35s|seyrek kNN=54.45s (30.1 GF)|s(K)=Q.E (Q olusmadan)=16.16s sonlu=1|tepe RAM=142 MB|yogun Q tablosu olsaydi: 80.0 GB/tablo (x6 = 480 GB)|yogun Cn(float): 40.0 GB
