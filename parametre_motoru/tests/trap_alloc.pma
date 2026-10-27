@@ -1,0 +1,4 @@
+func main() {
+    alloc x, 1000000000
+    host puti, x
+}

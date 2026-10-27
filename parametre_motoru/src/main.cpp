@@ -1,0 +1,123 @@
+// pm: Parametre Motoru komut satiri.  pm asm|run|dump|stats|fuzz
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <random>
+#include <sstream>
+#include <chrono>
+
+#include "program.h"
+
+static bool read_file(const std::string& path, std::string& out) {
+  std::ifstream f(path, std::ios::binary);
+  if (!f) return false;
+  out.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+  return true;
+}
+static bool write_file(const std::string& path, const void* d, size_t n) {
+  std::ofstream f(path, std::ios::binary);
+  if (!f) return false;
+  f.write((const char*)d, std::streamsize(n));
+  return bool(f);
+}
+
+static Program load_any(const std::string& path) {
+  std::string txt;
+  if (!read_file(path, txt)) throw PmError("dosya okunamadi: " + path);
+  if (txt.size() >= 4 && memcmp(txt.data(), "PMB1", 4) == 0) return decode_program((const uint8_t*)txt.data(), txt.size());
+  return assemble(txt);
+}
+
+static int usage() {
+  fprintf(stderr,
+    "kullanim:\n"
+    "  pm asm   kaynak.pma -o cikti.pmb [--strip]   yazma bicimini ikili tabloya cevirir\n"
+    "  pm run   dosya.(pma|pmb) [--fuel N] [--mem SOZCUK] [--result] [--stats]   calistirir (stdin -> getc)\n"
+    "  pm dump  dosya.(pma|pmb)                    motorun calistirdigi tabloyu okunabilir basar\n"
+    "  pm fuzz  dosya.pmb [N] [tohum]               ikiliyi rastgele bozar; yukleyici/VM cokmemeli\n"
+    "cikis kodu: 0 basari, 1 hata (dosya/ayristirma/dogrulama), 2 calisma tuzagi (TRAP)\n");
+  return 1;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 3) return usage();
+  std::string cmd = argv[1], file = argv[2];
+  try {
+    if (cmd == "asm") {
+      std::string outp; bool strip = false;
+      for (int i = 3; i < argc; i++) {
+        if (!strcmp(argv[i], "-o") && i + 1 < argc) outp = argv[++i];
+        else if (!strcmp(argv[i], "--strip")) strip = true;
+        else return usage();
+      }
+      if (outp.empty()) return usage();
+      std::string txt; if (!read_file(file, txt)) throw PmError("dosya okunamadi: " + file);
+      Program p = assemble(txt);
+      auto bin = encode_program(p, strip);
+      if (!write_file(outp, bin.data(), bin.size())) throw PmError("yazilamadi: " + outp);
+      size_t ncode = 0; for (auto& f : p.funcs) ncode += f.code.size();
+      printf("%s: %zu bayt (kaynak %zu bayt), %zu fonksiyon, %zu komut, %zu sabit, %zu veri sozcugu%s\n",
+             outp.c_str(), bin.size(), txt.size(), p.funcs.size(), ncode, p.consts.size(), p.data.size(), strip ? ", adlar atildi" : "");
+      return 0;
+    }
+    if (cmd == "dump") { std::string s = disassemble(load_any(file)); fwrite(s.data(), 1, s.size(), stdout); return 0; }
+    if (cmd == "run") {
+      RunConfig cfg; bool showResult = false, showStats = false;
+      for (int i = 3; i < argc; i++) {
+        if (!strcmp(argv[i], "--fuel") && i + 1 < argc) cfg.fuel = strtoull(argv[++i], nullptr, 10);
+        else if (!strcmp(argv[i], "--mem") && i + 1 < argc) cfg.max_mem_words = strtoull(argv[++i], nullptr, 10);
+        else if (!strcmp(argv[i], "--stack") && i + 1 < argc) cfg.stack_words = strtoull(argv[++i], nullptr, 10);
+        else if (!strcmp(argv[i], "--frames") && i + 1 < argc) cfg.max_frames = strtoull(argv[++i], nullptr, 10);
+        else if (!strcmp(argv[i], "--result")) showResult = true;
+        else if (!strcmp(argv[i], "--stats")) showStats = true;
+        else return usage();
+      }
+      Program p = load_any(file);
+      IO io; io.in = stdin;
+      auto t0 = std::chrono::steady_clock::now();
+      RunResult r = run_program(p, io, cfg);
+      double sec = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+      fwrite(io.out.data(), 1, io.out.size(), stdout); fflush(stdout);
+      if (r.trap != T_OK) {
+        const Func& f = p.funcs[r.func];
+        fprintf(stderr, "TRAP: %s (fonksiyon %s, komut %u, adim %llu)\n", kTrapName[r.trap], f.name.empty() ? "?" : f.name.c_str(), r.pc, (unsigned long long)r.steps);
+        return 2;
+      }
+      if (showResult) printf("sonuc: %lld\n", (long long)r.value);
+      if (showStats) fprintf(stderr, "adim: %llu  sure: %.4f s  hiz: %.1f Madim/s\n", (unsigned long long)r.steps, sec, sec > 0 ? r.steps / sec / 1e6 : 0.0);
+      return 0;
+    }
+    if (cmd == "fuzz") {
+      std::string raw; if (!read_file(file, raw)) throw PmError("dosya okunamadi: " + file);
+      long n = argc > 3 ? atol(argv[3]) : 10000; unsigned long seed = argc > 4 ? strtoul(argv[4], nullptr, 10) : 1;
+      std::mt19937_64 rng(seed);
+      long rejected = 0, trapped = 0, ok = 0, skipped = 0;
+      RunConfig cfg; cfg.fuel = 200000; cfg.stack_words = 1 << 14; cfg.max_frames = 1 << 10; cfg.max_mem_words = 1 << 20;
+      for (long it = 0; it < n; it++) {
+        std::string m = raw;
+        int k = 1 + int(rng() % 4);
+        for (int j = 0; j < k && !m.empty(); j++) {
+          size_t pos = rng() % m.size();
+          if (rng() % 8 == 0) m[pos] ^= char(1u << (rng() % 8)); else m[pos] = char(rng());
+        }
+        if (rng() % 16 == 0 && m.size() > 8) m.resize(rng() % m.size());
+        Program p;
+        try { p = decode_program((const uint8_t*)m.data(), m.size()); } catch (const PmError&) { rejected++; continue; }
+        if (p.mem_words > cfg.max_mem_words) { skipped++; continue; }
+        IO io;
+        RunResult r = run_program(p, io, cfg);
+        if (r.trap == T_OK) ok++; else trapped++;
+      }
+      printf("fuzz: %ld deneme -> reddedilen %ld, gecerli+calisan %ld, gecerli+tuzak %ld, atlanan(bellek) %ld; cokme yok\n", n, rejected, ok, trapped, skipped);
+      printf("gecerlilik orani (reddedilmeyen): %.2f%%\n", n ? 100.0 * (n - rejected) / n : 0.0);
+      return 0;
+    }
+  } catch (const PmError& e) {
+    fprintf(stderr, "HATA: %s\n", e.what());
+    return 1;
+  }
+  return usage();
+}

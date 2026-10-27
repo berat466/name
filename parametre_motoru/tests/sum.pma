@@ -1,0 +1,22 @@
+; dongu: 1..100 toplami ve 1..10 kareleri toplami
+func main() {
+    mov i, 1
+    mov s, 0
+l1: gt  c, i, 100
+    jnz c, d1
+    add s, s, i
+    add i, i, 1
+    jmp l1
+d1: host puti, s
+    host putc, 10
+    mov i, 1
+    mov q, 0
+l2: gt  c, i, 10
+    jnz c, d2
+    mul t, i, i
+    add q, q, t
+    add i, i, 1
+    jmp l2
+d2: host puti, q
+    host putc, 10
+}
