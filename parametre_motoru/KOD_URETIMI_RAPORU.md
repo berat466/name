@@ -28,7 +28,7 @@ Kapsam: yalnızca **üretilen programın kendisi**. Yürütme yöntemi (yorumlay
 | strings | 365 → 350 (−%4,1) | 60 → 48 | 31 → 21 | 259 → 223 B (−%14) |
 | sieve (küçük) | 256.665 → 256.652 (≈0) | 66 → 55 | 23 → 17 | 237 → 204 B (−%14) |
 | sort / matmul / heap / collatz | −%0,4 … −%1,3 | −%7 … −%16 | −%25 … −%46 | −%6 … −%13 |
-| loop_sum / sieve10m / floatloop / memsum | **≈ 0** | −%10 … −%20 | −%21 … −%50 | −%8 … −%15 |
+| loop_sum / sieve10m / floatloop / memsum | **≈ 0** | −%10 … −%23 | −%21 … −%50 | −%8 … −%15 |
 
 **B) Süre ve bellek (büyük iş yükleri)**
 | İş yükü | Yürütme eski → yeni | Toplam (süreç başı → sonu) | Tepe bellek |
