@@ -49,5 +49,9 @@ struct RunConfig {
   size_t stack_words = 1u << 20;
   size_t max_frames = 1u << 16;
 };
-struct RunResult { Trap trap = T_OK; int64_t value = 0; uint64_t steps = 0; uint32_t func = 0, pc = 0; };
+struct RunResult { Trap trap = T_OK; int64_t value = 0; uint64_t fuel_used = 0; uint64_t steps = 0; /* yalniz -DPM_STEPS */ uint32_t func = 0, pc = 0; };
 RunResult run_program(const Program& p, IO& io, const RunConfig& cfg);
+// native_x64.cpp: anlam tablosundan x86-64 makine kodu uretir ve calistirir (yorumlayiciyla ayni anlam / yakit / tuzak kurallari)
+bool native_available();
+bool native_supported(const Program& p);
+RunResult run_program_native(const Program& p, IO& io, const RunConfig& cfg);

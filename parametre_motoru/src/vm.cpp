@@ -1,9 +1,11 @@
-// Yorumlayici: yazmac makinesi, pencereli cagri, yakit (adim butcesi), sinirli bellek. Tuzaklar belirlidir (tanimsiz davranis yok).
+// Yorumlayici: yazmac makinesi, pencereli cagri, yakit kontrol noktalari, sinirli bellek. Tuzaklar belirlidir.
+// Komut anlamlarinin cogu anlam.h tablosundan uretilir (INTERP genisletmesi); tabloda olmayanlar (ondalik) elle yazilidir.
 #include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <vector>
 #include "program.h"
+#include "host.h"
 
 const char* kTrapName[T_COUNT] = {"OK", "DIV0", "OOB", "STACK", "DEPTH", "FUEL", "ALLOC"};
 
@@ -20,6 +22,12 @@ int64_t f2i(double d) {
 }
 struct Frame { const Ins* ret_ip; uint64_t* caller_R; uint32_t caller_func; };
 }  // namespace
+
+#define PM_SEM_INTERP
+#include "anlam.h"
+
+#define TRAP(t) do { trap = (t); goto done; } while (0)
+#define CHECKPOINT() do { if (fuel == 0) TRAP(T_FUEL); --fuel; } while (0)
 
 RunResult run_program(const Program& P, IO& io, const RunConfig& cfg) {
   RunResult res;
@@ -41,43 +49,20 @@ RunResult run_program(const Program& P, IO& io, const RunConfig& cfg) {
   uint64_t fuel = cfg.fuel;
   Trap trap = T_OK;
   int64_t result = 0;
+#ifdef PM_STEPS
+  uint64_t steps = 0;
+#endif
 
-#define TRAP(t) do { trap = (t); goto done; } while (0)
   for (;;) {
-    if (fuel == 0) TRAP(T_FUEL);
-    --fuel;
+#ifdef PM_STEPS
+    ++steps;
+#endif
     const Ins in = *ip;
     switch (in.op) {
-      case OP_MOV: R[in.a] = R[in.b]; break;
-      case OP_LDI: R[in.a] = uint64_t(int64_t(in.b)); break;
-      case OP_LDK: R[in.a] = P.consts[in.b]; break;
-      case OP_ADD: R[in.a] = R[in.b] + R[in.c]; break;
-      case OP_SUB: R[in.a] = R[in.b] - R[in.c]; break;
-      case OP_MUL: R[in.a] = R[in.b] * R[in.c]; break;
-      case OP_DIV: {
-        int64_t x = asI(R[in.b]), y = asI(R[in.c]);
-        if (y == 0) TRAP(T_DIV0);
-        R[in.a] = (y == -1) ? uint64_t(0) - uint64_t(x) : uint64_t(x / y);
-        break;
-      }
-      case OP_MOD: {
-        int64_t x = asI(R[in.b]), y = asI(R[in.c]);
-        if (y == 0) TRAP(T_DIV0);
-        R[in.a] = (y == -1) ? 0 : uint64_t(x % y);
-        break;
-      }
-      case OP_AND: R[in.a] = R[in.b] & R[in.c]; break;
-      case OP_OR:  R[in.a] = R[in.b] | R[in.c]; break;
-      case OP_XOR: R[in.a] = R[in.b] ^ R[in.c]; break;
-      case OP_SHL: R[in.a] = R[in.b] << (R[in.c] & 63); break;
-      case OP_SHR: R[in.a] = R[in.b] >> (R[in.c] & 63); break;
-      case OP_SAR: R[in.a] = uint64_t(asI(R[in.b]) >> (R[in.c] & 63)); break;
-      case OP_EQ: R[in.a] = R[in.b] == R[in.c]; break;
-      case OP_NE: R[in.a] = R[in.b] != R[in.c]; break;
-      case OP_LT: R[in.a] = asI(R[in.b]) < asI(R[in.c]); break;
-      case OP_LE: R[in.a] = asI(R[in.b]) <= asI(R[in.c]); break;
-      case OP_NEG: R[in.a] = uint64_t(0) - R[in.b]; break;
-      case OP_NOT: R[in.a] = ~R[in.b]; break;
+#define X(N) case OP_##N: { [[maybe_unused]] uint64_t T1 = 0, T2 = 0, T3 = 0, T4 = 0; SEM_##N(INTERP) } break;
+      PM_SEM_OPS(X)
+#undef X
+      // ---- tabloda olmayan komutlar (ondalik) ----
       case OP_FADD: R[in.a] = fromF(asF(R[in.b]) + asF(R[in.c])); break;
       case OP_FSUB: R[in.a] = fromF(asF(R[in.b]) - asF(R[in.c])); break;
       case OP_FMUL: R[in.a] = fromF(asF(R[in.b]) * asF(R[in.c])); break;
@@ -89,73 +74,15 @@ RunResult run_program(const Program& P, IO& io, const RunConfig& cfg) {
       case OP_FLE: R[in.a] = asF(R[in.b]) <= asF(R[in.c]); break;
       case OP_I2F: R[in.a] = fromF(double(asI(R[in.b]))); break;
       case OP_F2I: R[in.a] = uint64_t(f2i(asF(R[in.b]))); break;
-      case OP_ADDI: R[in.a] = R[in.b] + uint64_t(int64_t(in.c)); break;
-      case OP_MULI: R[in.a] = R[in.b] * uint64_t(int64_t(in.c)); break;
-      case OP_ANDI: R[in.a] = R[in.b] & uint64_t(int64_t(in.c)); break;
-      case OP_SHLI: R[in.a] = R[in.b] << (in.c & 63); break;
-      case OP_SHRI: R[in.a] = R[in.b] >> (in.c & 63); break;
-      case OP_SARI: R[in.a] = uint64_t(asI(R[in.b]) >> (in.c & 63)); break;
-      case OP_DIVI: R[in.a] = uint64_t(asI(R[in.b]) / int64_t(in.c)); break;   // dogrulayici c!=0,-1 garantiler
-      case OP_MODI: R[in.a] = uint64_t(asI(R[in.b]) % int64_t(in.c)); break;
-      case OP_EQI: R[in.a] = R[in.b] == uint64_t(int64_t(in.c)); break;
-      case OP_NEI: R[in.a] = R[in.b] != uint64_t(int64_t(in.c)); break;
-      case OP_LTI: R[in.a] = asI(R[in.b]) < int64_t(in.c); break;
-      case OP_LEI: R[in.a] = asI(R[in.b]) <= int64_t(in.c); break;
-      case OP_GTI: R[in.a] = asI(R[in.b]) > int64_t(in.c); break;
-      case OP_GEI: R[in.a] = asI(R[in.b]) >= int64_t(in.c); break;
-      case OP_JMP: ip = fn->code.data() + in.a; continue;
-      case OP_JZ:  if (R[in.a] == 0) { ip = fn->code.data() + in.b; continue; } break;
-      case OP_JNZ: if (R[in.a] != 0) { ip = fn->code.data() + in.b; continue; } break;
-      case OP_CALL: {
-        const Func& g = P.funcs[in.a];
-        uint64_t* nr = R + in.b;
-        if (size_t(stack_end - nr) < g.nregs) TRAP(T_STACK);
-        if (depth >= frames.size()) TRAP(T_DEPTH);
-        frames[depth++] = Frame{ip + 1, R, cur};
-        if (!P.zero_free) memset(nr + g.nparams, 0, size_t(g.nregs - g.nparams) * 8);
-        R = nr; cur = in.a; fn = &g; ip = g.code.data();
-        continue;
-      }
-      case OP_RET: {
-        uint64_t v = R[in.a];
-        if (depth == 0) { result = asI(v); goto done; }
-        R[0] = v;
-        const Frame& fr = frames[--depth];
-        ip = fr.ret_ip; R = fr.caller_R; cur = fr.caller_func; fn = &P.funcs[cur];
-        continue;
-      }
-      case OP_HALT: result = 0; goto done;
-      case OP_LD: {
-        uint64_t addr = R[in.b] + uint64_t(int64_t(in.c));
-        if (addr >= mem_words) TRAP(T_OOB);
-        R[in.a] = mem[addr]; break;
-      }
-      case OP_ST: {
-        uint64_t addr = R[in.b] + uint64_t(int64_t(in.c));
-        if (addr >= mem_words) TRAP(T_OOB);
-        mem[addr] = R[in.a]; break;
-      }
-      case OP_ALLOC: {
-        int64_t n = asI(R[in.b]);
-        if (n < 0 || uint64_t(n) > mem_words - heap) TRAP(T_ALLOC);
-        R[in.a] = heap; heap += uint64_t(n); break;
-      }
-      case OP_HOST: {
-        uint64_t* w = R + in.b;
-        switch (in.a) {
-          case H_PUTC: io.out.push_back(char(w[0] & 255)); w[0] = 0; break;
-          case H_PUTI: io.out += std::to_string(asI(w[0])); w[0] = 0; break;
-          case H_PUTF: { char buf[64]; snprintf(buf, sizeof buf, "%.15g", asF(w[0])); io.out += buf; w[0] = 0; break; }
-          case H_GETC: { int ch = io.in ? fgetc(io.in) : -1; w[0] = uint64_t(int64_t(ch)); break; }
-        }
-        break;
-      }
       default: TRAP(T_OOB);   // dogrulamadan sonra ulasilamaz
     }
     ++ip;
   }
 done:
-  res.trap = trap; res.value = result; res.steps = cfg.fuel - fuel; res.func = cur;
+  res.trap = trap; res.value = result; res.fuel_used = cfg.fuel - fuel; res.func = cur;
   res.pc = uint32_t(ip - fn->code.data());
+#ifdef PM_STEPS
+  res.steps = steps;
+#endif
   return res;
 }

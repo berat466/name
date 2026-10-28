@@ -1,6 +1,6 @@
 # Parametre Motoru — Şartname (v0.1)
 
-Durum: **Aşama 1 + kod üretimi sadeleştirmesi uygulandı** (bölüm 1–8, 13). Bölüm 9–12 tasarım notu / yol haritası, henüz kodlanmadı.
+Durum: **Aşama 1, kod üretimi sadeleştirmesi, anlam tablosu ve x86-64 makine kodu yürütücüsü uygulandı** (bölüm 1–8, 13–15). Bölüm 9–12 tasarım notu / yol haritası, henüz kodlanmadı.
 
 ## 0. Amaç ve ilkeler
 - Motor sıradan bir C++ programıdır. Sinir ağı, öğrenilmiş ağırlık, vektör uzayı yoktur.
@@ -17,7 +17,7 @@ Durum: **Aşama 1 + kod üretimi sadeleştirmesi uygulandı** (bölüm 1–8, 13
 ## 2. Yürütme modeli
 - Yazmaç makinesi. Komut: `op` + en çok 3 operand.
 - **Pencereli çağrı:** `call` çağıranın `w` numaralı yazmacından başlayan pencereyi çağrılanın 0. yazmacı yapar. Argümanlar pencereye kopyalanır, dönüş değeri pencerenin ilk yazmacına yazılır. Anlam: çağrılanın parametre dışı yazmaçları sıfırdır. Yükleyici **kesin atama** ispatlarsa (hiçbir yazmaç yazılmadan okunmuyor; çağrıdan sonra pencere ve ötesi tanımsız sayılır) VM bu sıfırlamayı atlar, çünkü gözlemlenemez; ispat yoksa sıfırlama korunur (bölüm 13).
-- **Yakıt:** her komut 1 birim yakıt harcar; bitince `TRAP: FUEL`. Böylece her program sonlanır ya da tuzağa düşer. **Not:** yakıt, üretilen kodun çalışan komut sayısıdır; kod üretimi sadeleşince aynı program daha az yakıt harcar (fib35: −%31,6), yani yakıt değeri derleyici sürümüne bağlıdır. Bu kural değiştirilmedi; karar bekliyor (`KOD_URETIMI_RAPORU.md`, "Karar bekleyenler").
+- **Yakıt (kontrol noktaları):** yakıt komut sayısına bağlı değildir. Kontrol noktaları: her `call`, her alınan **geri atlama** (hedef ≤ mevcut komut) ve her `host`. Her biri 1 yakıt harcar; yakıt 0 iken kontrol noktasına gelinirse `TRAP: FUEL`. İleri atlamalar ve düz komutlar yakıt harcamaz; sonlanma garantisi korunur (sonsuz yürütme ya sonsuz çağrı ya sonsuz geri atlama içerir). Yorumlayıcı ve makine kodu yürütücüsü bu kuralı aynı uygular ve aynı yakıt değerini üretir (testle doğrulanır). Optimizasyonlar çağrı ve geri atlama sayısını değiştirmemelidir.
 - **Tuzaklar** (belirli, tanımsız davranış yok): `DIV0`, `OOB`, `STACK`, `DEPTH`, `FUEL`, `ALLOC`.
 - Tamsayı: iki tamamlayıcı sarma; `INT64_MIN / -1` = `INT64_MIN`, `% -1` = 0; kaydırma miktarı 63 ile maskelenir. `f2i`: NaN→0, taşma→doygunluk.
 - Ondalık: IEEE-754, FMA birleştirme yok, hızlı-matematik yok.
@@ -81,3 +81,17 @@ Yükleyici/ayrıştırıcı, davranışı değiştirmeden şunları yapar (ölç
 3. **Çağrı penceresi:** tek yazılıp tek okunan, hemen çağrı argümanına kopyalanan geçici doğrudan pencereye yazılır; `mov x, W` ardından `mov W, x` ve hiç okunmayan çağrı sonucu kopyası silinir; kendine kopya silinir.
 4. **Sıfırlama atlama:** kesin atama analizi (`analyze_program`): bütün işlevlerde her yazmaç okunmadan önce her yoldan yazılmışsa `zero_free` olur. Bu bayrak **ikiliye yazılmaz**, yüklenirken hesaplanır; ikili biçim ve anlam değişmez.
 Yapılmayanlar (ölçümle gerekçe çıkmadı ya da mimariyi büyütür): ortak alt ifade, sabit katlama, yazmaç yeniden kullanımı/renklendirme, karşılaştır-ve-atla birleşik komutu.
+
+## 14. Anlam tablosu (uygulandı: `src/anlam.h`)
+44 komutun anlamı (tamsayı, karşılaştırma, bellek, atlama, çağrı, host) küçük bir **mikro-işlem dilinde** tek yerde tanımlıdır: `RD IM LK ALU CMP UN DIVS MODS DIVN MODN WR LD ST BR BRZ BRNZ CALLM RETM HALTM HOSTM ALLOCM`. Aynı tanımdan iki ayrı genişletme üretilir:
+- **INTERP** (derleme anında): yorumlayıcının işleyicileri (`vm.cpp`).
+- **DATA** (veri tablosu): makine kodu üretecinin sablonları (`native_x64.cpp`).
+Tabloda olmayan komutlar (ondalık: `fadd fsub fmul fdiv fneg fsqrt feq flt fle i2f f2i`) yalnızca yorumlayıcıda elle yazılıdır; bunları içeren program makine koduna çevrilemez, yorumlayıcıda çalışır.
+Sınır: tablo **derleme anında** kullanılır. Komut anlamları çalışma anında yüklenip değiştirilemez (kademe 2 / 3, yapılmadı). Tanım dili çalışma anında yüklenebilecek biçimde (küçük, tam tanımlı, tuzakları belli) tasarlandı.
+
+## 15. Makine kodu yürütücüsü (uygulandı: `src/native_x64.cpp`, yalnızca Linux x86-64)
+- Program tablosu, anlam tablosundaki şablonlarla x86-64 makine koduna çevrilir ve doğrudan işlemcide çalışır (`pm run --native`). C++ yorumlayıcı yürütme yolunda yoktur; yalnızca yükleyici, host işlevleri ve üretici C++'tır.
+- Yorumlayıcıyla **aynı** anlam, tuzak ve yakıt kuralları: çıktı, çıkış kodu, tuzak türü ve harcanan yakıt bire bir aynı olmak zorundadır (testle doğrulanır). Yorumlayıcı **referanstır**; makine kodu yolu onunla farklı çıkarsa hata makine kodundadır.
+- Sınır denetimleri korunur: bellek sınırı, sıfıra bölme, yığın/derinlik, yakıt kontrol noktaları, `alloc` sınırı.
+- Üretilen kod yazılabilir-yürütülebilir değildir: önce yazılır, sonra `mprotect` ile yalnızca okunur+yürütülür yapılır. Makine yığını ayrı ayrılır ve `max_frames` ile sınırlıdır.
+- Bilinen farklar: tuzak konumu (işlev/komut) raporlanmaz; yalnızca tür ve yakıt. Desteklenmeyen platformda ya da ondalık komut içeren programda `--native` yorumlayıcıya düşer (`--native-strict` hata verir, çıkış kodu 3).

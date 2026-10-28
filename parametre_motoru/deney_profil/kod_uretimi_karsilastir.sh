@@ -3,7 +3,7 @@
 # Kullanim: ./kod_uretimi_karsilastir.sh [cikti_dizini]
 cd "$(dirname "$0")"
 OUT=${1:-/tmp/pm_kuk}; mkdir -p "$OUT"; F="-std=c++17 -O2 -ffp-contract=off"
-g++ $F -o $OUT/pm_old eski_src/*.cpp && g++ $F -o $OUT/pm_new ../src/*.cpp || exit 1
+g++ $F -o $OUT/pm_old eski_src/*.cpp && g++ $F -DPM_STEPS -o $OUT/pm_new ../src/*.cpp || exit 1
 g++ $F -Ieski_src -o $OUT/bench_old bench_motor.cpp eski_src/asm.cpp eski_src/ikili.cpp eski_src/vm.cpp
 g++ $F -I../src -o $OUT/bench_new bench_motor.cpp ../src/asm.cpp ../src/ikili.cpp ../src/vm.cpp
 g++ -O1 -o $OUT/maxrss maxrss.cpp

@@ -36,7 +36,7 @@ static int usage() {
   fprintf(stderr,
     "kullanim:\n"
     "  pm asm   kaynak.pma -o cikti.pmb [--strip]   yazma bicimini ikili tabloya cevirir\n"
-    "  pm run   dosya.(pma|pmb) [--fuel N] [--mem SOZCUK] [--result] [--stats]   calistirir (stdin -> getc)\n"
+    "  pm run   dosya.(pma|pmb) [--fuel N] [--mem SOZCUK] [--stack S] [--frames F] [--result] [--stats] [--native | --native-strict]   calistirir (stdin -> getc)\n"
     "  pm dump  dosya.(pma|pmb)                    motorun calistirdigi tabloyu okunabilir basar\n"
     "  pm fuzz  dosya.pmb [N] [tohum]               ikiliyi rastgele bozar; yukleyici/VM cokmemeli\n"
     "cikis kodu: 0 basari, 1 hata (dosya/ayristirma/dogrulama), 2 calisma tuzagi (TRAP)\n");
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
     }
     if (cmd == "dump") { std::string s = disassemble(load_any(file)); fwrite(s.data(), 1, s.size(), stdout); return 0; }
     if (cmd == "run") {
-      RunConfig cfg; bool showResult = false, showStats = false;
+      RunConfig cfg; bool showResult = false, showStats = false, useNative = false, strictNative = false;
       for (int i = 3; i < argc; i++) {
         if (!strcmp(argv[i], "--fuel") && i + 1 < argc) cfg.fuel = strtoull(argv[++i], nullptr, 10);
         else if (!strcmp(argv[i], "--mem") && i + 1 < argc) cfg.max_mem_words = strtoull(argv[++i], nullptr, 10);
@@ -74,28 +74,36 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--frames") && i + 1 < argc) cfg.max_frames = strtoull(argv[++i], nullptr, 10);
         else if (!strcmp(argv[i], "--result")) showResult = true;
         else if (!strcmp(argv[i], "--stats")) showStats = true;
+        else if (!strcmp(argv[i], "--native")) useNative = true;
+        else if (!strcmp(argv[i], "--native-strict")) useNative = strictNative = true;
         else return usage();
       }
       Program p = load_any(file);
       IO io; io.in = stdin;
       auto t0 = std::chrono::steady_clock::now();
-      RunResult r = run_program(p, io, cfg);
+      bool nat = false;
+      if (useNative) {
+        if (native_available() && native_supported(p)) nat = true;
+        else if (strictNative) { fprintf(stderr, "NATIVE: bu program makine koduna cevrilemiyor (desteklenmeyen komut ya da platform)\n"); return 3; }
+      }
+      RunResult r = nat ? run_program_native(p, io, cfg) : run_program(p, io, cfg);
       double sec = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
       fwrite(io.out.data(), 1, io.out.size(), stdout); fflush(stdout);
       if (r.trap != T_OK) {
         const Func& f = p.funcs[r.func];
-        fprintf(stderr, "TRAP: %s (fonksiyon %s, komut %u, adim %llu)\n", kTrapName[r.trap], f.name.empty() ? "?" : f.name.c_str(), r.pc, (unsigned long long)r.steps);
+        if (nat) { fprintf(stderr, "TRAP: %s (makine kodu, yakit %llu)\n", kTrapName[r.trap], (unsigned long long)r.fuel_used); return 2; }
+        fprintf(stderr, "TRAP: %s (fonksiyon %s, komut %u, yakit %llu)\n", kTrapName[r.trap], f.name.empty() ? "?" : f.name.c_str(), r.pc, (unsigned long long)r.fuel_used);
         return 2;
       }
       if (showResult) printf("sonuc: %lld\n", (long long)r.value);
-      if (showStats) { struct rusage ru; getrusage(RUSAGE_SELF, &ru); fprintf(stderr, "adim: %llu  sure: %.4f s  hiz: %.1f Madim/s  tepe-bellek: %ld KiB\n", (unsigned long long)r.steps, sec, sec > 0 ? r.steps / sec / 1e6 : 0.0, ru.ru_maxrss); }
+      if (showStats) { struct rusage ru; getrusage(RUSAGE_SELF, &ru); fprintf(stderr, "adim: %llu  sure: %.4f s  hiz: %.1f Madim/s  tepe-bellek: %ld KiB\n", (unsigned long long)r.steps, sec, sec > 0 ? r.steps / sec / 1e6 : 0.0, ru.ru_maxrss); fprintf(stderr, "yakit: %llu\n", (unsigned long long)r.fuel_used); }
       return 0;
     }
     if (cmd == "fuzz") {
       std::string raw; if (!read_file(file, raw)) throw PmError("dosya okunamadi: " + file);
       long n = argc > 3 ? atol(argv[3]) : 10000; unsigned long seed = argc > 4 ? strtoul(argv[4], nullptr, 10) : 1;
       std::mt19937_64 rng(seed);
-      long rejected = 0, trapped = 0, ok = 0, skipped = 0;
+      long rejected = 0, trapped = 0, ok = 0, skipped = 0, compared = 0, mismatch = 0; bool diff = argc > 5 && !strcmp(argv[5], "--diff");
       RunConfig cfg; cfg.fuel = 200000; cfg.stack_words = 1 << 14; cfg.max_frames = 1 << 10; cfg.max_mem_words = 1 << 20;
       for (long it = 0; it < n; it++) {
         std::string m = raw;
@@ -110,10 +118,19 @@ int main(int argc, char** argv) {
         if (p.mem_words > cfg.max_mem_words) { skipped++; continue; }
         IO io;
         RunResult r = run_program(p, io, cfg);
+        if (diff && native_available() && native_supported(p)) {
+          IO io2; RunResult r2 = run_program_native(p, io2, cfg);
+          compared++;
+          if (r2.trap != r.trap || r2.value != r.value || r2.fuel_used != r.fuel_used || io2.out != io.out) {
+            if (mismatch++ < 5) fprintf(stderr, "FARK (deneme %ld): yorumlayici trap=%s deger=%lld yakit=%llu cikti=%zu bayt | native trap=%s deger=%lld yakit=%llu cikti=%zu bayt\n", it,
+              kTrapName[r.trap], (long long)r.value, (unsigned long long)r.fuel_used, io.out.size(), kTrapName[r2.trap], (long long)r2.value, (unsigned long long)r2.fuel_used, io2.out.size());
+          }
+        }
         if (r.trap == T_OK) ok++; else trapped++;
       }
       printf("fuzz: %ld deneme -> reddedilen %ld, gecerli+calisan %ld, gecerli+tuzak %ld, atlanan(bellek) %ld; cokme yok\n", n, rejected, ok, trapped, skipped);
       printf("gecerlilik orani (reddedilmeyen): %.2f%%\n", n ? 100.0 * (n - rejected) / n : 0.0);
+      if (diff) { printf("yorumlayici/native karsilastirma: %ld program karsilastirildi, %ld fark\n", compared, mismatch); if (mismatch) return 4; }
       return 0;
     }
   } catch (const PmError& e) {

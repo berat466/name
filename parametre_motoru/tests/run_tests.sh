@@ -4,7 +4,7 @@
 PM=${1:-./pm}
 cd "$(dirname "$0")"
 PM=$(cd .. && realpath "$PM")
-pass=0; fail=0; failed=""
+pass=0; fail=0; failed=""; native_ok=0; native_skip=0
 T=$(mktemp -d)
 check() { # ad kosul aciklama
   if [ "$2" = ok ]; then pass=$((pass+1)); else fail=$((fail+1)); failed="$failed\n  $1: $3"; fi
@@ -27,8 +27,18 @@ for f in *.pma; do
       [ "$rc2" = "$rc" ] && cmp -s $T/out $T/out2 && check $b ok || check $b bad "ikili tur ($mode) farkli: rc $rc2"
     done
   fi
+  if [ "$rc_exp" != 1 ]; then   # yorumlayici <-> makine kodu: cikti, cikis kodu, tuzak turu ve YAKIT ayni olmali
+    "$PM" run $f $args --stats < $inp > $T/outi 2> $T/erri; rci=$?
+    "$PM" run $f $args --stats --native-strict < $inp > $T/outn 2> $T/errn; rcn=$?
+    if [ "$rcn" = 3 ]; then native_skip=$((native_skip+1)); else
+      native_ok=$((native_ok+1))
+      kind() { sed -n "s/^TRAP: \([A-Z0-9]*\).*/\1/p" "$1"; }
+      fuel() { grep -o "yakit:\? [0-9]*" "$1" | grep -o "[0-9]*$" | head -1; }
+      [ "$rcn" = "$rci" ] && cmp -s $T/outi $T/outn && [ "$(kind $T/erri)" = "$(kind $T/errn)" ] && [ "$(fuel $T/erri)" = "$(fuel $T/errn)" ] && check $b ok || check $b bad "native farkli: rc $rcn/$rci tuzak '$(kind $T/errn)'/'$(kind $T/erri)' yakit $(fuel $T/errn)/$(fuel $T/erri)"
+    fi
+  fi
 done
 rm -rf $T
-echo "gecen: $pass, kalan: $fail"
+echo "gecen: $pass, kalan: $fail  (makine kodu karsilastirmasi: $native_ok program, atlanan: $native_skip)"
 [ $fail -eq 0 ] || { printf "BASARISIZ:$failed\n"; exit 1; }
 echo "KATI ESIT: tum testler gecti"
