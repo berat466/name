@@ -14,5 +14,5 @@ else P="$IN"; fi
 (ulimit -v 700000; $D/coz.elf < "$P" > $L 2>/dev/null) || { echo "zincir: cozucu reddetti (bicim)" >&2; rm -f "$OUT"; exit 1; }
 read -r V < <( (ulimit -v 700000; timeout 20 $D/valid.elf < $L 2>/dev/null) )
 case "$V" in 1*) ;; *) echo "zincir: dogrulayici reddetti ('$V')" >&2; rm -f "$OUT"; exit 1;; esac
-(ulimit -v 700000; { [ -z "$ONEK" ] || printf "%s\n" "$ONEK"; cat $L; } | timeout 20 $D/gen2.elf > "$OUT" 2>/dev/null) || { echo "zincir: uretici desteklemiyor" >&2; rm -f "$OUT"; exit 1; }
+if [ -z "$ONEK" ]; then (ulimit -v 700000; timeout 20 $D/gen2.elf < $L > "$OUT" 2>/dev/null); else (ulimit -v 700000; printf "%s\n%s\n" "$ONEK" "$(<$L)" | timeout 20 $D/gen2.elf > "$OUT" 2>/dev/null); fi || { echo "zincir: uretici desteklemiyor" >&2; rm -f "$OUT"; exit 1; }
 chmod +x "$OUT"; echo "zincir: tamam ($V) -> $OUT"
