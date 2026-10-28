@@ -1,0 +1,187 @@
+; S1: 500 nesneli halka uzerinde durum makinesi (100 adim). Kare 0 = baslangic, kare s+1 = s. adim.
+; Komsu sayimi etkilesim ile (onceki karenin sonundaki durumlardan), gecis sablon kurallari ile.
+kare 102
+global c0 = 0
+global c1 = 0
+global c2 = 0
+global c3 = 0
+global c4 = 0
+global e0 = 0
+global e1 = 0
+
+sablon obj adet 500
+  alan no dogrusal 0 1
+  alan cl rastgele 0 1 31
+  alan r32 rastgele 0 99 32
+  alan st sabit 0
+  alan t sabit 0
+  alan nn sabit 0
+  alan eski sabit 0
+  alan thr sabit 1
+  alan inf sabit 36
+  alan inc sabit 4
+  alan dur sabit 8
+  alan rec sabit 91
+  alan imm sabit 5
+  alan hop sabit 3
+  alan p1 dogrusal 1 1
+  alan m1 dogrusal 499 1
+  alan ph sabit 0
+  alan mh sabit 0
+  alan sv sabit 0
+  alan ra sabit 0
+  alan x sabit 0
+  alan y sabit 0
+  ; sinif parametreleri
+  kural thr = 2 eger cl == 1
+  kural inf = 58 eger cl == 1
+  kural inc = 2 eger cl == 1
+  kural dur = 10 eger cl == 1
+  kural rec = 85 eger cl == 1
+  kural imm = 8 eger cl == 1
+  kural hop = 22 eger cl == 1
+  ; komsu indeksleri
+  kural p1 = p1 % 500
+  kural m1 = m1 % 500
+  kural ph = no + hop
+  kural ph = ph % 500
+  kural mh = no + 500
+  kural mh = mh - hop
+  kural mh = mh % 500
+  ; adim no ve RND(i*7919+s, 33) % 100  -> x ; RND(i*7919+s, 34) % 100 -> y
+  kural sv = kare - 1
+  kural ra = no * 7919
+  kural ra = ra + sv
+  kural x = ra * 1664525
+  kural x = x + 5083000
+  kural x = x & 16777215
+  kural x = x * 1664525
+  kural x = x + 7271263
+  kural x = x & 16777215
+  kural x = x / 16
+  kural x = x % 100
+  kural y = ra * 1664525
+  kural y = y + 12354263
+  kural y = y & 16777215
+  kural y = y * 1664525
+  kural y = y + 7271263
+  kural y = y & 16777215
+  kural y = y / 16
+  kural y = y % 100
+  ; eski durum + baslangic (kare 0)
+  kural eski = st
+  kural st = 2 eger kare == 0 ve r32 < 12
+  kural t = dur eger kare == 0 ve r32 < 12
+  kural eski = 5 eger kare == 0
+  ; gecisler (hepsi eski durumdan)
+  kural st = 1 eger eski == 0 ve nn >= thr ve x < inf
+  kural t = inc eger eski == 0 ve nn >= thr ve x < inf
+  kural t = t - 1 eger eski >= 1 ve eski <= 3
+  kural st = 2 eger eski == 1 ve t == 0
+  kural t = dur eger eski == 1 ve t == 0
+  kural st = 3 eger eski == 2 ve t == 0 ve y < rec
+  kural st = 4 eger eski == 2 ve t == 0 ve y >= rec
+  kural t = imm eger eski == 2 ve t == 0 ve y < rec
+  kural st = 0 eger eski == 3 ve t == 0
+  kural nn = 0
+son
+
+; ayna: obj durumunun kopyasi (etkilesim iki farkli sablon ister)
+sablon ayna adet 500
+  alan no dogrusal 0 1
+  alan st sabit 0
+son
+
+etkilesim obj ayna eger a.no == b.no
+  kural b.st = a.st
+son
+; komsu sayimi: i+1, i-1, i+h, i-h (mod 500), yalniz bulastirici (durum 2) komsular
+etkilesim obj ayna eger b.st == 2 ve b.no == a.p1
+  kural a.nn = a.nn + 1
+son
+etkilesim obj ayna eger b.st == 2 ve b.no == a.m1
+  kural a.nn = a.nn + 1
+son
+etkilesim obj ayna eger b.st == 2 ve b.no == a.ph
+  kural a.nn = a.nn + 1
+son
+etkilesim obj ayna eger b.st == 2 ve b.no == a.mh
+  kural a.nn = a.nn + 1
+son
+
+topla c0 say obj eger st == 0
+topla c1 say obj eger st == 1
+topla c2 say obj eger st == 2
+topla c3 say obj eger st == 3
+topla c4 say obj eger st == 4
+topla e0 say obj eger st == 2 ve cl == 0
+topla e1 say obj eger st == 2 ve cl == 1
+
+; kontrol adimlarinin sonundaki sayimlari (kare 26, 51, 76, 101'de onceki karenin toplamlari) sakla
+sablon snap adet 1
+  alan w1_0 sabit 0
+  alan w1_1 sabit 0
+  alan w1_2 sabit 0
+  alan w1_3 sabit 0
+  alan w1_4 sabit 0
+  alan w1_5 sabit 0
+  alan w1_6 sabit 0
+  alan w2_0 sabit 0
+  alan w2_1 sabit 0
+  alan w2_2 sabit 0
+  alan w2_3 sabit 0
+  alan w2_4 sabit 0
+  alan w2_5 sabit 0
+  alan w2_6 sabit 0
+  alan w3_0 sabit 0
+  alan w3_1 sabit 0
+  alan w3_2 sabit 0
+  alan w3_3 sabit 0
+  alan w3_4 sabit 0
+  alan w3_5 sabit 0
+  alan w3_6 sabit 0
+  alan w4_0 sabit 0
+  alan w4_1 sabit 0
+  alan w4_2 sabit 0
+  alan w4_3 sabit 0
+  alan w4_4 sabit 0
+  alan w4_5 sabit 0
+  alan w4_6 sabit 0
+  kural w1_0 = c0 eger kare == 26
+  kural w1_1 = c1 eger kare == 26
+  kural w1_2 = c2 eger kare == 26
+  kural w1_3 = c3 eger kare == 26
+  kural w1_4 = c4 eger kare == 26
+  kural w1_5 = e0 eger kare == 26
+  kural w1_6 = e1 eger kare == 26
+  kural w2_0 = c0 eger kare == 51
+  kural w2_1 = c1 eger kare == 51
+  kural w2_2 = c2 eger kare == 51
+  kural w2_3 = c3 eger kare == 51
+  kural w2_4 = c4 eger kare == 51
+  kural w2_5 = e0 eger kare == 51
+  kural w2_6 = e1 eger kare == 51
+  kural w3_0 = c0 eger kare == 76
+  kural w3_1 = c1 eger kare == 76
+  kural w3_2 = c2 eger kare == 76
+  kural w3_3 = c3 eger kare == 76
+  kural w3_4 = c4 eger kare == 76
+  kural w3_5 = e0 eger kare == 76
+  kural w3_6 = e1 eger kare == 76
+  kural w4_0 = c0 eger kare == 101
+  kural w4_1 = c1 eger kare == 101
+  kural w4_2 = c2 eger kare == 101
+  kural w4_3 = c3 eger kare == 101
+  kural w4_4 = c4 eger kare == 101
+  kural w4_5 = e0 eger kare == 101
+  kural w4_6 = e1 eger kare == 101
+son
+
+yazdir snap.w1_0, snap.w1_1, snap.w1_2, snap.w1_3, snap.w1_4
+yazdir snap.w1_5, snap.w1_6
+yazdir snap.w2_0, snap.w2_1, snap.w2_2, snap.w2_3, snap.w2_4
+yazdir snap.w2_5, snap.w2_6
+yazdir snap.w3_0, snap.w3_1, snap.w3_2, snap.w3_3, snap.w3_4
+yazdir snap.w3_5, snap.w3_6
+yazdir snap.w4_0, snap.w4_1, snap.w4_2, snap.w4_3, snap.w4_4
+yazdir snap.w4_5, snap.w4_6

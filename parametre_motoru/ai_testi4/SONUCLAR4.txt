@@ -1,0 +1,101 @@
+KIT D1_pmt_1 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=2,
+ILK kip=pmt gorev=D1 davranis=TUTTU katman=- param_sayisi=212 param_bayt=946 param_gzip=368 ara_pmb_bayt=1324 yukleme_kod_us=12109 bos_surec_us=10779 calisma_us=0 toplam_us=11293 yorumlayici_us=25652 bellek_kib=12100 yakit=251386 tekrar=0.071 sablon=2 davranis=0 etkilesim=2 girdi=0 taban_cpp_us=6336 taban_cpp_kib=3408 detay=[cikti:ok]
+SON =ILK
+KIT D1_sayi_1 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=2,
+ILK kip=sayi gorev=D1 davranis=TUTTU katman=- param_sayisi=301 param_bayt=330 param_gzip=230 ara_pmb_bayt=330 yukleme_kod_us=9481 bos_surec_us=9276 calisma_us=1174 toplam_us=10655 yorumlayici_us=14239 bellek_kib=11840 yakit=617 tekrar=0.357 komut=84 taban_cpp_us=6357 taban_cpp_kib=3404 detay=[cikti:ok]
+SON =ILK
+KIT D1_sayi_2 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=2,
+ILK kip=sayi gorev=D1 davranis=TUTTU katman=- param_sayisi=321 param_bayt=351 param_gzip=250 ara_pmb_bayt=351 yukleme_kod_us=9631 bos_surec_us=9291 calisma_us=1459 toplam_us=11090 yorumlayici_us=17787 bellek_kib=11844 yakit=617 tekrar=0.341 komut=88 taban_cpp_us=5411 taban_cpp_kib=3400 detay=[cikti:ok]
+SON =ILK
+KIT D1_yap_1 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=2,
+ILK kip=yap gorev=D1 davranis=TUTTU katman=- param_sayisi=291 param_bayt=319 param_gzip=211 ara_pmb_bayt=696 yukleme_kod_us=10174 bos_surec_us=9989 calisma_us=244 toplam_us=10418 yorumlayici_us=14961 bellek_kib=12208 yakit=1023 tekrar=0.045 sablon=0 davranis=0 islev=1 dizi=1 etkilesim=0 girdi=0 toplama=0 taban_cpp_us=6297 taban_cpp_kib=3408 detay=[cikti:ok]
+SON =ILK
+KIT D1_yap_2 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=1,
+ILK kip=yap gorev=D1 davranis=TUTTU katman=- param_sayisi=307 param_bayt=334 param_gzip=228 ara_pmb_bayt=620 yukleme_kod_us=11142 bos_surec_us=12438 calisma_us=0 toplam_us=10447 yorumlayici_us=16868 bellek_kib=12208 yakit=1023 tekrar=0.036 sablon=0 davranis=0 islev=1 dizi=1 etkilesim=0 girdi=0 toplama=0 taban_cpp_us=5129 taban_cpp_kib=3280 detay=[cikti:ok]
+SON =ILK
+KIT D2_pmt_1 farkli_deneme=2 hatali_calistirma=0
+0 siniflar=CALISTI=3,
+ILK kip=pmt gorev=D2 davranis=TUTTU katman=- param_sayisi=1629 param_bayt=7551 param_gzip=1568 ara_pmb_bayt=11875 yukleme_kod_us=15526 bos_surec_us=11244 calisma_us=82101 toplam_us=97627 yorumlayici_us=1897698 bellek_kib=13304 yakit=48370877 tekrar=0.078 sablon=6 davranis=0 etkilesim=9 girdi=0 taban_cpp_us=7138 taban_cpp_kib=3536 detay=[cikti:ok]
+SON =ILK
+KIT D2_sayi_1 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=2,
+ILK kip=sayi gorev=D2 davranis=TUTTU katman=- param_sayisi=726 param_bayt=849 param_gzip=535 ara_pmb_bayt=849 yukleme_kod_us=11426 bos_surec_us=12403 calisma_us=0 toplam_us=11091 yorumlayici_us=17452 bellek_kib=12112 yakit=66791 tekrar=0.243 komut=206 taban_cpp_us=5408 taban_cpp_kib=3528 detay=[cikti:ok]
+SON =ILK
+KIT D2_sayi_2 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=2,
+ILK kip=sayi gorev=D2 davranis=TUTTU katman=- param_sayisi=853 param_bayt=974 param_gzip=586 ara_pmb_bayt=974 yukleme_kod_us=10151 bos_surec_us=11885 calisma_us=1615 toplam_us=11766 yorumlayici_us=19224 bellek_kib=12096 yakit=78751 tekrar=0.302 komut=235 taban_cpp_us=5907 taban_cpp_kib=3528 detay=[cikti:ok]
+SON =ILK
+KIT D2_yap_1 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=2,
+ILK kip=yap gorev=D2 davranis=TUTTU katman=- param_sayisi=844 param_bayt=899 param_gzip=431 ara_pmb_bayt=2193 yukleme_kod_us=12105 bos_surec_us=11155 calisma_us=1732 toplam_us=13837 yorumlayici_us=25451 bellek_kib=12588 yakit=98722 tekrar=0.238 sablon=0 davranis=0 islev=1 dizi=14 etkilesim=0 girdi=0 toplama=0 taban_cpp_us=6464 taban_cpp_kib=3536 detay=[cikti:ok]
+SON =ILK
+KIT D2_yap_2 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=2,
+ILK kip=yap gorev=D2 davranis=TUTTU katman=- param_sayisi=623 param_bayt=657 param_gzip=355 ara_pmb_bayt=2042 yukleme_kod_us=10090 bos_surec_us=10400 calisma_us=1178 toplam_us=11268 yorumlayici_us=17831 bellek_kib=12500 yakit=90732 tekrar=0.017 sablon=1 davranis=0 islev=2 dizi=1 etkilesim=0 girdi=0 toplama=0 taban_cpp_us=5560 taban_cpp_kib=3476 detay=[cikti:ok]
+SON =ILK
+KIT S1_pmt_1 farkli_deneme=2 hatali_calistirma=1 siniflar=DERLEME_DOGRULAMA=1,CALISTI=2,
+ILK kip=pmt gorev=S1 davranis=- katman=DERLEME mesaj="HATA: satir 90: etkilesim: iki sablon farkli olmali "
+SON kip=pmt gorev=S1 davranis=TUTTU katman=- param_sayisi=1051 param_bayt=4520 param_gzip=964 ara_pmb_bayt=4841 yukleme_kod_us=13151 bos_surec_us=12788 calisma_us=277474 toplam_us=290625 yorumlayici_us=4188314 bellek_kib=12560 yakit=128165690 tekrar=0.082 sablon=3 davranis=0 etkilesim=5 girdi=0 taban_cpp_us=6302 taban_cpp_kib=3376 detay=[cikti:ok]
+KIT S1_sayi_1 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=1,
+ILK kip=sayi gorev=S1 davranis=TUTTU katman=- param_sayisi=616 param_bayt=685 param_gzip=446 ara_pmb_bayt=685 yukleme_kod_us=10372 bos_surec_us=11140 calisma_us=1322 toplam_us=11694 yorumlayici_us=28045 bellek_kib=11928 yakit=108332 tekrar=0.293 komut=164 taban_cpp_us=6128 taban_cpp_kib=3376 detay=[cikti:ok]
+SON =ILK
+KIT S1_sayi_2 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=1,
+ILK kip=sayi gorev=S1 davranis=TUTTU katman=- param_sayisi=603 param_bayt=665 param_gzip=449 ara_pmb_bayt=665 yukleme_kod_us=10109 bos_surec_us=10619 calisma_us=2793 toplam_us=12902 yorumlayici_us=18637 bellek_kib=11968 yakit=108401 tekrar=0.265 komut=162 taban_cpp_us=6960 taban_cpp_kib=3376 detay=[cikti:ok]
+SON =ILK
+KIT S1_yap_1 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=3,
+ILK kip=yap gorev=S1 davranis=TUTTU katman=- param_sayisi=652 param_bayt=697 param_gzip=354 ara_pmb_bayt=1952 yukleme_kod_us=12737 bos_surec_us=9887 calisma_us=416 toplam_us=13153 yorumlayici_us=35476 bellek_kib=12380 yakit=172793 tekrar=0.030 sablon=0 davranis=0 islev=2 dizi=7 etkilesim=0 girdi=0 toplama=0 taban_cpp_us=5087 taban_cpp_kib=3396 detay=[cikti:ok]
+SON =ILK
+KIT S1_yap_2 farkli_deneme=2 hatali_calistirma=1 siniflar=CALISTI=3,TABLO_DOGRULAMA=1,
+ILK kip=yap gorev=S1 davranis=- katman=TABLO_DOGRULAMA mesaj="HATA: tablo: sayi #286 (bayt 322): bilinmeyen komut kodu 15 (1..12) "
+SON kip=yap gorev=S1 davranis=TUTTU katman=- param_sayisi=630 param_bayt=667 param_gzip=342 ara_pmb_bayt=2040 yukleme_kod_us=13302 bos_surec_us=10125 calisma_us=3069 toplam_us=16371 yorumlayici_us=34728 bellek_kib=12328 yakit=468943 tekrar=0.089 sablon=2 davranis=0 islev=2 dizi=0 etkilesim=0 girdi=0 toplama=7 taban_cpp_us=5463 taban_cpp_kib=3328 detay=[cikti:ok]
+KIT S2_yap_1 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=2,
+ILK kip=yap gorev=S2 davranis=TUTTU katman=- param_sayisi=700 param_bayt=753 param_gzip=417 ara_pmb_bayt=2433 yukleme_kod_us=11481 bos_surec_us=10270 calisma_us=31940 toplam_us=43421 yorumlayici_us=356893 bellek_kib=12556 yakit=2420081 tekrar=0.041 sablon=0 davranis=0 islev=1 dizi=13 etkilesim=0 girdi=0 toplama=0 taban_cpp_us=14223 taban_cpp_kib=3500 detay=[cikti:ok]
+SON =ILK
+KIT S2_yap_2 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=2,
+ILK kip=yap gorev=S2 davranis=TUTTU katman=- param_sayisi=743 param_bayt=791 param_gzip=430 ara_pmb_bayt=2597 yukleme_kod_us=12062 bos_surec_us=10151 calisma_us=30656 toplam_us=42718 yorumlayici_us=306990 bellek_kib=12592 yakit=2097128 tekrar=0.106 sablon=2 davranis=0 islev=2 dizi=2 etkilesim=0 girdi=0 toplama=0 taban_cpp_us=14815 taban_cpp_kib=3516 detay=[cikti:ok]
+SON =ILK
+KIT S2_sayi_1 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=3,
+ILK kip=sayi gorev=S2 davranis=TUTTU katman=- param_sayisi=631 param_bayt=722 param_gzip=491 ara_pmb_bayt=722 yukleme_kod_us=10593 bos_surec_us=10486 calisma_us=14431 toplam_us=25024 yorumlayici_us=127213 bellek_kib=12100 yakit=2101363 tekrar=0.299 komut=157 taban_cpp_us=18026 taban_cpp_kib=3528 detay=[cikti:ok]
+SON =ILK
+KIT S2_sayi_2 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=3,
+ILK kip=sayi gorev=S2 davranis=TUTTU katman=- param_sayisi=610 param_bayt=690 param_gzip=485 ara_pmb_bayt=690 yukleme_kod_us=13120 bos_surec_us=11003 calisma_us=14827 toplam_us=27947 yorumlayici_us=115181 bellek_kib=12108 yakit=3543295 tekrar=0.289 komut=152 taban_cpp_us=15303 taban_cpp_kib=3444 detay=[cikti:ok]
+SON =ILK
+KIT U1_pmt_1 farkli_deneme=10 hatali_calistirma=0
+0 siniflar=CALISTI=43,
+ILK kip=pmt gorev=U1 davranis=FARKLI katman=ALGORITMA param_sayisi=1187 param_bayt=4229 param_gzip=836 ara_pmb_bayt=4564 yukleme_kod_us=12126 bos_surec_us=9900 calisma_us=1896 toplam_us=14022 yorumlayici_us=26501 bellek_kib=12500 yakit=353903 tekrar=0.429 sablon=3 davranis=0 etkilesim=0 girdi=11  detay=[olay_dosyasi=0/4; ev5:cikti=0,piksel=0,kare=60; ev6:cikti=0,piksel=0,kare=60; ev7:cikti=0,piksel=0,kare=60; ev8:cikti=0,piksel=0,kare=60;]
+SON kip=pmt gorev=U1 davranis=TUTTU katman=- param_sayisi=1199 param_bayt=4257 param_gzip=829 ara_pmb_bayt=4506 yukleme_kod_us=14555 bos_surec_us=10216 calisma_us=2215 toplam_us=16770 yorumlayici_us=31529 bellek_kib=12420 yakit=364967 tekrar=0.432 sablon=3 davranis=0 etkilesim=0 girdi=7  detay=[olay_dosyasi=4/4; ev5:ok; ev6:ok; ev7:ok; ev8:ok;]
+KIT U1_sayi_1 farkli_deneme=7 hatali_calistirma=0
+0 siniflar=CALISTI=140,
+ILK kip=sayi gorev=U1 davranis=TUTTU katman=- param_sayisi=645 param_bayt=698 param_gzip=526 ara_pmb_bayt=698 yukleme_kod_us=10590 bos_surec_us=10064 calisma_us=3707 toplam_us=14297 yorumlayici_us=22137 bellek_kib=12160 yakit=270844 tekrar=0.177 komut=181  detay=[olay_dosyasi=4/4; ev5:ok; ev6:ok; ev7:ok; ev8:ok;]
+SON =ILK
+KIT U1_sayi_2 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=40,
+ILK kip=sayi gorev=U1 davranis=TUTTU katman=- param_sayisi=780 param_bayt=838 param_gzip=585 ara_pmb_bayt=838 yukleme_kod_us=10157 bos_surec_us=10740 calisma_us=2315 toplam_us=12472 yorumlayici_us=22614 bellek_kib=12196 yakit=278249 tekrar=0.234 komut=218  detay=[olay_dosyasi=4/4; ev5:ok; ev6:ok; ev7:ok; ev8:ok;]
+SON =ILK
+KIT U1_yap_1 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=8,
+ILK kip=yap gorev=U1 davranis=TUTTU katman=- param_sayisi=587 param_bayt=610 param_gzip=332 ara_pmb_bayt=1858 yukleme_kod_us=11175 bos_surec_us=10731 calisma_us=3529 toplam_us=14704 yorumlayici_us=24670 bellek_kib=12480 yakit=362673 tekrar=0.095 sablon=2 davranis=0 islev=1 dizi=0 etkilesim=0 girdi=7 toplama=0  detay=[olay_dosyasi=4/4; ev5:ok; ev6:ok; ev7:ok; ev8:ok;]
+SON =ILK
+KIT U1_yap_2 farkli_deneme=2 hatali_calistirma=1 siniflar=CALISTI=11,TABLO_DOGRULAMA=1,
+ILK kip=yap gorev=U1 davranis=- katman=TABLO_DOGRULAMA mesaj="HATA: tablo: girdi 2: 'kir' dongu disinda "
+SON kip=yap gorev=U1 davranis=TUTTU katman=- param_sayisi=429 param_bayt=454 param_gzip=291 ara_pmb_bayt=2159 yukleme_kod_us=11328 bos_surec_us=11481 calisma_us=1798 toplam_us=13126 yorumlayici_us=22866 bellek_kib=12360 yakit=362582 tekrar=0.054 sablon=2 davranis=2 islev=1 dizi=1 etkilesim=0 girdi=7 toplama=0  detay=[olay_dosyasi=4/4; ev5:ok; ev6:ok; ev7:ok; ev8:ok;]
+KIT U2_yap_1 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=17,
+ILK kip=yap gorev=U2 davranis=TUTTU katman=- param_sayisi=535 param_bayt=585 param_gzip=369 ara_pmb_bayt=1964 yukleme_kod_us=12540 bos_surec_us=10880 calisma_us=13645 toplam_us=26185 yorumlayici_us=94548 bellek_kib=12464 yakit=2884326 tekrar=0.023 sablon=3 davranis=0 islev=3 dizi=1 etkilesim=0 girdi=7 toplama=0  detay=[olay_dosyasi=4/4; ev5:ok; ev6:ok; ev7:ok; ev8:ok;]
+SON =ILK
+KIT U2_yap_2 farkli_deneme=1 hatali_calistirma=0
+0 siniflar=CALISTI=13,
+ILK kip=yap gorev=U2 davranis=TUTTU katman=- param_sayisi=474 param_bayt=504 param_gzip=332 ara_pmb_bayt=1981 yukleme_kod_us=11833 bos_surec_us=12667 calisma_us=9395 toplam_us=21228 yorumlayici_us=88557 bellek_kib=12352 yakit=2881218 tekrar=0.022 sablon=2 davranis=0 islev=3 dizi=1 etkilesim=0 girdi=7 toplama=0  detay=[olay_dosyasi=4/4; ev5:ok; ev6:ok; ev7:ok; ev8:ok;]
+SON =ILK

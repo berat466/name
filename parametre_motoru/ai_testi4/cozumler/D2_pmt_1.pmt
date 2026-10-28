@@ -1,0 +1,308 @@
+; D2: kayit gruplari raporu. Yalnizca sablon / etkilesim / topla; sonuc hesaplanir.
+kare 1
+global gs0
+global gs1
+global gs2
+global gs3
+global gs4
+global gs5
+global gs6
+global gs7
+global gs8
+global gs9
+global gs10
+global gs11
+global gs12
+global gs13
+global gs14
+global gs15
+global gs16
+global gs17
+global gs18
+global gs19
+global gc0
+global gc1
+global gc2
+global gc3
+global gc4
+global gc5
+global gc6
+global gc7
+global gc8
+global gc9
+global gc10
+global gc11
+global gc12
+global gc13
+global gc14
+global gc15
+global gc16
+global gc17
+global gc18
+global gc19
+global go0
+global go1
+global go2
+global go3
+global go4
+global go5
+global go6
+global go7
+global go8
+global go9
+global go10
+global go11
+global go12
+global go13
+global go14
+global go15
+global go16
+global go17
+global go18
+global go19
+global ga0
+global ga1
+global ga2
+global ga3
+global ga4
+global ga5
+global ga6
+global ga7
+global ga8
+global ga9
+global ga10
+global ga11
+global ga12
+global ga13
+global ga14
+global ga15
+global ga16
+global ga17
+global ga18
+global ga19
+global tp0
+global tp1
+global tp2
+global tp3
+global tp4
+global tp5
+global tp6
+global tp7
+global tp8
+global tp9
+global sa
+global sb
+global cb
+global wmax
+global wt
+global h0
+global h1
+global h2
+global h3
+global h4
+global h5
+global h6
+global h7
+global h8
+global h9
+global h10
+global h11
+global h12
+global h13
+global h14
+global h15
+
+sablon rec adet 4000
+  alan g rastgele 0 19 1
+  alan v rastgele -1000 1000 2
+  alan w rastgele 1 10 3
+  alan idx dogrusal 0 1
+  alan vw sabit 0
+  alan u sabit 0
+  alan bin sabit 0
+  alan rank sabit 0
+  alan big sabit 0
+  kural vw = v * w
+  kural u = v + 1000
+  kural bin = u * 16
+  kural bin = bin / 2001
+son
+
+sablon rec2 adet 4000
+  alan v rastgele -1000 1000 2
+  alan idx dogrusal 0 1
+son
+
+sablon grp adet 20
+  alan gid dogrusal 0 1
+  alan sv sabit 0
+  alan cn sabit 0
+  alan sw sabit 0
+  alan swv sabit 0
+  alan avg sabit 0
+  alan rank sabit 0
+son
+
+sablon grq adet 20
+  alan gid dogrusal 0 1
+  alan sv sabit 0
+son
+
+sablon dum adet 1
+  alan z sabit 0
+son
+
+sablon win adet 3993
+  alan tt dogrusal 0 1
+  alan ws sabit 0
+son
+
+; grup toplamlari
+etkilesim grp rec eger a.gid == b.g
+  kural a.sv = a.sv + b.v
+  kural a.cn = a.cn + 1
+  kural a.sw = a.sw + b.w
+  kural a.swv = a.swv + b.vw
+son
+etkilesim grq rec eger a.gid == b.g
+  kural a.sv = a.sv + b.v
+son
+etkilesim grp dum
+  kural a.avg = a.swv / a.sw
+son
+; grup siralamasi (sv azalan, esitlikte kucuk no once)
+etkilesim grp grq eger b.sv > a.sv
+  kural a.rank = a.rank + 1
+son
+etkilesim grp grq eger b.sv == a.sv ve b.gid < a.gid
+  kural a.rank = a.rank + 1
+son
+; kayit siralamasi (v azalan, esitlikte kucuk indeks once)
+etkilesim rec rec2 eger b.v > a.v
+  kural a.rank = a.rank + 1
+son
+etkilesim rec rec2 eger b.v == a.v ve b.idx < a.idx
+  kural a.rank = a.rank + 1
+son
+; 8'li pencere toplamlari
+etkilesim win rec eger b.idx >= a.tt ve b.idx <= a.tt + 7
+  kural a.ws = a.ws + b.v
+son
+; grup agirlikli ortalamasindan buyuk v
+etkilesim rec grp eger a.g == b.gid ve a.v > b.avg
+  kural a.big = 1
+son
+
+topla gs0 toplam grp sv eger gid == 0
+topla gs1 toplam grp sv eger gid == 1
+topla gs2 toplam grp sv eger gid == 2
+topla gs3 toplam grp sv eger gid == 3
+topla gs4 toplam grp sv eger gid == 4
+topla gs5 toplam grp sv eger gid == 5
+topla gs6 toplam grp sv eger gid == 6
+topla gs7 toplam grp sv eger gid == 7
+topla gs8 toplam grp sv eger gid == 8
+topla gs9 toplam grp sv eger gid == 9
+topla gs10 toplam grp sv eger gid == 10
+topla gs11 toplam grp sv eger gid == 11
+topla gs12 toplam grp sv eger gid == 12
+topla gs13 toplam grp sv eger gid == 13
+topla gs14 toplam grp sv eger gid == 14
+topla gs15 toplam grp sv eger gid == 15
+topla gs16 toplam grp sv eger gid == 16
+topla gs17 toplam grp sv eger gid == 17
+topla gs18 toplam grp sv eger gid == 18
+topla gs19 toplam grp sv eger gid == 19
+topla gc0 toplam grp cn eger gid == 0
+topla gc1 toplam grp cn eger gid == 1
+topla gc2 toplam grp cn eger gid == 2
+topla gc3 toplam grp cn eger gid == 3
+topla gc4 toplam grp cn eger gid == 4
+topla gc5 toplam grp cn eger gid == 5
+topla gc6 toplam grp cn eger gid == 6
+topla gc7 toplam grp cn eger gid == 7
+topla gc8 toplam grp cn eger gid == 8
+topla gc9 toplam grp cn eger gid == 9
+topla gc10 toplam grp cn eger gid == 10
+topla gc11 toplam grp cn eger gid == 11
+topla gc12 toplam grp cn eger gid == 12
+topla gc13 toplam grp cn eger gid == 13
+topla gc14 toplam grp cn eger gid == 14
+topla gc15 toplam grp cn eger gid == 15
+topla gc16 toplam grp cn eger gid == 16
+topla gc17 toplam grp cn eger gid == 17
+topla gc18 toplam grp cn eger gid == 18
+topla gc19 toplam grp cn eger gid == 19
+topla go0 toplam grp gid eger rank == 0
+topla go1 toplam grp gid eger rank == 1
+topla go2 toplam grp gid eger rank == 2
+topla go3 toplam grp gid eger rank == 3
+topla go4 toplam grp gid eger rank == 4
+topla go5 toplam grp gid eger rank == 5
+topla go6 toplam grp gid eger rank == 6
+topla go7 toplam grp gid eger rank == 7
+topla go8 toplam grp gid eger rank == 8
+topla go9 toplam grp gid eger rank == 9
+topla go10 toplam grp gid eger rank == 10
+topla go11 toplam grp gid eger rank == 11
+topla go12 toplam grp gid eger rank == 12
+topla go13 toplam grp gid eger rank == 13
+topla go14 toplam grp gid eger rank == 14
+topla go15 toplam grp gid eger rank == 15
+topla go16 toplam grp gid eger rank == 16
+topla go17 toplam grp gid eger rank == 17
+topla go18 toplam grp gid eger rank == 18
+topla go19 toplam grp gid eger rank == 19
+topla ga0 toplam grp avg eger gid == 0
+topla ga1 toplam grp avg eger gid == 1
+topla ga2 toplam grp avg eger gid == 2
+topla ga3 toplam grp avg eger gid == 3
+topla ga4 toplam grp avg eger gid == 4
+topla ga5 toplam grp avg eger gid == 5
+topla ga6 toplam grp avg eger gid == 6
+topla ga7 toplam grp avg eger gid == 7
+topla ga8 toplam grp avg eger gid == 8
+topla ga9 toplam grp avg eger gid == 9
+topla ga10 toplam grp avg eger gid == 10
+topla ga11 toplam grp avg eger gid == 11
+topla ga12 toplam grp avg eger gid == 12
+topla ga13 toplam grp avg eger gid == 13
+topla ga14 toplam grp avg eger gid == 14
+topla ga15 toplam grp avg eger gid == 15
+topla ga16 toplam grp avg eger gid == 16
+topla ga17 toplam grp avg eger gid == 17
+topla ga18 toplam grp avg eger gid == 18
+topla ga19 toplam grp avg eger gid == 19
+topla tp0 toplam rec idx eger rank == 0
+topla tp1 toplam rec idx eger rank == 1
+topla tp2 toplam rec idx eger rank == 2
+topla tp3 toplam rec idx eger rank == 3
+topla tp4 toplam rec idx eger rank == 4
+topla tp5 toplam rec idx eger rank == 5
+topla tp6 toplam rec idx eger rank == 6
+topla tp7 toplam rec idx eger rank == 7
+topla tp8 toplam rec idx eger rank == 8
+topla tp9 toplam rec idx eger rank == 9
+topla sa toplam rec v eger rank == 3599
+topla sb toplam rec v eger rank == 399
+topla cb say rec eger big == 1
+topla wmax enbuyuk win ws
+topla wt enkucuk win tt eger ws == wmax
+topla h0 say rec eger bin == 0
+topla h1 say rec eger bin == 1
+topla h2 say rec eger bin == 2
+topla h3 say rec eger bin == 3
+topla h4 say rec eger bin == 4
+topla h5 say rec eger bin == 5
+topla h6 say rec eger bin == 6
+topla h7 say rec eger bin == 7
+topla h8 say rec eger bin == 8
+topla h9 say rec eger bin == 9
+topla h10 say rec eger bin == 10
+topla h11 say rec eger bin == 11
+topla h12 say rec eger bin == 12
+topla h13 say rec eger bin == 13
+topla h14 say rec eger bin == 14
+topla h15 say rec eger bin == 15
+
+yazdir gs0, gs1, gs2, gs3, gs4, gs5, gs6, gs7, gs8, gs9, gs10, gs11, gs12, gs13, gs14, gs15, gs16, gs17, gs18, gs19, gc0, gc1, gc2, gc3, gc4, gc5, gc6, gc7, gc8, gc9, gc10, gc11, gc12, gc13, gc14, gc15, gc16, gc17, gc18, gc19, go0, go1, go2, go3, go4, go5, go6, go7, go8, go9, go10, go11, go12, go13, go14, go15, go16, go17, go18, go19, ga0, ga1, ga2, ga3, ga4, ga5, ga6, ga7, ga8, ga9, ga10, ga11, ga12, ga13, ga14, ga15, ga16, ga17, ga18, ga19, tp0, tp1, tp2, tp3, tp4, tp5, tp6, tp7, tp8, tp9, sa, sb, cb, wmax, wt, h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15
