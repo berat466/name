@@ -27,6 +27,7 @@ struct PmError : std::runtime_error { using std::runtime_error::runtime_error; }
 
 // ikili.cpp
 std::vector<uint8_t> encode_program(const Program& p, bool strip_names);
+Program parse_program(const uint8_t* data, size_t n);    // yalniz bicim cozumu (yukleyicinin ilk yarisi)
 Program decode_program(const uint8_t* data, size_t n);   // cozer VE dogrular; hatada PmError
 void validate_program(const Program& p);
 void analyze_program(Program& p);   // kesin atama analizi -> p.zero_free
@@ -44,6 +45,10 @@ std::string yapisal_dump(const std::string& bytes);
 
 // dump.cpp
 std::string disassemble(const Program& p);
+
+// liste.cpp: PMB1 tablosunun duz sayi listesi (referans/dogrulama araci)
+std::string program_to_liste(const Program& p);
+Program liste_to_program(const std::string& text);
 
 // vm.cpp
 enum Trap { T_OK = 0, T_DIV0, T_OOB, T_STACK, T_DEPTH, T_FUEL, T_ALLOC, T_COUNT };

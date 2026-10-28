@@ -43,6 +43,7 @@ static int usage() {
     "  pm run   dosya.(pma|pmb) [--fuel N] [--mem SOZCUK] [--stack S] [--frames F] [--result] [--stats] [--native | --native-strict] [--max-kare N] [--girdi olaylar.txt] [--ekran son.ppm] [--ascii K] [--kare-rapor]   calistirir (stdin -> getc)\n"
     "  pm yapisal tablo.pmy [--pma x.pma] [-o x.pmb] [--strip]   sayisal yapisal tabloyu (PMY1) .pmb/.pma uretir\n"
     "  pm tablo  tablo.pmy                         yapisal tabloyu okunabilir agac olarak basar\n"
+    "  pm liste x.pmb / pm yazliste liste.txt -o x.pmb   PMB1 <-> duz sayi listesi (dogrulamasiz; referans araci)\n"
     "  pm dump  dosya.(pma|pmb)                    motorun calistirdigi tabloyu okunabilir basar\n"
     "  pm fuzz  dosya.pmb [N] [tohum]               ikiliyi rastgele bozar; yukleyici/VM cokmemeli\n"
     "cikis kodu: 0 basari, 1 hata (dosya/ayristirma/dogrulama), 2 calisma tuzagi (TRAP)\n");
@@ -104,6 +105,18 @@ int main(int argc, char** argv) {
       auto bin = encode_program(p, strip);
       if (!binOut.empty() && !write_file(binOut, bin.data(), bin.size())) throw PmError("yazilamadi: " + binOut);
       printf("%s: tablo %zu bayt -> %zu satir .pma, %zu bayt .pmb, %zu fonksiyon, %zu komut, bellek %llu sozcuk\n", file.c_str(), txt.size(), size_t(std::count(pma.begin(), pma.end(), '\n')), bin.size(), p.funcs.size(), ncode, (unsigned long long)p.mem_words);
+      return 0;
+    }
+    if (cmd == "liste") {   // pm liste x.pmb : bicim cozumu (dogrulamasiz) -> duz sayi listesi
+      std::string txt; if (!read_file(file, txt)) throw PmError("dosya okunamadi: " + file);
+      std::string s = program_to_liste(parse_program((const uint8_t*)txt.data(), txt.size())); fwrite(s.data(), 1, s.size(), stdout); return 0;
+    }
+    if (cmd == "yazliste") {   // pm yazliste liste.txt -o x.pmb : duz sayi listesi -> PMB1 (kodlayici referansi)
+      std::string outp; for (int i = 3; i < argc; i++) { if (!strcmp(argv[i], "-o") && i + 1 < argc) outp = argv[++i]; else return usage(); }
+      if (outp.empty()) return usage();
+      std::string txt; if (!read_file(file, txt)) throw PmError("dosya okunamadi: " + file);
+      auto bin = encode_program(liste_to_program(txt), false);
+      if (!write_file(outp, bin.data(), bin.size())) throw PmError("yazilamadi: " + outp);
       return 0;
     }
     if (cmd == "dump") { std::string s = disassemble(load_any(file)); fwrite(s.data(), 1, s.size(), stdout); return 0; }

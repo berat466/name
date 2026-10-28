@@ -20,11 +20,13 @@ Bu belge: (1) hangi bileşenlerin C++ olduğu ve neye ihtiyaç duyduğu, (2) sı
 | Ana program, komut satırı | `main.cpp` (219) | argüman, dosya, bayrak | Kısmen | dosya/argüman erişimi |
 | **Host + ilk yürütücü** | `host.h`, `vm.cpp`, `native_x64.cpp` (mmap/atlama) | G/Ç, bellek, **ilk komutu çalıştıran şey** | **Hayır** | — |
 
-**Çıkarım [Kesin]:** Hiçbir parametre sistemi kendini sıfırdan çalıştıramaz; en az bir **çekirdek** (ilk PMB'yi çalıştıran yürütücü + G/Ç + yürütülebilir bellek erişimi) bir kez dışarıdan gelmelidir. Gerçekçi son durum: küçük bir C++ çekirdeği (`PMB1` yükle + doğrula + yürüt + host + `exec`), geri kalanı (birleştirici, özelleştiriciler, makine kodu üreticisi, analizler, dökümcü) PMB1/PMY1 programları. C++ kaynak koduna gerek kalmadan **yeni sürüm** üretmek, bu parametre tabanlı araçların kendi çıktılarını (`.pmb`) yeniden üretmesiyle doğrulanır (sabit nokta testi).
+**Düzeltme (kullanıcı kararı):** Önceki sürümde "küçük bir C++ çekirdeği kalıcı olmalı" yazılmıştı; bu yanlış çerçeveydi. Gereken şey bir **başlangıç yürütme mekanizması**dır, ve bunun C++ olması şart değildir. İşletim sistemi, önceden üretilmiş bir makine kodu görüntüsünü (ör. ELF) yükleyip başlatabilir. Nihai hedef: parametre tabanlı araç zinciri kendi makine kodunu üretir (kod üreticisi + bağlayıcı/yükleyici biçimi parametreyle), böylece C++ kaynak koduna ve C++ çalışma zamanına ihtiyaç kalmaz; C++ yalnızca geçiş döneminde önyükleme ve doğrulama aracıdır. Bu yüzden C++ satırlarının "ne kadarının kalacağı" sorulmaz; "sırayla nasıl parametreye taşınacağı" sorulur. Gerekli yeni ilkeller: bellek/dosya/G-Ç için işletim sistemi çağrıları ve üretilen kodun bağımsız bir yürütülebilir olarak yazılması (adım 9–10).
+
+**Durum dürüstlüğü:** Tamamlanan adımlar (paketleyici, kodlayıcı, çözücü) tam öz-barındırma değildir; çünkü bu parametre bileşenleri hâlâ C++ yorumlayıcısı/makine kodu üreticisi üzerinde çalışıyor. Öz-barındırma, zincirin tamamı parametreyle ifade edilip çalıştırma altyapısı da parametre tabanlı üretilen makine kodu olduğunda tamamlanır.
 
 ## 2. Geçiş merdiveni (kolaydan zora; her adım C++ sürümüyle bayt-bayt karşılaştırılır)
-1. **Paketleyici** (`oz/paketle.pmy`) — *yapıldı*.
-2. **PMB1 kodlayıcı + çözücü** (tablo ⇄ bayt). Doğrulama: depodaki 200+ test programı ve fuzz derlemi; çözücü çıktısı `pm dump` ile, kodlayıcı çıktısı `pm asm` ile bayt-bayt.
+1. **Paketleyici** (`oz/paketle.pmy`) — *yapıldı (tam 64 bit)*.
+2. **PMB1 kodlayıcı + çözücü** — *yapıldı* (bkz. bölüm 3). Doğrulama: depodaki 200+ test programı ve fuzz derlemi; çözücü çıktısı `pm dump` ile, kodlayıcı çıktısı `pm asm` ile bayt-bayt.
 3. **Doğrulayıcı**. Doğrulama: fuzz'daki yüz binlerce bozuk `.pmb` için kabul/ret kararı ve ret nedeni C++ ile aynı (diferansiyel).
 4. **Dökümcü** (kolay; metin çıktısı `pm dump` ile aynı).
 5. **Kesin atama analizi** (`zero_free`): sonuç bir bit; C++ ile aynı.
@@ -36,12 +38,24 @@ Bu belge: (1) hangi bileşenlerin C++ olduğu ve neye ihtiyaç duyduğu, (2) sı
 
 Her adımda **ölçü**: bayt/çıktı eşitliği (otomatik, ajan yok), hız (parametre tabanlı sürüm / C++), tablo boyutu (öğe sayısı) ve C++ satırının ne kadar azaldığı.
 
-## 3. Adım 1: sonuç (`oz/`)
-- Motora **tek genel ilkel eklendi**: PMY1 ifadesi `18 oku` (stdin'den bir bayt, bitince −1). Uygulamaya özel hiçbir şey eklenmedi.
-- `oz/paketle.sayi` → `oz/paketle.pmy` (322 bayt, 303 sayı civarı): sayı listesini LEB128/zigzag baytlara çeviren tek ILK bloğu. Önyükleme olarak ilk `.pmy` baytları awk ile üretildi; sonra **kendini yeniden üretiyor**.
-- Doğrulama (`oz/dogrula.sh`, 38 denetim, hepsi geçti): depodaki 20 gerçek `.sayi` dosyası bayt-bayt aynı; paketleyici kendi kaynağını paketlediğinde kendisini veriyor (sabit nokta); 8 rastgele girdi (negatif, 4 milyara kadar sayılar, yorumlar, sekme/boşluk) aynı; 8 geçersiz girdi her iki sürümde de reddediliyor (awk çıkış 1, parametre sürümü DIV0 tuzağı ile çıkış 2).
-- Hız: 34 KB girdide parametre sürümü 11 ms (süreç tabanı dahil), awk 4 ms; aynı mertebede.
-- Sınırlar [Kesin]: hata iletisi yerine tuzak veriyor (PMY1'de stderr yok); sayılar 64 bit tam (awk 2^53'e kadar tam), yani parametre sürümü daha kesin.
+## 3. Tamamlanan adımlar (`oz/`)
+
+**Kapsam notu (dürüstlük):** Bu adımlar *tam öz-barındırma değildir*. Üç bileşen artık parametre tablosu (PMY1) olarak yazıldı ve C++ referansıyla bayt-bayt aynı sonuç veriyor; ama bunları çalıştıran altyapı (yorumlayıcı + makine kodu üretici) hâlâ C++. Ayrıca bileşenler arası veri akışı henüz parametre tabanlı bir araç zinciri oluşturmuyor.
+
+**Motora eklenenler (hepsi genel, uygulamaya özel değil):** PMY1 ifadesi `18 oku` (stdin'den bir bayt, bitince −1); C++ tarafında `parse_program` (yükleyicinin biçim çözme yarısı, davranış değişmedi), `pm liste` / `pm yazliste` (PMB1 ⇄ düz sayı listesi, **doğrulamasız**; kodlayıcı/çözücünün C++ referansı), `src/liste.cpp` (~70 satır).
+
+| Bileşen | Dosya | Boyut (PMY1) | Girdi → Çıktı |
+|---|---|---|---|
+| Paketleyici (tam 64 bit) | `oz/paketle.sayi` → `.pmy` | 438 sayı, 458 B | sayı listesi (metin) → LEB128/zigzag bayt |
+| PMB1 **çözücü** | `oz/coz.sayi` → `.pmy` | 1114 sayı, 1147 B | PMB1 bayt → düz sayı listesi (`pm liste` ile aynı) |
+| PMB1 **kodlayıcı** | `oz/yaz.sayi` → `.pmy` | 882 sayı, 908 B | düz sayı listesi (mutlak etiket) → PMB1 bayt (`pm yazliste` ile aynı) |
+
+**Doğrulama (otomatik, ajan yok):**
+- `oz/dogrula.sh` (paketleyici, 49 denetim): bağımsız C++ referansı `oz/ref_paketle.cpp` (awk'ın 2^53 sınırı yerine tam 64 bit): depodaki 20 `.sayi`, sınır değerleri (0, 2^63−1, 2^63, 2^64−1, z±2^63), 10 rastgele 64 bit dosyası, 16 geçersiz/taşan girdi reddi, kendi kaynağını üretme (sabit nokta).
+- `oz/dogrula_ikili.sh` (kodlayıcı + çözücü, **4553 denetim, hepsi geçti**): 81 gerçek PMB1 dosyası (tüm `.pma`, `.pmt`, `.pmy` kaynaklarından, adlı/adsız): çözücü çıktısı = `pm liste`; kodlayıcı çıktısı = orijinal baytlar = `pm yazliste`; **gidiş-dönüş bilgi kaybı yok** (bayt → liste → bayt → liste); 64 bit sınır listeleri (sabit 2^64−1, veri ±2^63, işlenen ±2^31, bellek 2^27); 14 elle yazılmış bozuk girdi (yanlış başlık, bayrak, bellek 0/aşırı, taşan/uzun/yarım LEB128, fazla bayt, bss>bellek, bilinmeyen komut, np>nr…) için C++ ile aynı ret kararı; üç dosyanın **tüm kesik önekleri**; **3200 rastgele bozulmuş kopya** (yaklaşık %22'si geçerli kalıyor): kabul/ret kararı aynı, kabul edilenlerde çıktı bayt-bayt aynı.
+- Çekirdek: 203 test + 60 uygulama + 42 yapısal denetim değişmeden geçti.
+
+**Sınırlar / henüz yapılmayanlar [Kesin]:** Çözücü yalnızca *biçimi* çözer (C++ `parse_program` ile aynı kabul/ret); *doğrulama* (`validate_program`: indeks/ofset/pencere denetimleri) ve *analiz* sonraki adım. Girdi 1 MiB ile sınırlı (dizi boyutu). Hatalar mesaj yerine tuzakla (çıkış 2) bildirilir. Hız: küçük dosyalarda süreç tabanı (≈ 10–19 ms) baskın; C++ `pm liste` 4 ms.
 
 ## 4. Açık sorular ve riskler
 - **Çekirdek sınırı:** hangi parçalar C++'ta kalmalı? Öneri: çözücü+doğrulayıcı+yorumlayıcı+host (yaklaşık 800 satır) en küçük gerçekçi çekirdek; native üretici ve özelleştiriciler parametreye taşınır; `exec` yeni ilkeldir.

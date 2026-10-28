@@ -72,7 +72,7 @@ std::vector<uint8_t> encode_program(const Program& p, bool strip_names) {
   return o;
 }
 
-Program decode_program(const uint8_t* data, size_t n) {
+Program parse_program(const uint8_t* data, size_t n) {   // yalniz bicim cozumu (dogrulama ve analiz yok); decode_program = parse + validate + analyze
   Reader r{data, n};
   if (n < 5 || memcmp(data, "PMB1", 4) != 0) throw PmError("ikili: gecersiz baslik (PMB1 bekleniyor)");
   r.i = 4;
@@ -119,6 +119,11 @@ Program decode_program(const uint8_t* data, size_t n) {
       for (uint64_t i = 0; i < len; i++) f.name.push_back(char(r.byte()));
     }
   if (r.i != n) throw PmError("ikili: dosya sonunda fazla bayt");
+  return p;
+}
+
+Program decode_program(const uint8_t* data, size_t n) {
+  Program p = parse_program(data, n);
   validate_program(p);
   analyze_program(p);
   return p;

@@ -1,0 +1,132 @@
+# coz.sayi -- PMB1 COZUCU (parametre tablosu). stdin: PMB1 baytlari; stdout: duz sayi listesi (pm liste ile ayni bicim).
+# Yalniz bicim cozumu yapar (dogrulama yok): ikili.cpp'deki parse_program ile ayni kabul/ret kararlari. Hata -> DIV0 tuzagi.
+# Girdi sinirlari: en cok 1048576 bayt. Diziler: 0=GIR (girdi baytlari) 1=NOPS (komut basina islenen sayisi). Globaller: 0=konum 1=boyut.
+80 77 89 49   0 0 0 0
+2 z0 z0                                  # globaller: konum, boyut
+2  1048576 0   55 55 z2 z2 z2 z3 z3 z3 z3 z3 z3 z3 z3 z3 z3 z3 z3 z3 z3 z3 z2 z2 z3 z3 z3 z3 z2 z2 z3 z3 z3 z2 z2 z1 z2 z2 z2 z1 z0 z3 z3 z2 z2 z3 z3 z3 z3 z3 z3 z3 z3 z3 z3 z3 z3 z3 z3                # diziler
+7                                        # 7 islev
+# f0 bayt(): siradaki baytı oku (dosya sonu -> tuzak)
+0 1  4
+  2 15 16 3 0 3 1  1  1 4 0 15 4 1 z1 4 0  0
+  1 4 0 12 0 3 0
+  1 3 0 15 1 3 0 1 z1
+  7 4 0
+# f1 var(): LEB128 isaretsiz oku (ikili.cpp Reader::var ile ayni tasma kurallari)
+0 4  2
+  3 1 z1  6
+    1 4 2 13 0 0
+    2 15 19 15 16 4 1 1 z63 15 15 15 6 4 2 1 z127 1 z1   1 5 6 0   0
+    1 4 0 15 7 4 0 15 9 15 6 4 2 1 z127 4 1
+    2 15 11 15 6 4 2 1 z128 1 z0   1 7 4 0   0
+    1 4 1 15 1 4 1 1 z7
+    2 15 15 4 1 1 z63   1 5 6 0   0
+  7 1 z0
+# f2 ubuyuk(a, b): isaretsiz a > b
+2 2  1
+  7 15 15 15 8 4 0 15 9 1 z1 1 z63 15 8 4 1 15 9 1 z1 1 z63
+# f3 coz(v): zigzag cozme  (v >>> 1) ^ -(v & 1)
+1 1  1
+  7 15 8 15 6 15 10 4 0 1 z1 15 2 15 9 1 z1 1 z63 1 z1 15 2 1 z0 15 6 4 0 1 z1
+# f4 yazu(x): isaretsiz 64 bit onluk yaz
+1 3  1
+  2 15 16 4 0 1 z0   1 8 4 0   4
+    1 4 1 15 4 15 6 15 10 4 0 1 z1 15 2 15 9 1 z1 1 z63 1 z1 1 z5
+    1 4 2 15 2 4 0 15 3 4 1 1 z10
+    8 4 1
+    8 4 2
+# f5 kind(op, j): 0 duz, 1 isaretli dogrudan ('i'), 2 etiket ('l')
+2 2  5
+  2 15 19 15 11 4 0 1 z1 15 11 4 1 1 z1   1 7 1 z1   0
+  2 15 19 15 11 4 0 1 z31 15 11 4 1 1 z0   1 7 1 z2   0
+  2 15 19 15 20 15 11 4 0 1 z32 15 11 4 0 1 z33 15 11 4 1 1 z1   1 7 1 z2   0
+  2 15 19 15 20 15 20 15 11 4 0 1 z37 15 11 4 0 1 z38 15 16 4 0 1 z41 15 11 4 1 1 z2   1 7 1 z1   0
+  7 1 z0
+# f6 hata(): tuzak
+0 1  1
+  7 15 4 1 z1 4 0
+0 0 0 0 0 0                              # davranis, sablon, etkilesim, girdi, toplama, bitis yok
+# ===== ILK blok: 38 komut =====
+38
+1 3 1 1 z0                                                  # 1  boyut = 0
+1 4 15 18                                                   # 2  c = oku
+3 15 16 4 15 1 z0  4                                        # 3  surde c >= 0 : stdin'i diziye oku
+  2 15 16 3 1 1 z1048576  1 5 6 0  0
+  1 12 0 3 1 4 15
+  1 3 1 15 1 3 1 1 z1
+  1 4 15 18
+2 15 20 15 13 3 1 1 z5 15 20 15 20 15 12 12 0 1 z0 1 z80 15 12 12 0 1 z1 1 z77 15 20 15 12 12 0 1 z2 1 z66 15 12 12 0 1 z3 1 z49   1 5 6 0  0    # 4  baslik "PMB1" degilse hata
+1 3 0 1 z4                                                  # 5  konum = 4
+1 4 0 13 0 0                                                 # 6  bayrak = bayt()
+2 15 15 4 0 1 z1  1 5 6 0  0                                 # 7  bayrak > 1 -> hata
+1 4 1 13 1 0                                                  # 8  bellek = var()
+2 15 20 15 11 4 1 1 z0 13 2 2 4 1 1 z134217728  1 5 6 0  0  # 9  bellek == 0 veya > 2^27 -> hata
+1 4 2 13 1 0                                                  # 10 giris = var()
+2 13 2 2 4 2 1 z65534  1 5 6 0  0                            # 11 giris >= 65535 -> hata
+8 4 0                                                       # 12 yaz bayrak
+9 1 z32                                                         # 13
+5 4 1 4 1                                                   # 14 yazu bellek
+9 1 z32                                                         # 15
+5 4 1 4 2                                                   # 16 yazu giris
+9 1 z10                                                         # 17
+1 4 3 13 1 0                                                  # 18 nsabit = var()
+2 13 2 2 4 3 3 1  1 5 6 0  0                                 # 19 nsabit > boyut -> hata
+5 4 1 4 3                                                   # 20 yazu nsabit
+4 10 1 z0 15 2 4 3 1 z1  3                                  # 21 sabitler
+  1 4 14 13 1 0
+  9 1 z32
+  5 4 1 4 14
+9 1 z10                                                         # 22
+1 4 4 13 1 0                                                  # 23 nveri = var()
+2 13 2 2 4 4 3 1  1 5 6 0  0                                 # 24 nveri > boyut -> hata
+8 4 4                                                       # 25 yaz nveri
+4 10 1 z0 15 2 4 4 1 z1  3                                  # 26 veriler (zigzag)
+  1 4 14 13 3 1 13 1 0
+  9 1 z32
+  8 4 14
+9 1 z10                                                         # 27
+1 4 5 13 1 0                                                  # 28 bss = var()
+2 13 2 2 4 5 4 1  1 5 6 0  0                                 # 29 bss > bellek -> hata
+5 4 1 4 5                                                   # 30 yazu bss
+9 1 z10                                                         # 31
+1 4 6 13 1 0                                                  # 32 nfonk = var()
+2 15 20 13 2 2 4 6 1 z65535 13 2 2 4 6 3 1  1 5 6 0  0     # 33 nfonk > 65535 veya > boyut -> hata
+8 4 6                                                       # 34 yaz nfonk
+9 1 z10                                                         # 35
+4 10 1 z0 15 2 4 6 1 z1  12                                 # 36 fonksiyonlar
+  1 4 7 13 1 0
+  1 4 8 13 1 0
+  1 4 9 13 1 0
+  2 15 20 13 2 2 4 8 1 z65535 13 2 2 4 7 4 8  1 5 6 0  0
+  2 15 20 13 2 2 4 9 1 z4194304 13 2 2 4 9 3 1  1 5 6 0  0
+  5 4 1 4 7
+  9 1 z32
+  5 4 1 4 8
+  9 1 z32
+  5 4 1 4 9
+  9 1 z10
+  4 11 1 z0 15 2 4 9 1 z1  6                                #   komutlar
+    1 4 12 13 0 0
+    2 15 16 4 12 1 z55  1 5 6 0  0
+    8 4 12
+    1 4 15 12 1 4 12
+    4 13 1 z0 15 2 4 15 1 z1  7                             #   islenenler
+      1 4 14 13 1 0
+      1 4 15 13 5 2 4 12 4 13
+      2 15 11 4 15 1 z2  1  1 4 14 15 1 4 11 13 3 1 4 14  0
+      2 15 11 4 15 1 z1  1  1 4 14 13 3 1 4 14  0
+      2 15 20 15 13 4 14 1 z-2147483648 15 15 4 14 1 z2147483647  1 5 6 0  0
+      9 1 z32
+      8 4 14
+    9 1 z10
+2 15 12 4 0 1 z0  1                                         # 37 adlar (bayrak = 1)
+  4 10 1 z0 15 2 4 6 1 z1  5
+    1 4 14 13 1 0
+    2 13 2 2 4 14 1 z256  1 5 6 0  0
+    8 4 14
+    4 13 1 z0 15 2 4 14 1 z1  2
+      9 1 z32
+      8 13 0 0
+    9 1 z10
+  0
+2 15 12 3 0 3 1  1 5 6 0  0                                  # 38 dosya sonunda fazla bayt -> hata
+0                                                           # SON bos
