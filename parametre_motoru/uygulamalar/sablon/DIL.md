@@ -62,3 +62,4 @@ Kurallarda döngü/özyineleme yok; `etkilesim A B` için A ve B **farklı** şa
 - `topla`: GLOBAL önceden bildirilmiş olmalı; her karede baştan hesaplanıp yazılır. Boş küme: toplam/say = 0, enbuyuk = -2^62, enkucuk = 2^62.
 - `bitis` karenin sonunda, çizimden önce değerlendirilir; bitiş karesinde ekran güncellenmez. `yazdir` içinde `SABLON.alan` ve global kullanılabilir.
 - `pm run ... --ascii K`: son kareden her KxK bloğun sol-üst pikselini '#' (parlak) / '.' olarak yazar.
+- **Aynı tuş kodu için birden çok `girdi` bloğu yazılırsa yalnızca ilki çalışır** (sonrakiler sessizce yok sayılır); aynı tuşun tüm işini tek bloğa topla.
