@@ -1,0 +1,3174 @@
+; yap.pma -- PMY1 (yapisal sayisal tablo) -> .pma metni OZELLESTIRICISI (parametre tablosu). C++ karsiligi: src/yapisal.cpp (yapisal_to_pma).
+; stdin: PMY1 baytlari; stdout: .pma metni (pm yapisal --pma ile BAYT-BAYT ayni). Hata -> stdout'a "HATA kod" yazilir, DIV0 tuzagi (cikis 2).
+; Metin bicimleri (fmt.txt) veridir: %o d = operand (tur,deger), %n d = isaretli sayi, %A = degisken arguman listesi; '>' satir basi = 4 bosluk girinti.
+; Sinirlar [Kesin]: girdi <= 1 MiB; ifade dugumu 262144, komut dugumu 131072 (davranis acilimi dahil); cikti <= 2 MiB karakter.
+memory 16777216
+entry main
+space IB 1100000
+space EK 262144
+space EV 262144
+space EA 262144
+space EB 262144
+space EC0 262144
+space EC1 262144
+space EC2 262144
+space EARG 262144
+space ENX 262144
+space SK 131072
+space SA 131072
+space SE0 131072
+space SE1 131072
+space SARG 131072
+space SB0 131072
+space SB1 131072
+space SNX 131072
+space BIND 8192
+space INITV 131072
+space GLV 65536
+space ARSZ 4096
+space ARIS 4096
+space ARIN 4096
+space FNP 8192
+space FNL 8192
+space FNB 8192
+space BHP 4096
+space BHB 4096
+space TMN 1024
+space TMF0 1024
+space TMNF 1024
+space TMR 1024
+space TMD0 1024
+space TMND 1024
+space FDK 65536
+space FDP0 65536
+space FDP1 65536
+space FDP2 65536
+space FDW 65536
+space DSH 65536
+space DA0 65536
+space DA1 65536
+space DA2 65536
+space DA3 65536
+space DA4 65536
+space ETA 4096
+space ETB 4096
+space ETC 4096
+space ETY 4096
+space GIC 4096
+space GIT 4096
+space GIB 4096
+space AGG 4096
+space AGOP 4096
+space AGT 4096
+space AGV 4096
+space AGC 4096
+space USEDL 512
+space LKIR 256
+space LDEV 256
+space AK 16
+space AV 16
+space VK 8192
+space VV 8192
+space OUTA 2200000
+space BUFA 1100000
+space G 128
+data STO = @STO@
+data STRT = @STRT@
+data MAGIC = 80 77 89 49
+space SCRD 32
+
+; G: 0 ipos 1 isize 2 nexpr 3 nstmt 4 nglob 5 narr 6 nfn 7 nbh 8 ntm 9 net 10 ngi 11 nag 12 hasbitis 13 bitis 14 ilk 15 son 16 W 17 H 18 BG 19 FRAMES
+;    20 ninit 21 nfd 22 ndr 23 nbind 24 RK(sonuc turu) 25 ntmp 26 nlab 27 badlabel 28 needbad 29 outpos 30 bufpos 31 target(0 OUT,1 BUF) 32 CT 33 CA 34 CB 35 CFN 36 CNLOC 37 nloops
+;    38 nvar(%A) 39 RT(donus kuyrugu) 40 fnstart(unused) 41 srcpos
+
+func y_err(code) {
+    host putc, 72
+    host putc, 65
+    host putc, 84
+    host putc, 65
+    host putc, 58
+    host putc, 32
+    host puti, code
+    host putc, 10
+    mov z, 0
+    div x, 1, z
+    ret 0
+}
+
+; ---------- girdi okuyucu (LEB128) ----------
+func y_ru() {
+    mov v, 0
+    mov sh, 0
+r1: ld p, G, 0
+    ld n, G, 1
+    ge z, p, n
+    jz z, r2
+    call x, y_err, 1
+r2: add a, p, IB
+    ld b, a, 0
+    add p, p, 1
+    st p, G, 0
+    andi lo, b, 127
+    lti z, sh, 63
+    jnz z, r3
+    gti z, lo, 1
+    jz z, r3
+    call x, y_err, 2
+r3: shl t, lo, sh
+    or v, v, t
+    andi hi, b, 128
+    jnz hi, r4
+    ret v
+r4: addi sh, sh, 7
+    gti z, sh, 63
+    jz z, r1
+    call x, y_err, 3
+}
+
+func y_zz() {
+    call v, y_ru
+    shri h, v, 1
+    andi l, v, 1
+    neg l, l
+    xor r, h, l
+    ret r
+}
+
+func y_count() {
+    call v, y_ru
+    lti z, v, 0
+    jz z, c1
+    call x, y_err, 4
+c1: ld n, G, 1
+    ld i, G, 0
+    sub r, n, i
+    gt z, v, r
+    jz z, c2
+    call x, y_err, 4
+c2: ret v
+}
+
+func y_idx(limit) {
+    call v, y_ru
+    lti z, v, 0
+    jz z, i1
+    call x, y_err, 5
+i1: ge z, v, limit
+    jz z, i2
+    call x, y_err, 5
+i2: ret v
+}
+
+; ---------- dugum havuzlari ----------
+func y_newexpr(k) {
+    ld n, G, 2
+    addi n, n, 1
+    gei z, n, 262144
+    jz z, e1
+    call x, y_err, 6
+e1: st n, G, 2
+    add a, n, EK
+    st k, a, 0
+    ret n
+}
+
+func y_newstmt(k) {
+    ld n, G, 3
+    addi n, n, 1
+    gei z, n, 131072
+    jz z, e1
+    call x, y_err, 7
+e1: st n, G, 3
+    add a, n, SK
+    st k, a, 0
+    ret n
+}
+
+; ---------- ifade/komut cozumu ----------
+func y_dexpr(depth) {
+    gti z, depth, 200
+    jz z, d0
+    call x, y_err, 8
+d0: call k, y_ru
+    lti z, k, 1
+    jnz z, bk
+    gei z, k, 19
+    jz z, d1
+bk: call x, y_err, 9
+d1: call e, y_newexpr, k
+    eq z, k, 1
+    jz z, d2
+    call v, y_zz
+    add a, e, EV
+    st v, a, 0
+    ret e
+d2: eq z, k, 2
+    jnz z, ia
+    eq z, k, 3
+    jnz z, ia
+    eq z, k, 4
+    jnz z, ia
+    eq z, k, 7
+    jnz z, ia
+    eq z, k, 8
+    jnz z, ia
+    eq z, k, 14
+    jnz z, ia
+    jmp d3
+ia: call v, y_idx, 1048576
+    add a, e, EA
+    st v, a, 0
+    ret e
+d3: eq z, k, 11
+    jz z, d4
+    call v, y_idx, 1048576
+    add a, e, EA
+    st v, a, 0
+    call v, y_idx, 1048576
+    add a, e, EB
+    st v, a, 0
+    addi d1_, depth, 1
+    call c, y_dexpr, d1_
+    add a, e, EC0
+    st c, a, 0
+    ret e
+d4: eq z, k, 12
+    jz z, d5
+    call v, y_idx, 1048576
+    add a, e, EA
+    st v, a, 0
+    addi d1_, depth, 1
+    call c, y_dexpr, d1_
+    add a, e, EC0
+    st c, a, 0
+    ret e
+d5: eq z, k, 13
+    jz z, d6
+    call v, y_idx, 1048576
+    add a, e, EA
+    st v, a, 0
+    call n, y_count
+    addi d1_, depth, 1
+    mov j, 0
+    mov prev, 0
+d5a: ge z, j, n
+    jnz z, d5d
+    call c, y_dexpr, d1_
+    jnz prev, d5b
+    add a, e, EARG
+    st c, a, 0
+    jmp d5c
+d5b: add a, prev, ENX
+    st c, a, 0
+d5c: mov prev, c
+    addi j, j, 1
+    jmp d5a
+d5d: ret e
+d6: eq z, k, 15
+    jz z, d7
+    call o, y_ru
+    lti z, o, 1
+    jnz z, d6b
+    gti z, o, 20
+    jz z, d6a
+d6b: call x, y_err, 10
+d6a: add a, e, EA
+    st o, a, 0
+    addi d1_, depth, 1
+    call c, y_dexpr, d1_
+    add a, e, EC0
+    st c, a, 0
+    call c, y_dexpr, d1_
+    add a, e, EC1
+    st c, a, 0
+    ret e
+d7: eq z, k, 16
+    jz z, d8
+    call o, y_ru
+    lti z, o, 1
+    jnz z, d7b
+    gti z, o, 3
+    jz z, d7a
+d7b: call x, y_err, 11
+d7a: add a, e, EA
+    st o, a, 0
+    addi d1_, depth, 1
+    call c, y_dexpr, d1_
+    add a, e, EC0
+    st c, a, 0
+    ret e
+d8: eq z, k, 17
+    jz z, d9
+    addi d1_, depth, 1
+    call c, y_dexpr, d1_
+    add a, e, EC0
+    st c, a, 0
+    call c, y_dexpr, d1_
+    add a, e, EC1
+    st c, a, 0
+    call c, y_dexpr, d1_
+    add a, e, EC2
+    st c, a, 0
+d9: ret e
+}
+
+func y_dexpr0() {
+    call e, y_dexpr, 0
+    ret e
+}
+
+func y_dblock(depth) {
+    gti z, depth, 100
+    jz z, b0
+    call x, y_err, 12
+b0: call n, y_count
+    mov head, 0
+    mov tail, 0
+    mov j, 0
+b1: ge z, j, n
+    jnz z, b9
+    call k, y_ru
+    lti z, k, 1
+    jnz z, bk
+    gei z, k, 13
+    jz z, b2
+bk: call x, y_err, 13
+b2: call s, y_newstmt, k
+    addi d1_, depth, 1
+    eq z, k, 1
+    jz z, s2
+    call c, y_dexpr0
+    add a, s, SE0
+    st c, a, 0
+    call c, y_dexpr0
+    add a, s, SE1
+    st c, a, 0
+    jmp sl
+s2: eq z, k, 2
+    jz z, s3
+    call c, y_dexpr0
+    add a, s, SE0
+    st c, a, 0
+    call c, y_dblock, d1_
+    add a, s, SB0
+    st c, a, 0
+    call c, y_dblock, d1_
+    add a, s, SB1
+    st c, a, 0
+    jmp sl
+s3: eq z, k, 3
+    jz z, s4
+    call c, y_dexpr0
+    add a, s, SE0
+    st c, a, 0
+    call c, y_dblock, d1_
+    add a, s, SB0
+    st c, a, 0
+    jmp sl
+s4: eq z, k, 4
+    jz z, s5
+    call v, y_idx, 256
+    add a, s, SA
+    st v, a, 0
+    call c, y_dexpr0
+    add a, s, SE0
+    st c, a, 0
+    call c, y_dexpr0
+    add a, s, SE1
+    st c, a, 0
+    call c, y_dblock, d1_
+    add a, s, SB0
+    st c, a, 0
+    jmp sl
+s5: eq z, k, 5
+    jnz z, s5a
+    eq z, k, 6
+    jz z, s6
+s5a: call v, y_idx, 1048576
+    add a, s, SA
+    st v, a, 0
+    call n2, y_count
+    mov q, 0
+    mov prev, 0
+s5b: ge z, q, n2
+    jnz z, sl
+    call c, y_dexpr0
+    jnz prev, s5c
+    add a, s, SARG
+    st c, a, 0
+    jmp s5d
+s5c: add a, prev, ENX
+    st c, a, 0
+s5d: mov prev, c
+    addi q, q, 1
+    jmp s5b
+s6: eq z, k, 7
+    jnz z, s6a
+    eq z, k, 8
+    jnz z, s6a
+    eq z, k, 9
+    jz z, s7
+s6a: call c, y_dexpr0
+    add a, s, SE0
+    st c, a, 0
+    jmp sl
+s7: eq z, k, 12
+    jz z, sl
+    call n2, y_count
+    mov q, 0
+    mov prev, 0
+s7b: ge z, q, n2
+    jnz z, sl
+    call c, y_dexpr0
+    jnz prev, s7c
+    add a, s, SARG
+    st c, a, 0
+    jmp s7d
+s7c: add a, prev, ENX
+    st c, a, 0
+s7d: mov prev, c
+    addi q, q, 1
+    jmp s7b
+sl: jnz tail, sl2
+    mov head, s
+    jmp sl3
+sl2: add a, tail, SNX
+    st s, a, 0
+sl3: mov tail, s
+    addi j, j, 1
+    jmp b1
+b9: ret head
+}
+
+; ---------- model cozumu ----------
+func y_decode() {
+    ld n, G, 1
+    lti z, n, 4
+    jnz z, hb
+    mov i, 0
+    mov ex, 0
+h1: gei z, i, 4
+    jnz z, h2
+    add a, i, IB
+    ld c, a, 0
+    add a, i, MAGIC
+    ld m, a, 0
+    ne z, c, m
+    jz z, h1a
+    mov ex, 1
+h1a: addi i, i, 1
+    jmp h1
+h2: jz ex, h3
+hb: call x, y_err, 20
+h3: mov four, 4
+    st four, G, 0
+    call w, y_ru
+    st w, G, 16
+    call h, y_ru
+    st h, G, 17
+    call b, y_ru
+    st b, G, 18
+    call f, y_ru
+    st f, G, 19
+    lti z, w, 0
+    jnz z, hb
+    lti z, h, 0
+    jnz z, hb
+    gti z, w, 4096
+    jnz z, hb
+    gti z, h, 4096
+    jnz z, hb
+    eqi z1, w, 0
+    eqi z2, h, 0
+    ne z, z1, z2
+    jnz z, hb
+    ; globaller
+    call n1, y_count
+    gti z, n1, 65536
+    jz z, g0
+    call x, y_err, 21
+g0: st n1, G, 4
+    mov j, 0
+g1: ge z, j, n1
+    jnz z, g2
+    call v, y_zz
+    add a, j, GLV
+    st v, a, 0
+    addi j, j, 1
+    jmp g1
+g2: ; diziler
+    call n1, y_count
+    gti z, n1, 4096
+    jz z, a0
+    call x, y_err, 22
+a0: st n1, G, 5
+    mov j, 0
+a1: ge z, j, n1
+    jnz z, a9
+    call sz, y_ru
+    lti z, sz, 1
+    jnz z, abad
+    gti z, sz, 16777216
+    jz z, a2
+abad: call x, y_err, 23
+a2: add a, j, ARSZ
+    st sz, a, 0
+    call ni, y_count
+    gt z, ni, sz
+    jz z, a3
+    call x, y_err, 24
+a3: ld p, G, 20
+    add a, j, ARIS
+    st p, a, 0
+    add a, j, ARIN
+    st ni, a, 0
+    add e, p, ni
+    gti z, e, 131072
+    jz z, a4
+    call x, y_err, 25
+a4: mov q, 0
+a5: ge z, q, ni
+    jnz z, a6
+    call v, y_zz
+    ld p, G, 20
+    add a, p, INITV
+    st v, a, 0
+    addi p, p, 1
+    st p, G, 20
+    addi q, q, 1
+    jmp a5
+a6: addi j, j, 1
+    jmp a1
+a9: ; islevler
+    call n1, y_count
+    gti z, n1, 8192
+    jz z, f0
+    call x, y_err, 26
+f0: st n1, G, 6
+    mov j, 0
+f1: ge z, j, n1
+    jnz z, f9
+    call np, y_idx, 256
+    call nl, y_idx, 257
+    lt z, nl, np
+    jz z, f2
+    call x, y_err, 27
+f2: add a, j, FNP
+    st np, a, 0
+    add a, j, FNL
+    st nl, a, 0
+    call bd, y_dblock, 0
+    add a, j, FNB
+    st bd, a, 0
+    addi j, j, 1
+    jmp f1
+f9: ; davranislar
+    call n1, y_count
+    gti z, n1, 4096
+    jz z, b0
+    call x, y_err, 28
+b0: st n1, G, 7
+    mov j, 0
+b1: ge z, j, n1
+    jnz z, b9
+    call np, y_idx, 256
+    add a, j, BHP
+    st np, a, 0
+    call bd, y_dblock, 0
+    add a, j, BHB
+    st bd, a, 0
+    addi j, j, 1
+    jmp b1
+b9: ; sablonlar
+    call n1, y_count
+    gti z, n1, 1024
+    jz z, t0
+    call x, y_err, 29
+t0: st n1, G, 8
+    mov j, 0
+t1: ge z, j, n1
+    jnz z, t9
+    call tn, y_ru
+    lti z, tn, 1
+    jnz z, tbad
+    gti z, tn, 10000000
+    jz z, t2
+tbad: call x, y_err, 30
+t2: add a, j, TMN
+    st tn, a, 0
+    call nf, y_count
+    ld p, G, 21
+    add a, j, TMF0
+    st p, a, 0
+    add a, j, TMNF
+    st nf, a, 0
+    add e, p, nf
+    gti z, e, 65536
+    jz z, t3
+    call x, y_err, 31
+t3: mov q, 0
+t4: ge z, q, nf
+    jnz z, t8
+    ld p, G, 21
+    call g, y_ru
+    lti z, g, 1
+    jnz z, gbad
+    gti z, g, 5
+    jz z, g1_
+gbad: call x, y_err, 32
+g1_: add a, p, FDK
+    st g, a, 0
+    mov zero, 0
+    add a, p, FDP0
+    st zero, a, 0
+    add a, p, FDP1
+    st zero, a, 0
+    add a, p, FDP2
+    st zero, a, 0
+    add a, p, FDW
+    st zero, a, 0
+    eq z, g, 1
+    jz z, k2
+    call v, y_zz
+    add a, p, FDP0
+    st v, a, 0
+    jmp k9
+k2: eq z, g, 2
+    jz z, k3
+    call v, y_zz
+    add a, p, FDP0
+    st v, a, 0
+    call v, y_zz
+    add a, p, FDP1
+    st v, a, 0
+    jmp k9
+k3: eq z, g, 3
+    jnz z, k3a
+    eq z, g, 4
+    jz z, k5
+k3a: call v, y_ru
+    add a, p, FDP0
+    st v, a, 0
+    lti z, v, 1
+    jz z, k3b
+    call x, y_err, 33
+k3b: call v, y_zz
+    add a, p, FDP1
+    st v, a, 0
+    call v, y_zz
+    add a, p, FDP2
+    st v, a, 0
+    jmp k9
+k5: call v, y_zz
+    add a, p, FDP0
+    st v, a, 0
+    call v, y_zz
+    add a, p, FDP1
+    st v, a, 0
+    call v, y_zz
+    add a, p, FDP2
+    st v, a, 0
+    add a, p, FDP0
+    ld lo, a, 0
+    add a, p, FDP1
+    ld hi, a, 0
+    lt z, hi, lo
+    jz z, k9
+    call x, y_err, 34
+k9: addi p, p, 1
+    st p, G, 21
+    addi q, q, 1
+    jmp t4
+t8: call bd, y_dblock, 0
+    add a, j, TMR
+    st bd, a, 0
+    call nd, y_count
+    ld p, G, 22
+    add a, j, TMD0
+    st p, a, 0
+    add a, j, TMND
+    st nd, a, 0
+    add e, p, nd
+    gti z, e, 65536
+    jz z, t8a
+    call x, y_err, 35
+t8a: mov q, 0
+t8b: ge z, q, nd
+    jnz z, t8z
+    ld p, G, 22
+    call sh, y_ru
+    lti z, sh, 1
+    jnz z, shbad
+    gti z, sh, 2
+    jz z, t8c
+shbad: call x, y_err, 36
+t8c: add a, p, DSH
+    st sh, a, 0
+    mov want, 3
+    eq z, sh, 1
+    jz z, t8d
+    mov want, 5
+t8d: mov w2, 0
+t8e: ge z, w2, want
+    jnz z, t8f
+    call ee, y_dexpr0
+    eq z, w2, 0
+    jz z, d1a
+    add a, p, DA0
+    st ee, a, 0
+    jmp t8g
+d1a: eq z, w2, 1
+    jz z, d2a
+    add a, p, DA1
+    st ee, a, 0
+    jmp t8g
+d2a: eq z, w2, 2
+    jz z, d3a
+    add a, p, DA2
+    st ee, a, 0
+    jmp t8g
+d3a: eq z, w2, 3
+    jz z, d4a
+    add a, p, DA3
+    st ee, a, 0
+    jmp t8g
+d4a: add a, p, DA4
+    st ee, a, 0
+t8g: addi w2, w2, 1
+    jmp t8e
+t8f: addi p, p, 1
+    st p, G, 22
+    addi q, q, 1
+    jmp t8b
+t8z: addi j, j, 1
+    jmp t1
+t9: ; etkilesimler
+    call n1, y_count
+    gti z, n1, 4096
+    jz z, e0
+    call x, y_err, 37
+e0: st n1, G, 9
+    mov j, 0
+e1: ge z, j, n1
+    jnz z, e9
+    call v, y_idx, 1048576
+    add a, j, ETA
+    st v, a, 0
+    call v, y_idx, 1048576
+    add a, j, ETB
+    st v, a, 0
+    call c, y_dexpr0
+    add a, j, ETC
+    st c, a, 0
+    call bd, y_dblock, 0
+    add a, j, ETY
+    st bd, a, 0
+    addi j, j, 1
+    jmp e1
+e9: ; girdiler
+    call n1, y_count
+    gti z, n1, 4096
+    jz z, i0
+    call x, y_err, 38
+i0: st n1, G, 10
+    mov j, 0
+i1: ge z, j, n1
+    jnz z, i9
+    call v, y_ru
+    add a, j, GIC
+    st v, a, 0
+    call v, y_idx, 1048576
+    addi v, v, -1
+    add a, j, GIT
+    st v, a, 0
+    call bd, y_dblock, 0
+    add a, j, GIB
+    st bd, a, 0
+    addi j, j, 1
+    jmp i1
+i9: ; toplamalar
+    call n1, y_count
+    gti z, n1, 4096
+    jz z, o0
+    call x, y_err, 39
+o0: st n1, G, 11
+    mov j, 0
+o1: ge z, j, n1
+    jnz z, o9
+    call v, y_idx, 1048576
+    add a, j, AGG
+    st v, a, 0
+    call op, y_ru
+    lti z, op, 1
+    jnz z, opbad
+    gti z, op, 4
+    jz z, o2
+opbad: call x, y_err, 40
+o2: add a, j, AGOP
+    st op, a, 0
+    call v, y_idx, 1048576
+    add a, j, AGT
+    st v, a, 0
+    call c, y_dexpr0
+    add a, j, AGV
+    st c, a, 0
+    call c, y_dexpr0
+    add a, j, AGC
+    st c, a, 0
+    addi j, j, 1
+    jmp o1
+o9: call hb2, y_ru
+    gti z, hb2, 1
+    jz z, hb3
+    call x, y_err, 41
+hb3: st hb2, G, 12
+    jz hb2, hb4
+    call c, y_dexpr0
+    st c, G, 13
+hb4: call bd, y_dblock, 0
+    st bd, G, 14
+    call bd, y_dblock, 0
+    st bd, G, 15
+    ld p, G, 0
+    ld n, G, 1
+    eq z, p, n
+    jnz z, hok
+    call x, y_err, 42
+hok: ret 0
+}
+
+; ---------- davranis acilimi ----------
+func y_clone(e, bb, bn) {
+    jnz e, c0
+    ret 0
+c0: add a, e, EK
+    ld k, a, 0
+    eq z, k, 14
+    jz z, c1
+    ; E_PARAM
+    lti z, bb, 0
+    jnz z, pbad
+    add a, e, EA
+    ld idx, a, 0
+    ge z, idx, bn
+    jnz z, pbad
+    add a, bb, idx
+    add a, a, BIND
+    ld src, a, 0
+    call r, y_clone, src, -1, 0
+    ret r
+pbad: call x, y_err, 50
+c1: call n, y_newexpr, k
+    add a, e, EV
+    ld v, a, 0
+    add a, n, EV
+    st v, a, 0
+    add a, e, EA
+    ld v, a, 0
+    add a, n, EA
+    st v, a, 0
+    add a, e, EB
+    ld v, a, 0
+    add a, n, EB
+    st v, a, 0
+    add a, e, EC0
+    ld ch, a, 0
+    call r, y_clone, ch, bb, bn
+    add a, n, EC0
+    st r, a, 0
+    add a, e, EC1
+    ld ch, a, 0
+    call r, y_clone, ch, bb, bn
+    add a, n, EC1
+    st r, a, 0
+    add a, e, EC2
+    ld ch, a, 0
+    call r, y_clone, ch, bb, bn
+    add a, n, EC2
+    st r, a, 0
+    add a, e, EARG
+    ld ch, a, 0
+    mov prev, 0
+c2: jz ch, c9
+    call r, y_clone, ch, bb, bn
+    jnz prev, c3
+    add a, n, EARG
+    st r, a, 0
+    jmp c4
+c3: add a, prev, ENX
+    st r, a, 0
+c4: mov prev, r
+    add a, ch, ENX
+    ld ch, a, 0
+    jmp c2
+c9: ret n
+}
+
+; arguman zincirinin uzunlugu
+func y_chain(h) {
+    mov n, 0
+c1: jz h, c9
+    addi n, n, 1
+    add a, h, ENX
+    ld h, a, 0
+    jmp c1
+c9: ret n
+}
+
+; in listesini (bb,bn baglamiyla) acarak head/tail listesine ekler; yeni head dondurur, kuyruk G[39]'da
+func y_expand(in, bb, bn, depth, head, tail) {
+    gti z, depth, 16
+    jz z, x0
+    call x, y_err, 51
+x0: mov s, in
+x1: jz s, x9
+    add a, s, SK
+    ld k, a, 0
+    eq z, k, 6
+    jz z, x4
+    ; DAVRAN
+    add a, s, SA
+    ld bi, a, 0
+    ld nbh, G, 7
+    ge z, bi, nbh
+    jz z, x2
+    call x, y_err, 52
+x2: add a, bi, BHP
+    ld np, a, 0
+    add a, s, SARG
+    ld ah, a, 0
+    call cnt, y_chain, ah
+    eq z, cnt, np
+    jnz z, x3
+    call x, y_err, 53
+x3: ld base, G, 23
+    add t, base, np
+    gti z, t, 8192
+    jz z, x3a
+    call x, y_err, 54
+x3a: st t, G, 23
+    mov j, 0
+x3b: ge z, j, np
+    jnz z, x3d
+    call cl, y_clone, ah, bb, bn
+    add t, base, j
+    add a, t, BIND
+    st cl, a, 0
+    add a, ah, ENX
+    ld ah, a, 0
+    addi j, j, 1
+    jmp x3b
+x3d: add a, bi, BHB
+    ld body, a, 0
+    addi d1_, depth, 1
+    call head, y_expand, body, base, np, d1_, head, tail
+    ld tail, G, 39
+    jmp xn
+x4: call n, y_newstmt, k
+    add a, s, SA
+    ld v, a, 0
+    add a, n, SA
+    st v, a, 0
+    add a, s, SE0
+    ld v, a, 0
+    call r, y_clone, v, bb, bn
+    add a, n, SE0
+    st r, a, 0
+    add a, s, SE1
+    ld v, a, 0
+    call r, y_clone, v, bb, bn
+    add a, n, SE1
+    st r, a, 0
+    add a, s, SARG
+    ld ch, a, 0
+    mov prev, 0
+x5: jz ch, x6
+    call r, y_clone, ch, bb, bn
+    jnz prev, x5a
+    add a, n, SARG
+    st r, a, 0
+    jmp x5b
+x5a: add a, prev, ENX
+    st r, a, 0
+x5b: mov prev, r
+    add a, ch, ENX
+    ld ch, a, 0
+    jmp x5
+x6: add a, s, SB0
+    ld v, a, 0
+    call r, y_expand, v, bb, bn, depth, 0, 0
+    add a, n, SB0
+    st r, a, 0
+    add a, s, SB1
+    ld v, a, 0
+    call r, y_expand, v, bb, bn, depth, 0, 0
+    add a, n, SB1
+    st r, a, 0
+    jnz tail, x7
+    mov head, n
+    jmp x8
+x7: add a, tail, SNX
+    st n, a, 0
+x8: mov tail, n
+xn: add a, s, SNX
+    ld s, a, 0
+    jmp x1
+x9: st tail, G, 39
+    ret head
+}
+
+func y_expblock(h) {
+    call r, y_expand, h, -1, 0, 0, 0, 0
+    ret r
+}
+
+; ---------- cikti ilkelleri ----------
+func y_ch(c) {
+    ld tg, G, 31
+    jnz tg, b1
+    ld p, G, 29
+    gei z, p, 2200000
+    jz z, a1
+    call x, y_err, 60
+a1: add a, p, OUTA
+    st c, a, 0
+    addi p, p, 1
+    st p, G, 29
+    ret 0
+b1: ld p, G, 30
+    gei z, p, 1100000
+    jz z, b2
+    call x, y_err, 61
+b2: add a, p, BUFA
+    st c, a, 0
+    addi p, p, 1
+    st p, G, 30
+    ret 0
+}
+
+; isaretli onluk sayi yaz (INT64_MIN dahil)
+func y_pnum(v) {
+    mov u, v
+    lti z, v, 0
+    jz z, p0
+    call x, y_ch, 45
+    neg u, v
+p0: ; u isaretsiz: basamaklari ters sirada SCR alanina (USEDL ile cakismasin: yerel dizi yok -> yigin yerine VV sonu)
+    mov nd, 0
+p1: lti z, u, 0
+    jz z, p2
+    ; u >= 2^63 (isaretsiz): q = ((u >> 1) / 5), r = u - 10q (r < 20)
+    shri q, u, 1
+    divi q, q, 5
+    muli t, q, 10
+    sub r, u, t
+    lti z, r, 10
+    jnz z, p3
+    addi q, q, 1
+    addi r, r, -10
+    jmp p3
+p2: divi q, u, 10
+    muli t, q, 10
+    sub r, u, t
+p3: addi r, r, 48
+    add a, nd, SCRD
+    st r, a, 0
+    addi nd, nd, 1
+    mov u, q
+    jnz u, p1
+    mov i, nd
+p4: jz i, p9
+    addi i, i, -1
+    add a, i, SCRD
+    ld c, a, 0
+    call x, y_ch, c
+    jmp p4
+p9: ret 0
+}
+
+; operand tanimlayicisi: tur 0 sayi, 1 gecici v<n>, 2 "i", 3 "ia", 4 "ib", 5 yerel l<n>
+func y_op(k, v) {
+    eq z, k, 0
+    jz z, o1
+    call x, y_pnum, v
+    ret 0
+o1: eq z, k, 1
+    jz z, o2
+    call x, y_ch, 118
+    call x, y_pnum, v
+    ret 0
+o2: eq z, k, 2
+    jz z, o3
+    call x, y_ch, 105
+    ret 0
+o3: eq z, k, 3
+    jz z, o4
+    call x, y_ch, 105
+    call x, y_ch, 97
+    ret 0
+o4: eq z, k, 4
+    jz z, o5
+    call x, y_ch, 105
+    call x, y_ch, 98
+    ret 0
+o5: call x, y_ch, 108
+    call x, y_pnum, v
+    ret 0
+}
+
+; bicim metnini (STRT, fid) yaz. '>' satir basi = 4 bosluk, %o d operand, %n d sayi, %A degisken liste, satir ayirici 10, son satira \n eklenir
+func y_fmt(fid) {
+    add a, fid, STO
+    ld p, a, 0
+    mov bol, 1
+f1: add a, p, STRT
+    ld c, a, 0
+    addi p, p, 1
+    jz c, fend
+    eq z, c, 10
+    jz z, f2
+    call x, y_ch, 10
+    mov bol, 1
+    jmp f1
+f2: jz bol, f3
+    mov bol, 0
+    eq z, c, 62
+    jz z, f3
+    call x, y_ch, 32
+    call x, y_ch, 32
+    call x, y_ch, 32
+    call x, y_ch, 32
+    jmp f1
+f3: eq z, c, 37
+    jz z, fc
+    add a, p, STRT
+    ld t, a, 0
+    addi p, p, 1
+    eq z, t, 80
+    jz z, fP
+    ld np, G, 40
+    mov j, 0
+fp1: ge z, j, np
+    jnz z, f1
+    jz j, fp2
+    call x, y_ch, 44
+    call x, y_ch, 32
+fp2: call x, y_ch, 108
+    call x, y_pnum, j
+    addi j, j, 1
+    jmp fp1
+fP: eq z, t, 65
+    jz z, f4
+    ; %A : ", " + operand her eleman icin
+    ld nv, G, 38
+    ld bs, G, 42
+    mov j, 0
+fa: ge z, j, nv
+    jnz z, f1
+    call x, y_ch, 44
+    call x, y_ch, 32
+    add a, j, bs
+    add a, a, VK
+    ld k, a, 0
+    add a, j, bs
+    add a, a, VV
+    ld v, a, 0
+    call x, y_op, k, v
+    addi j, j, 1
+    jmp fa
+f4: add a, p, STRT
+    ld d, a, 0
+    addi d, d, -48
+    addi p, p, 1
+    add a, d, AV
+    ld v, a, 0
+    eq z, t, 111
+    jz z, f5
+    add a, d, AK
+    ld k, a, 0
+    call x, y_op, k, v
+    jmp f1
+f5: call x, y_pnum, v
+    jmp f1
+fc: call x, y_ch, c
+    jmp f1
+fend: call x, y_ch, 10
+    ret 0
+}
+
+func y_sa(i, k, v) {
+    add a, i, AK
+    st k, a, 0
+    add a, i, AV
+    st v, a, 0
+    ret 0
+}
+
+; yalniz sayi argumani (tur 0)
+func y_sn(i, v) {
+    add a, i, AK
+    mov zero, 0
+    st zero, a, 0
+    add a, i, AV
+    st v, a, 0
+    ret 0
+}
+
+func y_tmp() {
+    ld n, G, 25
+    addi m, n, 1
+    st m, G, 25
+    ret n
+}
+
+func y_lab() {
+    ld n, G, 26
+    addi m, n, 1
+    st m, G, 26
+    ret n
+}
+
+func y_setkind(k) {
+    st k, G, 24
+    ret 0
+}
+
+; ---------- baglam ----------
+func y_setctx(t, a, b, fn, nloc) {
+    st t, G, 32
+    st a, G, 33
+    st b, G, 34
+    st fn, G, 35
+    st nloc, G, 36
+    mov zero, 0
+    st zero, G, 37
+    ret 0
+}
+
+func y_needt(ti) {
+    lti z, ti, 0
+    jnz z, bad
+    ld n, G, 8
+    ge z, ti, n
+    jz z, ok
+bad: call x, y_err, 70
+ok: ret 0
+}
+
+func y_needf(ti, fi) {
+    call x, y_needt, ti
+    lti z, fi, 0
+    jnz z, bad
+    add a, ti, TMNF
+    ld n, a, 0
+    ge z, fi, n
+    jz z, ok
+bad: call x, y_err, 71
+ok: ret 0
+}
+
+func y_loc(l) {
+    ld n, G, 36
+    ge z, l, n
+    jz z, ok
+    call x, y_err, 72
+ok: add a, l, USEDL
+    mov one, 1
+    st one, a, 0
+    mov k, 5
+    st k, G, 24
+    ret l
+}
+
+func y_checkidx(vk, vv, size) {
+    eq z, vk, 0
+    jz z, c1
+    lti z, vv, 0
+    jnz z, bad
+    ge z, vv, size
+    jz z, c0
+bad: call x, y_err, 73
+c0: st vk, G, 24
+    ret vv
+c1: call c, y_tmp
+    mov one, 1
+    st one, G, 28
+    ld bl, G, 27
+    call x, y_sn, 0, c
+    call x, y_sa, 1, vk, vv
+    call x, y_emit, @F_LT0@
+    call x, y_sn, 1, bl
+    call x, y_emit, @F_JNZBAD@
+    call x, y_sa, 1, vk, vv
+    call x, y_sn, 2, size
+    call x, y_emit, @F_GE0@
+    call x, y_sn, 1, bl
+    call x, y_emit, @F_JNZBAD@
+    st vk, G, 24
+    ret vv
+}
+
+func y_emit(fid) {
+    call x, y_fmt, fid
+    ret 0
+}
+
+; alan okuma: sablon ti, alan fi, indeks tanimlayicisi (ik,iv)
+func y_fieldread(ti, fi, ik, iv) {
+    add a, ti, TMF0
+    ld f0, a, 0
+    add fd, f0, fi
+    add a, fd, FDK
+    ld kind, a, 0
+    add a, fd, FDW
+    ld w, a, 0
+    eq z, kind, 5
+    jnz z, st1
+    jnz w, st1
+    jmp vir
+st1: call p, y_tmp
+    call v, y_tmp
+    call x, y_sn, 0, p
+    call x, y_sn, 1, ti
+    call x, y_sn, 2, fi
+    call x, y_sa, 3, ik, iv
+    call x, y_emit, @F_ADDSYM@
+    call x, y_sn, 0, v
+    call x, y_sn, 1, p
+    call x, y_emit, @F_LDP@
+    mov k1, 1
+    st k1, G, 24
+    ret v
+vir: add a, fd, FDP0
+    ld p0, a, 0
+    add a, fd, FDP1
+    ld p1, a, 0
+    add a, fd, FDP2
+    ld p2, a, 0
+    eq z, kind, 1
+    jz z, v2
+    mov k0, 0
+    st k0, G, 24
+    ret p0
+v2: eq z, kind, 2
+    jz z, v3
+    call v, y_tmp
+    call x, y_sn, 0, v
+    call x, y_sa, 1, ik, iv
+    call x, y_sn, 2, p1
+    call x, y_emit, @F_MULI@
+    call x, y_sn, 1, p0
+    call x, y_emit, @F_ADDSELF@
+    mov k1, 1
+    st k1, G, 24
+    ret v
+v3: eq z, kind, 3
+    jz z, v4
+    call v, y_tmp
+    call x, y_sn, 0, v
+    call x, y_sa, 1, ik, iv
+    call x, y_sn, 2, p0
+    call x, y_emit, @F_MODI@
+    call x, y_sn, 1, p2
+    call x, y_emit, @F_MULSELF@
+    call x, y_sn, 1, p1
+    call x, y_emit, @F_ADDSELF@
+    mov k1, 1
+    st k1, G, 24
+    ret v
+v4: eq z, kind, 4
+    jz z, v5
+    call v, y_tmp
+    call x, y_sn, 0, v
+    call x, y_sa, 1, ik, iv
+    call x, y_sn, 2, p0
+    call x, y_emit, @F_DIVI@
+    call x, y_sn, 1, p2
+    call x, y_emit, @F_MULSELF@
+    call x, y_sn, 1, p1
+    call x, y_emit, @F_ADDSELF@
+    mov k1, 1
+    st k1, G, 24
+    ret v
+v5: call x, y_err, 74
+}
+
+; ---------- ifade uretimi: deger doner, tur G[24]'te ----------
+func y_ex(e) {
+    add a, e, EK
+    ld k, a, 0
+    eq z, k, 1
+    jz z, k2
+    add a, e, EV
+    ld v, a, 0
+    mov z0, 0
+    st z0, G, 24
+    ret v
+k2: eq z, k, 2
+    jz z, k3
+    ld ct, G, 32
+    lti z, ct, 0
+    jz z, k2a
+    call x, y_err, 75
+k2a: add a, e, EA
+    ld fa, a, 0
+    call x, y_needf, ct, fa
+    call v, y_fieldread, ct, fa, 2, 0
+    ret v
+k3: eq z, k, 3
+    jz z, k4
+    add a, e, EA
+    ld ga, a, 0
+    ld ng, G, 4
+    ge z, ga, ng
+    jz z, k3a
+    call x, y_err, 76
+k3a: call v, y_tmp
+    call x, y_sn, 0, v
+    call x, y_sn, 1, ga
+    call x, y_emit, @F_LDG@
+    mov k1, 1
+    st k1, G, 24
+    ret v
+k4: eq z, k, 4
+    jz z, k5
+    add a, e, EA
+    ld la, a, 0
+    call v, y_loc, la
+    ret v
+k5: eq z, k, 5
+    jz z, k6
+    ld ct, G, 32
+    lti z, ct, 0
+    jz z, k5a
+    call x, y_err, 77
+k5a: mov k1, 2
+    st k1, G, 24
+    ret 0
+k6: eq z, k, 6
+    jz z, k7
+    call v, y_tmp
+    call x, y_sn, 0, v
+    call x, y_emit, @F_LDKARE@
+    mov k1, 1
+    st k1, G, 24
+    ret v
+k7: eq z, k, 7
+    jz z, k8
+    ld ca, G, 33
+    lti z, ca, 0
+    jz z, k7a
+    call x, y_err, 78
+k7a: add a, e, EA
+    ld fa, a, 0
+    call x, y_needf, ca, fa
+    call v, y_fieldread, ca, fa, 3, 0
+    ret v
+k8: eq z, k, 8
+    jz z, k9
+    ld ca, G, 33
+    lti z, ca, 0
+    jz z, k8a
+    call x, y_err, 79
+k8a: ld cb, G, 34
+    add a, e, EA
+    ld fa, a, 0
+    call x, y_needf, cb, fa
+    call v, y_fieldread, cb, fa, 4, 0
+    ret v
+k9: eq z, k, 9
+    jz z, k10
+    ld ca, G, 33
+    lti z, ca, 0
+    jz z, k9a
+    call x, y_err, 80
+k9a: mov k1, 3
+    st k1, G, 24
+    ret 0
+k10: eq z, k, 10
+    jz z, k11
+    ld ca, G, 33
+    lti z, ca, 0
+    jz z, k10a
+    call x, y_err, 81
+k10a: mov k1, 4
+    st k1, G, 24
+    ret 0
+k11: eq z, k, 11
+    jz z, k12
+    add a, e, EA
+    ld ta, a, 0
+    add a, e, EB
+    ld tb, a, 0
+    call x, y_needf, ta, tb
+    add a, e, EC0
+    ld c0, a, 0
+    call iv, y_ex, c0
+    ld ikk, G, 24
+    add a, ta, TMN
+    ld tn, a, 0
+    call iv, y_checkidx, ikk, iv, tn
+    ld ikk, G, 24
+    call v, y_fieldread, ta, tb, ikk, iv
+    ret v
+k12: eq z, k, 12
+    jz z, k13
+    add a, e, EA
+    ld da, a, 0
+    ld na, G, 5
+    ge z, da, na
+    jz z, k12a
+    call x, y_err, 82
+k12a: add a, e, EC0
+    ld c0, a, 0
+    call iv, y_ex, c0
+    ld ikk, G, 24
+    add a, da, ARSZ
+    ld sz, a, 0
+    call iv, y_checkidx, ikk, iv, sz
+    ld ikk, G, 24
+    call p, y_tmp
+    call v, y_tmp
+    call x, y_sn, 0, p
+    call x, y_sn, 1, da
+    call x, y_sa, 2, ikk, iv
+    call x, y_emit, @F_ADDD@
+    call x, y_sn, 0, v
+    call x, y_sn, 1, p
+    call x, y_emit, @F_LDP@
+    mov k1, 1
+    st k1, G, 24
+    ret v
+k13: eq z, k, 13
+    jz z, k14
+    add a, e, EA
+    ld fa, a, 0
+    ld nf, G, 6
+    ge z, fa, nf
+    jz z, k13a
+    call x, y_err, 83
+k13a: add a, e, EARG
+    ld ah, a, 0
+    call cnt, y_chain, ah
+    add a, fa, FNP
+    ld np, a, 0
+    eq z, cnt, np
+    jnz z, k13b
+    call x, y_err, 84
+k13b: call bs, y_evalargs, ah
+    call r, y_tmp
+    call x, y_sn, 0, r
+    call x, y_sn, 1, fa
+    call x, y_emit, @F_CALLF@
+    st bs, G, 41
+    mov k1, 1
+    st k1, G, 24
+    ret r
+k14: eq z, k, 14
+    jz z, k15
+    call x, y_err, 85
+k15: eq z, k, 16
+    jz z, k16
+    add a, e, EC0
+    ld c0, a, 0
+    call av, y_ex, c0
+    ld akk, G, 24
+    call r, y_tmp
+    add a, e, EA
+    ld o, a, 0
+    call x, y_sn, 0, r
+    call x, y_sa, 1, akk, av
+    eq z, o, 1
+    jz z, k15a
+    call x, y_emit, @F_NEG@
+    jmp k15z
+k15a: eq z, o, 2
+    jz z, k15b
+    call x, y_emit, @F_NOT@
+    jmp k15z
+k15b: call x, y_emit, @F_EQ0@
+k15z: mov k1, 1
+    st k1, G, 24
+    ret r
+k16: eq z, k, 17
+    jz z, k17
+    call r, y_tmp
+    call le_, y_lab
+    call ld_, y_lab
+    add a, e, EC0
+    ld c0, a, 0
+    call cnd, y_ex, c0
+    ld ck, G, 24
+    call x, y_sa, 0, ck, cnd
+    call x, y_sn, 1, le_
+    call x, y_emit, @F_JZL@
+    add a, e, EC1
+    ld c1, a, 0
+    call av, y_ex, c1
+    ld akk, G, 24
+    call x, y_sn, 0, r
+    call x, y_sa, 1, akk, av
+    call x, y_emit, @F_MOVV@
+    call x, y_sn, 0, ld_
+    call x, y_emit, @F_JMPL@
+    call x, y_sn, 0, le_
+    call x, y_emit, @F_LABEL@
+    add a, e, EC2
+    ld c2, a, 0
+    call bv, y_ex, c2
+    ld bk, G, 24
+    call x, y_sn, 0, r
+    call x, y_sa, 1, bk, bv
+    call x, y_emit, @F_MOVV@
+    call x, y_sn, 0, ld_
+    call x, y_emit, @F_LABEL@
+    mov k1, 1
+    st k1, G, 24
+    ret r
+k17: eq z, k, 15
+    jz z, k18
+    add a, e, EC0
+    ld c0, a, 0
+    call av, y_ex, c0
+    ld akk, G, 24
+    add a, e, EC1
+    ld c1, a, 0
+    call bv, y_ex, c1
+    ld bk, G, 24
+    call r, y_tmp
+    add a, e, EA
+    ld o, a, 0
+    gti z, o, 16
+    jnz z, k17b
+    ; dogrudan ikili
+    call x, y_sn, 0, r
+    call x, y_sa, 1, akk, av
+    call x, y_sa, 2, bk, bv
+    addi fid, o, @F_BIN1@
+    addi fid, fid, -1
+    call x, y_emit, fid
+    jmp k17z
+k17b: gti z, o, 18
+    jnz z, k17c
+    call cc, y_tmp
+    call l, y_lab
+    call x, y_sn, 0, r
+    call x, y_sa, 1, akk, av
+    call x, y_emit, @F_MOVV@
+    call x, y_sn, 0, cc
+    call x, y_sa, 1, bk, bv
+    call x, y_sn, 2, r
+    eq z, o, 17
+    jz z, k17d
+    call x, y_emit, @F_LTMIN@
+    jmp k17e
+k17d: call x, y_emit, @F_GTMAX@
+k17e: call x, y_sn, 0, cc
+    call x, y_sn, 1, l
+    call x, y_emit, @F_JZVL@
+    call x, y_sn, 0, r
+    call x, y_sa, 1, bk, bv
+    call x, y_emit, @F_MOVV@
+    call x, y_sn, 0, l
+    call x, y_emit, @F_LABEL@
+    jmp k17z
+k17c: call t1, y_tmp
+    call t2, y_tmp
+    call x, y_sn, 0, t1
+    call x, y_sa, 1, akk, av
+    call x, y_emit, @F_NE0@
+    call x, y_sn, 0, t2
+    call x, y_sa, 1, bk, bv
+    call x, y_emit, @F_NE0@
+    call x, y_sn, 0, r
+    call x, y_sn, 1, t1
+    call x, y_sn, 2, t2
+    eq z, o, 19
+    jz z, k17f
+    call x, y_emit, @F_ANDV@
+    jmp k17z
+k17f: call x, y_emit, @F_ORV@
+k17z: mov k1, 1
+    st k1, G, 24
+    ret r
+k18: eq z, k, 18
+    jz z, k19
+    call v, y_tmp
+    call x, y_sn, 0, v
+    call x, y_emit, @F_GETC@
+    mov k1, 1
+    st k1, G, 24
+    ret v
+k19: call x, y_err, 86
+}
+
+; arguman zincirini sirayla degerlendirir; sonuclari VK/VV yiginina (G[41]=tepe) koyar. Taban G[42], sayi G[38] (ic ice cagrilar ustte yer alir)
+func y_evalargs(ah) {
+    ld base, G, 41
+    mov n, 0
+e1: jz ah, e9
+    call v, y_ex, ah
+    ld k, G, 24
+    ld top, G, 41
+    gei z, top, 8190
+    jz z, e2
+    call x, y_err, 87
+e2: add a, top, VK
+    st k, a, 0
+    add a, top, VV
+    st v, a, 0
+    addi top, top, 1
+    st top, G, 41
+    addi n, n, 1
+    add a, ah, ENX
+    ld ah, a, 0
+    jmp e1
+e9: st n, G, 38
+    st base, G, 42
+    ret base
+}
+
+; ---------- atama hedefi ----------
+; deger tanimlayicisi (vk,vv) lvalue lv'ye yazilir
+func y_store(lv, vk, vv) {
+    add a, lv, EK
+    ld k, a, 0
+    eq z, k, 2
+    jz z, s2
+    ld ct, G, 32
+    lti z, ct, 0
+    jz z, s2a
+    call x, y_err, 90
+s2a: add a, lv, EA
+    ld fa, a, 0
+    call x, y_needf, ct, fa
+    call p, y_tmp
+    call x, y_sn, 0, p
+    call x, y_sn, 1, ct
+    call x, y_sn, 2, fa
+    call x, y_emit, @F_ADDSYMI@
+    jmp fin
+s2: eq z, k, 7
+    jz z, s3
+    ld ca, G, 33
+    lti z, ca, 0
+    jz z, s3a
+    call x, y_err, 91
+s3a: add a, lv, EA
+    ld fa, a, 0
+    call x, y_needf, ca, fa
+    call p, y_tmp
+    call x, y_sn, 0, p
+    call x, y_sn, 1, ca
+    call x, y_sn, 2, fa
+    call x, y_emit, @F_ADDSYMIA@
+    jmp fin
+s3: eq z, k, 8
+    jz z, s4
+    ld ca, G, 33
+    lti z, ca, 0
+    jz z, s3b
+    call x, y_err, 92
+s3b: ld cb, G, 34
+    add a, lv, EA
+    ld fa, a, 0
+    call x, y_needf, cb, fa
+    call p, y_tmp
+    call x, y_sn, 0, p
+    call x, y_sn, 1, cb
+    call x, y_sn, 2, fa
+    call x, y_emit, @F_ADDSYMIB@
+    jmp fin
+s4: eq z, k, 3
+    jz z, s5
+    add a, lv, EA
+    ld ga, a, 0
+    ld ng, G, 4
+    ge z, ga, ng
+    jz z, s4a
+    call x, y_err, 93
+s4a: call x, y_sa, 0, vk, vv
+    call x, y_sn, 1, ga
+    call x, y_emit, @F_STG@
+    ret 0
+s5: eq z, k, 4
+    jz z, s6
+    add a, lv, EA
+    ld la, a, 0
+    call l, y_loc, la
+    call x, y_sn, 0, l
+    call x, y_sa, 1, vk, vv
+    call x, y_emit, @F_MOVL@
+    ret 0
+s6: eq z, k, 12
+    jz z, s7
+    add a, lv, EA
+    ld da, a, 0
+    ld na, G, 5
+    ge z, da, na
+    jz z, s6a
+    call x, y_err, 94
+s6a: add a, lv, EC0
+    ld c0, a, 0
+    call iv, y_ex, c0
+    ld ikk, G, 24
+    add a, da, ARSZ
+    ld sz, a, 0
+    call iv, y_checkidx, ikk, iv, sz
+    ld ikk, G, 24
+    call p, y_tmp
+    call x, y_sn, 0, p
+    call x, y_sn, 1, da
+    call x, y_sa, 2, ikk, iv
+    call x, y_emit, @F_ADDD@
+    jmp fin
+s7: eq z, k, 11
+    jz z, s8
+    add a, lv, EA
+    ld ta, a, 0
+    add a, lv, EB
+    ld tb, a, 0
+    call x, y_needf, ta, tb
+    add a, lv, EC0
+    ld c0, a, 0
+    call iv, y_ex, c0
+    ld ikk, G, 24
+    add a, ta, TMN
+    ld tn, a, 0
+    call iv, y_checkidx, ikk, iv, tn
+    ld ikk, G, 24
+    call p, y_tmp
+    call x, y_sn, 0, p
+    call x, y_sn, 1, ta
+    call x, y_sn, 2, tb
+    call x, y_sa, 3, ikk, iv
+    call x, y_emit, @F_ADDSYM@
+    jmp fin
+s8: call x, y_err, 95
+fin: call x, y_sa, 0, vk, vv
+    call x, y_sn, 1, p
+    call x, y_emit, @F_STP@
+    ret 0
+}
+
+; ---------- komutlar ----------
+func y_block(h) {
+b1: jz h, b9
+    call x, y_stmt, h
+    add a, h, SNX
+    ld h, a, 0
+    jmp b1
+b9: ret 0
+}
+
+func y_pushloop(kir, dev) {
+    ld n, G, 37
+    gei z, n, 256
+    jz z, p1
+    call x, y_err, 96
+p1: add a, n, LKIR
+    st kir, a, 0
+    add a, n, LDEV
+    st dev, a, 0
+    addi n, n, 1
+    st n, G, 37
+    ret 0
+}
+
+func y_poploop() {
+    ld n, G, 37
+    addi n, n, -1
+    st n, G, 37
+    ret 0
+}
+
+func y_stmt(s) {
+    mov zero, 0
+    st zero, G, 25
+    add a, s, SK
+    ld k, a, 0
+    eq z, k, 1
+    jz z, k2
+    add a, s, SE1
+    ld e1, a, 0
+    call v, y_ex, e1
+    ld vk, G, 24
+    add a, s, SE0
+    ld e0, a, 0
+    call x, y_store, e0, vk, v
+    ret 0
+k2: eq z, k, 2
+    jz z, k3
+    add a, s, SE0
+    ld e0, a, 0
+    call cnd, y_ex, e0
+    ld ck, G, 24
+    call le_, y_lab
+    call ld_, y_lab
+    call x, y_sa, 0, ck, cnd
+    call x, y_sn, 1, le_
+    call x, y_emit, @F_JZL@
+    add a, s, SB0
+    ld b0, a, 0
+    call x, y_block, b0
+    add a, s, SB1
+    ld b1, a, 0
+    jz b1, k2a
+    call x, y_sn, 0, ld_
+    call x, y_emit, @F_JMPL@
+    call x, y_sn, 0, le_
+    call x, y_emit, @F_LABEL@
+    call x, y_block, b1
+    call x, y_sn, 0, ld_
+    call x, y_emit, @F_LABEL@
+    ret 0
+k2a: call x, y_sn, 0, le_
+    call x, y_emit, @F_LABEL@
+    ret 0
+k3: eq z, k, 3
+    jz z, k4
+    call lt_, y_lab
+    call le_, y_lab
+    call x, y_sn, 0, lt_
+    call x, y_emit, @F_LABEL@
+    mov zero, 0
+    st zero, G, 25
+    add a, s, SE0
+    ld e0, a, 0
+    call cnd, y_ex, e0
+    ld ck, G, 24
+    call x, y_sa, 0, ck, cnd
+    call x, y_sn, 1, le_
+    call x, y_emit, @F_JZL@
+    call x, y_pushloop, le_, lt_
+    add a, s, SB0
+    ld b0, a, 0
+    call x, y_block, b0
+    call x, y_poploop
+    call x, y_sn, 0, lt_
+    call x, y_emit, @F_JMPL@
+    call x, y_sn, 0, le_
+    call x, y_emit, @F_LABEL@
+    ret 0
+k4: eq z, k, 4
+    jz z, k5
+    add a, s, SA
+    ld sa_, a, 0
+    call l, y_loc, sa_
+    ld nl_, G, 26
+    call lt_, y_lab
+    call le_, y_lab
+    call ln_, y_lab
+    add a, s, SE0
+    ld e0, a, 0
+    call f, y_ex, e0
+    ld fk, G, 24
+    call x, y_sn, 0, l
+    call x, y_sa, 1, fk, f
+    call x, y_emit, @F_MOVL@
+    add a, s, SE1
+    ld e1, a, 0
+    call t, y_ex, e1
+    ld tk, G, 24
+    call x, y_sn, 0, nl_
+    call x, y_sa, 1, tk, t
+    call x, y_emit, @F_MOVE@
+    call x, y_sn, 0, lt_
+    call x, y_emit, @F_LABEL@
+    call cc, y_tmp
+    call x, y_sn, 0, cc
+    call x, y_sn, 1, l
+    call x, y_sn, 2, nl_
+    call x, y_emit, @F_LEV@
+    call x, y_sn, 0, cc
+    call x, y_sn, 1, le_
+    call x, y_emit, @F_JZVL@
+    call x, y_pushloop, le_, ln_
+    add a, s, SB0
+    ld b0, a, 0
+    call x, y_block, b0
+    call x, y_poploop
+    call x, y_sn, 0, ln_
+    call x, y_emit, @F_LABEL@
+    call x, y_sn, 0, l
+    call x, y_emit, @F_ADDL1@
+    call x, y_sn, 0, lt_
+    call x, y_emit, @F_JMPL@
+    call x, y_sn, 0, le_
+    call x, y_emit, @F_LABEL@
+    ret 0
+k5: eq z, k, 5
+    jz z, k6
+    add a, s, SA
+    ld fa, a, 0
+    ld nf, G, 6
+    ge z, fa, nf
+    jz z, k5a
+    call x, y_err, 97
+k5a: add a, s, SARG
+    ld ah, a, 0
+    call cnt, y_chain, ah
+    add a, fa, FNP
+    ld np, a, 0
+    eq z, cnt, np
+    jnz z, k5b
+    call x, y_err, 98
+k5b: call bs, y_evalargs, ah
+    call zz, y_tmp
+    call x, y_sn, 0, zz
+    call x, y_sn, 1, fa
+    call x, y_emit, @F_CALLF@
+    st bs, G, 41
+    ret 0
+k6: eq z, k, 7
+    jz z, k7
+    ld cf, G, 35
+    jnz cf, k6a
+    call x, y_err, 99
+k6a: add a, s, SE0
+    ld e0, a, 0
+    call v, y_ex, e0
+    ld vk, G, 24
+    call x, y_sa, 0, vk, v
+    call x, y_emit, @F_RET@
+    ret 0
+k7: eq z, k, 8
+    jz z, k8
+    add a, s, SE0
+    ld e0, a, 0
+    call v, y_ex, e0
+    ld vk, G, 24
+    call x, y_sa, 0, vk, v
+    call x, y_emit, @F_PUTI@
+    ret 0
+k8: eq z, k, 9
+    jz z, k9
+    add a, s, SE0
+    ld e0, a, 0
+    call v, y_ex, e0
+    ld vk, G, 24
+    call x, y_sa, 0, vk, v
+    call x, y_emit, @F_PUTC@
+    ret 0
+k9: eq z, k, 12
+    jz z, k10
+    add a, s, SARG
+    ld ah, a, 0
+    jnz ah, k9a
+    call x, y_err, 100
+k9a: jz ah, k9z
+    mov zero, 0
+    st zero, G, 25
+    call v, y_ex, ah
+    ld vk, G, 24
+    call x, y_sa, 0, vk, v
+    call x, y_emit, @F_PUTI@
+    add a, ah, ENX
+    ld ah, a, 0
+    jz ah, k9b
+    call x, y_emit, @F_PUTC32@
+    jmp k9a
+k9b: call x, y_emit, @F_PUTC10@
+k9z: ret 0
+k10: eq z, k, 10
+    jz z, k11
+    ld n, G, 37
+    jnz n, k10a
+    call x, y_err, 101
+k10a: addi n, n, -1
+    add a, n, LKIR
+    ld l, a, 0
+    call x, y_sn, 0, l
+    call x, y_emit, @F_JMPL@
+    ret 0
+k11: eq z, k, 11
+    jz z, k12
+    ld n, G, 37
+    jnz n, k11a
+    call x, y_err, 102
+k11a: addi n, n, -1
+    add a, n, LDEV
+    ld l, a, 0
+    call x, y_sn, 0, l
+    call x, y_emit, @F_JMPL@
+    ret 0
+k12: call x, y_err, 103
+}
+
+; ---------- yazilan alan isaretleme ----------
+func y_mark(lv) {
+    add a, lv, EK
+    ld k, a, 0
+    add a, lv, EA
+    ld la, a, 0
+    ld nt, G, 8
+    eq z, k, 2
+    jz z, m2
+    ld ct, G, 32
+    call x, y_mk, ct, la
+    ret 0
+m2: eq z, k, 7
+    jz z, m3
+    ld ca, G, 33
+    call x, y_mk, ca, la
+    ret 0
+m3: eq z, k, 8
+    jz z, m4
+    ld cb, G, 34
+    call x, y_mk, cb, la
+    ret 0
+m4: eq z, k, 11
+    jz z, m9
+    add a, lv, EB
+    ld lb, a, 0
+    call x, y_mk, la, lb
+m9: ret 0
+}
+
+func y_mk(t, f) {      ; t >= 0, t < ntm, f < nf(t) ise yazildi say
+    lti z, t, 0
+    jnz z, m9
+    ld nt, G, 8
+    ge z, t, nt
+    jnz z, m9
+    add a, t, TMNF
+    ld nf, a, 0
+    ge z, f, nf
+    jnz z, m9
+    add a, t, TMF0
+    ld f0, a, 0
+    add fd, f0, f
+    add a, fd, FDW
+    mov one, 1
+    st one, a, 0
+m9: ret 0
+}
+
+func y_scan(h) {
+s1: jz h, s9
+    add a, h, SK
+    ld k, a, 0
+    eq z, k, 1
+    jz z, s2
+    add a, h, SE0
+    ld e0, a, 0
+    call x, y_mark, e0
+s2: add a, h, SB0
+    ld b0, a, 0
+    call x, y_scan, b0
+    add a, h, SB1
+    ld b1, a, 0
+    call x, y_scan, b1
+    add a, h, SNX
+    ld h, a, 0
+    jmp s1
+s9: ret 0
+}
+
+; ---------- islev cercevesi ----------
+func y_beginfn(fid, n, np) {
+    st np, G, 40
+    call x, y_sn, 0, n
+    call x, y_emit, fid
+    mov one, 1
+    st one, G, 31
+    mov zero, 0
+    st zero, G, 30
+    call bl, y_lab
+    st bl, G, 27
+    st zero, G, 28
+    mov i, 0
+b1: gei z, i, 257
+    jnz z, b2
+    add a, i, USEDL
+    st zero, a, 0
+    addi i, i, 1
+    jmp b1
+b2: ret 0
+}
+
+func y_endfn(np) {
+    call x, y_emit, @F_RET0@
+    ld nb, G, 28
+    jz nb, e1
+    ld bl, G, 27
+    call x, y_sn, 0, bl
+    call x, y_emit, @F_BADLAB@
+    call x, y_emit, @F_BADMOV@
+    call x, y_emit, @F_BADLD@
+    call x, y_emit, @F_RET0@
+e1: mov zero, 0
+    st zero, G, 31
+    mov l, np
+e2: gei z, l, 257
+    jnz z, e4
+    add a, l, USEDL
+    ld u, a, 0
+    jz u, e3
+    call x, y_sn, 0, l
+    call x, y_emit, @F_PROLOG@
+e3: addi l, l, 1
+    jmp e2
+e4: ld bn, G, 30
+    mov i, 0
+e5: ge z, i, bn
+    jnz z, e6
+    add a, i, BUFA
+    ld c, a, 0
+    call x, y_ch, c
+    addi i, i, 1
+    jmp e5
+e6: call x, y_emit, @F_CLOSE@
+    ret 0
+}
+
+; ---------- iskelet ----------
+func y_stored(ti, fi) {
+    add a, ti, TMF0
+    ld f0, a, 0
+    add fd, f0, fi
+    add a, fd, FDK
+    ld k, a, 0
+    eq z, k, 5
+    jz z, s1
+    ret 1
+s1: add a, fd, FDW
+    ld w, a, 0
+    ret w
+}
+
+func y_expand_all() {
+    ld nt, G, 8
+    mov i, 0
+t1: ge z, i, nt
+    jnz z, t9
+    add a, i, TMR
+    ld h, a, 0
+    call r, y_expblock, h
+    add a, i, TMR
+    st r, a, 0
+    addi i, i, 1
+    jmp t1
+t9: ld n, G, 9
+    mov i, 0
+e1: ge z, i, n
+    jnz z, e9
+    add a, i, ETY
+    ld h, a, 0
+    call r, y_expblock, h
+    add a, i, ETY
+    st r, a, 0
+    addi i, i, 1
+    jmp e1
+e9: ld n, G, 10
+    mov i, 0
+g1: ge z, i, n
+    jnz z, g9
+    add a, i, GIB
+    ld h, a, 0
+    call r, y_expblock, h
+    add a, i, GIB
+    st r, a, 0
+    addi i, i, 1
+    jmp g1
+g9: ld n, G, 6
+    mov i, 0
+f1: ge z, i, n
+    jnz z, f9
+    add a, i, FNB
+    ld h, a, 0
+    call r, y_expblock, h
+    add a, i, FNB
+    st r, a, 0
+    addi i, i, 1
+    jmp f1
+f9: ld h, G, 14
+    call r, y_expblock, h
+    st r, G, 14
+    ld h, G, 15
+    call r, y_expblock, h
+    st r, G, 15
+    ret 0
+}
+
+func y_lib_screen() {
+    ld w, G, 16
+    ld h, G, 17
+    mul wh, w, h
+    ld bg, G, 18
+    call x, y_sn, 0, w
+    call x, y_sn, 1, h
+    call x, y_sn, 2, wh
+    call x, y_sn, 3, bg
+    call x, y_emit, @F_LIBSCREEN@
+    ret 0
+}
+
+func y_generate() {
+    ld nt, G, 8
+    gti z, nt, 1000
+    jnz z, bad1
+    ld nfn, G, 6
+    gti z, nfn, 5000
+    jz z, g0
+bad1: call x, y_err, 110
+g0: ld w, G, 16
+    gti hs, w, 0
+    call x, y_expand_all
+    ; dogrulamalar
+    ld n, G, 9
+    mov i, 0
+v1: ge z, i, n
+    jnz z, v2
+    add a, i, ETA
+    ld ea, a, 0
+    add a, i, ETB
+    ld eb, a, 0
+    ge z, ea, nt
+    jnz z, vbad
+    ge z, eb, nt
+    jnz z, vbad
+    eq z, ea, eb
+    jz z, v1a
+vbad: call x, y_err, 111
+v1a: addi i, i, 1
+    jmp v1
+v2: ld n, G, 10
+    mov i, 0
+v3: ge z, i, n
+    jnz z, v4
+    add a, i, GIT
+    ld gt_, a, 0
+    lti z, gt_, 0
+    jnz z, v3a
+    ge z, gt_, nt
+    jz z, v3a
+    call x, y_err, 112
+v3a: addi i, i, 1
+    jmp v3
+v4: ld n, G, 11
+    ld ng, G, 4
+    mov i, 0
+v5: ge z, i, n
+    jnz z, v6
+    add a, i, AGG
+    ld ag, a, 0
+    ge z, ag, ng
+    jz z, v5a
+    call x, y_err, 113
+v5a: add a, i, AGT
+    ld at, a, 0
+    ge z, at, nt
+    jz z, v5b
+    call x, y_err, 114
+v5b: addi i, i, 1
+    jmp v5
+    ; yazilan alan analizi
+v6: mov i, 0
+w1: ge z, i, nt
+    jnz z, w2
+    call x, y_setctx, i, -1, -1, 0, 16
+    add a, i, TMR
+    ld h, a, 0
+    call x, y_scan, h
+    addi i, i, 1
+    jmp w1
+w2: ld n, G, 9
+    mov i, 0
+w3: ge z, i, n
+    jnz z, w4
+    add a, i, ETA
+    ld ea, a, 0
+    add a, i, ETB
+    ld eb, a, 0
+    call x, y_setctx, -1, ea, eb, 0, 16
+    add a, i, ETY
+    ld h, a, 0
+    call x, y_scan, h
+    addi i, i, 1
+    jmp w3
+w4: ld n, G, 10
+    mov i, 0
+w5: ge z, i, n
+    jnz z, w6
+    add a, i, GIT
+    ld gt_, a, 0
+    call x, y_setctx, gt_, -1, -1, 0, 16
+    add a, i, GIB
+    ld h, a, 0
+    call x, y_scan, h
+    addi i, i, 1
+    jmp w5
+w6: ld n, G, 6
+    mov i, 0
+w7: ge z, i, n
+    jnz z, w8
+    call x, y_setctx, -1, -1, -1, 0, 16
+    add a, i, FNB
+    ld h, a, 0
+    call x, y_scan, h
+    addi i, i, 1
+    jmp w7
+w8: call x, y_setctx, -1, -1, -1, 0, 16
+    ld h, G, 14
+    call x, y_scan, h
+    ld h, G, 15
+    call x, y_scan, h
+    ; kare dongusu gerekli mi?
+    ld net, G, 9
+    ld ngi, G, 10
+    ld nag, G, 11
+    ld hb, G, 12
+    mov anyf, 0
+    jz net, a1
+    mov anyf, 1
+a1: jz ngi, a2
+    mov anyf, 1
+a2: jz nag, a3
+    mov anyf, 1
+a3: jz hb, a4
+    mov anyf, 1
+a4: mov i, 0
+a5: ge z, i, nt
+    jnz z, a9
+    add a, i, TMR
+    ld h, a, 0
+    jz h, a6
+    mov anyf, 1
+a6: add a, i, TMND
+    ld nd, a, 0
+    jz nd, a7
+    mov anyf, 1
+a7: addi i, i, 1
+    jmp a5
+a9: ld fr, G, 19
+    mov loop, hs
+    gti z, fr, 0
+    jz z, b1
+    mov loop, 1
+b1: jz hb, b2
+    mov loop, 1
+b2: jz anyf, b3
+    jnz loop, b3
+    call x, y_err, 115
+b3: jz loop, b4
+    jnz hs, b4
+    jnz fr, b4
+    jnz hb, b4
+    call x, y_err, 116
+b4: ; fr == 0 ise "frames==0": yukaridaki fr isaretli; fr<0 icin frames>0 yanlis, ==0 yanlis
+    mov i, 0
+b5: ge z, i, nt
+    jnz z, b9
+    add a, i, TMND
+    ld nd, a, 0
+    jz nd, b6
+    jnz hs, b6
+    call x, y_err, 117
+b6: addi i, i, 1
+    jmp b5
+b9: ; bellek ve veri
+    ld ngl, G, 4
+    addi words, ngl, 65
+    jz hs, m1
+    ld h, G, 17
+    mul wh, w, h
+    add words, words, wh
+m1: ld na, G, 5
+    mov i, 0
+m2: ge z, i, na
+    jnz z, m3
+    add a, i, ARSZ
+    ld sz, a, 0
+    add words, words, sz
+    addi i, i, 1
+    jmp m2
+m3: mov nvirt, 0
+    mov nstored, 0
+    mov wstored, 0
+    mov i, 0
+m4: ge z, i, nt
+    jnz z, m9
+    add a, i, TMNF
+    ld nf, a, 0
+    add a, i, TMN
+    ld tn, a, 0
+    mov j, 0
+m5: ge z, j, nf
+    jnz z, m8
+    call s, y_stored, i, j
+    jz s, m6
+    add words, words, tn
+    addi nstored, nstored, 1
+    add wstored, wstored, tn
+    jmp m7
+m6: add nvirt, nvirt, tn
+m7: addi j, j, 1
+    jmp m5
+m8: addi i, i, 1
+    jmp m4
+m9: call x, y_sn, 0, nvirt
+    call x, y_sn, 1, nstored
+    call x, y_sn, 2, wstored
+    mov fw, 0
+    jz hs, m10
+    ld h, G, 17
+    mul fw, w, h
+m10: call x, y_sn, 3, fw
+    call x, y_emit, @F_H1@
+    call x, y_emit, @F_H2@
+    addi mem, words, 1024
+    lti z, mem, 4096
+    jz z, m11
+    mov mem, 4096
+m11: call x, y_sn, 0, mem
+    call x, y_emit, @F_MEM@
+    mov i, 0
+d1: ge z, i, ngl
+    jnz z, d2
+    add a, i, GLV
+    ld gv, a, 0
+    call x, y_sn, 0, i
+    call x, y_sn, 1, gv
+    call x, y_emit, @F_DATAG@
+    addi i, i, 1
+    jmp d1
+d2: call x, y_emit, @F_DATAK@
+    mov i, 0
+d3: ge z, i, na
+    jnz z, d4
+    add a, i, ARSZ
+    ld sz, a, 0
+    call x, y_sn, 0, i
+    call x, y_sn, 1, sz
+    call x, y_emit, @F_SPD@
+    addi i, i, 1
+    jmp d3
+d4: mov i, 0
+d5: ge z, i, nt
+    jnz z, d9
+    add a, i, TMNF
+    ld nf, a, 0
+    add a, i, TMN
+    ld tn, a, 0
+    mov j, 0
+d6: ge z, j, nf
+    jnz z, d8
+    call s, y_stored, i, j
+    jz s, d7
+    call x, y_sn, 0, i
+    call x, y_sn, 1, j
+    call x, y_sn, 2, tn
+    call x, y_emit, @F_SPS@
+d7: addi j, j, 1
+    jmp d6
+d8: addi i, i, 1
+    jmp d5
+d9: jz hs, d10
+    ld h, G, 17
+    mul wh, w, h
+    call x, y_sn, 0, wh
+    call x, y_emit, @F_SPFB@
+    call x, y_lib_screen
+d10: call x, y_gen_baslat
+    call x, y_gen_units
+    call x, y_gen_main
+    ret 0
+}
+
+func y_gen_baslat() {
+    call x, y_emit, @F_BASLAT@
+    ld na, G, 5
+    mov a_, 0
+b1: ge z, a_, na
+    jnz z, b9
+    add a, a_, ARIS
+    ld st0, a, 0
+    add a, a_, ARIN
+    ld cnt, a, 0
+    mov k, 0
+b2: ge z, k, cnt
+    jnz z, b8
+    add a, st0, k
+    add a, a, INITV
+    ld v, a, 0
+    jz v, b7
+    call x, y_sn, 0, v
+    call x, y_sn, 1, a_
+    call x, y_sn, 2, k
+    call x, y_emit, @F_STINIT@
+b7: addi k, k, 1
+    jmp b2
+b8: addi a_, a_, 1
+    jmp b1
+b9: ld nt, G, 8
+    mov ti, 0
+t1: ge z, ti, nt
+    jnz z, t99
+    add a, ti, TMNF
+    ld nf, a, 0
+    mov any, 0
+    mov fi, 0
+t2: ge z, fi, nf
+    jnz z, t3
+    call s, y_stored, ti, fi
+    jz s, t2a
+    mov any, 1
+t2a: addi fi, fi, 1
+    jmp t2
+t3: jz any, t8
+    call l, y_lab
+    call d, y_lab
+    add a, ti, TMN
+    ld tn, a, 0
+    call x, y_emit, @F_MOVI0@
+    call x, y_sn, 0, l
+    call x, y_emit, @F_LABEL@
+    call x, y_sn, 0, tn
+    call x, y_emit, @F_LTCI@
+    call x, y_sn, 0, d
+    call x, y_emit, @F_JZCL@
+    mov fi, 0
+t4: ge z, fi, nf
+    jnz z, t7
+    call s, y_stored, ti, fi
+    jz s, t6
+    mov zero, 0
+    st zero, G, 25
+    call v, y_tmp
+    add a, ti, TMF0
+    ld f0, a, 0
+    add fd, f0, fi
+    add a, fd, FDK
+    ld kind, a, 0
+    add a, fd, FDP0
+    ld p0, a, 0
+    add a, fd, FDP1
+    ld p1, a, 0
+    add a, fd, FDP2
+    ld p2, a, 0
+    call x, y_sn, 0, v
+    eq z, kind, 1
+    jz z, k2
+    call x, y_sn, 1, p0
+    call x, y_emit, @F_MOVVN@
+    jmp kz
+k2: eq z, kind, 2
+    jz z, k3
+    call x, y_sn, 1, p1
+    call x, y_emit, @F_MULVI@
+    call x, y_sn, 1, p0
+    call x, y_emit, @F_ADDSELF@
+    jmp kz
+k3: eq z, kind, 3
+    jz z, k4
+    call x, y_sn, 1, p0
+    call x, y_emit, @F_MODVI@
+    call x, y_sn, 1, p2
+    call x, y_emit, @F_MULSELF@
+    call x, y_sn, 1, p1
+    call x, y_emit, @F_ADDSELF@
+    jmp kz
+k4: eq z, kind, 4
+    jz z, k5
+    call x, y_sn, 1, p0
+    call x, y_emit, @F_DIVVI@
+    call x, y_sn, 1, p2
+    call x, y_emit, @F_MULSELF@
+    call x, y_sn, 1, p1
+    call x, y_emit, @F_ADDSELF@
+    jmp kz
+k5: muli sd, p2, 1013904223
+    addi sd, sd, 12345
+    call x, y_emit, @F_RMUL@
+    call x, y_sn, 1, sd
+    call x, y_emit, @F_ADDSELF@
+    call x, y_emit, @F_AND24@
+    call x, y_emit, @F_RMUL2@
+    call x, y_emit, @F_RADD@
+    call x, y_emit, @F_AND24@
+    call x, y_emit, @F_RSHR@
+    sub rng, p1, p0
+    addi rng, rng, 1
+    call x, y_sn, 1, rng
+    call x, y_emit, @F_MODSELF@
+    call x, y_sn, 1, p0
+    call x, y_emit, @F_ADDSELF@
+kz: call p, y_tmp
+    call x, y_sn, 0, p
+    call x, y_sn, 1, ti
+    call x, y_sn, 2, fi
+    call x, y_emit, @F_ADDSYMV@
+    call x, y_sn, 0, v
+    call x, y_sn, 1, p
+    call x, y_emit, @F_STPV@
+t6: addi fi, fi, 1
+    jmp t4
+t7: call x, y_emit, @F_ADDI1@
+    call x, y_sn, 0, l
+    call x, y_emit, @F_JMPL@
+    call x, y_sn, 0, d
+    call x, y_emit, @F_LABEL@
+t8: addi ti, ti, 1
+    jmp t1
+t99: call x, y_emit, @F_RET0@
+    call x, y_emit, @F_CLOSE@
+    ret 0
+}
+
+func y_loophead(tn) {          ; l,nx,d etiketleri uretip dongu basini yazar; (l,nx,d) G[43..45]
+    call l, y_lab
+    call nx, y_lab
+    call d, y_lab
+    st l, G, 43
+    st nx, G, 44
+    st d, G, 45
+    call x, y_emit, @F_MOVI0@
+    call x, y_sn, 0, l
+    call x, y_emit, @F_LABEL@
+    call x, y_sn, 0, tn
+    call x, y_emit, @F_LTCI@
+    call x, y_sn, 0, d
+    call x, y_emit, @F_JZCL@
+    ret 0
+}
+
+func y_looptail(l, nx, d) {
+    call x, y_sn, 0, nx
+    call x, y_emit, @F_LABEL@
+    call x, y_emit, @F_ADDI1@
+    call x, y_sn, 0, l
+    call x, y_emit, @F_JMPL@
+    call x, y_sn, 0, d
+    call x, y_emit, @F_LABEL@
+    ret 0
+}
+
+func y_gen_units() {
+    ld nfn, G, 6
+    mov k, 0
+f1: ge z, k, nfn
+    jnz z, f9
+    add a, k, FNP
+    ld np, a, 0
+    add a, k, FNL
+    ld nl, a, 0
+    call x, y_setctx, -1, -1, -1, 1, nl
+    call x, y_beginfn, @F_HF@, k, np
+    add a, k, FNB
+    ld h, a, 0
+    call x, y_block, h
+    call x, y_endfn, np
+    addi k, k, 1
+    jmp f1
+f9: ld nt, G, 8
+    mov ti, 0
+r1: ge z, ti, nt
+    jnz z, r9
+    add a, ti, TMR
+    ld h, a, 0
+    jz h, r8
+    call x, y_setctx, ti, -1, -1, 0, 16
+    call x, y_beginfn, @F_HR@, ti, 0
+    add a, ti, TMN
+    ld tn, a, 0
+    call x, y_loophead, tn
+    ld l, G, 43
+    ld nx, G, 44
+    ld d, G, 45
+    call x, y_pushloop, nx, nx
+    add a, ti, TMR
+    ld h, a, 0
+    call x, y_block, h
+    call x, y_poploop
+    call x, y_looptail, l, nx, d
+    call x, y_endfn, 0
+r8: addi ti, ti, 1
+    jmp r1
+r9: ld net, G, 9
+    mov k, 0
+e1: ge z, k, net
+    jnz z, e9
+    add a, k, ETA
+    ld ea, a, 0
+    add a, k, ETB
+    ld eb, a, 0
+    call x, y_setctx, -1, ea, eb, 0, 16
+    call x, y_beginfn, @F_HE@, k, 0
+    call la, y_lab
+    call lb, y_lab
+    call nxa, y_lab
+    call nxb, y_lab
+    call d, y_lab
+    add a, ea, TMN
+    ld an, a, 0
+    add a, eb, TMN
+    ld bn, a, 0
+    call x, y_emit, @F_MOVIA0@
+    call x, y_sn, 0, la
+    call x, y_emit, @F_LABEL@
+    call x, y_sn, 0, an
+    call x, y_emit, @F_LTCIA@
+    call x, y_sn, 0, d
+    call x, y_emit, @F_JZCL@
+    call x, y_emit, @F_MOVIB0@
+    call x, y_sn, 0, lb
+    call x, y_emit, @F_LABEL@
+    call x, y_sn, 0, bn
+    call x, y_emit, @F_LTCIB@
+    call x, y_sn, 0, nxa
+    call x, y_emit, @F_JZCL@
+    mov zero, 0
+    st zero, G, 25
+    add a, k, ETC
+    ld c, a, 0
+    call cnd, y_ex, c
+    ld ck, G, 24
+    call x, y_sa, 0, ck, cnd
+    call x, y_sn, 1, nxb
+    call x, y_emit, @F_JZL@
+    call x, y_pushloop, nxb, nxb
+    add a, k, ETY
+    ld h, a, 0
+    call x, y_block, h
+    call x, y_poploop
+    call x, y_sn, 0, nxb
+    call x, y_emit, @F_LABEL@
+    call x, y_emit, @F_ADDIB1@
+    call x, y_sn, 0, lb
+    call x, y_emit, @F_JMPL@
+    call x, y_sn, 0, nxa
+    call x, y_emit, @F_LABEL@
+    call x, y_emit, @F_ADDIA1@
+    call x, y_sn, 0, la
+    call x, y_emit, @F_JMPL@
+    call x, y_sn, 0, d
+    call x, y_emit, @F_LABEL@
+    call x, y_endfn, 0
+    addi k, k, 1
+    jmp e1
+e9: ld ngi, G, 10
+    mov k, 0
+g1: ge z, k, ngi
+    jnz z, g9
+    add a, k, GIT
+    ld gt_, a, 0
+    call x, y_setctx, gt_, -1, -1, 0, 16
+    call x, y_beginfn, @F_HGI@, k, 0
+    lti z, gt_, 0
+    jz z, g2
+    add a, k, GIB
+    ld h, a, 0
+    call x, y_block, h
+    jmp g8
+g2: add a, gt_, TMN
+    ld tn, a, 0
+    call x, y_loophead, tn
+    ld l, G, 43
+    ld nx, G, 44
+    ld d, G, 45
+    call x, y_pushloop, nx, nx
+    add a, k, GIB
+    ld h, a, 0
+    call x, y_block, h
+    call x, y_poploop
+    call x, y_looptail, l, nx, d
+g8: call x, y_endfn, 0
+    addi k, k, 1
+    jmp g1
+g9: ld nag, G, 11
+    mov k, 0
+a1: ge z, k, nag
+    jnz z, a9
+    add a, k, AGT
+    ld at, a, 0
+    call x, y_setctx, at, -1, -1, 0, 16
+    call x, y_beginfn, @F_HA@, k, 0
+    add a, k, AGOP
+    ld op, a, 0
+    mov init, 0
+    eq z, op, 3
+    jz z, a2
+    mov init, -4611686018427387904
+a2: eq z, op, 4
+    jz z, a3
+    mov init, 4611686018427387904
+a3: call x, y_sn, 0, init
+    call x, y_emit, @F_MOVACCN@
+    add a, at, TMN
+    ld tn, a, 0
+    call x, y_loophead, tn
+    ld l, G, 43
+    ld nx, G, 44
+    ld d, G, 45
+    mov zero, 0
+    st zero, G, 25
+    add a, k, AGC
+    ld c, a, 0
+    call cnd, y_ex, c
+    ld ck, G, 24
+    call x, y_sa, 0, ck, cnd
+    call x, y_sn, 1, nx
+    call x, y_emit, @F_JZL@
+    add a, k, AGV
+    ld c, a, 0
+    call v, y_ex, c
+    ld vk, G, 24
+    eq z, op, 1
+    jz z, a4
+    call x, y_sa, 0, vk, v
+    call x, y_emit, @F_ADDACC@
+    jmp a7
+a4: eq z, op, 2
+    jz z, a5
+    call x, y_emit, @F_ADDACC1@
+    jmp a7
+a5: call sk, y_lab
+    call cc, y_tmp
+    call x, y_sn, 0, cc
+    call x, y_sa, 1, vk, v
+    eq z, op, 3
+    jz z, a5a
+    call x, y_emit, @F_GTACC@
+    jmp a5b
+a5a: call x, y_emit, @F_LTACC@
+a5b: call x, y_sn, 0, cc
+    call x, y_sn, 1, sk
+    call x, y_emit, @F_JZVL@
+    call x, y_sa, 0, vk, v
+    call x, y_emit, @F_MOVACC@
+    call x, y_sn, 0, sk
+    call x, y_emit, @F_LABEL@
+a7: call x, y_looptail, l, nx, d
+    add a, k, AGG
+    ld g, a, 0
+    call x, y_sn, 0, g
+    call x, y_emit, @F_STACC@
+    call x, y_endfn, 0
+    addi k, k, 1
+    jmp a1
+a9: ld w, G, 16
+    jz w, c99
+    ld nt, G, 8
+    mov ti, 0
+c1: ge z, ti, nt
+    jnz z, c99
+    add a, ti, TMND
+    ld nd, a, 0
+    jz nd, c8
+    call x, y_setctx, ti, -1, -1, 0, 16
+    call x, y_beginfn, @F_HC@, ti, 0
+    add a, ti, TMN
+    ld tn, a, 0
+    call x, y_loophead, tn
+    ld l, G, 43
+    ld nx, G, 44
+    ld d, G, 45
+    add a, ti, TMD0
+    ld d0, a, 0
+    mov q, 0
+c2: ge z, q, nd
+    jnz z, c7
+    add dr, d0, q
+    mov zero, 0
+    st zero, G, 25
+    add a, dr, DSH
+    ld sh, a, 0
+    mov want, 3
+    eq z, sh, 1
+    jz z, c3
+    mov want, 5
+c3: ld base, G, 41
+    mov j, 0
+c4: ge z, j, want
+    jnz z, c6
+    eq z, j, 0
+    jz z, c4a
+    add a, dr, DA0
+    ld ee, a, 0
+    jmp c4e
+c4a: eq z, j, 1
+    jz z, c4b
+    add a, dr, DA1
+    ld ee, a, 0
+    jmp c4e
+c4b: eq z, j, 2
+    jz z, c4c
+    add a, dr, DA2
+    ld ee, a, 0
+    jmp c4e
+c4c: eq z, j, 3
+    jz z, c4d
+    add a, dr, DA3
+    ld ee, a, 0
+    jmp c4e
+c4d: add a, dr, DA4
+    ld ee, a, 0
+c4e: call v, y_ex, ee
+    ld vk, G, 24
+    ld top, G, 41
+    add a, top, VK
+    st vk, a, 0
+    add a, top, VV
+    st v, a, 0
+    addi top, top, 1
+    st top, G, 41
+    addi j, j, 1
+    jmp c4
+c6: mov j, 0
+c6a: ge z, j, want
+    jnz z, c6b
+    add t, base, j
+    add a, t, VK
+    ld vk, a, 0
+    add a, t, VV
+    ld v, a, 0
+    call x, y_sa, j, vk, v
+    addi j, j, 1
+    jmp c6a
+c6b: st base, G, 41
+    eq z, sh, 1
+    jz z, c6c
+    call x, y_emit, @F_RECT@
+    jmp c6d
+c6c: call x, y_emit, @F_PUTPX@
+c6d: addi q, q, 1
+    jmp c2
+c7: call x, y_looptail, l, nx, d
+    call x, y_endfn, 0
+c8: addi ti, ti, 1
+    jmp c1
+c99: call x, y_setctx, -1, -1, -1, 0, 16
+    call x, y_beginfn, @F_HILK@, 0, 0
+    ld h, G, 14
+    call x, y_block, h
+    call x, y_endfn, 0
+    call x, y_setctx, -1, -1, -1, 0, 16
+    call x, y_beginfn, @F_HSON@, 0, 0
+    ld h, G, 15
+    call x, y_block, h
+    call x, y_endfn, 0
+    ret 0
+}
+
+func y_gen_main() {
+    call x, y_setctx, -1, -1, -1, 0, 16
+    call x, y_emit, @F_MAINHEAD@
+    ld w, G, 16
+    gti hs, w, 0
+    ld fr, G, 19
+    ld hb, G, 12
+    mov loop, hs
+    gti z, fr, 0
+    jz z, l1
+    mov loop, 1
+l1: jz hb, l2
+    mov loop, 1
+l2: jz loop, lend
+    call x, y_emit, @F_MAINLOOP@
+    gti z, fr, 0
+    jz z, l3
+    call x, y_sn, 0, fr
+    call x, y_emit, @F_FRAMECHK@
+l3: ld ngi, G, 10
+    jz ngi, l5
+    call x, y_emit, @F_EVHEAD@
+    mov k, 0
+l4: ge z, k, ngi
+    jnz z, l4z
+    add a, k, GIC
+    ld code, a, 0
+    call x, y_sn, 0, code
+    call x, y_sn, 1, k
+    call x, y_emit, @F_EVCASE@
+    addi k, k, 1
+    jmp l4
+l4z: call x, y_emit, @F_EVTAIL@
+l5: ld nt, G, 8
+    mov ti, 0
+l6: ge z, ti, nt
+    jnz z, l7
+    add a, ti, TMR
+    ld h, a, 0
+    jz h, l6a
+    call x, y_sn, 0, ti
+    call x, y_emit, @F_CALLR@
+l6a: addi ti, ti, 1
+    jmp l6
+l7: ld net, G, 9
+    mov k, 0
+l8: ge z, k, net
+    jnz z, l9
+    call x, y_sn, 0, k
+    call x, y_emit, @F_CALLE@
+    addi k, k, 1
+    jmp l8
+l9: ld nag, G, 11
+    mov k, 0
+l10: ge z, k, nag
+    jnz z, l11
+    call x, y_sn, 0, k
+    call x, y_emit, @F_CALLA@
+    addi k, k, 1
+    jmp l10
+l11: jz hb, l12
+    mov zero, 0
+    st zero, G, 25
+    ld bt, G, 13
+    call cnd, y_ex, bt
+    ld ck, G, 24
+    call x, y_sa, 0, ck, cnd
+    call x, y_emit, @F_BITIS1@
+    call x, y_emit, @F_BITIS2@
+l12: jz hs, l15
+    call x, y_emit, @F_CALLTEMIZLE@
+    ld nt, G, 8
+    mov ti, 0
+l13: ge z, ti, nt
+    jnz z, l14
+    add a, ti, TMND
+    ld nd, a, 0
+    jz nd, l13a
+    call x, y_sn, 0, ti
+    call x, y_emit, @F_CALLC@
+l13a: addi ti, ti, 1
+    jmp l13
+l14: ld h, G, 17
+    call x, y_sn, 0, w
+    call x, y_sn, 1, h
+    call x, y_emit, @F_PRESENT@
+l15: call x, y_emit, @F_FRAMEINC@
+lend: call x, y_emit, @F_MAINTAIL@
+    ret 0
+}
+
+func y_main() {
+    mov n, 0
+r1: host ch, getc
+    lti z, ch, 0
+    jnz z, r2
+    gei z, n, 1048576
+    jz z, r1a
+    call x, y_err, 120
+r1a: add a, n, IB
+    st ch, a, 0
+    addi n, n, 1
+    jmp r1
+r2: st n, G, 1
+    call x, y_decode
+    call x, y_generate
+    ld no, G, 29
+    mov i, 0
+o1: ge z, i, no
+    jnz z, o9
+    add a, i, OUTA
+    ld c, a, 0
+    host putc, c
+    addi i, i, 1
+    jmp o1
+o9: ret 0
+}
+
+func main() {
+    call x, y_main
+}

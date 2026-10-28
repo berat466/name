@@ -21,7 +21,8 @@ data MSGOFF = 0 11 21 33 45
 data MSGS = @MSGS@
 data PUTIB = @PUTIB@
 data PUTCB = @PUTCB@
-@TABLOLAR@
+data TPLS = @TPLS@
+data TPL = @TPL@
 
 ; G: 0 NT  1 imlec  2 KONUM  3 GECIS  4 bellek  5 giris  6 nsabit  7 sabit tabani  8 nveri  9 veri tabani  10 bss  11 nfonk  12 toplam komut
 ;    20 a  21 b  22 c  23 fonksiyon taban komutu  24 gecerli fonksiyon

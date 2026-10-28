@@ -19,7 +19,8 @@ space FNC 65536
 space FNB 65536
 space S 1024
 space G 64
-@TABLOLAR@
+data NOPS = @NOPS@
+data KIND = @KIND@
 data ARITY = 1 1 1 0 3 0 0
 
 ; G: 0 NT  1 bayrak  2 bellek  3 giris  4 nsabit  5 nveri  6 bss  7 nfonk  8 imlec  9 toplam komut

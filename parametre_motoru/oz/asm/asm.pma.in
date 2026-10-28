@@ -72,7 +72,11 @@ space OUTB 1048576
 space NMO 64
 space NML 64
 space G 128
-@TABLOLAR@
+data OPNAMES = @OPNAMES@
+data NOPS = @NOPS@
+data KIND = @KIND@
+data ARITY = 1 1 1 0 3 0 0
+data KWS = "memory\0entry\0data\0space\0func\0gt\0ge\0fgt\0fge\0main\0"
 
 ; G: 0 NSRC(kullanilan) 1 SATIR 2 NTOK 3 NST 4 NFN 5 NSY 6 NCONST 7 NDATA 8 BSS 9 BELLEK 10 giris-ad-ofset 11 giris-ad-uzunluk 12 giris-satiri
 ;    13 PV(parse_int degeri) 14 NGC(genel komut sayisi) 15 NOUT 16 gecerli fonksiyon 17 ORJ_UZUNLUK(kaynak) 20 NREG 21 NLAB 22 NIR 23 NOPR 24 NLIT 25 MAXWIN
