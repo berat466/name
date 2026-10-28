@@ -8,7 +8,7 @@ fail() { bad=$((bad+1)); echo "HATA: $1"; }
 kos() {   # etiket : $T/o.pma
   $PM asm $T/o.pma -o $T/o.pmb --strip > /dev/null 2>$T/ae || { fail "$1 derlenmedi: $(head -c 80 $T/ae)"; return; }
   $PM liste $T/o.pmb > $T/l.txt 2>/dev/null
-  if ! $PM run $D/elf.pmy < $T/l.txt > $T/p.elf 2>/dev/null; then ret=$((ret+1)); return; fi
+  if ! $PM run ${ELFGEN:-$D/elf.pmy} < $T/l.txt > $T/p.elf 2>/dev/null; then ret=$((ret+1)); return; fi
   chmod +x $T/p.elf; n=$((n+1))
   (ulimit -v 400000; timeout 10 $PM run $T/o.pmb < /dev/null > $T/o1 2> $T/e1); r1=$?
   (ulimit -v 400000; timeout 10 $T/p.elf < /dev/null > $T/o2 2> $T/e2); r2=$?

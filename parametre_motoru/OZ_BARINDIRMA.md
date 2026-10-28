@@ -74,7 +74,7 @@ Her adımda **ölçü**: bayt/çıktı eşitliği (otomatik, ajan yok), hız (pa
 - Test kapsamı: rastgele program üreticisi yalnızca desteklenen altkümeden üretir; stdin her zaman boş (getc desteklenmiyor); OOB tuzağı rastgele kümede çıkmıyor, yalnızca `trap_oob.pma` ile sınandı [Muhtemel yetersiz kapsam].
 - Bulunan 3 üretici hatası düzeltildi (başlık çıktısı, `j==2` işlenen yazımı, `sayi` `-` bloğu); bunlar farksal test olmadan fark edilmezdi.
 
-**Sıradaki adım (kullanıcı sırası):** doğrulayıcı + analiz taşındı (§3c); sırada bağımsız ELF üreticisini genişletmek (call, alloc, getc/G-Ç), sonra üreticiyi `pm`'siz çalıştırmak.
+**Sıradaki adım (kullanıcı sırası):** doğrulayıcı + analiz taşındı (§3c); ELF üreticisi genişletildi ve pm'siz çalışıyor (§3d). Sırada: assembler/PMY1 açıcı gibi kaynaktan-tablo üretim araçlarını parametreye taşımak ve motorun kendi yeni sürümünü üretmesi.
 
 ## 3c. PMB1 doğrulayıcı + analiz parametre tablosunda (`oz/dogr/`)
 
@@ -96,6 +96,25 @@ Her adımda **ölçü**: bayt/çıktı eşitliği (otomatik, ajan yok), hız (pa
 
 **ELF OOB tamamlaması (`oz/elf/dogrula_oob.sh`):** 890 program (ld/st × 5 bellek boyutu × 11 taban × 8 ofset + 10 döngü/geri-sayım), 1640 denetim hepsi geçti; 750 program OOB tuzağına, 140'ı sınır içinde bitti; çıktı, çıkış kodu ve tuzak adı `pm run` ile aynı. Tüm koşular `ulimit -v` + `timeout` altında.
 
+## 3d. Bağımsız ELF üreticisi genişletildi ve kendini yeniden üretti (`oz/elf2/`, `oz/bag/`)
+
+**Yeni üretici `gen2` [Kesin]:** `oz/elf2/gen2.pmb` (4434 bayt PMB1 tablosu, 562 komut, 16 fonksiyon) `pm liste` biçimindeki bir programdan bağımsız Linux x86-64 ELF üretir. Önceki fizibilite üreticisinin (`oz/elf/elf.pmy`, tek fonksiyon) üstüne eklenenler: **çok fonksiyonlu program, `call`/`ret` (pencereli yazmaçlar, çağrıda yerel yazmaçları sıfırlama), `alloc`, `host getc`/`putc`/`puti`, tuzaklar DIV0/OOB/STACK/DEPTH/ALLOC** (C++ VM ile aynı sınırlar: 2^20 sözcük yazmaç yığını, 65536 kare; stderr `TRAP: AD`, çıkış 2). Mantık kodda değil **veri tablosunda**: `sablon.txt` komut başına x86-64 şablonunu tanımlar (bayt + alan yer tutucuları); `sablon.awk` yalnızca bunu sayı dizisine çevirir (`TPL/TPLS`); `gen2.pma.in` şablonları iki geçişte (boyut/konum, sonra çıktı) yorumlayan 560 komutluk döngüdür.
+
+**Yazım biçimi (dürüstlük):** `gen2` `.pma` assembly'sinden `pm asm` ile üretilen PMB1 tablosudur (doğrulayıcıyla aynı gerekçe); `uret.sh` yalnızca komut tablolarını ve eski üreticideki puti/putc bayt bloklarını yerleştirir.
+
+**Doğrulama (`oz/elf2/dogrula_elf2.sh`, otomatik, ajan yok) — tam çalışma: 2846 denetim, hepsi geçti:**
+- 482 program `pm run` ile karşılaştırıldı (stdout bayt-bayt, çıkış kodu, tuzak adı; 53'ü tuzakla bitiyor): depodaki tüm `.pma` (boş ve dolu stdin), 400 rastgele çok fonksiyonlu program (çağrı, alloc, getc, döngü, bellek, bölme), elle yazılmış uç durumlar: sonsuz özyineleme (DEPTH), kare büyüklüğüne göre STACK, **eşikte** özyineleme (pm'in geçtiği en büyük derinlik ve +1; yığın sınırında tam eşitlik dahil), alloc tam dolu / 1 fazla / negatif / ikinci alloc, `data`+`space`, getc'de 0/128/255 baytları ve EOF, çağrıda yerel yazmaçların sıfırlanması, çağrı penceresinin üst üste binmesi, karşılıklı özyineleme.
+- Desteklenmeyen girdiler (`fadd`, `present`, `putf`, `poll`, `frame`): üretici reddeder, stdout **boş** (kısmi ELF yok). Depodaki 12 program (kayan nokta/sunum kullanan uygulamalar) bu yüzden ELF'e çevrilemiyor.
+- OOB: 890 programlık `dogrula_oob.sh` gen2 ile de geçti (1640 denetim).
+- **`valid.pmb` (doğrulayıcı) ELF'e çevrildi**; 656 girdide (derlem + rastgele programlar + liste mutantları) `pm run valid.pmb` ile aynı çıktı ve çıkış kodu.
+- **Sabit nokta [Kesin]:** `pm run gen2.pmb` → `gen2.elf`; `gen2.elf` kendi listesinden (pm'siz) kendi ELF'ini üretti: 1., 2. ve 3. nesil bayt-bayt aynı (27541 bayt). Not: bu, üretici mantığının doğruluğunu tek başına kanıtlamaz (aynı mantığın kendi çıktısı); doğruluk kanıtı yukarıdaki `pm run` karşılaştırmalarıdır. Sabit nokta, 560 komutluk büyük bir programın yerel kodunun VM ile aynı davrandığının ek kanıtıdır.
+- **Test duyarlılığı (sabotaj):** şablonlara 12 kasıtlı hata sokuldu (DEPTH eşiği, STACK karşılaştırması, çağrıda sıfırlama sayısı, `mod -1`, `div -1`, alloc karşılaştırması, `ld` OOB karşılaştırması, `ret` değeri, `sar`↔`shr`, çağrı sonrası pencere geri alma, derinlik sayacı, getc EOF). İlk turda ikisi kaçtı: `ld` için `jae`→`ja` (yalnızca adres tam bellek boyuna eşitse görünür; OOB denetimi gen2'ye uygulanınca yakalandı) ve STACK karşılaştırması `<`→`<=` (yalnızca kalan alan tam çerçeve boyuna eşitse görünür; yazmaç yığınında tam eşitlik kuran test eklenince yakalandı). Sonuçta 12'si de yakalanıyor; `getc EOF` hatası testte asılma/zaman aşımı olarak göründü (çalışma yarıda kesildi, kesin hata sayısı alınmadı). `st` için aynı mutasyon ölçülmedi.
+
+**pm'siz araç zinciri (`oz/bag/`):** `kur.sh` bir kez `pm` kullanır (gen2.elf'i üretmek, PMY1 çözücü/kodlayıcıyı PMB1'e çevirmek); sonrası `gen2.elf` ile: `coz.elf` (16825 B), `yaz.elf` (13171 B), `valid.elf` (21851 B). `zincir.sh x.pmb çıktı.elf` yalnızca bu ELF'leri çağırır: `coz.elf → valid.elf ("1 …" ise) → gen2.elf`; doğrulayıcı reddederse ELF üretilmez. `dogrula_bag.sh` bunu `{timeout, chmod, rm}` dışında hiçbir komutun bulunmadığı bir PATH ile çalıştırır (pm/g++ erişilemez) ve 1216 denetimde (77 program + bayt mutantları) referansla (`pm` yükleyici kararı + `pm run gen2.pmb`) aynı sonucu verir: 103 program üretildi (ELF'ler bayt-bayt referansla aynı, davranış `pm run` ile aynı), 1014 girdi reddedildi.
+
+**Hız ve sınırlar [Kesin]:** `fib(35)`: gen2 ELF 0,345 s, `pm run` yorumlayıcı 0,57 s, C++ `--native` 0,098 s (yazmaçlar bellekte, yazmaç ayırma yok: C++ yerel arka ucundan yaklaşık 3,5 kat yavaş). Yakıt sınırı yok (sonsuz döngü ELF'te sonsuz döner; testler timeout altında). Üretici girdiyi doğrulamaz (güvenilen tablo; `zincir.sh` doğrulayıcıyı önce çalıştırır). Kayan nokta, `present/poll/frame/putf` yok. ELF belleği: 8 MiB yazmaç yığını + `mem_words` × 8 bayt (sanal; en çok ~1 GiB). Üretici 524288 simge / 524288 komutla sınırlı.
+
+**Hâlâ C++ olan [Kesin]:** `pm run` (VM, tüm tabloları çalıştıran önyükleme yorumlayıcısı ve referans), `pm asm` (assembler: doğrulayıcı ve gen2 bu metinden üretildi), `pm yapisal` (PMY1 → PMB1; yalnızca çözücü/kodlayıcıyı ELF'e çevirirken), `pm liste` (referans), derleme ve test araçları. Yani zincirin **çalışma zamanı** C++'sızdır; **kaynaktan üretim** (assembler, PMY1 açıcı) henüz değil.
 ## 4. Açık sorular ve riskler
 - **Çekirdek sınırı:** hangi parçalar C++'ta kalmalı? Öneri: çözücü+doğrulayıcı+yorumlayıcı+host (yaklaşık 800 satır) en küçük gerçekçi çekirdek; native üretici ve özelleştiriciler parametreye taşınır; `exec` yeni ilkeldir.
 - **Performans:** VM üstünde çalışan araçlar (özelleştirici, birleştirici) yavaşlar; ama bunlar bir kez çalışan yükleme-zamanı araçları ve makine koduna çevrilince (`--native`) kabul edilebilir olmalı. Ölçülecek.
