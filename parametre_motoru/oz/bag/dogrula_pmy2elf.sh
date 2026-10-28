@@ -6,7 +6,7 @@ PM=${1:-../../pm}; NR=${2:-150}; D=$(cd "$(dirname "$0")" && pwd); cd "$D"; PM=$
 pass() { ok=$((ok+1)); }; fail() { bad=$((bad+1)); echo "HATA: $1"; }
 if [ -z "$BAG" ]; then ./kur.sh $PM $T/bag > /dev/null || { echo "kur.sh basarisiz"; exit 1; }; BAG=$T/bag; fi; export BAG
 mkdir -p $T/bin; for c in bash cat chmod cmp cp dirname ls mkdir mktemp realpath rm stat timeout head; do p=$(command -v $c) && ln -sf $p $T/bin/$c; done
-PF() { env -i PATH=$T/bin BAG="$BAG" bash "$@"; }       # pm/g++/awk/sed erisilemez ortam
+PF() { env -i PATH=$T/bin BAG="$BAG" ONEK="$ONEK" bash "$@"; }       # pm/g++/awk/sed erisilemez ortam
 gr() {   # grafik: ayni model, ELF secenekleri (olay, azami kare, ascii, kare raporu, son kare) = pm run secenekleri
   printf '0 1\n2 5\n4 7\n' > $T/ev.txt
   ONEK="-2 3 0 1 2 5 4 7 -3 5 -4 4 -5 3" PF ./zincir.sh "$2" $T/g.elf > /dev/null 2>&1 || { fail "$1: grafik ELF uretilemedi"; return; }

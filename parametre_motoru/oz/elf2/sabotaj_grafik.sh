@@ -1,7 +1,7 @@
 #!/bin/bash
 # dogrula_grafik.sh'in gercekten yakaladigini kanitlar: kaynaklari (rt.pma, sablon.txt, gen2.pma.in) tek tek bozar (mutant), gen2.pmb'yi yeniden uretir, grafik denetiminin BASARISIZ olmasini bekler.
 # Kullanim: sabotaj_grafik.sh [pm]   (her mutant: dosya | perl degistirme ifadesi (ilk eslesme))
-# Not: iki mutant bilerek yok (gozlenebilir davranis degistirmez): `gt z, ptr, n` -> `ge` (ptr==n zaten W*H>kalan denetimiyle reddedilir) ve cikis tamponu esigi 32768 -> 32769 (tasan bayt yalniz uygulamanin 0. sozcugune yazilir, cikti ayni).
+# Not: iki mutant bilerek yok (gozlenebilir davranis degistirmez): `gt z, ptr, n` -> `ge` (ptr==n zaten W*H>kalan denetimiyle reddedilir) ve cikis tamponu esigi 32768 -> 32769 (tasan bayt yalniz uygulamanin 0. sozcugune yazilir, cikti ayni) ve piksel maskesi 24 -> 25 bit (hash, PPM ve ASCII tuketicileri zaten bayt maskeler; 25. bit gozlenemez).
 PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
 yakalandi=0; kacti=0
 mut() {   # etiket dosya ifade   (SADECE: yalniz bu desenle eslesen etiketler)
@@ -14,7 +14,6 @@ mut() {   # etiket dosya ifade   (SADECE: yalniz bu desenle eslesen etiketler)
 mut ppm_esik rt.pma 's/gti z, w, 4096/gti z, w, 4097/'
 mut alan_sinir rt.pma 's/gt z, wh, rem/ge z, wh, rem/'
 mut hash_kanal rt.pma 's/shri t, px, 16/shri t, px, 15/'
-mut piksel_maske rt.pma 's/andi px, px, 16777215/andi px, px, 33554431/'
 mut azami_kare rt.pma 's/ge z, fr, mk/gt z, fr, mk/'
 mut olay_kare rt.pma 's/gt z, kare, fr/ge z, kare, fr/'
 mut ascii_esik rt.pma 's/lti z, m, 128/lti z, m, 127/'
