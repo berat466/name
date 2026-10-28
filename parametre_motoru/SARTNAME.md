@@ -83,10 +83,10 @@ Yükleyici/ayrıştırıcı, davranışı değiştirmeden şunları yapar (ölç
 Yapılmayanlar (ölçümle gerekçe çıkmadı ya da mimariyi büyütür): ortak alt ifade, sabit katlama, yazmaç yeniden kullanımı/renklendirme, karşılaştır-ve-atla birleşik komutu.
 
 ## 14. Anlam tablosu (uygulandı: `src/anlam.h`)
-44 komutun anlamı (tamsayı, karşılaştırma, bellek, atlama, çağrı, host) küçük bir **mikro-işlem dilinde** tek yerde tanımlıdır: `RD IM LK ALU CMP UN DIVS MODS DIVN MODN WR LD ST BR BRZ BRNZ CALLM RETM HALTM HOSTM ALLOCM`. Aynı tanımdan iki ayrı genişletme üretilir:
+**55 komutun tamamının** anlamı (tamsayı, ondalık, karşılaştırma, bellek, atlama, çağrı, host) küçük bir **mikro-işlem dilinde** tek yerde tanımlıdır: `RD IM LK ALU CMP UN DIVS MODS DIVN MODN WR LD ST BR BRZ BRNZ CALLM RETM HALTM HOSTM ALLOCM FALU FUN FCMP CVTIF CVTFI`. Aynı tanımdan iki ayrı genişletme üretilir:
 - **INTERP** (derleme anında): yorumlayıcının işleyicileri (`vm.cpp`).
 - **DATA** (veri tablosu): makine kodu üretecinin sablonları (`native_x64.cpp`).
-Tabloda olmayan komutlar (ondalık: `fadd fsub fmul fdiv fneg fsqrt feq flt fle i2f f2i`) yalnızca yorumlayıcıda elle yazılıdır; bunları içeren program makine koduna çevrilemez, yorumlayıcıda çalışır.
+Tabloda olmayan komut kalmadı (ondalık komutlar da tabloda: `fadd fsub fmul fdiv fneg fsqrt feq flt fle i2f f2i`).
 Sınır: tablo **derleme anında** kullanılır. Komut anlamları çalışma anında yüklenip değiştirilemez (kademe 2 / 3, yapılmadı). Tanım dili çalışma anında yüklenebilecek biçimde (küçük, tam tanımlı, tuzakları belli) tasarlandı.
 
 ## 15. Makine kodu yürütücüsü (uygulandı: `src/native_x64.cpp`, yalnızca Linux x86-64)
@@ -94,7 +94,10 @@ Sınır: tablo **derleme anında** kullanılır. Komut anlamları çalışma an�
 - Yorumlayıcıyla **aynı** anlam, tuzak ve yakıt kuralları: çıktı, çıkış kodu, tuzak türü ve harcanan yakıt bire bir aynı olmak zorundadır (testle doğrulanır). Yorumlayıcı **referanstır**; makine kodu yolu onunla farklı çıkarsa hata makine kodundadır.
 - Sınır denetimleri korunur: bellek sınırı, sıfıra bölme, yığın/derinlik, yakıt kontrol noktaları, `alloc` sınırı.
 - Üretilen kod yazılabilir-yürütülebilir değildir: önce yazılır, sonra `mprotect` ile yalnızca okunur+yürütülür yapılır. Makine yığını ayrı ayrılır ve `max_frames` ile sınırlıdır.
-- Bilinen farklar: tuzak konumu (işlev/komut) raporlanmaz; yalnızca tür ve yakıt. Desteklenmeyen platformda ya da ondalık komut içeren programda `--native` yorumlayıcıya düşer (`--native-strict` hata verir, çıkış kodu 3).
+- Bilinen farklar: tuzak konumu (işlev/komut) raporlanmaz; yalnızca tür ve yakıt. Desteklenmeyen platformda `--native` yorumlayıcıya düşer (`--native-strict` hata verir, çıkış kodu 3).
 - **Yazmaç dağıtımı:** program "kesin atama" ispatlıysa (`zero_free`), bir işlevdeki sık kullanılan VM yazmaçları (en çok 8) CPU yazmaçlarında tutulur. Yalnızca işlevin en küçük `call/host` tabanının altındaki yazmaçlar adaydır; çağrı penceresi hep bellekte kalır. İşlev kullandığı havuz yazmaçlarını girişte saklar, çıkışta geri yükler. Eşik: ağırlıklı kullanım (döngü içi ×8) ≥ `native_promote` (varsayılan 4; `--native-promote N`, 0 = hepsi, büyük = hiç).
 - **Karşılaştır-ve-atla birleştirmesi:** bir karşılaştırma komutunun ardından hemen `jz/jnz` gelir ve sonuç başka yerde okunmuyorsa tek `cmp`+`jcc` üretilir, sonuç yazmacı yazılmaz. Bu da yalnızca `zero_free` programlarda yapılır: ispat yoksa çağrı penceresi üst üste binen programlarda çağıran, çağrılanın yazmacını okuyabilir (fuzz bunu buldu; `tests/regress/`).
 - Kural: **yazmaca alma ve birleştirme, bir çağrıdan sonra pencere yazmaçlarının okunmadığı ispatına dayanır.** İspat yoksa bellekte tutulan (basit) şablonlar kullanılır; anlam değişmez.
+- **Ondalık (SSE2):** `addsd subsd mulsd divsd sqrtsd ucomisd cvtsi2sd cvttsd2si`; değerler 64 bit kalıp olarak tamsayı yazmaçlarında/bellekte durur, işlem sırasında xmm0/xmm1'e `movq` ile alınır. `f2i` yorumlayıcıyla aynı: NaN→0, ≥2^63→INT64_MAX, ≤−2^63→INT64_MIN, aksi halde sıfıra kırpma; NaN karşılaştırmaları yanlış.
+- **Host çağrısı kuralı:** C++ yardımcısı caller-saved yazmaçları (`rsi rdi r8–r11`) bozar. Yazmaca alma kullanılan bir programda bu altı yazmaç **her** `host` çağrısında saklanır/geri yüklenir; çünkü çağıran zincirinde bir üst işlev değerini orada tutuyor olabilir (kendi yazmaç kullanmayan bir işlev bile). Fuzz bu hatayı buldu (`tests/regress/host_caller_saved_*`).
+- **Belirsiz kalan:** iki *farklı* NaN içeren ondalık işlemde sonucun NaN işareti/yükü belirsizdir (x86 ilk operandı seçer; yorumlayıcıda derleyici değişmeli işlemin operand sırasını değiştirebilir). Fuzz'da fark gözlenmedi ama kanıtlanmış değil.

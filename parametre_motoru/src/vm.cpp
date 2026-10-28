@@ -1,5 +1,5 @@
 // Yorumlayici: yazmac makinesi, pencereli cagri, yakit kontrol noktalari, sinirli bellek. Tuzaklar belirlidir.
-// Komut anlamlarinin cogu anlam.h tablosundan uretilir (INTERP genisletmesi); tabloda olmayanlar (ondalik) elle yazilidir.
+// Tum komut anlamlari anlam.h tablosundan uretilir (INTERP genisletmesi).
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -62,18 +62,6 @@ RunResult run_program(const Program& P, IO& io, const RunConfig& cfg) {
 #define X(N) case OP_##N: { [[maybe_unused]] uint64_t T1 = 0, T2 = 0, T3 = 0, T4 = 0; SEM_##N(INTERP) } break;
       PM_SEM_OPS(X)
 #undef X
-      // ---- tabloda olmayan komutlar (ondalik) ----
-      case OP_FADD: R[in.a] = fromF(asF(R[in.b]) + asF(R[in.c])); break;
-      case OP_FSUB: R[in.a] = fromF(asF(R[in.b]) - asF(R[in.c])); break;
-      case OP_FMUL: R[in.a] = fromF(asF(R[in.b]) * asF(R[in.c])); break;
-      case OP_FDIV: R[in.a] = fromF(asF(R[in.b]) / asF(R[in.c])); break;
-      case OP_FNEG: R[in.a] = fromF(-asF(R[in.b])); break;
-      case OP_FSQRT: R[in.a] = fromF(std::sqrt(asF(R[in.b]))); break;
-      case OP_FEQ: R[in.a] = asF(R[in.b]) == asF(R[in.c]); break;
-      case OP_FLT: R[in.a] = asF(R[in.b]) < asF(R[in.c]); break;
-      case OP_FLE: R[in.a] = asF(R[in.b]) <= asF(R[in.c]); break;
-      case OP_I2F: R[in.a] = fromF(double(asI(R[in.b]))); break;
-      case OP_F2I: R[in.a] = uint64_t(f2i(asF(R[in.b]))); break;
       default: TRAP(T_OOB);   // dogrulamadan sonra ulasilamaz
     }
     ++ip;

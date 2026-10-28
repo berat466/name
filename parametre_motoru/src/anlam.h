@@ -21,8 +21,11 @@
 enum AluK : uint8_t { ALUK_ADD, ALUK_SUB, ALUK_MUL, ALUK_AND, ALUK_OR, ALUK_XOR, ALUK_SHL, ALUK_SHR, ALUK_SAR };
 enum CmpK : uint8_t { CMPK_EQ, CMPK_NE, CMPK_LT, CMPK_LE, CMPK_GT, CMPK_GE };
 enum UnK : uint8_t { UNK_NEG, UNK_NOT };
+enum FaluK : uint8_t { FALUK_ADD, FALUK_SUB, FALUK_MUL, FALUK_DIV };
+enum FunK : uint8_t { FUNK_NEG, FUNK_SQRT };
+enum FcmpK : uint8_t { FCMPK_EQ, FCMPK_LT, FCMPK_LE };
 enum MicroKind : uint8_t { MK_END, MK_RD, MK_IM, MK_LK, MK_ALU, MK_CMP, MK_UN, MK_DIVS, MK_MODS, MK_DIVN, MK_MODN, MK_WR,
-                           MK_LD, MK_ST, MK_BR, MK_BRZ, MK_BRNZ, MK_CALLM, MK_RETM, MK_HALTM, MK_HOSTM, MK_ALLOCM };
+                           MK_LD, MK_ST, MK_BR, MK_BRZ, MK_BRNZ, MK_CALLM, MK_RETM, MK_HALTM, MK_HOSTM, MK_ALLOCM, MK_FALU, MK_FUN, MK_FCMP, MK_CVTIF, MK_CVTFI };
 struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define OPD_a 0
 #define OPD_b 1
@@ -63,6 +66,17 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define SEM_LEI(M)  M##_RD(1,b) M##_IM(2,c) M##_CMP(LE,3,1,2) M##_WR(a,3)
 #define SEM_GTI(M)  M##_RD(1,b) M##_IM(2,c) M##_CMP(GT,3,1,2) M##_WR(a,3)
 #define SEM_GEI(M)  M##_RD(1,b) M##_IM(2,c) M##_CMP(GE,3,1,2) M##_WR(a,3)
+#define SEM_FADD(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(ADD,3,1,2) M##_WR(a,3)
+#define SEM_FSUB(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(SUB,3,1,2) M##_WR(a,3)
+#define SEM_FMUL(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(MUL,3,1,2) M##_WR(a,3)
+#define SEM_FDIV(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(DIV,3,1,2) M##_WR(a,3)
+#define SEM_FNEG(M)  M##_RD(1,b) M##_FUN(NEG,2,1) M##_WR(a,2)
+#define SEM_FSQRT(M) M##_RD(1,b) M##_FUN(SQRT,2,1) M##_WR(a,2)
+#define SEM_FEQ(M)  M##_RD(1,b) M##_RD(2,c) M##_FCMP(EQ,3,1,2) M##_WR(a,3)
+#define SEM_FLT(M)  M##_RD(1,b) M##_RD(2,c) M##_FCMP(LT,3,1,2) M##_WR(a,3)
+#define SEM_FLE(M)  M##_RD(1,b) M##_RD(2,c) M##_FCMP(LE,3,1,2) M##_WR(a,3)
+#define SEM_I2F(M)  M##_RD(1,b) M##_CVTIF(2,1) M##_WR(a,2)
+#define SEM_F2I(M)  M##_RD(1,b) M##_CVTFI(2,1) M##_WR(a,2)
 #define SEM_JMP(M)  M##_BR(a)
 #define SEM_JZ(M)   M##_RD(1,a) M##_BRZ(1,b)
 #define SEM_JNZ(M)  M##_RD(1,a) M##_BRNZ(1,b)
@@ -77,7 +91,8 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define PM_SEM_OPS(X) \
   X(MOV) X(LDI) X(LDK) X(ADD) X(SUB) X(MUL) X(AND) X(OR) X(XOR) X(SHL) X(SHR) X(SAR) X(EQ) X(NE) X(LT) X(LE) \
   X(NEG) X(NOT) X(DIV) X(MOD) X(ADDI) X(MULI) X(ANDI) X(SHLI) X(SHRI) X(SARI) X(DIVI) X(MODI) \
-  X(EQI) X(NEI) X(LTI) X(LEI) X(GTI) X(GEI) X(JMP) X(JZ) X(JNZ) X(CALL) X(RET) X(HALT) X(LD) X(ST) X(ALLOC) X(HOST)
+  X(EQI) X(NEI) X(LTI) X(LEI) X(GTI) X(GEI) X(JMP) X(JZ) X(JNZ) X(CALL) X(RET) X(HALT) X(LD) X(ST) X(ALLOC) X(HOST) \
+  X(FADD) X(FSUB) X(FMUL) X(FDIV) X(FNEG) X(FSQRT) X(FEQ) X(FLT) X(FLE) X(I2F) X(F2I)
 
 // ---------------- DATA genisletmesi: makine kodu uretecinin okudugu tablo ----------------
 #define DATA_RD(t,x) {MK_RD, t, OPD_##x, 0, 0},
@@ -102,6 +117,11 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define DATA_HOSTM(h,b) {MK_HOSTM, OPD_##h, OPD_##b, 0, 0},
 #define DATA_ALLOCM(t,tn) {MK_ALLOCM, t, tn, 0, 0},
 
+#define DATA_FALU(op,t,t1,t2) {MK_FALU, FALUK_##op, t, t1, t2},
+#define DATA_FUN(op,t,t1) {MK_FUN, FUNK_##op, t, t1, 0},
+#define DATA_FCMP(cc,t,t1,t2) {MK_FCMP, FCMPK_##cc, t, t1, t2},
+#define DATA_CVTIF(t,t1) {MK_CVTIF, t, t1, 0, 0},
+#define DATA_CVTFI(t,t1) {MK_CVTFI, t, t1, 0, 0},
 #ifdef PM_SEM_TABLES
 #define X(N) static const MicroOp sem_##N[] = { SEM_##N(DATA) {MK_END, 0, 0, 0, 0} };
 PM_SEM_OPS(X)
@@ -166,4 +186,18 @@ inline const MicroOp* sem_of(int op) {
 #define INTERP_HALTM() { result = 0; goto done; }
 #define INTERP_HOSTM(h,b)  { CHECKPOINT(); host_call(io, in.h, R + in.b); }
 #define INTERP_ALLOCM(t,tn) { int64_t n_ = int64_t(T##tn); if (n_ < 0 || uint64_t(n_) > mem_words - heap) TRAP(T_ALLOC); T##t = heap; heap += uint64_t(n_); }
+#define FALU_ADD(x, y) (asF(x) + asF(y))
+#define FALU_SUB(x, y) (asF(x) - asF(y))
+#define FALU_MUL(x, y) (asF(x) * asF(y))
+#define FALU_DIV(x, y) (asF(x) / asF(y))
+#define FUN_NEG(x)  (-asF(x))
+#define FUN_SQRT(x) (std::sqrt(asF(x)))
+#define FCMP_EQ(x, y) (asF(x) == asF(y))
+#define FCMP_LT(x, y) (asF(x) < asF(y))
+#define FCMP_LE(x, y) (asF(x) <= asF(y))
+#define INTERP_FALU(op,t,t1,t2) T##t = fromF(FALU_##op(T##t1, T##t2));
+#define INTERP_FUN(op,t,t1)     T##t = fromF(FUN_##op(T##t1));
+#define INTERP_FCMP(cc,t,t1,t2) T##t = uint64_t(FCMP_##cc(T##t1, T##t2));
+#define INTERP_CVTIF(t,t1) T##t = fromF(double(int64_t(T##t1)));
+#define INTERP_CVTFI(t,t1) T##t = uint64_t(f2i(asF(T##t1)));
 #endif

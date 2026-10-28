@@ -17,8 +17,7 @@
 namespace {
 enum { RAX = 0, RCX = 1, RDX = 2, RBX = 3, RSP = 4, RBP = 5, RSI = 6, RDI = 7, R8 = 8, R9 = 9, R10 = 10, R11 = 11, R12 = 12, R13 = 13, R14 = 14, R15 = 15 };
 const int POOL[8] = {RSI, RDI, R8, R9, R10, R11, R14, RBP};
-bool caller_saved(int r) { return r == RSI || r == RDI || (r >= R8 && r <= R11); }
-enum { CC_B = 2, CC_AE = 3, CC_E = 4, CC_NE = 5, CC_A = 7, CC_L = 0xC, CC_GE = 0xD, CC_LE = 0xE, CC_G = 0xF };
+enum { CC_B = 2, CC_AE = 3, CC_E = 4, CC_NE = 5, CC_A = 7, CC_S = 8, CC_P = 0xA, CC_NP = 0xB, CC_L = 0xC, CC_GE = 0xD, CC_LE = 0xE, CC_G = 0xF };
 int inv_cc(int cc) { return cc ^ 1; }
 
 struct Ctx {
@@ -110,6 +109,28 @@ struct X {
     for (size_t f : l.fix) { int32_t d = int32_t(l.pos - long(f + 4)); for (int i = 0; i < 4; i++) b[f + size_t(i)] = uint8_t(uint32_t(d) >> (8 * i)); }
     l.fix.clear();
   }
+  // --- SSE2 (ondalik): xmm0/xmm1 gecici; degerler 64 bit kalip olarak tamsayi yazmaclarinda/bellekte durur
+  void movq_x_rm(int xmm, const V& m) {   // movq xmm, r/m64
+    u8(0x66);
+    if (m.k == V_REG) { rex(xmm, m.r); u8(0x0F); u8(0x6E); u8(uint8_t(0xC0 | ((xmm & 7) << 3) | (m.r & 7))); }
+    else { rex(xmm, RBX); u8(0x0F); u8(0x6E); u8(uint8_t(0x80 | ((xmm & 7) << 3) | 3)); u32(uint32_t(m.d)); }
+  }
+  void movq_r_x(int r, int xmm) { u8(0x66); rex(xmm, r); u8(0x0F); u8(0x7E); u8(uint8_t(0xC0 | ((xmm & 7) << 3) | (r & 7))); }   // movq r64, xmm
+  void sse_sd(uint8_t opc, int xmm, const V& m) {   // F2 0F opc /r : addsd/mulsd/subsd/divsd/sqrtsd xmm, xmm1|m64
+    u8(0xF2); u8(0x0F); u8(opc);
+    if (m.k == V_REG) u8(uint8_t(0xC0 | ((xmm & 7) << 3) | 1));   // m.r burada xmm1 anlaminda kullanilmaz: cagiran movq ile xmm1'e koyar
+    else { u8(uint8_t(0x80 | ((xmm & 7) << 3) | 3)); u32(uint32_t(m.d)); }
+  }
+  void ucomisd(int xa, int xb) { u8(0x66); u8(0x0F); u8(0x2E); u8(uint8_t(0xC0 | ((xa & 7) << 3) | (xb & 7))); }
+  void cvtsi2sd(int xmm, const V& m) {   // F2 REX.W 0F 2A /r
+    u8(0xF2);
+    if (m.k == V_REG) { rex(xmm, m.r); u8(0x0F); u8(0x2A); u8(uint8_t(0xC0 | ((xmm & 7) << 3) | (m.r & 7))); }
+    else { rex(xmm, RBX); u8(0x0F); u8(0x2A); u8(uint8_t(0x80 | ((xmm & 7) << 3) | 3)); u32(uint32_t(m.d)); }
+  }
+  void cvttsd2si_rax_xmm0() { u8(0xF2); u8(0x48); u8(0x0F); u8(0x2C); u8(0xC0); }
+  void btc_rax_63() { u8(0x48); u8(0x0F); u8(0xBA); u8(0xF8); u8(63); }
+  void setcc_cl(int cc) { u8(0x0F); u8(uint8_t(0x90 | cc)); u8(0xC1); }
+  void and_al_cl() { u8(0x20); u8(0xC8); }
   // --- V yardimcilari
   void load_to(int dst, const V& v) {
     switch (v.k) {
@@ -280,7 +301,8 @@ RunResult run_program_native(const Program& P, IO& io, const RunConfig& cfg) {
         const MicroOp& nxt = sem[mi + 1];
         // sonraki mikro-islem bu sonucu bir VM yazmacina yaziyorsa hedef bilgisi
         int hint = -1; bool wrNext = false; V wdst;
-        if (nxt.k == MK_WR && nxt.b == (m.k == MK_ALU || m.k == MK_CMP ? m.b : m.k == MK_LD ? m.a : 255)) {
+        const int dtemp = (m.k == MK_ALU || m.k == MK_CMP || m.k == MK_FALU || m.k == MK_FUN || m.k == MK_FCMP) ? m.b : (m.k == MK_LD || m.k == MK_CVTIF) ? m.a : 255;
+        if (nxt.k == MK_WR && nxt.b == dtemp) {
           wrNext = true; wdst = vmloc(fld(in, nxt.a));
           if (wdst.k == V_REG) hint = wdst.r;
         }
@@ -318,6 +340,64 @@ RunResult run_program_native(const Program& P, IO& io, const RunConfig& cfg) {
             a.setcc_al(cc[m.a]); a.movzx_al(D);
             tv[m.b] = vreg(D);
             if (wrNext && hint >= 0) mi++;
+            break;
+          }
+          case MK_FALU: {
+            static const uint8_t opc[] = {0x58, 0x5C, 0x59, 0x5E};   // addsd subsd mulsd divsd
+            V A = tv[m.c], B = tv[m.d];
+            if (A.k != V_REG && A.k != V_MEM) { a.load_to(RAX, A); A = vreg(RAX); }
+            if (B.k != V_REG && B.k != V_MEM) { a.load_to(RCX, B); B = vreg(RCX); }
+            a.movq_x_rm(0, A);
+            if (B.k == V_REG) { a.movq_x_rm(1, B); V x1; x1.k = V_REG; x1.r = 1; a.sse_sd(opc[m.a], 0, x1); } else a.sse_sd(opc[m.a], 0, B);
+            int D = hint >= 0 ? hint : RAX; a.movq_r_x(D, 0); tv[m.b] = vreg(D);
+            if (wrNext && hint >= 0) mi++;
+            break;
+          }
+          case MK_FUN: {
+            V A = tv[m.c];
+            if (m.a == FUNK_NEG) { a.load_to(RAX, A); a.btc_rax_63(); tv[m.b] = vreg(RAX); break; }
+            if (A.k != V_REG && A.k != V_MEM) { a.load_to(RAX, A); A = vreg(RAX); }
+            a.movq_x_rm(0, A); V x0; x0.k = V_REG; x0.r = 0; a.movq_x_rm(1, A); V x1; x1.k = V_REG; x1.r = 1; a.sse_sd(0x51, 0, x1);   // sqrtsd xmm0, xmm1
+            int D = hint >= 0 ? hint : RAX; a.movq_r_x(D, 0); tv[m.b] = vreg(D);
+            if (wrNext && hint >= 0) mi++;
+            break;
+          }
+          case MK_FCMP: {
+            V A = tv[m.c], B = tv[m.d];
+            if (A.k != V_REG && A.k != V_MEM) { a.load_to(RAX, A); A = vreg(RAX); }
+            if (B.k != V_REG && B.k != V_MEM) { a.load_to(RCX, B); B = vreg(RCX); }
+            int D = hint >= 0 ? hint : RAX;
+            if (m.a == FCMPK_EQ) {
+              a.movq_x_rm(0, A); a.movq_x_rm(1, B); a.ucomisd(0, 1);
+              a.setcc_al(CC_E); a.setcc_cl(CC_NP); a.and_al_cl();   // eslit VE sirali (NaN degil)
+            } else {   // a<b  <=>  ucomisd(b,a): ustunde ; a<=b  <=>  ucomisd(b,a): alti degil. NaN -> CF=1 -> yanlis
+              a.movq_x_rm(0, B); a.movq_x_rm(1, A); a.ucomisd(0, 1);
+              a.setcc_al(m.a == FCMPK_LT ? CC_A : CC_AE);
+            }
+            a.movzx_al(D); tv[m.b] = vreg(D);
+            if (wrNext && hint >= 0) mi++;
+            break;
+          }
+          case MK_CVTIF: {
+            V A = tv[m.b];
+            if (A.k != V_REG && A.k != V_MEM) { a.load_to(RAX, A); A = vreg(RAX); }
+            a.cvtsi2sd(0, A);
+            int D = hint >= 0 ? hint : RAX; a.movq_r_x(D, 0); tv[m.a] = vreg(D);
+            if (wrNext && hint >= 0) mi++;
+            break;
+          }
+          case MK_CVTFI: {   // yorumlayici: NaN->0, >=2^63 -> INT64_MAX, <=-2^63 -> INT64_MIN, aksi halde kirpma
+            V A = tv[m.b];
+            if (A.k != V_REG && A.k != V_MEM) { a.load_to(RAX, A); A = vreg(RAX); }
+            a.movq_x_rm(0, A); a.cvttsd2si_rax_xmm0();
+            Label lDone, lNan;
+            a.mov_imm64(RCX, 0x8000000000000000ull); a.alu_rr(0x39, RAX, RCX); a.jcc(CC_NE, lDone);   // gecerli sonuc
+            a.ucomisd(0, 0); a.jcc(CC_P, lNan);
+            a.movq_r_x(RCX, 0); a.alu_rr(0x85, RCX, RCX); a.jcc(CC_S, lDone);                          // negatif: INT64_MIN kalir
+            a.mov_imm64(RAX, 0x7FFFFFFFFFFFFFFFull); a.jmp(lDone);
+            a.bind(lNan); a.xor_eax();
+            a.bind(lDone);
+            tv[m.a] = vreg(RAX);
             break;
           }
           case MK_UN: { a.load_to(RAX, tv[m.c]); a.unary(m.a == UNK_NEG ? 3 : 2, RAX); tv[m.b] = vreg(RAX); break; }
@@ -387,7 +467,9 @@ RunResult run_program_native(const Program& P, IO& io, const RunConfig& cfg) {
           case MK_HALTM: a.jmp(lEpi); break;
           case MK_HOSTM: {
             checkpoint();
-            std::vector<int> cs; for (int p : used) if (caller_saved(p)) cs.push_back(p);
+            // C++ yardimcisi caller-saved yazmaclari bozar; bunlarda YUKARIDAKI cagiranlarin yazmaca alinmis degerleri olabilir
+            // (bu islev kendisi kullanmasa bile) -> yazmaca alma varsa altisini her host cagrisinda sakla.
+            std::vector<int> cs; if (P.zero_free) cs = {RSI, RDI, R8, R9, R10, R11};
             for (int p : cs) a.push(p);
             bool oddp = cs.size() % 2 == 1; if (oddp) a.alu_ri(5, RSP, 8);
             a.lea(RDI, RBX, 8 * fld(in, m.b)); a.mov_imm64(RSI, A_(&ctx)); a.mov_imm32(RDX, fld(in, m.a));

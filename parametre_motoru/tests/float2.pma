@@ -1,0 +1,179 @@
+; ondalik kenar durumlari: f2i doygunlugu, NaN/sonsuz, -0.0, i2f yuvarlama, karsilastirma, fsqrt, dongu
+func nl() {
+    host putc, 10
+    ret 0
+}
+func sp() {
+    host putc, 32
+    ret 0
+}
+func main() {
+    fdiv inf, 1.0, 0.0
+    fneg ninf, inf
+    fsub nan, inf, inf
+    ; --- f2i
+    mov a, 9223372036854775808.0
+    f2i x1, a
+    mov a, -9223372036854775808.0
+    f2i x2, a
+    mov a, 1.0e19
+    f2i x3, a
+    mov a, -1.0e19
+    f2i x4, a
+    mov a, 9223372036854774784.0
+    f2i x5, a
+    host puti, x1
+    call z, sp
+    host puti, x2
+    call z, sp
+    host puti, x3
+    call z, sp
+    host puti, x4
+    call z, sp
+    host puti, x5
+    call z, nl
+    mov a, 4.5
+    f2i y1, a
+    mov a, -4.5
+    f2i y2, a
+    mov a, 0.5
+    f2i y3, a
+    mov a, -0.5
+    f2i y4, a
+    f2i y5, inf
+    f2i y6, ninf
+    f2i y7, nan
+    host puti, y1
+    call z, sp
+    host puti, y2
+    call z, sp
+    host puti, y3
+    call z, sp
+    host puti, y4
+    call z, sp
+    host puti, y5
+    call z, sp
+    host puti, y6
+    call z, sp
+    host puti, y7
+    call z, nl
+    ; --- i2f
+    mov i, 9007199254740993
+    i2f f1, i
+    f2i g1, f1
+    mov i, 9223372036854775807
+    i2f f2, i
+    f2i g2, f2
+    mov i, -9223372036854775808
+    i2f f3, i
+    f2i g3, f3
+    mov i, -1
+    i2f f4, i
+    host puti, g1
+    call z, sp
+    host puti, g2
+    call z, sp
+    host puti, g3
+    call z, sp
+    host putf, f4
+    call z, nl
+    ; --- aritmetik
+    mov p, 1.5
+    mov q, 2.25
+    fadd r1, p, q
+    fsub r2, p, q
+    fmul r3, p, q
+    fdiv r4, p, q
+    host putf, r1
+    call z, sp
+    host putf, r2
+    call z, sp
+    host putf, r3
+    call z, sp
+    host putf, r4
+    call z, nl
+    mov big, 1.0e300
+    fmul r5, big, big
+    mov m1, -1.0
+    fdiv r6, m1, 0.0
+    mov zero, 0.0
+    fmul r7, zero, m1
+    fsqrt r8, q
+    fsqrt r9, zero
+    fsqrt r10, r7
+    fsqrt r11, big
+    host putf, r5
+    call z, sp
+    host putf, r6
+    call z, sp
+    host putf, r7
+    call z, sp
+    host putf, r8
+    call z, sp
+    host putf, r9
+    call z, sp
+    host putf, r10
+    call z, sp
+    host putf, r11
+    call z, nl
+    ; --- karsilastirma (NaN dahil)
+    mov one, 1.0
+    mov two, 2.0
+    feq c1, nan, nan
+    flt c2, nan, one
+    fle c3, one, nan
+    flt c4, one, two
+    flt c5, two, one
+    fle c6, two, two
+    feq c7, zero, r7
+    fgt c8, two, one
+    fge c9, nan, one
+    fgt c10, nan, one
+    host puti, c1
+    call z, sp
+    host puti, c2
+    call z, sp
+    host puti, c3
+    call z, sp
+    host puti, c4
+    call z, sp
+    host puti, c5
+    call z, sp
+    host puti, c6
+    call z, sp
+    host puti, c7
+    call z, sp
+    host puti, c8
+    call z, sp
+    host puti, c9
+    call z, sp
+    host puti, c10
+    call z, nl
+    ; --- fneg, NaN yayilimi, sqrt(negatif)
+    fneg n1, p
+    fneg n2, r7
+    fsqrt n3, m1
+    feq n4, n3, n3
+    f2i n5, n3
+    host putf, n1
+    call z, sp
+    host putf, n2
+    call z, sp
+    host puti, n4
+    call z, sp
+    host puti, n5
+    call z, nl
+    ; --- dongu: sum 1/k^2, k=1..1000
+    mov k, 1
+    mov s, 0.0
+l:  gt  done, k, 1000
+    jnz done, e
+    i2f kf, k
+    fmul k2, kf, kf
+    fdiv t, 1.0, k2
+    fadd s, s, t
+    add k, k, 1
+    jmp l
+e:  host putf, s
+    call z, nl
+}

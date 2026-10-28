@@ -82,3 +82,30 @@ Karşılaştırma için (önceki ölçüm oturumundan, aynı makine): yerel C++ 
 - Yalnızca Linux x86-64; ondalık komutlar yok; tuzak konumu yok (değişmedi).
 - Yazmaç dağıtımı yerel (işlev içi, doğrusal ağırlık) bir sezgiseldir; gerçek bir yazmaç ayırıcı değil (ömür analizi yok, döküm yok). Bu yüzden `-O2`'ye hâlâ 1,2–4× var.
 - Optimizasyonlar `zero_free` ispatına bağlı; ispat başarısız olan programlar eski, daha yavaş şablonlarla çalışır (doğruluk aynı).
+
+---
+
+# Aşama 3: Ondalık komutlar (SSE2)
+
+- Ondalık 11 komut (`fadd fsub fmul fdiv fneg fsqrt feq flt fle i2f f2i`) **anlam tablosuna** taşındı (`FALU FUN FCMP CVTIF CVTFI` mikro-işlemleri). Tablodaki komut sayısı 44 → **55 (tamamı)**; yorumlayıcıdaki elle yazılmış ondalık kod silindi, artık hepsi tablodan üretiliyor (`vm.cpp` 88 → 73 satır). Makine kodu yolu için SSE2 şablonları eklendi.
+- Doğruluk: **203 kontrol**, normal ve ASan/UBSan'da geçti; makine kodu karşılaştırması **69 koşu, atlanan 0** (artık hiçbir test programı atlanmıyor).
+- Yeni test `float2.pma`: `f2i` doygunluğu (±2^63, ±1e19, 2^63−1024), NaN/±sonsuz, −0.0, 2^53+1 yuvarlaması, NaN karşılaştırmaları (`feq nan nan = 0`), `fsqrt(−x)`, 1/k² toplamı. Beklenen çıktılar awk ve akıl yürütmeyle bağımsız türetildi; yorumlayıcı birebir uydu.
+- **Farklılık fuzz'ı yine bir hata buldu** (`float2`'nin bozulmuş sürümlerinde ~%1,7 fark): **host çağrısı yazmaç koruma hatası**. Küçük yardımcı işlevler (`sp`, `nl`) kendileri yazmaç kullanmıyor ama `host putc` çağırıyor; C++ yardımcısı `rsi/rdi/r8–r11`'i bozuyor ve çağıranın yazmaca alınmış değerleri orada duruyorsa kayboluyor. Elle yazılan testlerde tesadüfen tetiklenmemişti (sıcak yazmaçlar yalnızca çağrısız döngüdeydi). Düzeltme: yazmaca alma varsa her `host` çağrısında altı yazmaç saklanır. 2 vaka regresyon testi oldu.
+- Düzeltmeden sonra: **30 seri × 40.000 deneme** (15 program × 2 yeni tohum, ondalık programlar dahil; her seride 2.000–3.900 geçerli program karşılaştırıldı): **0 fark, 0 çökme**.
+
+## Hız (en iyi 7 koşu, s)
+| İş yükü | Yorumlayıcı | Makine kodu | Hızlanma | Yerel C++ `-O0` / `-O2` |
+|---|---|---|---|---|
+| floatloop (yeni) | 0,405 | **0,194** | 2,0× | 0,120 / 0,064 |
+| fib35 | 0,526 | 0,078 | 6,7× | 0,109 / 0,019 |
+| loop_sum | 0,940 | 0,071 | 13,3× | 0,438 / 0,041 |
+| memsum | 0,719 | 0,109 | 6,6× | 0,177 / 0,027 |
+| sieve10m | 0,814 | 0,363 | 2,2× | 0,450 / 0,269 |
+
+- **Ondalık kazanç mütevazı:** `floatloop` yorumlayıcıdan 2× hızlı ama yerel `-O0`'dan **1,6× yavaş**, `-O2`'den 3× yavaş. Sebep: değerler tamsayı yazmaçlarında duruyor, her ondalık işlemde `movq` ile xmm'e gidiş-dönüş ve `divsd` gecikmesine ek gecikme biniyor. Gerçek çözüm ondalık değerleri xmm yazmaçlarında tutmak (ayrı yazmaç sınıfı + dağıtım) — yapılmadı.
+- Diğer iş yükleri değişmedi (gürültü içinde).
+
+## Sınırlar (güncel)
+- Yalnızca Linux x86-64; tuzak konumu raporlanmıyor.
+- Ondalık değerler tamsayı yazmaçlarında; `-O0` altı hız (yukarıda). Birleşik karşılaştır-ve-atla yalnızca tamsayı karşılaştırmada.
+- İki farklı NaN'lı işlemde NaN işareti/yükü belirsiz (şartname bölüm 15).
