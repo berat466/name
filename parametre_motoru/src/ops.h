@@ -74,7 +74,7 @@ struct OpInfo { const char* name; int nops; const char* kinds; };
 extern const OpInfo kOpInfo[OP_COUNT];
 
 // Host islevleri (sistem arayuzu). Argumanlar pencere yazmaclarinda, sonuc pencerenin ilk yazmacinda.
-enum HostId : uint8_t { H_PUTC = 0, H_PUTI = 1, H_PUTF = 2, H_GETC = 3, H_COUNT };
+enum HostId : uint8_t { H_PUTC = 0, H_PUTI = 1, H_PUTF = 2, H_GETC = 3, H_PRESENT = 4, H_POLL = 5, H_FRAME = 6, H_COUNT };
 struct HostInfo { const char* name; int arity; };
 extern const HostInfo kHostInfo[H_COUNT];
 

@@ -1,0 +1,131 @@
+; Tablo güdümlü sahne çizici: sahnenin TAMAMI asagidaki sekil tablosu (7 sozcuk/sekil):
+;   tur, a, b, c, d, renk0, renk1
+;   tur 0: dolu dikdortgen x=a y=b g=c y=d | tur 1: dolu daire merkez=(a,b) yaricap=c | tur 2: dikey degrade dikdortgen (renk0 -> renk1)
+; Ayni cizici baska bir tabloyla baska sahne cizer; cizici kodu tabloyu degistirmeden degismez.
+memory 40000
+data sekil =  2,0,0,160,120,0x203060,0x80C0FF,   0,0,80,160,40,0x206020,0,   1,130,25,14,0,0xFFE040,0,   0,40,50,50,35,0xB04030,0,   0,35,44,60,8,0x602020,0,   0,58,62,12,23,0x402010,0,   0,46,56,8,8,0xE0E080,0,   0,76,56,8,8,0xE0E080,0,   0,110,60,6,25,0x604020,0,   1,113,52,14,0,0x108020,0,   1,30,20,8,0,0xFFFFFF,0,   1,40,18,10,0,0xFFFFFF,0,   1,52,21,8,0,0xFFFFFF,0
+space fb 19200
+
+; kanal degradesi: c0 + (c1-c0)*j/hm1 (sifira dogru kirpilan tamsayi bolme); hm1 = 0 ise c0
+func lerp(c0, c1, j, hm1) {
+    jz  hm1, same
+    sub d, c1, c0
+    mul d, d, j
+    div d, d, hm1
+    add r, c0, d
+    ret r
+same:
+    ret c0
+}
+
+func putpx(x, y, col) {
+    lt  t, x, 0
+    jnz t, out
+    ge  t, x, 160
+    jnz t, out
+    lt  t, y, 0
+    jnz t, out
+    ge  t, y, 120
+    jnz t, out
+    mul k, y, 160
+    add k, k, x
+    add p, fb, k
+    st  col, p, 0
+out:
+    ret 0
+}
+
+func main() {
+    mov s, 0
+sl: lt  c, s, 13
+    jz  c, fin
+    mul o, s, 7
+    add base, sekil, o
+    ld  type, base, 0
+    ld  a, base, 1
+    ld  b, base, 2
+    ld  w, base, 3
+    ld  h, base, 4
+    ld  col0, base, 5
+    ld  col1, base, 6
+    jz  type, rect
+    eq  t, type, 1
+    jnz t, circ
+    jmp grad
+rect:
+    mov yy, 0
+ry: lt  c, yy, h
+    jz  c, next
+    mov xx, 0
+rx: lt  c, xx, w
+    jz  c, rnexty
+    add px, a, xx
+    add py, b, yy
+    call z, putpx, px, py, col0
+    add xx, xx, 1
+    jmp rx
+rnexty:
+    add yy, yy, 1
+    jmp ry
+circ:
+    mul r2, w, w
+    sub yy, 0, w
+cy: gt  c, yy, w
+    jnz c, next
+    sub xx, 0, w
+cx: gt  c, xx, w
+    jnz c, cnexty
+    mul d1, xx, xx
+    mul d2, yy, yy
+    add d1, d1, d2
+    gt  c, d1, r2
+    jnz c, cskip
+    add px, a, xx
+    add py, b, yy
+    call z, putpx, px, py, col0
+cskip:
+    add xx, xx, 1
+    jmp cx
+cnexty:
+    add yy, yy, 1
+    jmp cy
+grad:
+    sub hm1, h, 1
+    mov yy, 0
+gy: lt  c, yy, h
+    jz  c, next
+    shr r0, col0, 16
+    and r0, r0, 255
+    shr g0, col0, 8
+    and g0, g0, 255
+    and b0, col0, 255
+    shr r1, col1, 16
+    and r1, r1, 255
+    shr g1, col1, 8
+    and g1, g1, 255
+    and b1, col1, 255
+    call rr, lerp, r0, r1, yy, hm1
+    call gg, lerp, g0, g1, yy, hm1
+    call bb, lerp, b0, b1, yy, hm1
+    shl rr, rr, 16
+    shl gg, gg, 8
+    or  col, rr, gg
+    or  col, col, bb
+    mov xx, 0
+gx: lt  c, xx, w
+    jz  c, gnexty
+    add px, a, xx
+    add py, b, yy
+    call z, putpx, px, py, col
+    add xx, xx, 1
+    jmp gx
+gnexty:
+    add yy, yy, 1
+    jmp gy
+next:
+    add s, s, 1
+    jmp sl
+fin:
+    host r, present, fb, 160, 120
+    ret 0
+}

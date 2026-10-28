@@ -7,6 +7,7 @@
 #include <iterator>
 #include <random>
 #include <sstream>
+#include <algorithm>
 #include <chrono>
 #include <sys/resource.h>
 
@@ -36,7 +37,7 @@ static int usage() {
   fprintf(stderr,
     "kullanim:\n"
     "  pm asm   kaynak.pma -o cikti.pmb [--strip]   yazma bicimini ikili tabloya cevirir\n"
-    "  pm run   dosya.(pma|pmb) [--fuel N] [--mem SOZCUK] [--stack S] [--frames F] [--result] [--stats] [--native | --native-strict]   calistirir (stdin -> getc)\n"
+    "  pm run   dosya.(pma|pmb) [--fuel N] [--mem SOZCUK] [--stack S] [--frames F] [--result] [--stats] [--native | --native-strict] [--max-kare N] [--girdi olaylar.txt] [--ekran son.ppm] [--ascii K] [--kare-rapor]   calistirir (stdin -> getc)\n"
     "  pm dump  dosya.(pma|pmb)                    motorun calistirdigi tabloyu okunabilir basar\n"
     "  pm fuzz  dosya.pmb [N] [tohum]               ikiliyi rastgele bozar; yukleyici/VM cokmemeli\n"
     "cikis kodu: 0 basari, 1 hata (dosya/ayristirma/dogrulama), 2 calisma tuzagi (TRAP)\n");
@@ -67,6 +68,7 @@ int main(int argc, char** argv) {
     if (cmd == "dump") { std::string s = disassemble(load_any(file)); fwrite(s.data(), 1, s.size(), stdout); return 0; }
     if (cmd == "run") {
       RunConfig cfg; bool showResult = false, showStats = false, useNative = false, strictNative = false;
+      uint64_t maxFrames = 0; std::string inputFile, screenFile; int asciiK = 0; bool frameReport = false;
       for (int i = 3; i < argc; i++) {
         if (!strcmp(argv[i], "--fuel") && i + 1 < argc) cfg.fuel = strtoull(argv[++i], nullptr, 10);
         else if (!strcmp(argv[i], "--mem") && i + 1 < argc) cfg.max_mem_words = strtoull(argv[++i], nullptr, 10);
@@ -75,12 +77,24 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--result")) showResult = true;
         else if (!strcmp(argv[i], "--stats")) showStats = true;
         else if (!strcmp(argv[i], "--native-promote") && i + 1 < argc) cfg.native_promote = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--max-kare") && i + 1 < argc) maxFrames = strtoull(argv[++i], nullptr, 10);
+        else if (!strcmp(argv[i], "--girdi") && i + 1 < argc) inputFile = argv[++i];
+        else if (!strcmp(argv[i], "--ekran") && i + 1 < argc) screenFile = argv[++i];
+        else if (!strcmp(argv[i], "--ascii") && i + 1 < argc) asciiK = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--kare-rapor")) frameReport = true;
         else if (!strcmp(argv[i], "--native")) useNative = true;
         else if (!strcmp(argv[i], "--native-strict")) useNative = strictNative = true;
         else return usage();
       }
       Program p = load_any(file);
       IO io; io.in = stdin;
+      io.max_frames = maxFrames;
+      if (!inputFile.empty()) {   // her satir: "kare kod" (# yorum)
+        std::string ev; if (!read_file(inputFile, ev)) throw PmError("girdi dosyasi okunamadi: " + inputFile);
+        std::istringstream es(ev); std::string line;
+        while (std::getline(es, line)) { if (line.empty() || line[0] == '#') continue; unsigned long long a_, b_; if (sscanf(line.c_str(), "%llu %llu", &a_, &b_) == 2) io.events.push_back({a_, b_}); }
+        std::stable_sort(io.events.begin(), io.events.end(), [](const std::pair<uint64_t, uint64_t>& x, const std::pair<uint64_t, uint64_t>& y) { return x.first < y.first; });
+      }
       auto t0 = std::chrono::steady_clock::now();
       bool nat = false;
       if (useNative) {
@@ -90,6 +104,26 @@ int main(int argc, char** argv) {
       RunResult r = nat ? run_program_native(p, io, cfg) : run_program(p, io, cfg);
       double sec = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
       fwrite(io.out.data(), 1, io.out.size(), stdout); fflush(stdout);
+      if (frameReport) fprintf(stderr, "ekran: kare=%llu boyut=%ux%u zincir=%016llx son=%016llx\n", (unsigned long long)io.frames, io.fw, io.fh, (unsigned long long)io.chain_hash, (unsigned long long)io.last_hash);
+      if (!screenFile.empty() && io.fw) {
+        FILE* pf = fopen(screenFile.c_str(), "wb");
+        if (!pf) { fprintf(stderr, "HATA: yazilamadi: %s\n", screenFile.c_str()); return 1; }
+        fprintf(pf, "P6\n%u %u\n255\n", io.fw, io.fh);
+        for (uint32_t px : io.frame) { fputc(int((px >> 16) & 255), pf); fputc(int((px >> 8) & 255), pf); fputc(int(px & 255), pf); }
+        fclose(pf);
+      }
+      if (asciiK > 0 && io.fw) {   // her KxK blogun sol ust pikseli: en parlak kanal >= 0x80 ise '#', degilse '.'
+        std::string a;
+        for (uint32_t y = 0; y < io.fh; y += uint32_t(asciiK)) {
+          for (uint32_t x = 0; x < io.fw; x += uint32_t(asciiK)) {
+            uint32_t px = io.frame[size_t(y) * io.fw + x];
+            uint32_t m = std::max({(px >> 16) & 255u, (px >> 8) & 255u, px & 255u});
+            a.push_back(m >= 0x80 ? '#' : '.');
+          }
+          a.push_back('\n');
+        }
+        fwrite(a.data(), 1, a.size(), stdout); fflush(stdout);
+      }
       if (r.trap != T_OK) {
         const Func& f = p.funcs[r.func];
         if (nat) { fprintf(stderr, "TRAP: %s (makine kodu, yakit %llu)\n", kTrapName[r.trap], (unsigned long long)r.fuel_used); return 2; }
@@ -123,7 +157,7 @@ int main(int argc, char** argv) {
           static const int thr[] = {0, 4, 100000}; cfg.native_promote = thr[rng() % 3];
           IO io2; RunResult r2 = run_program_native(p, io2, cfg);
           compared++;
-          if (r2.trap != r.trap || r2.value != r.value || r2.fuel_used != r.fuel_used || io2.out != io.out) {
+          if (r2.trap != r.trap || r2.value != r.value || r2.fuel_used != r.fuel_used || io2.out != io.out || io2.frames != io.frames || io2.chain_hash != io.chain_hash) {
             if (const char* dd = getenv("PM_FUZZ_DUMP")) { std::string fn = std::string(dd) + "/fark_" + std::to_string(it) + "_p" + std::to_string(cfg.native_promote) + ".pmb"; write_file(fn, m.data(), m.size()); }
             if (mismatch++ < 5) fprintf(stderr, "FARK (deneme %ld): yorumlayici trap=%s deger=%lld yakit=%llu cikti=%zu bayt | native trap=%s deger=%lld yakit=%llu cikti=%zu bayt\n", it,
               kTrapName[r.trap], (long long)r.value, (unsigned long long)r.fuel_used, io.out.size(), kTrapName[r2.trap], (long long)r2.value, (unsigned long long)r2.fuel_used, io2.out.size());

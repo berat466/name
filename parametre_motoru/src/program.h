@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdio>
 #include <string>
+#include <utility>
 #include <vector>
 #include <stdexcept>
 #include "ops.h"
@@ -42,6 +43,13 @@ extern const char* kTrapName[T_COUNT];
 struct IO {
   std::string out;
   FILE* in = nullptr;   // getc buradan okur; null ise girdi yok (EOF)
+  // ---- ekran / girdi kapisi (sanal cerceve tamponu; pencere sistemi bu arayuzun ardina takilir)
+  const uint64_t* mem = nullptr; uint64_t mem_words = 0;   // calistirici doldurur: present, uygulamanin belleginden okur
+  uint64_t frames = 0, max_frames = 0;                      // sunulan kare sayisi; max_frames 0 = sinirsiz
+  bool quit = false;
+  std::vector<uint32_t> frame; uint32_t fw = 0, fh = 0;     // son sunulan kare (0xRRGGBB)
+  uint64_t last_hash = 0, chain_hash = 0xcbf29ce484222325ull;
+  std::vector<std::pair<uint64_t, uint64_t>> events; size_t ev_next = 0;   // (kare, tus kodu): poll sirayla verir
 };
 struct RunConfig {
   uint64_t fuel = 4000000000ull;

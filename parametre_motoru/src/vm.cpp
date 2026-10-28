@@ -34,6 +34,7 @@ RunResult run_program(const Program& P, IO& io, const RunConfig& cfg) {
   const uint64_t mem_words = std::min<uint64_t>(P.mem_words, cfg.max_mem_words);
   if (mem_words < 1 + P.data.size() + P.bss) { res.trap = T_ALLOC; return res; }
   std::vector<uint64_t> mem(mem_words, 0);
+  io.mem = mem.data(); io.mem_words = mem_words;
   for (size_t i = 0; i < P.data.size(); i++) mem[1 + i] = uint64_t(P.data[i]);
   uint64_t heap = 1 + P.data.size() + P.bss;
   std::vector<uint64_t> stack(cfg.stack_words, 0);

@@ -1,6 +1,6 @@
 # Parametre Motoru — Şartname (v0.1)
 
-Durum: **Aşama 1, kod üretimi sadeleştirmesi, anlam tablosu ve x86-64 makine kodu yürütücüsü uygulandı** (bölüm 1–8, 13–15). Bölüm 9–12 tasarım notu / yol haritası, henüz kodlanmadı.
+Durum: **Aşama 1, kod üretimi sadeleştirmesi, anlam tablosu, x86-64 makine kodu yürütücüsü ve ekran/girdi kapısı uygulandı** (bölüm 1–8, 13–15). Bölüm 9–12 tasarım notu / yol haritası, henüz kodlanmadı.
 
 ## 0. Amaç ve ilkeler
 - Motor sıradan bir C++ programıdır. Sinir ağı, öğrenilmiş ağırlık, vektör uzayı yoktur.
@@ -27,8 +27,12 @@ Durum: **Aşama 1, kod üretimi sadeleştirmesi, anlam tablosu ve x86-64 makine 
 Komut tablosunun tek kaynağı `src/ops.h`; ayrıştırıcı, ikili kodlayıcı, doğrulayıcı, döküm ve VM buradan beslenir.
 
 ## 4. Host arayüzü (sistem çağrıları)
-Yalnızca 4 işlev: `putc`, `puti`, `putf`, `getc` (stdin; dosya sonu → -1). Çekirdeğe başka alan işlevi gömülmez.
-Sonraki aşamada eklenecekler (çizim, girdi olayı, dosya, zaman) aynı `host` komutuyla, küçük ve genel (tampon yaz/oku) tutulacak.
+7 işlev; hepsi aynı `host` komutuyla çağrılır (argümanlar pencere yazmaçlarında, sonuç pencerenin ilk yazmacında). Yorumlayıcı ve makine kodu **aynı** C++ kodunu (`src/host.h`) çağırır. Her `host` çağrısı 1 yakıt harcar.
+- `putc(c)`, `puti(n)`, `putf(x)`, `getc()` (stdin; dosya sonu → -1).
+- `present(ptr, w, h)`: uygulamanın belleğinde `ptr`'den başlayan w×h sözcüğü (her biri `0xRRGGBB`) kare olarak sunar. Sonuç: 0 devam, 1 çık (kare sınırı doldu ya da çıkış istendi), −1 geçersiz argüman (sunum yapılmaz; w, h ∈ [1, 4096] ve bölge uygulama belleği içinde olmalı).
+- `poll()`: sıradaki girdi olayı `(1<<32) | tuş_kodu`, yoksa 0. Olaylar kare numarasıyla verilir (`--girdi dosya`, satır: `kare kod`); olay, sunulan kare sayısı olayın karesine ulaşınca teslim edilir. Bu, girdiyi deterministik ve yeniden üretilebilir yapar.
+- `frame()`: şimdiye kadar sunulan kare sayısı.
+Ana bilgisayar tarafı şimdilik **sanal çerçeve tamponu**: son kare PPM (`--ekran`), ASCII (`--ascii K`) ya da kare zinciri özeti (`--kare-rapor`) olarak alınır; `--max-kare N` N kare sonra `present` 1 döndürür. **Gerçek pencere (SDL/X11) bu arayüzün arkasına takılabilir, ama yapılmadı ve denenmedi** (sandbox'ta ekran yok). Ses, fare, dosya, ağ, zaman yok.
 
 ## 5. Yazma biçimi (.pma) — insan ve AI için
 Satır tabanlı, adlı yazmaç, etiket, yorum `;`.

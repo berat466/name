@@ -13,9 +13,11 @@ pm_steps: $(SRC) src/ops.h src/program.h src/anlam.h src/host.h
 
 test: pm
 	./tests/run_tests.sh ./pm
+	./uygulamalar/kontrol.sh ./pm
 
 test_san: pm_san
 	./tests/run_tests.sh ./pm_san
+	./uygulamalar/kontrol.sh ./pm_san
 
 clean:
 	rm -f pm pm_san tests/*.pmb
