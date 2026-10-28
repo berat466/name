@@ -34,6 +34,9 @@ void analyze_program(Program& p);   // kesin atama analizi -> p.zero_free
 // asm.cpp
 Program assemble(const std::string& text);
 
+// sablon.cpp: .pmt (bildirimsel uygulama tanimi) -> .pma metni (sablon/ornekleme katmani)
+std::string sablon_to_pma(const std::string& path);
+
 // dump.cpp
 std::string disassemble(const Program& p);
 

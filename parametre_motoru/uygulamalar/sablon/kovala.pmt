@@ -1,0 +1,62 @@
+; Kovalamaca: oyuncu tuslarla gezer, 30 altin toplar, 3 dusman (oyuncunun yarisi hizinda) kovalar; carpisirsa skor -5, oyuncu basa doner, dusman koseye gider.
+; Davranis baglantilari: dusman kurali baska sablonun alanina ('oyuncu.x') bakar; iliskiler etkilesim tablolarinda.
+ekle std.pmt
+sahne 160 120
+kare 500
+arkaplan 0x102010
+global skor = 0
+global kalan = 30
+
+sablon oyuncu adet 1
+  alan x sabit 40
+  alan y sabit 30
+  davran sinirla x 0 157
+  davran sinirla y 0 117
+  ciz dikdortgen x, y, 3, 3, 0xFFFFFF
+son
+
+sablon altin adet 30
+  alan x rastgele 2 150 21
+  alan y rastgele 2 110 22
+  ciz dikdortgen x, y, 3, 3, 0xFFD020
+son
+
+sablon dusman adet 3
+  alan x rastgele 0 159 23
+  alan y rastgele 0 119 24
+  kural x = x + 1 eger kare % 2 == 0 ve x < oyuncu.x
+  kural x = x - 1 eger kare % 2 == 0 ve x > oyuncu.x
+  kural y = y + 1 eger kare % 2 == 0 ve y < oyuncu.y
+  kural y = y - 1 eger kare % 2 == 0 ve y > oyuncu.y
+  ciz dikdortgen x, y, 4, 4, 0xE02020
+son
+
+etkilesim oyuncu altin eger b.canli == 1 ve a.x + 3 > b.x ve a.x < b.x + 3 ve a.y + 3 > b.y ve a.y < b.y + 3
+  kural b.canli = 0
+  kural skor = skor + 1
+son
+etkilesim oyuncu dusman eger a.x + 3 > b.x ve a.x < b.x + 4 ve a.y + 3 > b.y ve a.y < b.y + 4
+  kural skor = skor - 5
+  kural b.x = 150
+  kural b.y = 110
+  kural a.x = 40
+  kural a.y = 30
+son
+
+topla kalan say altin eger canli == 1
+bitis eger kalan == 0
+
+girdi 1 oyuncu
+  kural x = x - 2
+son
+girdi 2 oyuncu
+  kural x = x + 2
+son
+girdi 3 oyuncu
+  kural y = y - 2
+son
+girdi 4 oyuncu
+  kural y = y + 2
+son
+
+yazdir skor, kalan, oyuncu.x, oyuncu.y

@@ -26,7 +26,9 @@ static bool write_file(const std::string& path, const void* d, size_t n) {
   return bool(f);
 }
 
+static bool ends_with(const std::string& s, const char* e) { size_t n = strlen(e); return s.size() >= n && s.compare(s.size() - n, n, e) == 0; }
 static Program load_any(const std::string& path) {
+  if (ends_with(path, ".pmt")) return assemble(sablon_to_pma(path));
   std::string txt;
   if (!read_file(path, txt)) throw PmError("dosya okunamadi: " + path);
   if (txt.size() >= 4 && memcmp(txt.data(), "PMB1", 4) == 0) return decode_program((const uint8_t*)txt.data(), txt.size());
@@ -63,6 +65,23 @@ int main(int argc, char** argv) {
       size_t ncode = 0, nregs = 0; for (auto& f : p.funcs) { ncode += f.code.size(); nregs += f.nregs; }
       printf("%s: %zu bayt (kaynak %zu bayt), %zu fonksiyon, %zu komut, %zu yazmac, %zu sabit, %zu veri sozcugu%s\n",
              outp.c_str(), bin.size(), txt.size(), p.funcs.size(), ncode, nregs, p.consts.size(), p.data.size(), strip ? ", adlar atildi" : "");
+      return 0;
+    }
+    if (cmd == "sablon") {   // pm sablon uygulama.pmt [--pma uretilen.pma] [-o cikti.pmb] [--strip]
+      std::string pmaOut, binOut; bool strip = false;
+      for (int i = 3; i < argc; i++) {
+        if (!strcmp(argv[i], "--pma") && i + 1 < argc) pmaOut = argv[++i];
+        else if (!strcmp(argv[i], "-o") && i + 1 < argc) binOut = argv[++i];
+        else if (!strcmp(argv[i], "--strip")) strip = true;
+        else return usage();
+      }
+      std::string pma = sablon_to_pma(file);
+      if (!pmaOut.empty() && !write_file(pmaOut, pma.data(), pma.size())) throw PmError("yazilamadi: " + pmaOut);
+      Program p = assemble(pma);
+      size_t ncode = 0; for (auto& f : p.funcs) ncode += f.code.size();
+      auto bin = encode_program(p, strip);
+      if (!binOut.empty() && !write_file(binOut, bin.data(), bin.size())) throw PmError("yazilamadi: " + binOut);
+      printf("%s: tanim -> %zu satir .pma, %zu bayt parametre dosyasi, %zu fonksiyon, %zu komut, bellek %llu sozcuk\n", file.c_str(), size_t(std::count(pma.begin(), pma.end(), '\n')), bin.size(), p.funcs.size(), ncode, (unsigned long long)p.mem_words);
       return 0;
     }
     if (cmd == "dump") { std::string s = disassemble(load_any(file)); fwrite(s.data(), 1, s.size(), stdout); return 0; }

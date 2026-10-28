@@ -1,6 +1,6 @@
 # Parametre Motoru — Şartname (v0.1)
 
-Durum: **Aşama 1, kod üretimi sadeleştirmesi, anlam tablosu, x86-64 makine kodu yürütücüsü ve ekran/girdi kapısı uygulandı** (bölüm 1–8, 13–15). Bölüm 9–12 tasarım notu / yol haritası, henüz kodlanmadı.
+Durum: **uygulanan: bölüm 1–9, 13–16** (çekirdek, anlam tablosu, makine kodu, ekran/girdi kapısı, şablon katmanı). Bölüm 10–12 yol haritası / tasarım notu, henüz kodlanmadı.
 
 ## 0. Amaç ve ilkeler
 - Motor sıradan bir C++ programıdır. Sinir ağı, öğrenilmiş ağırlık, vektör uzayı yoktur.
@@ -63,7 +63,7 @@ Yükleyici ikiliyi çözerken ve çözdükten sonra denetler (doğrudan-operand 
 Çözüm yönü (uygulandı): **iki biçim**. Yazma biçimi (.pma) üretilebilirlik için, ikili biçim (.pmb) kompaktlık için; arada tek yönlü, deterministik ve doğrulanabilir dönüşüm.
 Not: "her rastgele bayt değişikliği geçerli program verir" **sağlanmamıştır** (bölüm 12). Bu hedef ayrı bir tasarım gerektirir.
 
-## 9. Şablon / örnekleme katmanı — *tasarım notu, kodlanmadı*
+## 9. Şablon / örnekleme katmanı — *uygulandı, bölüm 16*
 Amaç: 10.000 nesneyi döngü+oluşturma işlevi yerine "ortak şablon + tekrar sayısı + değişim kuralı" olarak tutmak.
 Taslak: şablon = parametrelenmiş işlev gövdesi benzeri bir tablo; örnekleme = `(şablon, sayı n, kural: alan_i = a + b·i)`. Motor bunu açmadan (tekrar başına komut üretmeden) yürütebilmeli; koşul: kural yalnızca basit afin/tablo bağımlılığı içerir. Kompaktlık kazancı **ölçülmeden** varsayılmaz.
 
@@ -105,3 +105,12 @@ Sınır: tablo **derleme anında** kullanılır. Komut anlamları çalışma an�
 - **Ondalık (SSE2):** `addsd subsd mulsd divsd sqrtsd ucomisd cvtsi2sd cvttsd2si`; değerler 64 bit kalıp olarak tamsayı yazmaçlarında/bellekte durur, işlem sırasında xmm0/xmm1'e `movq` ile alınır. `f2i` yorumlayıcıyla aynı: NaN→0, ≥2^63→INT64_MAX, ≤−2^63→INT64_MIN, aksi halde sıfıra kırpma; NaN karşılaştırmaları yanlış.
 - **Host çağrısı kuralı:** C++ yardımcısı caller-saved yazmaçları (`rsi rdi r8–r11`) bozar. Yazmaca alma kullanılan bir programda bu altı yazmaç **her** `host` çağrısında saklanır/geri yüklenir; çünkü çağıran zincirinde bir üst işlev değerini orada tutuyor olabilir (kendi yazmaç kullanmayan bir işlev bile). Fuzz bu hatayı buldu (`tests/regress/host_caller_saved_*`).
 - **Belirsiz kalan:** iki *farklı* NaN içeren ondalık işlemde sonucun NaN işareti/yükü belirsizdir (x86 ilk operandı seçer; yorumlayıcıda derleyici değişmeli işlemin operand sırasını değiştirebilir). Fuzz'da fark gözlenmedi ama kanıtlanmış değil.
+
+## 16. Şablon / örnekleme katmanı (uygulandı: `src/sablon.cpp`, dil başvurusu `uygulamalar/sablon/DIL.md`)
+- Bölüm 9'daki fikir hayata geçti, ama **yorumlayıcı değil özelleştirici** olarak: bildirimsel uygulama tanımı (`.pmt`: şablonlar, örnekleme üreteçleri, davranış makroları, ilişki/olay/toplama tabloları) yazma biçimine (`.pma`) çevrilir, sonra mevcut ayrıştırıcı ve makine kodu üreticisinden geçer. Böylece yürütme hızı yorumlayıcı katmanı eklemeden korunur ve tanım boyutu örnek sayısından bağımsızdır (10.000 örnek = tek döngü).
+- **Davranışlar veri:** kural dili küçüktür (`hedef = ifade eger koşul`); `hareket`, `sek`, `yercekimi`, `sinirla` gibi davranışlar bu kuralların parametreli makrolarıdır ve `std.pmt` kütüphanesinde tanımlıdır. Uygulama davranışı adıyla seçer, kuralları birleştirir.
+- **Genel amaçlılık:** aynı dil oyun, grafik ve veri işleme (toplam, sayı, en büyük/küçük) için çalışır; ekrana özgü kısım (`sahne`, `ciz`) isteğe bağlıdır.
+- **Sanal alanlar:** hiçbir kuralla yazılmayan alan (sabit/doğrusal/mod/bol üreteçli) bellekte tutulmaz; formülden hesaplanır.
+- **Anlam:** bir şablonun kuralları her örnek için sırayla uygulanır (örnek-öncelikli); etkileşim A×B çiftlerini (A dış, B iç döngü) sırayla gezer; kare sırası DIL.md'de.
+- **Sınırlar:** kurallarda döngü/özyineleme yok, ifadede tek ikili işlem, etkileşim O(|A|·|B|), toplama işlemleri sabit dört; 3B, metin, arayüz bileşenleri yok. Özelleştirici C++'tır (514 satır), uygulamanın kendisi değildir; kendini yenileme (bölüm 10) için ileride tanım dili üzerinden yeniden yazılabilir.
+- Doğrulama: `uygulamalar/kontrol.sh` (bağımsız awk benzetimleri, elle yazılmış sürümlerle kare zinciri eşitliği) ve `SABLON_RAPORU.md`.
