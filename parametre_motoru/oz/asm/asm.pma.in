@@ -1,7 +1,7 @@
 ; asm.pma -- .pma metni -> PMB1 (adlar atilmis: `pm asm --strip` ile BAYT-BAYT ayni cikti) ASSEMBLER'I (parametre tablosu).
 ; stdin: .pma kaynagi (en cok 1 MiB); stdout: PMB1 baytlari. Hata -> stdout'a "HATA satir N: kod" yazilir ve DIV0 tuzagi (cikis 2).
 ; C++ karsiligi: src/asm.cpp (ayni algoritma: etiket/dogrudan-operand donusumu, sabit yazmaclari, cagri pencereleri, gozetleme deligi).
-; Fark [Kesin]: ondalik sabitler (2.0 gibi) desteklenmez (strtod yok) -> hata kodu 90. validate_program/analyze_program calistirilmaz
+; Ondalik sabitler (2.0, 1e-5, .5 ...) fbits ile (buyuk sayi aritmetigi, en yakin-cifte yuvarlama = strtod). validate_program/analyze_program calistirilmaz
 ; (cikti oz/dogr/valid.pmb ile dogrulanir); yalnizca "veri bellege sigmiyor" ve "giris fonksiyonu parametre almamali" burada da denetlenir.
 memory 12582912
 entry main
@@ -72,6 +72,8 @@ space OUTB 1048576
 space NMO 64
 space NML 64
 space G 128
+space FBN 1024
+space FDG 1024
 data OPNAMES = @OPNAMES@
 data NOPS = @NOPS@
 data KIND = @KIND@
@@ -705,7 +707,11 @@ d10: sub l, j, i
     jmp d5
 d11: call r, isfloat, i, l
     jz r, d12
-    call x, err, 90
+    call x, fbits, i, l
+    ld v, G, 13
+    call x, pushdata, v
+    mov i, j
+    jmp d5
 d12: call x, err, 13
 d6: add i, i, 1
     jmp d5
@@ -1350,6 +1356,427 @@ i2: add a, d, SYV
     ret 1
 }
 
+; ---------- ondalik sabit (strtod esdegeri: DOGRU yuvarlama, en yakin-cifte) ----------
+; buyuk sayi: FBN[b] = limb sayisi, FBN[b+1+i] = i. limb (32 bit). A=0 B=200 C=400 (en cok 160 limb).
+func fb_mul(b, k, cin) {
+    add p, b, FBN
+    ld len, p, 0
+    mov i, 0
+    mov c, cin
+ml: ge z, i, len
+    jnz z, md
+    add a, b, i
+    add a, a, FBN
+    ld v, a, 1
+    mul v, v, k
+    add v, v, c
+    shli t, v, 32
+    shri t, t, 32
+    st t, a, 1
+    shri c, v, 32
+    addi i, i, 1
+    jmp ml
+md: jz c, mdone
+    add a, b, len
+    add a, a, FBN
+    st c, a, 1
+    addi len, len, 1
+    add a, b, FBN
+    st len, a, 0
+mdone: ret 0
+}
+func fb_pow2(b, n) {
+    mov big, 1073741824
+l1: lti z, n, 30
+    jnz z, l2
+    call x, fb_mul, b, big, 0
+    addi n, n, -30
+    jmp l1
+l2: jz n, l3
+    mov one, 1
+    shl m, one, n
+    call x, fb_mul, b, m, 0
+l3: ret 0
+}
+func fb_pow10(b, n) {
+    mov big, 1000000000
+l1: lti z, n, 9
+    jnz z, l2
+    call x, fb_mul, b, big, 0
+    addi n, n, -9
+    jmp l1
+l2: jz n, l3
+    mov m, 1
+l4: jz n, l5
+    muli m, m, 10
+    addi n, n, -1
+    jmp l4
+l5: call x, fb_mul, b, m, 0
+l3: ret 0
+}
+func fb_cmp(a, b) {
+    add p, a, FBN
+    ld la, p, 0
+    add q, b, FBN
+    ld lb, q, 0
+    lt z, la, lb
+    jnz z, less
+    lt z, lb, la
+    jnz z, more
+    mov i, la
+c1: jz i, same
+    addi i, i, -1
+    add p, a, i
+    add p, p, FBN
+    ld x, p, 1
+    add q, b, i
+    add q, q, FBN
+    ld y, q, 1
+    lt z, x, y
+    jnz z, less
+    lt z, y, x
+    jnz z, more
+    jmp c1
+same: ret 0
+less: ret -1
+more: ret 1
+}
+func fb_sub(a, b) {   ; a -= b (a >= b)
+    add p, a, FBN
+    ld la, p, 0
+    add q, b, FBN
+    ld lb, q, 0
+    mov i, 0
+    mov br, 0
+    mov one, 1
+    shli big, one, 32
+s1: ge z, i, la
+    jnz z, s5
+    add p, a, i
+    add p, p, FBN
+    ld x, p, 1
+    mov y, 0
+    ge z, i, lb
+    jnz z, s2
+    add q, b, i
+    add q, q, FBN
+    ld y, q, 1
+s2: sub x, x, y
+    sub x, x, br
+    mov br, 0
+    lti z, x, 0
+    jz z, s4
+    mov br, 1
+    add x, x, big
+s4: st x, p, 1
+    addi i, i, 1
+    jmp s1
+s5: jz la, s7
+    addi t, la, -1
+    add p, a, t
+    add p, p, FBN
+    ld x, p, 1
+    jnz x, s7
+    mov la, t
+    jmp s5
+s7: add p, a, FBN
+    st la, p, 0
+    ret 0
+}
+func fb_copy(d, s) {
+    add p, s, FBN
+    ld len, p, 0
+    mov i, 0
+cp: gt z, i, len
+    jnz z, cd
+    add p, s, i
+    add p, p, FBN
+    ld v, p, 0
+    add q, d, i
+    add q, q, FBN
+    st v, q, 0
+    addi i, i, 1
+    jmp cp
+cd: ret 0
+}
+func fb_shr1(b) {     ; b >>= 1
+    add p, b, FBN
+    ld len, p, 0
+    mov i, 0
+sh: ge z, i, len
+    jnz z, shd
+    add q, b, i
+    add q, q, FBN
+    ld v, q, 1
+    shri v, v, 1
+    addi t, i, 1
+    ge z, t, len
+    jnz z, sh1
+    ld w, q, 2
+    andi w, w, 1
+    shli w, w, 31
+    or v, v, w
+sh1: st v, q, 1
+    addi i, i, 1
+    jmp sh
+shd: jz len, sh3
+    addi t, len, -1
+    add q, b, t
+    add q, q, FBN
+    ld v, q, 1
+    jnz v, sh3
+    st t, p, 0
+sh3: ret 0
+}
+func fb_bitlen(b) {
+    add p, b, FBN
+    ld len, p, 0
+    jz len, z0
+    addi t, len, -1
+    add q, b, t
+    add q, q, FBN
+    ld v, q, 1
+    muli r, t, 32
+bl: jz v, bd
+    shri v, v, 1
+    addi r, r, 1
+    jmp bl
+bd: ret r
+z0: ret 0
+}
+func fb_set(b, v) {   ; b = v (v < 2^32)
+    add p, b, FBN
+    st v, p, 1
+    mov len, 0
+    jz v, h1
+    mov len, 1
+h1: st len, p, 0
+    ret 0
+}
+
+; jeton [o,l) ondalik (isfloat dogru): bit deseni G[13]
+func fbits(o, l) {
+    mov i, 0
+    mov ng, 0
+    call c, sc, o
+    eq z, c, 45
+    jz z, f0
+    mov ng, 1
+    mov i, 1
+    jmp f1
+f0: eq z, c, 43
+    jz z, f1
+    mov i, 1
+f1: mov nsig, 0
+    mov e10, 0
+    mov sticky, 0
+    mov infrac, 0
+f2: ge z, i, l
+    jnz z, f9
+    add p, o, i
+    call c, sc, p
+    eq z, c, 46
+    jz z, f3
+    mov infrac, 1
+    addi i, i, 1
+    jmp f2
+f3: call d, isdig, c
+    jz d, f9
+    addi dv, c, -48
+    jnz nsig, f4
+    jnz dv, f4
+    jz infrac, f8
+    addi e10, e10, -1
+    jmp f8
+f4: gei z, nsig, 800
+    jnz z, f5
+    add a, nsig, FDG
+    st dv, a, 0
+    addi nsig, nsig, 1
+    jz infrac, f8
+    addi e10, e10, -1
+    jmp f8
+f5: jz dv, f6
+    mov sticky, 1
+f6: jnz infrac, f8
+    addi e10, e10, 1
+f8: addi i, i, 1
+    jmp f2
+f9: ; us kismi
+    mov ev, 0
+    mov es, 0
+    ge z, i, l
+    jnz z, g0
+    addi i, i, 1
+    add p, o, i
+    call c, sc, p
+    eq z, c, 45
+    jz z, g1
+    mov es, 1
+    addi i, i, 1
+    jmp g2
+g1: eq z, c, 43
+    jz z, g2
+    addi i, i, 1
+g2: ge z, i, l
+    jnz z, g3
+    add p, o, i
+    call c, sc, p
+    addi dv, c, -48
+    muli ev, ev, 10
+    add ev, ev, dv
+    gei z, ev, 100000
+    jz z, g2a
+    mov ev, 100000
+g2a: addi i, i, 1
+    jmp g2
+g3: jz es, g4
+    neg ev, ev
+g4: add e10, e10, ev
+g0: shli sgn, ng, 63
+    jnz nsig, h0
+    st sgn, G, 13
+    ret 0
+h0: jz sticky, h1
+    add a, nsig, FDG
+    mov one, 1
+    st one, a, 0
+    addi nsig, nsig, 1
+    addi e10, e10, -1
+h1: ; sondaki sifirlari at
+h2: addi t, nsig, -1
+    add a, t, FDG
+    ld dv, a, 0
+    jnz dv, h3
+    mov nsig, t
+    addi e10, e10, 1
+    jmp h2
+h3: add mag, e10, nsig
+    gti z, mag, 309
+    jz z, h4
+    shli v, ng, 63
+    mov inf, 2047
+    shli inf, inf, 52
+    or v, v, inf
+    st v, G, 13
+    ret 0
+h4: lti z, mag, -323
+    jz z, h5
+    st sgn, G, 13
+    ret 0
+h5: ; A = ondalik tam sayi (basamaklar), B = 1
+    mov ba, 0
+    mov bb, 200
+    mov bc, 400
+    mov zr, 0
+    call x, fb_set, ba, zr
+    mov j, 0
+h6: ge z, j, nsig
+    jnz z, h7
+    add a, j, FDG
+    ld dv, a, 0
+    call x, fb_mul, ba, 10, dv
+    ; A bos (len 0) iken carry yeni limb olur -> fb_mul bunu isler
+    addi j, j, 1
+    jmp h6
+h7: mov one, 1
+    call x, fb_set, bb, one
+    lti z, e10, 0
+    jz z, h8
+    neg t, e10
+    call x, fb_pow10, bb, t
+    jmp h9
+h8: call x, fb_pow10, ba, e10
+h9: call la, fb_bitlen, ba
+    call lb, fb_bitlen, bb
+    sub s, la, lb
+    mov t57, 57
+    sub s, t57, s
+    lti z, s, 0
+    jz z, i1
+    neg t, s
+    call x, fb_pow2, bb, t
+    jmp i2
+i1: call x, fb_pow2, ba, s
+i2: call x, fb_copy, bc, bb
+    call x, fb_pow2, bc, 57
+    mov q, 0
+    mov bit, 57
+i3: lti z, bit, 0
+    jnz z, i5
+    call r, fb_cmp, ba, bc
+    lti z, r, 0
+    jnz z, i4
+    call x, fb_sub, ba, bc
+    mov one, 1
+    shl t, one, bit
+    or q, q, t
+i4: call x, fb_shr1, bc
+    addi bit, bit, -1
+    jmp i3
+i5: ld sb, FBN, 0
+    ; q uzunlugu
+    mov lq, 0
+    mov t, q
+i6: jz t, i7
+    shri t, t, 1
+    addi lq, lq, 1
+    jmp i6
+i7: addi eb, lq, -1
+    sub eb, eb, s
+    addi drop, lq, -53
+    gei z, eb, -1022
+    jnz z, i8
+    mov t, -1022
+    sub t, t, eb
+    add drop, drop, t
+i8: gei z, drop, 64
+    jz z, i9
+    st sgn, G, 13
+    ret 0
+i9: shr m, q, drop
+    shl t, m, drop
+    sub rem, q, t
+    addi t, drop, -1
+    mov one, 1
+    shl half, one, t
+    gt z, rem, half
+    jnz z, up
+    lt z, rem, half
+    jnz z, nrd
+    jnz sb, up
+    andi t, m, 1
+    jz t, nrd
+up: addi m, m, 1
+nrd: gei z, eb, -1022
+    jz z, sub0
+    shli t, one, 53
+    lt z, m, t
+    jnz z, k1
+    shri m, m, 1
+    addi eb, eb, 1
+k1: gti z, eb, 1023
+    jz z, k2
+    shli v, ng, 63
+    mov inf, 2047
+    shli inf, inf, 52
+    or v, v, inf
+    st v, G, 13
+    ret 0
+k2: addi t, eb, 1023
+    shli t, t, 52
+    shli u, one, 52
+    addi u, u, -1
+    and m, m, u
+    or v, t, m
+    or v, v, sgn
+    st v, G, 13
+    ret 0
+sub0: or v, m, sgn
+    st v, G, 13
+    ret 0
+}
+
 func litbits(o, l) {    ; parse_int / ondalik / data adresi -> 1 ve G[63]=bit deseni; yoksa 0
     call r, parse_int, o, l
     jz r, b1
@@ -1358,7 +1785,10 @@ func litbits(o, l) {    ; parse_int / ondalik / data adresi -> 1 ve G[63]=bit de
     ret 1
 b1: call r, isfloat, o, l
     jz r, b2
-    call x, err, 90
+    call x, fbits, o, l
+    ld v, G, 13
+    st v, G, 63
+    ret 1
 b2: call d, datafind, o, l
     lti z, d, 0
     jz z, b3
@@ -1747,7 +2177,16 @@ s0: call li, litidx, v
     ret 0
 s1: call r, isfloat, o, l
     jz r, s2
-    call x, err, 90
+    eq z, kind, 2
+    jz z, s1a
+    call x, err, 85
+s1a: call x, fbits, o, l
+    ld v, G, 13
+    call li, litidx, v
+    mov t, 2
+    st t, G, 61
+    st li, G, 62
+    ret 0
 s2: call r, is_ident, o, l
     jnz r, s3
     call x, err, 81

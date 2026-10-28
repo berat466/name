@@ -1,0 +1,41 @@
+#!/bin/bash
+# dogrula_float.sh'in yakaladigini kanitlar: sablon.txt'te ondalik sablonlarini tek tek bozar, gen2.pmb'yi yeniden uretir, denetimin BASARISIZ olmasini bekler.
+# Kullanim: sabotaj_float.sh [pm]   (SADECE: etiket deseni)
+PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
+yakalandi=0; kacti=0
+mut() {   # etiket dosya ifade (dosya: sablon.txt | rt.pma | gen2.pma.in)
+  [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
+  rm -rf $T/w; mkdir -p $T/w/src $T/w/oz; cp $R/src/ops.h $T/w/src/; cp -r $R/oz/arac $R/oz/elf2 $T/w/oz/
+  (cd $T/w/oz/elf2 && perl -0pi -e "$3" $2 && ! cmp -s $2 $D/$2) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
+  (cd $T/w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: uretici derlenemedi"; kacti=$((kacti+1)); return; }
+  if GEN2=$T/w/oz/elf2/gen2.pmb $D/dogrula_float.sh $PM > $T/log 2>&1; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+}
+mut fsub_op sablon.txt 's/fsub: F2 0F 10 83 R_B F2 0F 5C/fsub: F2 0F 10 83 R_B F2 0F 58/'
+mut fdiv_op sablon.txt 's/fdiv: F2 0F 10 83 R_B F2 0F 5E/fdiv: F2 0F 10 83 R_B F2 0F 59/'
+mut feq_nan sablon.txt 's/0F 9B C0 0F 94 C1 20 C8 0F B6 C0/0F 94 C0 90 90 90 90 0F B6 C0/'
+mut flt_cc sablon.txt 's/flt: (.*) 0F 97 C0/flt: $1 0F 93 C0/'
+mut fle_cc sablon.txt 's/fle: (.*) 0F 93 C0/fle: $1 0F 97 C0/'
+mut fle_sira sablon.txt 's/fle: F2 0F 10 83 R_C 66 0F 2E 83 R_B/fle: F2 0F 10 83 R_B 66 0F 2E 83 R_C/'
+mut f2i_nan sablon.txt 's/EB 02 31 C0 STA/EB 02 90 90 STA/'
+mut f2i_isaret sablon.txt 's/78 0A 48 89 C8/79 0A 48 89 C8/'
+mut f2i_tasma sablon.txt 's/48 89 C8 48 FF C8 EB 02/48 89 C8 90 90 90 EB 02/'
+mut i2f_32 sablon.txt 's/i2f: F2 48 0F 2A/i2f: F2 90 0F 2A/'
+mut fneg_bit sablon.txt 's/48 0F BA F8 3F/48 0F BA F8 3E/'
+mut fsqrt_op sablon.txt 's/F2 0F 51 83 R_B/F2 0F 5E 83 R_B/'
+mut putf_tie rt.pma 's/ld t, rb, 55\n    andi t, t, 1\n    jz t, nord/ld t, rb, 55\n    andi t, t, 1\n    jz zr, nord/'
+mut putf_yuvarla rt.pma 's/lti z, c, 0\n    jnz z, nord\n    jnz c, up/lti z, c, 0\n    jnz z, nord\n    jmp nord/'
+mut putf_basamak rt.pma 's/gei z, i, 15\n    jnz z, g4/gei z, i, 16\n    jnz z, g4/'
+mut putf_ust_esik rt.pma 's/gei z, x0, 15\n    jnz z, expf/gei z, x0, 16\n    jnz z, expf/'
+mut putf_alt_esik rt.pma 's/lti z, x0, -4\n    jnz z, expf/lti z, x0, -5\n    jnz z, expf/'
+mut putf_us_isaret rt.pma 's/e2p: call x, wb, 43/e2p: call x, wb, 32/'
+mut putf_us_iki_hane rt.pma 's/e3: lti z, ax, 10/e3: lti z, ax, 1/'
+mut putf_sifir_kirp rt.pma 's/mov k, 15\nz1:/mov k, 16\nz1:/'
+mut putf_nan_isaret rt.pma 's/jz sg, pos\n    call x, wb, 45/jz sg, pos\n    jz sg, pos/'
+mut putf_sifir_pad rt.pma 's/f1w: addi c, dg, 48/f1w: addi c, dg, 49/'
+mut putf_alt_normal rt.pma 's/addi e2, ex, -1075/addi e2, ex, -1074/'
+mut putf_borc rt.pma 's/mov br, 1\n    add x, x, big/mov br, 0\n    add x, x, big/'
+mut putf_tahmin rt.pma 's/muli t, t, 1233/muli t, t, 1200/'
+mut putf_kare gen2.pma.in 's/    eqi z, h, 2\n    jnz z, srh\n/    eqi z, h, 99\n    jnz z, srh\n/'
+echo "sabotaj(ondalik): $yakalandi yakalandi, $kacti kacti"
+rm -rf $T
+[ $kacti = 0 ]

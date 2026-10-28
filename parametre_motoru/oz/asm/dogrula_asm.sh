@@ -1,18 +1,17 @@
 #!/bin/bash
 # Parametre tabanli assembler (oz/asm/asm.pmb) = C++ `pm asm --strip`: bayt-bayt cikti ve kabul/ret karari.
-# Kullanim: dogrula_asm.sh [pm] [rastgele_sayisi] [mutant_sayisi]   (tum calistirmalar zaman+bellek siniri altinda)
-PM=${1:-../../pm}; NR=${2:-200}; NM=${3:-1500}; D=$(cd "$(dirname "$0")" && pwd); cd "$D"; PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
-ok=0; bad=0; acc=0; rej=0; flt=0
+# Kullanim: dogrula_asm.sh [pm] [rastgele_sayisi] [mutant_sayisi] [ondalik_program_sayisi]   (tum calistirmalar zaman+bellek siniri altinda)
+PM=${1:-../../pm}; NR=${2:-200}; NM=${3:-1500}; NFL=${4:-150}; D=$(cd "$(dirname "$0")" && pwd); cd "$D"; PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
+ok=0; bad=0; acc=0; rej=0
 pass() { ok=$((ok+1)); }; fail() { bad=$((bad+1)); echo "HATA: $1"; }
 AS="$D/asm.pmb"
 [ -n "$ASMPMB" ] && AS=$ASMPMB
 runasm() { if [ -n "$ASMELF" ]; then (ulimit -v 900000; timeout 30 $ASMELF < $1 > $T/mine.pmb 2> $T/mine.err); else (ulimit -v 900000; timeout 30 $PM run $AS < $1 > $T/mine.pmb 2> $T/mine.err); fi; }
-cmpsrc() {   # etiket kaynak  (ondalik sabit iceren kaynaklar bilinen farktir, sayilir)
+cmpsrc() {   # etiket kaynak
   $PM asm $2 -o $T/ref.pmb --strip > /dev/null 2>&1; rr=$?
   runasm $2; rm_=$?
   if [ $rr = 0 ]; then
     if [ $rm_ = 0 ] && cmp -s $T/ref.pmb $T/mine.pmb; then pass; acc=$((acc+1))
-    elif grep -q "HATA [0-9]*: 90" $T/mine.pmb; then flt=$((flt+1))
     else fail "$1: referans kabul etti, parametre rc=$rm_ $(head -c 80 $T/mine.pmb | tr -c '[:print:]\n' '?')"; cp $2 /tmp/asm_fark_$((ok+bad)).pma; fi
   else
     if [ $rm_ != 0 ]; then pass; rej=$((rej+1)); else fail "$1: referans reddetti, parametre kabul etti"; cp $2 /tmp/asm_fark_$((ok+bad)).pma; fi
@@ -93,6 +92,8 @@ hand yalniz_yorum '; sadece yorum\n'
 hand crlf 'func main() {\r\n ldi a, 5\r\n host puti, a\r\n}\r\n'
 hand sekme_virgul 'func\tmain()\t{\n\tldi\ta,\t5\n\tadd b,a,a\n\thost puti,b\n}\n'
 hand ondalik 'func main() {\n fadd a, 1.5, 2.5\n}\n'
+# ondalik sabitler: C++ strtod ile BAYT-BAYT ayni (rastgele + sinir degerleri: alt normal, tasma, yarim-esitlik, 800+ basamak)
+for sd in $(seq 1 $NFL); do awk -v seed=$sd -v n=60 -f ondalik_gen.awk > $T/fl.pma; cmpsrc "ondalik-$sd" $T/fl.pma; done
 hand tamsayi_imm_sinir 'func main() {\n ldi a, 2147483647\n ldi b, -2147483648\n ld c, a, 2147483647\n ld d, a, -2147483648\n}\n'
 hand ld_imm_tasma 'func main() {\n ldi a, 1\n ld c, a, 2147483648\n}\n'
 hand st_ld 'memory 16\nfunc main() {\n ldi a, 3\n st a, a, 1\n ld b, a, 1\n host puti, b\n}\n'
@@ -101,7 +102,7 @@ hand veri_adresi_imm 'data t = 5 6 7\nfunc main() {\n ld a, t, 2\n add b, a, t\n
 hand kayan 'func main() {\n i2f a, 3\n f2i b, a\n host puti, b\n}\n'
 hand cok_arg 'func f(a, b, c, d) {\n ret d\n}\nfunc main() {\n call r, f, 1, 2, 3, 4\n call s, f, r, 2, 3, 4\n host puti, s\n}\n'
 # ---- 4) kaynak mutantlari (kabul/ret karari ve kabul edilince bayt-bayt cikti)
-src=($(find $R/tests $R/uygulamalar $R/bench -name '*.pma' | sort | grep -v float))
+src=($(find $R/tests $R/uygulamalar $R/bench -name '*.pma' | sort))
 for s in $(seq 1 $NM); do f=${src[$((s % ${#src[@]}))]}; awk -v seed=$s -v k=$((1 + s % 3)) -f mutpma.awk $f > $T/m.pma; cmpsrc "mutant-$s ($(basename $f))" $T/m.pma; done
 echo "mutantlar tamam"
 # ---- 5) KENDI KAYNAGINI DERLER (sabit nokta) ve diger araclarin kaynaklarini
@@ -109,8 +110,8 @@ for f in asm.pma ../elf2/gen2.pma ../dogr/valid.pma; do $PM asm $f -o $T/ref.pmb
 runasm asm.pma; cmp -s $T/mine.pmb asm.pmb && pass || fail "asm.pmb kendi kaynagindan uretilen asm.pmb ile ayni degil (sabit nokta)"
 # ---- 6) ELF olarak: asm.elf (gen2 ile uretilmis) ayni cikti
 $PM liste $AS > $T/a.l; (ulimit -v 900000; $PM run $D/../elf2/gen2.pmb < $T/a.l > $T/asm.elf) && chmod +x $T/asm.elf && pass || fail "asm.pmb ELF'e cevrilemedi"
-na=0; for f in $(find $R/tests $R/uygulamalar $R/bench -name '*.pma' | sort | grep -v float | head -40); do (ulimit -v 900000; timeout 30 $T/asm.elf < $f > $T/e.pmb 2>/dev/null); re=$?; runasm $f; rp=$?
+na=0; for f in $(find $R/tests $R/uygulamalar $R/bench -name '*.pma' | sort | head -40); do (ulimit -v 900000; timeout 30 $T/asm.elf < $f > $T/e.pmb 2>/dev/null); re=$?; runasm $f; rp=$?
   if [ $re = $rp ] && cmp -s $T/e.pmb $T/mine.pmb; then pass; else fail "asm.elf farkli: $f (rc $re/$rp)"; fi; na=$((na+1)); done
 $T/asm.elf < asm.pma | cmp -s - asm.pmb && pass || fail "asm.elf kendi kaynagindan asm.pmb uretmedi"
 rm -rf $T
-echo "assembler (parametre): gecen $ok, kalan $bad (C++ ile ayni uretim: $acc, ayni ret: $rej, bilinen fark - ondalik sabit: $flt)"; [ $bad = 0 ]
+echo "assembler (parametre): gecen $ok, kalan $bad (C++ ile ayni uretim: $acc, ayni ret: $rej)"; [ $bad = 0 ]

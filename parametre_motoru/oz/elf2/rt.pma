@@ -225,6 +225,207 @@ aend: call x, flush
 finish: ret 0
 }
 
+
+; ---- putf: "%.15g" (glibc ile ayni), TAM dogru yuvarlama: deger = mant * 2^e2 buyuk sayi N/D olarak olceklenir, 15 basamak cikarilir, yarim -> cifte yuvarlanir.
+; Buyuk sayi: s[b] = limb sayisi, s[b+1+i] = i. limb (32 bit, 64 bit sozcukte). Bolge: RT sozcuk 60096.. (olaylar <= 30000 oldugundan 60064'e kadar); N=-5440, D=N+80, T=N+160.
+; Basamaklar RT sozcuk 41..55. Cikti wb tamponuna yazilir, sonda stdout'a (fd 1) bosaltilir.
+func rt_putf(bits) {
+    mov rb, -65536
+    mov one, 1
+    st one, rb, 15
+    shri sg, bits, 63
+    shri ex, bits, 52
+    andi ex, ex, 2047
+    shli mm, bits, 12
+    shri mm, mm, 12
+    jz sg, pos
+    call x, wb, 45
+pos: eqi z, ex, 2047
+    jz z, fin
+    jnz mm, isnan
+    call x, ws4, 105, 110, 102, 0
+    jmp done
+isnan: call x, ws4, 110, 97, 110, 0
+    jmp done
+fin: or t, ex, mm
+    jnz t, nz
+    call x, wb, 48
+    jmp done
+nz: jz ex, subn
+    shli t, one, 52
+    or mant, mm, t
+    addi e2, ex, -1075
+    jmp have
+subn: mov mant, mm
+    mov e2, -1074
+have: mov bl, 0
+    mov t, mant
+bl1: jz t, bl2
+    shri t, t, 1
+    addi bl, bl, 1
+    jmp bl1
+bl2: add t, e2, bl
+    addi t, t, -1
+    muli t, t, 1233
+    sari x0, t, 12
+    mov nb, -5440
+    addi db, nb, 80
+    addi tb, nb, 160
+    call x, bn_setu, nb, mant
+    call x, bn_setu, db, one
+    lti z, e2, 0
+    jz z, p2n
+    neg t, e2
+    call x, bn_pow2, db, t
+    jmp sc
+p2n: call x, bn_pow2, nb, e2
+sc: lti z, x0, 0
+    jz z, sp
+    neg t, x0
+    call x, bn_pow10, nb, t
+    jmp adj
+sp: call x, bn_pow10, db, x0
+adj: mov ten, 10
+a1: call x, bn_copy, tb, db
+    call x, bn_mul, tb, ten
+    call c, bn_cmp, nb, tb
+    lti z, c, 0
+    jnz z, a2
+    call x, bn_mul, db, ten
+    addi x0, x0, 1
+    jmp a1
+a2: call c, bn_cmp, nb, db
+    gei z, c, 0
+    jnz z, a3
+    call x, bn_mul, nb, ten
+    addi x0, x0, -1
+    jmp a2
+a3: mov i, 0
+g1: gei z, i, 15
+    jnz z, g4
+    mov dg, 0
+g2: call c, bn_cmp, nb, db
+    lti z, c, 0
+    jnz z, g3
+    call x, bn_sub, nb, db
+    addi dg, dg, 1
+    jmp g2
+g3: add t, rb, i
+    st dg, t, 41
+    call x, bn_mul, nb, ten
+    addi i, i, 1
+    jmp g1
+g4: call x, bn_copy, tb, db
+    mov five, 5
+    call x, bn_mul, tb, five
+    call c, bn_cmp, nb, tb
+    lti z, c, 0
+    jnz z, nord
+    jnz c, up
+    ld t, rb, 55
+    andi t, t, 1
+    jz t, nord
+up: mov i, 14
+    mov zr, 0
+u1: add t, rb, i
+    ld dg, t, 41
+    addi dg, dg, 1
+    eqi z, dg, 10
+    jz z, u2
+    st zr, t, 41
+    addi i, i, -1
+    gei z, i, 0
+    jnz z, u1
+    mov dg, 1
+    st dg, rb, 41
+    addi x0, x0, 1
+    jmp nord
+u2: st dg, t, 41
+nord: mov k, 15
+z1: addi t, k, -1
+    add a, rb, t
+    ld dg, a, 41
+    jnz dg, z2
+    mov k, t
+    jmp z1
+z2: lti z, x0, -4
+    jnz z, expf
+    gei z, x0, 15
+    jnz z, expf
+    lti z, x0, 0
+    jnz z, negx
+    mov i, 0
+f1: gt z, i, x0
+    jnz z, f2
+    mov dg, 0
+    ge z, i, k
+    jnz z, f1w
+    add a, rb, i
+    ld dg, a, 41
+f1w: addi c, dg, 48
+    call x, wb, c
+    addi i, i, 1
+    jmp f1
+f2: addi i, x0, 1
+    ge z, i, k
+    jnz z, done
+    call x, wb, 46
+f3: ge z, i, k
+    jnz z, done
+    add a, rb, i
+    ld dg, a, 41
+    addi c, dg, 48
+    call x, wb, c
+    addi i, i, 1
+    jmp f3
+negx: call x, ws4, 48, 46, 0, 0
+    neg t, x0
+    addi t, t, -1
+nz1: jz t, nz2
+    call x, wb, 48
+    addi t, t, -1
+    jmp nz1
+nz2: mov i, 0
+nz3: ge z, i, k
+    jnz z, done
+    add a, rb, i
+    ld dg, a, 41
+    addi c, dg, 48
+    call x, wb, c
+    addi i, i, 1
+    jmp nz3
+expf: ld dg, rb, 41
+    addi c, dg, 48
+    call x, wb, c
+    lei z, k, 1
+    jnz z, e1
+    call x, wb, 46
+    mov i, 1
+e0: ge z, i, k
+    jnz z, e1
+    add a, rb, i
+    ld dg, a, 41
+    addi c, dg, 48
+    call x, wb, c
+    addi i, i, 1
+    jmp e0
+e1: call x, wb, 101
+    mov ax, x0
+    lti z, x0, 0
+    jz z, e2p
+    call x, wb, 45
+    neg ax, x0
+    jmp e3
+e2p: call x, wb, 43
+e3: lti z, ax, 10
+    jz z, e4
+    call x, wb, 48
+e4: call x, wnum, ax
+done: call x, flush
+    ret 0
+}
+
+
 ; ---- yardimcilar (tamponlu bayt yazici) ----
 func wb(b) {
     mov rb, -65536
@@ -310,4 +511,148 @@ h3: call x, wb, c
     addi i, i, -1
     jmp h1
 h9: ret 0
+}
+func bn_mul(b, k) {
+    ld len, b, 0
+    mov i, 0
+    mov c, 0
+ml: ge z, i, len
+    jnz z, md
+    add a, b, i
+    ld v, a, 1
+    mul v, v, k
+    add v, v, c
+    shli t, v, 32
+    shri t, t, 32
+    st t, a, 1
+    shri c, v, 32
+    addi i, i, 1
+    jmp ml
+md: jz c, mdone
+    add a, b, len
+    st c, a, 1
+    addi len, len, 1
+    st len, b, 0
+mdone: ret 0
+}
+
+func bn_pow2(b, n) {
+    mov big, 1073741824
+l1: lti z, n, 30
+    jnz z, l2
+    call x, bn_mul, b, big
+    addi n, n, -30
+    jmp l1
+l2: jz n, l3
+    mov one, 1
+    shl m, one, n
+    call x, bn_mul, b, m
+l3: ret 0
+}
+
+func bn_pow10(b, n) {
+    mov big, 1000000000
+l1: lti z, n, 9
+    jnz z, l2
+    call x, bn_mul, b, big
+    addi n, n, -9
+    jmp l1
+l2: jz n, l3
+    mov m, 1
+l4: jz n, l5
+    muli m, m, 10
+    addi n, n, -1
+    jmp l4
+l5: call x, bn_mul, b, m
+l3: ret 0
+}
+
+func bn_cmp(a, b) {
+    ld la, a, 0
+    ld lb, b, 0
+    lt z, la, lb
+    jnz z, less
+    lt z, lb, la
+    jnz z, more
+    mov i, la
+c1: jz i, same
+    addi i, i, -1
+    add p, a, i
+    ld x, p, 1
+    add q, b, i
+    ld y, q, 1
+    lt z, x, y
+    jnz z, less
+    lt z, y, x
+    jnz z, more
+    jmp c1
+same: ret 0
+less: ret -1
+more: ret 1
+}
+
+func bn_sub(a, b) {
+    ld la, a, 0
+    ld lb, b, 0
+    mov i, 0
+    mov br, 0
+    mov one, 1
+    shli big, one, 32
+s1: ge z, i, la
+    jnz z, s5
+    add p, a, i
+    ld x, p, 1
+    mov y, 0
+    ge z, i, lb
+    jnz z, s2
+    add q, b, i
+    ld y, q, 1
+s2: sub x, x, y
+    sub x, x, br
+    mov br, 0
+    lti z, x, 0
+    jz z, s4
+    mov br, 1
+    add x, x, big
+s4: st x, p, 1
+    addi i, i, 1
+    jmp s1
+s5: jz la, s7
+    addi t, la, -1
+    add p, a, t
+    ld x, p, 1
+    jnz x, s7
+    mov la, t
+    jmp s5
+s7: st la, a, 0
+    ret 0
+}
+
+func bn_copy(d, s) {
+    ld len, s, 0
+    mov i, 0
+cp: gt z, i, len
+    jnz z, cd
+    add p, s, i
+    ld v, p, 0
+    add q, d, i
+    st v, q, 0
+    addi i, i, 1
+    jmp cp
+cd: ret 0
+}
+
+func bn_setu(b, v) {
+    shli lo, v, 32
+    shri lo, lo, 32
+    shri hi, v, 32
+    st lo, b, 1
+    st hi, b, 2
+    mov len, 0
+    jz lo, h1
+    mov len, 1
+h1: jz hi, h2
+    mov len, 2
+h2: st len, b, 0
+    ret 0
 }
