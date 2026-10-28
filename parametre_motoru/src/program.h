@@ -48,6 +48,7 @@ struct RunConfig {
   uint64_t max_mem_words = Limits::kMaxMemWords;
   size_t stack_words = 1u << 20;
   size_t max_frames = 1u << 16;
+  int native_promote = 4;   // makine kodu: yazmaca alma esigi (agirlikli kullanim); 0 = hepsi, buyuk deger = hic
 };
 struct RunResult { Trap trap = T_OK; int64_t value = 0; uint64_t fuel_used = 0; uint64_t steps = 0; /* yalniz -DPM_STEPS */ uint32_t func = 0, pc = 0; };
 RunResult run_program(const Program& p, IO& io, const RunConfig& cfg);

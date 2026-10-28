@@ -74,6 +74,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--frames") && i + 1 < argc) cfg.max_frames = strtoull(argv[++i], nullptr, 10);
         else if (!strcmp(argv[i], "--result")) showResult = true;
         else if (!strcmp(argv[i], "--stats")) showStats = true;
+        else if (!strcmp(argv[i], "--native-promote") && i + 1 < argc) cfg.native_promote = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--native")) useNative = true;
         else if (!strcmp(argv[i], "--native-strict")) useNative = strictNative = true;
         else return usage();
@@ -119,9 +120,11 @@ int main(int argc, char** argv) {
         IO io;
         RunResult r = run_program(p, io, cfg);
         if (diff && native_available() && native_supported(p)) {
+          static const int thr[] = {0, 4, 100000}; cfg.native_promote = thr[rng() % 3];
           IO io2; RunResult r2 = run_program_native(p, io2, cfg);
           compared++;
           if (r2.trap != r.trap || r2.value != r.value || r2.fuel_used != r.fuel_used || io2.out != io.out) {
+            if (const char* dd = getenv("PM_FUZZ_DUMP")) { std::string fn = std::string(dd) + "/fark_" + std::to_string(it) + "_p" + std::to_string(cfg.native_promote) + ".pmb"; write_file(fn, m.data(), m.size()); }
             if (mismatch++ < 5) fprintf(stderr, "FARK (deneme %ld): yorumlayici trap=%s deger=%lld yakit=%llu cikti=%zu bayt | native trap=%s deger=%lld yakit=%llu cikti=%zu bayt\n", it,
               kTrapName[r.trap], (long long)r.value, (unsigned long long)r.fuel_used, io.out.size(), kTrapName[r2.trap], (long long)r2.value, (unsigned long long)r2.fuel_used, io2.out.size());
           }

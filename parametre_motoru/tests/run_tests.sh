@@ -29,14 +29,25 @@ for f in *.pma; do
   fi
   if [ "$rc_exp" != 1 ]; then   # yorumlayici <-> makine kodu: cikti, cikis kodu, tuzak turu ve YAKIT ayni olmali
     "$PM" run $f $args --stats < $inp > $T/outi 2> $T/erri; rci=$?
-    "$PM" run $f $args --stats --native-strict < $inp > $T/outn 2> $T/errn; rcn=$?
+    for prom in "" "--native-promote 0" "--native-promote 100000"; do
+    "$PM" run $f $args --stats --native-strict $prom < $inp > $T/outn 2> $T/errn; rcn=$?
     if [ "$rcn" = 3 ]; then native_skip=$((native_skip+1)); else
       native_ok=$((native_ok+1))
       kind() { sed -n "s/^TRAP: \([A-Z0-9]*\).*/\1/p" "$1"; }
       fuel() { grep -o "yakit:\? [0-9]*" "$1" | grep -o "[0-9]*$" | head -1; }
       [ "$rcn" = "$rci" ] && cmp -s $T/outi $T/outn && [ "$(kind $T/erri)" = "$(kind $T/errn)" ] && [ "$(fuel $T/erri)" = "$(fuel $T/errn)" ] && check $b ok || check $b bad "native farkli: rc $rcn/$rci tuzak '$(kind $T/errn)'/'$(kind $T/erri)' yakit $(fuel $T/errn)/$(fuel $T/erri)"
     fi
+    done
   fi
+done
+# regresyon: fuzz'in buldugu bozuk ikililer (cagri penceresi ustuste biniyor); yorumlayici = makine kodu (uc kip)
+for f in regress/*.pmb; do
+  [ -f "$f" ] || continue; b=$(basename $f .pmb)
+  "$PM" run $f --stats < /dev/null > $T/outi 2> $T/erri; rci=$?
+  for prom in 0 4 100000; do
+    "$PM" run $f --stats --native-strict --native-promote $prom < /dev/null > $T/outn 2> $T/errn; rcn=$?
+    [ "$rcn" = "$rci" ] && cmp -s $T/outi $T/outn && check $b ok || check $b bad "regresyon (promote $prom): rc $rcn/$rci"
+  done
 done
 rm -rf $T
 echo "gecen: $pass, kalan: $fail  (makine kodu karsilastirmasi: $native_ok program, atlanan: $native_skip)"
