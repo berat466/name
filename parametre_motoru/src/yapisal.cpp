@@ -15,9 +15,9 @@
 namespace {
 
 // ---- dugum turleri (sayisal kimlikler; belge ile ayni)
-enum EK { E_SAYI = 1, E_ALAN, E_GLOBAL, E_YEREL, E_INDIS, E_KARE, E_AALAN, E_BALAN, E_AINDIS, E_BINDIS, E_TALAN, E_DIZI, E_CAGRI, E_PARAM, E_IKILI, E_TEKLI, E_SEC, E_SON };
+enum EK { E_SAYI = 1, E_ALAN, E_GLOBAL, E_YEREL, E_INDIS, E_KARE, E_AALAN, E_BALAN, E_AINDIS, E_BINDIS, E_TALAN, E_DIZI, E_CAGRI, E_PARAM, E_IKILI, E_TEKLI, E_SEC, E_OKU, E_SON };
 enum SK { S_ATA = 1, S_EGER, S_SURDE, S_SAY, S_CAGIR, S_DAVRAN, S_DON, S_YAZI, S_KARAKTER, S_KIR, S_DEVAM, S_SATIR, S_SON };
-const char* kEN[] = {"?", "sayi", "alan", "global", "yerel", "indis", "kare", "aalan", "balan", "aindis", "bindis", "talan", "dizi", "cagri", "param", "ikili", "tekli", "sec"};
+const char* kEN[] = {"?", "sayi", "alan", "global", "yerel", "indis", "kare", "aalan", "balan", "aindis", "bindis", "talan", "dizi", "cagri", "param", "ikili", "tekli", "sec", "oku"};
 const char* kSN[] = {"?", "ata", "eger", "surde", "say", "cagir", "davran", "don", "yazi", "karakter", "kir", "devam", "satir"};
 const char* kBinS[] = {"?", "+", "-", "*", "/", "%", "&", "|", "^", "<<", ">>", "==", "!=", "<", "<=", ">", ">=", "min", "max", "ve", "veya"};
 const char* kBinAsm[] = {"?", "add", "sub", "mul", "div", "mod", "and", "or", "xor", "shl", "sar", "eq", "ne", "lt", "le", "gt", "ge"};
@@ -80,7 +80,7 @@ struct Dec {
     switch (e->k) {
       case E_SAYI: e->v = r.z(); break;
       case E_ALAN: case E_GLOBAL: case E_YEREL: case E_AALAN: case E_BALAN: case E_PARAM: e->a = int(r.idx("indeks", 1u << 20)); break;
-      case E_INDIS: case E_KARE: case E_AINDIS: case E_BINDIS: break;
+      case E_INDIS: case E_KARE: case E_AINDIS: case E_BINDIS: case E_OKU: break;
       case E_TALAN: e->a = int(r.idx("sablon", 1u << 20)); e->b = int(r.idx("alan", 1u << 20)); e->c.push_back(expr(depth + 1)); break;
       case E_DIZI: e->a = int(r.idx("dizi", 1u << 20)); e->c.push_back(expr(depth + 1)); break;
       case E_CAGRI: { e->a = int(r.idx("islev", 1u << 20)); size_t n = r.count("arguman"); for (size_t j = 0; j < n; j++) e->c.push_back(expr(depth + 1)); break; }
@@ -298,6 +298,7 @@ struct Gen {
       case E_BINDIS: if (c.a < 0) err("'bindis' yalniz etkilesimde"); return "ib";
       case E_GLOBAL: { if (size_t(e->a) >= m.globals.size()) err("global " + S(e->a) + " yok"); std::string v = tmp(); emit("ld " + v + ", g_" + S(e->a) + ", 0"); return v; }
       case E_KARE: { std::string v = tmp(); emit("ld " + v + ", g_kare, 0"); return v; }
+      case E_OKU: { std::string v = tmp(); emit("host " + v + ", getc"); return v; }
       case E_YEREL: return loc(e->a, c);
       case E_TALAN: { need_f(e->a, e->b); std::string ix = check_idx(ex(e->c[0], c), m.tms[size_t(e->a)].n); return field_read(e->a, e->b, ix); }
       case E_DIZI: {

@@ -49,6 +49,7 @@ SON      BLOK                                    sonda bir kez çalışır
 | 15 | ikili | `15 OP E1 E2` | OP aşağıda |
 | 16 | tekli | `16 OP E` | 1 eksi · 2 bit tümleyen · 3 değil (0↔1) |
 | 17 | sec | `17 C E1 E2` | C ≠ 0 ise E1, değilse E2 (yalnız seçilen değerlendirilir) |
+| 18 | oku | `18` | standart girdiden bir bayt okur (0..255); girdi bitince −1. Değerlendirme sırası ifade sırasıdır (yan etkilidir) |
 
 İkili `OP`: 1 `+` 2 `-` 3 `*` 4 `/` 5 `%` 6 `&` 7 `|` 8 `^` 9 `<<` 10 `>>` (aritmetik) 11 `==` 12 `!=` 13 `<` 14 `<=` 15 `>` 16 `>=` 17 `min` 18 `max` 19 `ve` 20 `veya`. Karşılaştırmalar 0/1 verir. `ve`/`veya` iki tarafı da değerlendirir ve 0 olmayanı "doğru" sayar. Tamsayı 64 bit, taşmada sarar; `/` ve `%` sıfıra doğru kırpar; sıfıra bölme = DIV0 tuzağı.
 Atanabilir ifadeler (atama hedefi): `alan`, `aalan`, `balan`, `global`, `yerel`, `dizi`, `talan`; `param` olarak verilen argüman da atanabilir olmalıdır.
