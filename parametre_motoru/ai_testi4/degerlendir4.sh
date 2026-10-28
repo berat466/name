@@ -8,9 +8,9 @@ GZ=$W/src; cp "$F" $W/t.$M; cp $D/../uygulamalar/sablon/std.pmt $W/std.pmt; cd $
 nc() { sed 's/#.*//; s/;.*//' "$1" | sed '/^[[:space:]]*$/d'; }
 TYPE=out; EXTRA=""
 case $G in
-  D1) ORACLE="awk -f $GZ/d1.awk"; FMIN=2000; BASE="d1";;
-  D2) ORACLE="awk -f $GZ/d2.awk"; FMIN=20000; BASE="d2";;
-  D3) ORACLE="awk -v spec=$GZ/d3_spec.txt -f $GZ/d3.awk"; FMIN=100000; BASE="d3 $GZ/d3_spec.txt";;
+  D1) ORACLE="awk -f $GZ/d1.awk"; FMIN=300; BASE="d1";;
+  D2) ORACLE="awk -f $GZ/d2.awk"; FMIN=3000; BASE="d2";;
+  D3) ORACLE="awk -v spec=$GZ/d3_spec.txt -f $GZ/d3.awk"; FMIN=6000; BASE="d3 $GZ/d3_spec.txt";;
   S1) ORACLE="awk -v N=500 -v C=2 -v D=100 -v tab=$GZ/s1_tab.txt -f $GZ/s.awk"; FMIN=12000; BASE="s 500 2 100 $GZ/s1_tab.txt";;
   S2) ORACLE="awk -v N=5000 -v C=8 -v D=200 -v tab=$GZ/s2_tab.txt -f $GZ/s.awk"; FMIN=250000; BASE="s 5000 8 200 $GZ/s2_tab.txt";;
   S3) ORACLE="awk -v N=20000 -v C=32 -v D=300 -v tab=$GZ/s3_tab.txt -f $GZ/s.awk"; FMIN=1500000; BASE="s 20000 32 300 $GZ/s3_tab.txt";;

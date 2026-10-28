@@ -70,7 +70,7 @@ Atanabilir ifadeler (atama hedefi): `alan`, `aalan`, `balan`, `global`, `yerel`,
 | 11 | devam | `11` | en içteki döngünün sonraki turuna geç |
 | 12 | satir | `12 N IFADE×N` | N sayıyı boşlukla ayırıp yazar, sonuna satır sonu koyar |
 
-`kir`/`devam` şablon/etkileşim/girdi gövdesinin en üst düzeyinde: "bu örneğin geri kalanını atla".
+`kir`/`devam`: bir döngünün (`surde`, `say`) içinde en içteki döngüye uygulanır. Şablonlu kural bloğunda, etkileşim gövdesinde ve **şablonlu** girdi gövdesinde döngü dışında kullanılırsa "bu örneğin (çiftin) geri kalanını atla" anlamına gelir. **Şablonsuz (genel) girdi gövdesinde, işlevlerde, ILK ve SON bloklarında döngü dışında kullanılamaz** (tablo hatası); gerekirse tek turluk bir `say` döngüsüyle sar.
 
 ## 5. Çalışma modeli
 1. Alanlar başlatıcılarla doldurulur, dizi başlangıç değerleri yazılır; **ILK** bloğu çalışır.

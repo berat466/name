@@ -54,7 +54,7 @@ yazdir IFADE, IFADE, ...      ; bitişte yazdır
 ## Karede sıra
 1) girdi olayları (poll ile gelen tümü) → 2) şablonların kuralları (bildirim sırasıyla, örnek-öncelikli) → 3) etkileşimler (bildirim sırasıyla) → 4) topla → 5) bitis → 6) çizim (şablon sırasıyla) ve sunum.
 ## Sınırlar (bilinçli)
-Kurallarda döngü/özyineleme yok; ifadede tek ikili işlem; etkileşim O(|A|·|B|); toplama işlemi 4 çeşit (toplam, say, enbuyuk, enkucuk); 3B, ses, metin, arayüz bileşenleri yok.
+Kurallarda döngü/özyineleme yok; `etkilesim A B` için A ve B **farklı** şablonlar olmalı (bir şablonun kendi örnekleri arasında etkileşim için aynı alanları taşıyan ikinci bir şablon gerekir); `yazdir` yalnız bitişte, tek satırda çıktı verir; ifadede tek ikili işlem; etkileşim O(|A|·|B|); toplama işlemi 4 çeşit (toplam, say, enbuyuk, enkucuk); 3B, ses, metin, arayüz bileşenleri yok.
 ## Ayrıntılar (AI testinde sorulan noktalar)
 - Aynı alana birden çok `kural` yazılabilir; bildirim sırasıyla uygulanır, her biri öncekinin sonucunu görür. İki işlemli ifade (ör. `(x+37)%152`) iki kural satırıyla yazılır; ara değer ara alana yazılabilir.
 - `girdi` kuralları karede en önce çalışır (şablon kurallarından, sınırlamalardan önce).
