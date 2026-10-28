@@ -1,11 +1,10 @@
 #!/bin/bash
 # Dogrudan sayisal parametre testi degerlendiricisi.
-# Kullanim: ANAHTAR=... ./degerlendir2.sh GOREV(A|B|C) KIP(sayi|pmt) DOSYA [GIZLI.enc]
-# Gizli dogrular (awk kehanetleri, olay dosyalari) sifreli arsivdedir; yalnizca degerlendirme aninda acilir.
+# Kullanim: ./degerlendir2.sh GOREV(A|B|C) KIP(sayi|pmt) DOSYA
+# Test sirasinda dogrular sifreliydi; test bitince gizli_dogrular/ altina acildi.
 G=$1; M=$2; F=$3; D=$(cd "$(dirname "$0")" && pwd); PM=$D/../pm
-ENC=${4:-/tmp/claude-0/-home-user-name/2c981dbf-12d3-5bd2-95cd-af645b836dba/scratchpad/ai2/gizli.enc}
 W=$(mktemp -d /dev/shm/ai2.XXXXXX); trap 'rm -rf $W' EXIT
-openssl enc -d -aes-256-cbc -pbkdf2 -in "$ENC" -pass pass:"$ANAHTAR" 2>/dev/null | tar xz -C $W || { echo "SONUC HATA anahtar/arsiv"; exit 1; }
+cp -r $D/gizli_dogrular $W/gizli
 GZ=$W/gizli; cp "$F" $W/t.$M; cp $D/../uygulamalar/sablon/std.pmt $W/std.pmt
 nc() { sed 's/#.*//; s/;.*//' "$1" | sed '/^[[:space:]]*$/d'; }
 cd $W

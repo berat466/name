@@ -1,0 +1,6 @@
+SONUC kip=pmt gorev=A davranis=TUTTU katman=- pmb_bayt=1270 tanim_sozcuk=228 tanim_satir=41 tanim_bayt=917 yakit=56039 yorum_ms=6.4 native_ms=4.8 detay=[cikti:ok;yakit=56039]
+SONUC kip=sayi gorev=A davranis=TUTTU katman=- pmb_bayt=214 sayi_adedi=205 tanim_bayt=1188 komut_adedi=57 yakit=4030 yorum_ms=5.3 native_ms=4.3 detay=[cikti:ok;yakit=4030]
+SONUC kip=pmt gorev=B davranis=TUTTU katman=- pmb_bayt=1111 tanim_sozcuk=195 tanim_satir=42 tanim_bayt=787 yakit=1578568 yorum_ms=30.0 native_ms=11.5 detay=[olay_dosyasi=4/4; ev99:ok; ev1:ok; ev2:ok; 
+SONUC kip=sayi gorev=B davranis=TUTTU katman=- pmb_bayt=365 sayi_adedi=348 tanim_bayt=1652 komut_adedi=97 yakit=1553039 yorum_ms=31.3 native_ms=16.7 detay=[olay_dosyasi=4/4; ev99:ok; ev1:ok; ev2:ok; e
+SONUC kip=pmt gorev=C davranis=TUTTU katman=- pmb_bayt=896 tanim_sozcuk=170 tanim_satir=30 tanim_bayt=697 yakit=4540738 yorum_ms=115.9 native_ms=14.5 detay=[cikti:ok;yakit=4540738]
+SONUC kip=sayi gorev=C davranis=TUTTU katman=- pmb_bayt=181 sayi_adedi=179 tanim_bayt=991 komut_adedi=52 yakit=218072 yorum_ms=8.6 native_ms=5.4 detay=[cikti:ok;yakit=218072]
