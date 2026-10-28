@@ -27,6 +27,12 @@ kos() {
   lim $T/p.elf < /dev/null > $T/o2 2> $T/e2 3> $T/elf.ppm; r2=$?
   [ -s $T/elf.ppm ] || rm -f $T/elf.ppm
   n=$((n+1))
+  # seceneksiz ELF (rapor/PPM/ascii/olay yok; RT yalniz present/poll/frame kullanimina gore eklenir): stdout, cikis kodu, tuzak adi pm run (seceneksiz) ile ayni
+  if lim $GEN < $T/l.txt > $T/b.elf 2>/dev/null; then
+    chmod +x $T/b.elf; lim $PM run $pmb < /dev/null > $T/bo1 2> $T/be1; b1=$?
+    lim $T/b.elf < /dev/null > $T/bo2 2> $T/be2; b2=$?
+    [ $b1 = $b2 ] && cmp -s $T/bo1 $T/bo2 && [ "$(grep -a ^TRAP: $T/be1 | cut -d' ' -f1-2)" = "$(grep -a ^TRAP: $T/be2 | cut -d' ' -f1-2)" ] && pass || fail "$et (seceneksiz): pm rc=$b1 elf rc=$b2 | $(cmp $T/bo1 $T/bo2 2>&1 | head -c 50)"
+  else fail "$et (seceneksiz): ELF uretilemedi"; fi
   grep -E '^ekran:' $T/e1 > $T/r1; grep -E '^ekran:' $T/e2 > $T/r2
   local t1 t2; t1=$(grep -a '^TRAP:' $T/e1 | cut -d' ' -f1-2); t2=$(grep -a '^TRAP:' $T/e2 | cut -d' ' -f1-2)
   if [ $r1 = $r2 ] && cmp -s $T/o1 $T/o2 && cmp -s $T/r1 $T/r2 && [ "$t1" = "$t2" ] && { [ ! -e $T/pm.ppm ] && [ ! -e $T/elf.ppm ] || cmp -s $T/pm.ppm $T/elf.ppm; }; then pass

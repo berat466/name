@@ -8,6 +8,10 @@ lp: ge z, i, n
     add v, v, s
     shli t, i, 33
     or v, v, t
+    shli t, i, 24
+    or v, v, t
+    shli t, i, 63
+    or v, v, t
     shli t, s, 40
     or v, v, t
     add a, p, i
