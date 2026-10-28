@@ -1,0 +1,10 @@
+func main() {
+    mov s, 0
+    mov i, 0
+l:  add s, s, i
+    add i, i, 1
+    lt  c, i, 100000000
+    jnz c, l
+    host puti, s
+    host putc, 10
+}
