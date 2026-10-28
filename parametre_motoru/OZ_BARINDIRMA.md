@@ -57,6 +57,25 @@ Her adımda **ölçü**: bayt/çıktı eşitliği (otomatik, ajan yok), hız (pa
 
 **Sınırlar / henüz yapılmayanlar [Kesin]:** Çözücü yalnızca *biçimi* çözer (C++ `parse_program` ile aynı kabul/ret); *doğrulama* (`validate_program`: indeks/ofset/pencere denetimleri) ve *analiz* sonraki adım. Girdi 1 MiB ile sınırlı (dizi boyutu). Hatalar mesaj yerine tuzakla (çıkış 2) bildirilir. Hız: küçük dosyalarda süreç tabanı (≈ 10–19 ms) baskın; C++ `pm liste` 4 ms.
 
+## 3b. Fizibilite: PMY1 tablosu bağımsız ELF üretiyor (`oz/elf/`)
+
+**Soru:** Bir parametre tablosu, PMB1 sayı listesinden `pm` ve g++ olmadan çalışan geçerli bir Linux x86-64 ELF üretebilir mi? **Cevap [Kesin]: evet, desteklenen komut altkümesi için.**
+
+**Düzen:** `oz/elf/elf.pmy` (3727 B, PMY1; kaynağı `gen.sh` ile `elf.sayi`) girdi olarak `pm liste` çıktısını (düz sayı listesi) okur, stdout'a ELF yazar. Üretici *sabit makine kodu kopyalamaz*: her PMB1 komutu için işlenen alanlarından (yazmaç, sabit, ofset, atlama hedefi) komut başına sabit boyutlu x86-64 kodu üretir; iki geçişli ofset hesabıyla atlama hedefleri çözülür. Sabit olan yalnızca ortak rutinler (puti/putc/tuzak/çıkış, ≈ 250 B) ve komut şablonlarıdır. ELF: tek RWX `PT_LOAD` @0x400000, 120 B başlık, yazmaçlar bellekte ([rbx+8r]), bellek dizisi r12 tabanlı; INTERP/DYNAMIC yok.
+
+**Desteklenen altküme:** mov/ldi/ldk, tüm tamsayı ALU (+ sabit işlenenli `*i` biçimleri), karşılaştırmalar, jmp/jz/jnz, ret/halt, ld/st (sınır denetimli), host (yazdırma). **Desteklenmeyen (üretici reddeder, hata kodu ≠ 0):** call, alloc, kayan nokta, getc/present, yakıt sınırı. Tuzaklar: `TRAP: DIV0`, `TRAP: OOB` (stderr), çıkış 2.
+
+**Doğrulama (`oz/elf/dogrula_elf.sh`, otomatik, ajan yok):** 92 denetim, hepsi geçti. 68 program `pm run` ile karşılaştırıldı (stdout bayt-bayt, çıkış kodu, tuzak adı): depodaki `tests/ uygulamalar/ bench/` `.pma` dosyaları + `rastgele_pma.awk` ile üretilen 60 rastgele program (60'ının 57'si çıktı üretti, 58 farklı çıktı özeti, 19'u DIV0 tuzağı; yani üretici farklı sayısal programlara farklı doğru davranış veriyor, tek bir sabit ikili değil). 19 program desteklenmeyen altküme dışı olduğu için reddedildi, 1 program yakıt sınırına bağlı olduğu için atlandı. Bağımsızlık: tek `PT_LOAD`, INTERP/DYNAMIC yok, ikili içinde `PMB1`/`libstdc`/`GLIBC` izi yok, `env -i` ile çalışır. `tests/trap_oob.pma` ve `collatz.pma` elle ayrıca doğrulandı.
+
+**Sınırlar [Kesin]:**
+- Üretici hâlâ C++ `pm` ile çalıştırılıyor: bu **geçiş kanıtıdır, tam öz-barındırma değil**. Üretilen uygulama `pm`'siz çalışır; üreticinin kendisi henüz değil.
+- Üretici *güvenilir/önceden doğrulanmış* tablolar için: doğrulayıcı (`validate_program`) parametrelere taşınana kadar güvenilmeyen girdiden yerel kod üretmemeli (bellek/atlama indeksi denetimi yok).
+- Yakıt (fuel) sınırı yok; sonsuz döngü ELF'te sonsuz döner. Tek fonksiyon.
+- Test kapsamı: rastgele program üreticisi yalnızca desteklenen altkümeden üretir; stdin her zaman boş (getc desteklenmiyor); OOB tuzağı rastgele kümede çıkmıyor, yalnızca `trap_oob.pma` ile sınandı [Muhtemel yetersiz kapsam].
+- Bulunan 3 üretici hatası düzeltildi (başlık çıktısı, `j==2` işlenen yazımı, `sayi` `-` bloğu); bunlar farksal test olmadan fark edilmezdi.
+
+**Sıradaki adım (kullanıcı sırası):** PMB1 doğrulayıcısını (`validate_program` + analiz) PMY1'e taşımak; ardından makine kodu üretici (bu fizibilite onun altkümesidir), birleştirme, kendi yeni sürümünü üretme, C++ önyükleme bağımlılığını kaldırma.
+
 ## 4. Açık sorular ve riskler
 - **Çekirdek sınırı:** hangi parçalar C++'ta kalmalı? Öneri: çözücü+doğrulayıcı+yorumlayıcı+host (yaklaşık 800 satır) en küçük gerçekçi çekirdek; native üretici ve özelleştiriciler parametreye taşınır; `exec` yeni ilkeldir.
 - **Performans:** VM üstünde çalışan araçlar (özelleştirici, birleştirici) yavaşlar; ama bunlar bir kez çalışan yükleme-zamanı araçları ve makine koduna çevrilince (`--native`) kabul edilebilir olmalı. Ölçülecek.
