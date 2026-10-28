@@ -54,7 +54,7 @@ Karşılaştırma için (önceki ölçüm oturumundan, aynı makine): yerel C++ 
 
 # Aşama 2: Yazmaç dağıtımı + karşılaştır-ve-atla birleştirmesi
 
-Üretici baştan yazıldı (`src/native_x64.cpp`, 253 → ~330 satır). Değişenler:
+Üretici baştan yazıldı (`src/native_x64.cpp`, 253 → 511 satır; ondalık dahil). Değişenler:
 - Bir işlevde sık kullanılan VM yazmaçları (en çok 8) CPU yazmaçlarında tutulur; kalanlar bellek operandı olarak doğrudan komuta girer (`add [m], x`, `cmp [m], imm`).
 - Çağıran/çağrılan yazmaç penceresine `rbx` ayarlanarak geçilir (önceden `push/pop rbx`), derinlik/yığın denetimi sabit adreslerle yapılır; bağlam göstericisi artık bir yazmaç tutmaz.
 - `lti/eq/...` + hemen `jz/jnz` tek `cmp`+`jcc` olur.
@@ -87,7 +87,7 @@ Karşılaştırma için (önceki ölçüm oturumundan, aynı makine): yerel C++ 
 
 # Aşama 3: Ondalık komutlar (SSE2)
 
-- Ondalık 11 komut (`fadd fsub fmul fdiv fneg fsqrt feq flt fle i2f f2i`) **anlam tablosuna** taşındı (`FALU FUN FCMP CVTIF CVTFI` mikro-işlemleri). Tablodaki komut sayısı 44 → **55 (tamamı)**; yorumlayıcıdaki elle yazılmış ondalık kod silindi, artık hepsi tablodan üretiliyor (`vm.cpp` 88 → 73 satır). Makine kodu yolu için SSE2 şablonları eklendi.
+- Ondalık 11 komut (`fadd fsub fmul fdiv fneg fsqrt feq flt fle i2f f2i`) **anlam tablosuna** taşındı (`FALU FUN FCMP CVTIF CVTFI` mikro-işlemleri). Tablodaki komut sayısı 44 → **55 (tamamı)**; yorumlayıcıdaki elle yazılmış ondalık kod silindi, artık hepsi tablodan üretiliyor (`vm.cpp` 88 → 76 satır). Makine kodu yolu için SSE2 şablonları eklendi.
 - Doğruluk: **203 kontrol**, normal ve ASan/UBSan'da geçti; makine kodu karşılaştırması **69 koşu, atlanan 0** (artık hiçbir test programı atlanmıyor).
 - Yeni test `float2.pma`: `f2i` doygunluğu (±2^63, ±1e19, 2^63−1024), NaN/±sonsuz, −0.0, 2^53+1 yuvarlaması, NaN karşılaştırmaları (`feq nan nan = 0`), `fsqrt(−x)`, 1/k² toplamı. Beklenen çıktılar awk ve akıl yürütmeyle bağımsız türetildi; yorumlayıcı birebir uydu.
 - **Farklılık fuzz'ı yine bir hata buldu** (`float2`'nin bozulmuş sürümlerinde ~%1,7 fark): **host çağrısı yazmaç koruma hatası**. Küçük yardımcı işlevler (`sp`, `nl`) kendileri yazmaç kullanmıyor ama `host putc` çağırıyor; C++ yardımcısı `rsi/rdi/r8–r11`'i bozuyor ve çağıranın yazmaca alınmış değerleri orada duruyorsa kayboluyor. Elle yazılan testlerde tesadüfen tetiklenmemişti (sıcak yazmaçlar yalnızca çağrısız döngüdeydi). Düzeltme: yazmaca alma varsa her `host` çağrısında altı yazmaç saklanır. 2 vaka regresyon testi oldu.
