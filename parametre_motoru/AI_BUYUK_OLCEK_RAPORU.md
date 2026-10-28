@@ -1,6 +1,18 @@
-# Büyük Ölçekli Karşılaştırma — Kısmi Rapor (token/limit nedeniyle yarıda kesildi)
+# Büyük Ölçekli Karşılaştırma — Kısmi Rapor
 
-## Durum
+## ⚠ Bu test neden yarıda kesildi (bu raporu okuyan, konuşmayı görmemiş biri için)
+**Kısa cevap: sonuçlar kötü olduğu için ya da bir hata bulunduğu için geri çekilmedi. Maliyet ve kullanım sınırı yüzünden kesildi; büyük ölçek ayağı hiç ölçülmedi.**
+
+1. **Plan çok büyüktü.** Kullanıcının isteği (3 uygulama sınıfı × 3 ölçek × 3 biçim × "her görevde birden fazla bağımsız deneme") bendeki uygulamada 45 bağımsız AI ajanına dönüştü (PMY1 ve sayısal assembly için ikişer, `.pmt` için birer deneme). Her ajan yaklaşık 60–95 bin token harcıyor; büyük ölçekte bunun daha fazla olacağı belliydi. Bu maliyeti başlamadan kullanıcıya açıkça göstermem gerekirdi; göstermedim. Bu benim planlama hatamdı.
+2. **Üç dalga hâlinde başlattım:** küçük ölçek (15 ajan) tamamlandı; orta ölçek (15 ajan) büyük kısmı tamamlandı; büyük ölçek (15 ajan) orta ölçek bitmeden paralel başlatıldı.
+3. **Kullanım sınırına çarptım.** Hesabın 5 saatlik kullanım sınırı doldu ("5-hour limit, resets 5pm UTC"). O anda çalışan 19 ajan yarıda kaldı: büyük ölçeğin 15 ajanının hepsi (D3, S3, U3) ve orta ölçekten 4 ajan (S2 `.pmt`, U2 `.pmt`, U2 sayısal ×2).
+4. **Kullanıcı aynı anda şunu yazdı:** "45 ajan fazla mı, çok fazla token tüketiyor" (itiraz). Haklıydı. Bu yüzden düşen 19 ajanı **devam ettirmedim** ve yeni ajan **başlatmadım**; yalnızca zaten tamamlanmış 26 ajanın sonucunu ölçüp raporladım.
+5. **Sonuç:** Aşağıdaki veriler yalnızca **küçük ölçek (D1, S1, U1) ve orta ölçeğin yarısı (D2, S2 PMY1+sayısal, U2 PMY1)** için geçerli. "Karmaşıklık 10–100 kat artınca yapısal parametreler tanım boyutunu ne kadar düşük tutuyor?" sorusu **cevaplanmadı**. Bu soruyu cevaplayacak ölçek (D3 = 40 farklı rapor, S3 = 32 sınıflı 20 000 nesne, U3 = 8 pencere × 20 bileşen) hiç koşulmadı.
+
+**Bundan çıkarılamayacak şeyler:** "PMY1 büyük ölçekte işe yaramadı" ya da "işe yaradı" denemez. Büyük ölçek hakkında hiçbir veri yok.
+
+
+## Durum (ayrıntı)
 - Planlanan: 9 görev (veri D1–D3, arayüz U1–U3, simülasyon S1–S3) × 3 biçim (PMY1, sayısal assembly, `.pmt`) × birden çok deneme = 45 ajan.
 - **Tamamlanan: 26 ajan** (D1, D2, S1, U1 tüm biçimler; S2 PMY1+sayısal; U2 PMY1). **Tamamlanamayan: 19 ajan**: üçüncü dalganın tamamı (D3, S3, U3: "büyük" ölçek) ve U2/S2'nin `.pmt` ile U2'nin sayısal denemeleri; 5 saatlik kullanım sınırına çarptılar. Kullanıcı 45 ajanın token maliyetini sorguladı; düşen ajanlar **devam ettirilmedi**.
 - Bu yüzden asıl sorunun (10–100 kat karmaşıklıkta tanım boyutu) **büyük ölçek ayağı ölçülmedi**. Aşağıdakiler yalnızca küçük ve orta ölçek.
