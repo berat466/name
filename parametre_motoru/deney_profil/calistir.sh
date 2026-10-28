@@ -1,9 +1,9 @@
 #!/bin/bash
 # Profil deneyi: (1) VM mekanizma kapat/ac, (2) dinamik komut histogrami, (3) AOT (C++'a cevirme) ust sinir deneyi, (4) yerel C++.
-# Kullanim: ./calistir.sh [cikti_dizini]   -- motor (src/) degistirilmez.
+# Kullanim: ./calistir.sh [cikti_dizini]   -- eski_src/ = 8eb302b surumunun donmus kopyasi (olcumler o surume ait).
 set -e
 cd "$(dirname "$0")"
-SRC=../src; OUT=${1:-/tmp/pm_profil}; mkdir -p "$OUT"; W="fib35 loop_sum sieve10m floatloop memsum"
+SRC=eski_src; OUT=${1:-/tmp/pm_profil}; mkdir -p "$OUT"; W="fib35 loop_sum sieve10m floatloop memsum"
 b() { n=$1; shift; g++ -std=c++17 -O2 -ffp-contract=off -I$SRC "$@" -o $OUT/$n bench_main.cpp vm_exp.cpp $SRC/asm.cpp $SRC/ikili.cpp; }
 b v_base; b v_hist -DPM_HIST; b v_nofuel -DPM_NOFUEL; b v_nozero -DPM_NOZERO; b v_nochk -DPM_NOCHK
 b v_cgoto -DPM_CGOTO; b v_cgoto_nofuel -DPM_CGOTO -DPM_NOFUEL

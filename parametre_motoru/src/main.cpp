@@ -8,6 +8,7 @@
 #include <random>
 #include <sstream>
 #include <chrono>
+#include <sys/resource.h>
 
 #include "program.h"
 
@@ -58,9 +59,9 @@ int main(int argc, char** argv) {
       Program p = assemble(txt);
       auto bin = encode_program(p, strip);
       if (!write_file(outp, bin.data(), bin.size())) throw PmError("yazilamadi: " + outp);
-      size_t ncode = 0; for (auto& f : p.funcs) ncode += f.code.size();
-      printf("%s: %zu bayt (kaynak %zu bayt), %zu fonksiyon, %zu komut, %zu sabit, %zu veri sozcugu%s\n",
-             outp.c_str(), bin.size(), txt.size(), p.funcs.size(), ncode, p.consts.size(), p.data.size(), strip ? ", adlar atildi" : "");
+      size_t ncode = 0, nregs = 0; for (auto& f : p.funcs) { ncode += f.code.size(); nregs += f.nregs; }
+      printf("%s: %zu bayt (kaynak %zu bayt), %zu fonksiyon, %zu komut, %zu yazmac, %zu sabit, %zu veri sozcugu%s\n",
+             outp.c_str(), bin.size(), txt.size(), p.funcs.size(), ncode, nregs, p.consts.size(), p.data.size(), strip ? ", adlar atildi" : "");
       return 0;
     }
     if (cmd == "dump") { std::string s = disassemble(load_any(file)); fwrite(s.data(), 1, s.size(), stdout); return 0; }
@@ -87,7 +88,7 @@ int main(int argc, char** argv) {
         return 2;
       }
       if (showResult) printf("sonuc: %lld\n", (long long)r.value);
-      if (showStats) fprintf(stderr, "adim: %llu  sure: %.4f s  hiz: %.1f Madim/s\n", (unsigned long long)r.steps, sec, sec > 0 ? r.steps / sec / 1e6 : 0.0);
+      if (showStats) { struct rusage ru; getrusage(RUSAGE_SELF, &ru); fprintf(stderr, "adim: %llu  sure: %.4f s  hiz: %.1f Madim/s  tepe-bellek: %ld KiB\n", (unsigned long long)r.steps, sec, sec > 0 ? r.steps / sec / 1e6 : 0.0, ru.ru_maxrss); }
       return 0;
     }
     if (cmd == "fuzz") {

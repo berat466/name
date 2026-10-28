@@ -19,6 +19,7 @@ for f in *.pma; do
   if [ -f $b.out ]; then cmp -s $T/out $b.out && check $b ok || check $b bad "cikti beklenenle ayni degil"
   else [ ! -s $T/out ] && check $b ok || check $b bad "beklenmeyen cikti"; fi
   if [ -f $b.errmatch ]; then grep -qF "$(cat $b.errmatch)" $T/err && check $b ok || check $b bad "stderr '$(cat $b.errmatch)' icermiyor: $(head -c 200 $T/err)"; fi
+  if [ -f $b.dumpmatch ]; then "$PM" dump $f > $T/dump 2>&1; grep -qF "$(cat $b.dumpmatch)" $T/dump && check $b ok || check $b bad "dump '$(cat $b.dumpmatch)' icermiyor"; fi
   if [ "$rc_exp" != 1 ]; then   # ikili tur
     for mode in "" "--strip"; do
       "$PM" asm $f -o $T/x.pmb $mode > /dev/null 2>&1 || { check $b bad "asm basarisiz ($mode)"; continue; }

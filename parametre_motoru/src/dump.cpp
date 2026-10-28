@@ -6,6 +6,7 @@
 std::string disassemble(const Program& p) {
   std::string o;
   char buf[160];
+  snprintf(buf, sizeof buf, "; sifirlama-atlama=%s\n", p.zero_free ? "evet (kesin atama ispatli)" : "hayir"); o += buf;
   snprintf(buf, sizeof buf, "; bellek=%llu sozcuk, sabit=%zu, veri=%zu, bss=%llu, giris=f%u\n", (unsigned long long)p.mem_words, p.consts.size(), p.data.size(), (unsigned long long)p.bss, p.entry);
   o += buf;
   for (size_t fi = 0; fi < p.funcs.size(); fi++) {

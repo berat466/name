@@ -120,6 +120,7 @@ Program decode_program(const uint8_t* data, size_t n) {
     }
   if (r.i != n) throw PmError("ikili: dosya sonunda fazla bayt");
   validate_program(p);
+  analyze_program(p);
   return p;
 }
 
@@ -146,6 +147,7 @@ void validate_program(const Program& p) {
         else if (k == 'k') { if (v < 0 || size_t(v) >= p.consts.size()) bad(pc, "sabit indeksi gecersiz"); }
         else if (k == 'h') { if (v < 0 || v >= H_COUNT) bad(pc, "bilinmeyen host islevi"); }
       }
+      if ((in.op == OP_DIVI || in.op == OP_MODI) && (in.c == 0 || in.c == -1)) bad(pc, "divi/modi sabiti 0 veya -1 olamaz");
       if (in.op == OP_CALL) {
         uint32_t need = std::max<uint32_t>(1, p.funcs[in.a].nparams);
         if (uint64_t(in.b) + need > f.nregs) bad(pc, "cagri penceresi yazmaclara sigmiyor");
@@ -155,4 +157,57 @@ void validate_program(const Program& p) {
       }
     }
   }
+}
+
+// Kesin atama analizi: her yazmac okunmadan once her yoldan yazilmis mi? Hepsi ispatlanirsa cagri sirasinda
+// yazmac sifirlamak gozlemlenemez, VM bunu atlar. Ispat yoksa (ya da analiz cok buyukse) sifirlama KORUNUR.
+// Cagridan sonra pencere ve otesi (b..) "tanimsiz" sayilir (cagrilan cercevesi orayi ezer); yalnizca sonuc r[b] yazilmistir.
+void analyze_program(Program& p) {
+  p.zero_free = false;
+  for (const Func& f : p.funcs) {
+    const size_t N = f.nregs, W = (N + 63) / 64, M = f.code.size();
+    if (M * W > (size_t(1) << 24)) return;
+    std::vector<uint64_t> in(M * W, 0);
+    std::vector<char> reached(M, 0), queued(M, 0);
+    std::vector<uint32_t> work;
+    auto bit = [&](const uint64_t* s, size_t r) { return (s[r >> 6] >> (r & 63)) & 1; };
+    auto setb = [&](uint64_t* s, size_t r) { s[r >> 6] |= uint64_t(1) << (r & 63); };
+    for (uint32_t r = 0; r < f.nparams; r++) setb(&in[0], r);
+    reached[0] = queued[0] = 1; work.push_back(0);
+    std::vector<uint64_t> s(W);
+    while (!work.empty()) {
+      uint32_t pc = work.back(); work.pop_back(); queued[pc] = 0;
+      const Ins& ins = f.code[pc]; const OpInfo& oi = kOpInfo[ins.op];
+      memcpy(s.data(), &in[size_t(pc) * W], W * 8);
+      auto need = [&](size_t r) { return bit(s.data(), r) != 0; };
+      if (ins.op == OP_CALL) {
+        size_t np = p.funcs[ins.a].nparams;
+        for (size_t j = 0; j < np; j++) if (!need(size_t(ins.b) + j)) return;
+        for (size_t r = size_t(ins.b); r < N; r++) s[r >> 6] &= ~(uint64_t(1) << (r & 63));
+        setb(s.data(), size_t(ins.b));
+      } else if (ins.op == OP_HOST) {
+        int ar = kHostInfo[ins.a].arity;
+        for (int j = 0; j < ar; j++) if (!need(size_t(ins.b) + size_t(j))) return;
+        setb(s.data(), size_t(ins.b));
+      } else {
+        for (int j = 0; j < oi.nops; j++) {
+          char k = oi.kinds[j]; int32_t v = j == 0 ? ins.a : j == 1 ? ins.b : ins.c;
+          if ((k == 'r' || k == 'f' || k == 's') && !need(size_t(v))) return;
+        }
+        for (int j = 0; j < oi.nops; j++) if (oi.kinds[j] == 'd') setb(s.data(), size_t(j == 0 ? ins.a : j == 1 ? ins.b : ins.c));
+      }
+      auto flow = [&](uint32_t to) {
+        uint64_t* t = &in[size_t(to) * W];
+        if (!reached[to]) { memcpy(t, s.data(), W * 8); reached[to] = 1; if (!queued[to]) { queued[to] = 1; work.push_back(to); } return; }
+        bool ch = false;
+        for (size_t i = 0; i < W; i++) { uint64_t n = t[i] & s[i]; if (n != t[i]) { t[i] = n; ch = true; } }
+        if (ch && !queued[to]) { queued[to] = 1; work.push_back(to); }
+      };
+      if (ins.op == OP_RET || ins.op == OP_HALT) continue;
+      if (ins.op == OP_JMP) { flow(uint32_t(ins.a)); continue; }
+      if (ins.op == OP_JZ || ins.op == OP_JNZ) flow(uint32_t(ins.b));
+      if (pc + 1 < M) flow(pc + 1);
+    }
+  }
+  p.zero_free = true;
 }

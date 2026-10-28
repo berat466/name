@@ -89,6 +89,20 @@ RunResult run_program(const Program& P, IO& io, const RunConfig& cfg) {
       case OP_FLE: R[in.a] = asF(R[in.b]) <= asF(R[in.c]); break;
       case OP_I2F: R[in.a] = fromF(double(asI(R[in.b]))); break;
       case OP_F2I: R[in.a] = uint64_t(f2i(asF(R[in.b]))); break;
+      case OP_ADDI: R[in.a] = R[in.b] + uint64_t(int64_t(in.c)); break;
+      case OP_MULI: R[in.a] = R[in.b] * uint64_t(int64_t(in.c)); break;
+      case OP_ANDI: R[in.a] = R[in.b] & uint64_t(int64_t(in.c)); break;
+      case OP_SHLI: R[in.a] = R[in.b] << (in.c & 63); break;
+      case OP_SHRI: R[in.a] = R[in.b] >> (in.c & 63); break;
+      case OP_SARI: R[in.a] = uint64_t(asI(R[in.b]) >> (in.c & 63)); break;
+      case OP_DIVI: R[in.a] = uint64_t(asI(R[in.b]) / int64_t(in.c)); break;   // dogrulayici c!=0,-1 garantiler
+      case OP_MODI: R[in.a] = uint64_t(asI(R[in.b]) % int64_t(in.c)); break;
+      case OP_EQI: R[in.a] = R[in.b] == uint64_t(int64_t(in.c)); break;
+      case OP_NEI: R[in.a] = R[in.b] != uint64_t(int64_t(in.c)); break;
+      case OP_LTI: R[in.a] = asI(R[in.b]) < int64_t(in.c); break;
+      case OP_LEI: R[in.a] = asI(R[in.b]) <= int64_t(in.c); break;
+      case OP_GTI: R[in.a] = asI(R[in.b]) > int64_t(in.c); break;
+      case OP_GEI: R[in.a] = asI(R[in.b]) >= int64_t(in.c); break;
       case OP_JMP: ip = fn->code.data() + in.a; continue;
       case OP_JZ:  if (R[in.a] == 0) { ip = fn->code.data() + in.b; continue; } break;
       case OP_JNZ: if (R[in.a] != 0) { ip = fn->code.data() + in.b; continue; } break;
@@ -98,7 +112,7 @@ RunResult run_program(const Program& P, IO& io, const RunConfig& cfg) {
         if (size_t(stack_end - nr) < g.nregs) TRAP(T_STACK);
         if (depth >= frames.size()) TRAP(T_DEPTH);
         frames[depth++] = Frame{ip + 1, R, cur};
-        memset(nr + g.nparams, 0, size_t(g.nregs - g.nparams) * 8);
+        if (!P.zero_free) memset(nr + g.nparams, 0, size_t(g.nregs - g.nparams) * 8);
         R = nr; cur = in.a; fn = &g; ip = g.code.data();
         continue;
       }

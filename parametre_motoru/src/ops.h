@@ -47,7 +47,21 @@
   X(LD,   "ld",    3, "dri")           \
   X(ST,   "st",    3, "sri")           \
   X(ALLOC,"alloc", 2, "dr")            \
-  X(HOST, "host",  2, "hb")
+  X(HOST, "host",  2, "hb")             \
+  X(ADDI, "addi",  3, "dri")           \
+  X(MULI, "muli",  3, "dri")           \
+  X(ANDI, "andi",  3, "dri")           \
+  X(SHLI, "shli",  3, "dri")           \
+  X(SHRI, "shri",  3, "dri")           \
+  X(SARI, "sari",  3, "dri")           \
+  X(DIVI, "divi",  3, "dri")           \
+  X(MODI, "modi",  3, "dri")           \
+  X(EQI,  "eqi",   3, "dri")           \
+  X(NEI,  "nei",   3, "dri")           \
+  X(LTI,  "lti",   3, "dri")           \
+  X(LEI,  "lei",   3, "dri")           \
+  X(GTI,  "gti",   3, "dri")           \
+  X(GEI,  "gei",   3, "dri")
 
 enum Op : uint8_t {
 #define X(E, N, C, K) OP_##E,

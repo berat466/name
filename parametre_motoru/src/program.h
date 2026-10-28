@@ -19,6 +19,7 @@ struct Program {
   uint64_t bss = 0;               // veri sozcuklerinden sonra gelen sifir dolu alan (ikilide yalnizca sayi)
   std::vector<Func> funcs;
   bool has_names = false;
+  bool zero_free = false;         // yukleyicinin ispatladigi: hicbir yazmac okunmadan once yazilmadan okunmuyor -> cagri sifirlamasi atlanabilir (ikiliye yazilmaz)
 };
 
 struct PmError : std::runtime_error { using std::runtime_error::runtime_error; };
@@ -27,6 +28,7 @@ struct PmError : std::runtime_error { using std::runtime_error::runtime_error; }
 std::vector<uint8_t> encode_program(const Program& p, bool strip_names);
 Program decode_program(const uint8_t* data, size_t n);   // cozer VE dogrular; hatada PmError
 void validate_program(const Program& p);
+void analyze_program(Program& p);   // kesin atama analizi -> p.zero_free
 
 // asm.cpp
 Program assemble(const std::string& text);
