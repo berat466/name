@@ -1,0 +1,3116 @@
+; asm.pma -- .pma metni -> PMB1 (adlar atilmis: `pm asm --strip` ile BAYT-BAYT ayni cikti) ASSEMBLER'I (parametre tablosu).
+; stdin: .pma kaynagi (en cok 1 MiB); stdout: PMB1 baytlari. Hata -> stdout'a "HATA satir N: kod" yazilir ve DIV0 tuzagi (cikis 2).
+; C++ karsiligi: src/asm.cpp (ayni algoritma: etiket/dogrudan-operand donusumu, sabit yazmaclari, cagri pencereleri, gozetleme deligi).
+; Fark [Kesin]: ondalik sabitler (2.0 gibi) desteklenmez (strtod yok) -> hata kodu 90. validate_program/analyze_program calistirilmaz
+; (cikti oz/dogr/valid.pmb ile dogrulanir); yalnizca "veri bellege sigmiyor" ve "giris fonksiyonu parametre almamali" burada da denetlenir.
+memory 12582912
+entry main
+space SRC 1200000
+space TOKO 262144
+space TOKL 262144
+space STLN 131072
+space STT0 131072
+space STNT 131072
+space FNNO 65536
+space FNNL 65536
+space FNLN 65536
+space FNNP 65536
+space FNPT 65536
+space FNBS 65536
+space FNBE 65536
+space FNNR 65536
+space FNCS 65536
+space FNCN 65536
+space PARO 131072
+space PARL 131072
+space SYO 65536
+space SYL 65536
+space SYK 65536
+space SYV 65536
+space CONSTV 65536
+space DATAV 262144
+space REGO 65536
+space REGL 65536
+space LABO 65536
+space LABL 65536
+space LABV 65536
+space IRMN 65536
+space IRS 65536
+space IRN 65536
+space IRLN 65536
+space OPO 262144
+space OPL 262144
+space IIOP 65536
+space IIHAS 65536
+space IIDEST 65536
+space IOT0 65536
+space IOV0 65536
+space IOT1 65536
+space IOV1 65536
+space IOT2 65536
+space IOV2 65536
+space IAS 65536
+space IAN 65536
+space ARGT 262144
+space ARGV 262144
+space LITV 65536
+space COP 131072
+space CA 131072
+space CB 131072
+space CC 131072
+space PCOF 65536
+space RD 65536
+space WR 65536
+space TGT 131072
+space DEL 131072
+space IDX 131072
+space GOP 524288
+space GA 524288
+space GB 524288
+space GC 524288
+space OUTB 1048576
+space NMO 64
+space NML 64
+space G 128
+data OPNAMES =  109 111 118 0 108 100 105 0 108 100 107 0 97 100 100 0 115 117 98 0 109 117 108 0 100 105 118 0 109 111 100 0 97 110 100 0 111 114 0 120 111 114 0 115 104 108 0 115 104 114 0 115 97 114 0 101 113 0 110 101 0 108 116 0 108 101 0 110 101 103 0 110 111 116 0 102 97 100 100 0 102 115 117 98 0 102 109 117 108 0 102 100 105 118 0 102 110 101 103 0 102 115 113 114 116 0 102 101 113 0 102 108 116 0 102 108 101 0 105 50 102 0 102 50 105 0 106 109 112 0 106 122 0 106 110 122 0 99 97 108 108 0 114 101 116 0 104 97 108 116 0 108 100 0 115 116 0 97 108 108 111 99 0 104 111 115 116 0 97 100 100 105 0 109 117 108 105 0 97 110 100 105 0 115 104 108 105 0 115 104 114 105 0 115 97 114 105 0 100 105 118 105 0 109 111 100 105 0 101 113 105 0 110 101 105 0 108 116 105 0 108 101 105 0 103 116 105 0 103 101 105 0 112 117 116 99 0 112 117 116 105 0 112 117 116 102 0 103 101 116 99 0 112 114 101 115 101 110 116 0 112 111 108 108 0 102 114 97 109 101 0 
+data NOPS = 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 2 2 3 3 3 3 2 2 3 3 3 2 2 1 2 2 2 1 0 3 3 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+data KIND = 1 4 0 1 5 0 1 6 0 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 0 1 2 0 1 3 3 1 3 3 1 3 3 1 3 3 1 3 0 1 3 0 1 3 3 1 3 3 1 3 3 1 2 0 1 3 0 7 0 0 2 7 0 2 7 0 8 9 0 4 0 0 0 0 0 1 2 5 4 2 5 1 2 0 10 9 0 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5
+data ARITY = 1 1 1 0 3 0 0
+data KWS =  109 101 109 111 114 121 0 101 110 116 114 121 0 100 97 116 97 0 115 112 97 99 101 0 102 117 110 99 0 103 116 0 103 101 0 102 103 116 0 102 103 101 0 109 97 105 110 0 
+
+; G: 0 NSRC(kullanilan) 1 SATIR 2 NTOK 3 NST 4 NFN 5 NSY 6 NCONST 7 NDATA 8 BSS 9 BELLEK 10 giris-ad-ofset 11 giris-ad-uzunluk 12 giris-satiri
+;    13 PV(parse_int degeri) 14 NGC(genel komut sayisi) 15 NOUT 16 gecerli fonksiyon 17 ORJ_UZUNLUK(kaynak) 20 NREG 21 NLAB 22 NIR 23 NOPR 24 NLIT 25 MAXWIN
+;    26 NARG 27 NCODE 28 FNLN 30 mkint-uzunluk 31 ASM-hata-satiri
+
+func err(code) {
+    host putc, 72
+    host putc, 65
+    host putc, 84
+    host putc, 65
+    host putc, 32
+    ld ln, G, 1
+    host puti, ln
+    host putc, 58
+    host putc, 32
+    host puti, code
+    host putc, 10
+    mov z, 0
+    div x, 1, z
+    ret 0
+}
+
+func sc(i) {
+    add a, i, SRC
+    ld c, a, 0
+    ret c
+}
+
+func isdig(c) {
+    lt z, c, 48
+    jnz z, no
+    gt z, c, 57
+    jnz z, no
+    ret 1
+no: ret 0
+}
+
+func isalp(c) {      ; harf ya da '_'
+    eq z, c, 95
+    jz z, a1
+    ret 1
+a1: lt z, c, 65
+    jnz z, no
+    le z, c, 90
+    jz z, a2
+    ret 1
+a2: lt z, c, 97
+    jnz z, no
+    le z, c, 122
+    jz z, no
+    ret 1
+no: ret 0
+}
+
+func isalnum_(c) {
+    call r, isdig, c
+    jz r, a1
+    ret 1
+a1: call r, isalp, c
+    ret r
+}
+
+func is_ident(o, l) {
+    jnz l, i1
+    ret 0
+i1: call c, sc, o
+    call r, isalp, c
+    jnz r, i2
+    ret 0
+i2: mov k, 1
+i3: ge z, k, l
+    jnz z, ok
+    add p, o, k
+    call c, sc, p
+    call r, isalnum_, c
+    jnz r, i4
+    ret 0
+i4: add k, k, 1
+    jmp i3
+ok: ret 1
+}
+
+func streq(o1, l1, o2, l2) {
+    eq z, l1, l2
+    jnz z, s1
+    ret 0
+s1: mov k, 0
+s2: ge z, k, l1
+    jnz z, ok
+    add p, o1, k
+    call c1, sc, p
+    add p, o2, k
+    call c2, sc, p
+    eq z, c1, c2
+    jnz z, s3
+    ret 0
+s3: add k, k, 1
+    jmp s2
+ok: ret 1
+}
+
+; ad tablolari: NMO/NML = komut (0..54) ve host (55..61) adlari (SRC sonuna kopyalanmis)
+func opid(o, l) {
+    mov i, 0
+o1: ge z, i, 55
+    jnz z, no
+    add a, i, NMO
+    ld po, a, 0
+    add a, i, NML
+    ld pl, a, 0
+    call r, streq, o, l, po, pl
+    jnz r, yes
+    add i, i, 1
+    jmp o1
+yes: ret i
+no: ret -1
+}
+
+func hostid(o, l) {
+    mov i, 0
+h1: ge z, i, 7
+    jnz z, no
+    add j, i, 55
+    add a, j, NMO
+    ld po, a, 0
+    add a, j, NML
+    ld pl, a, 0
+    call r, streq, o, l, po, pl
+    jnz r, yes
+    add i, i, 1
+    jmp h1
+yes: ret i
+no: ret -1
+}
+
+func funcfind(o, l) {
+    ld n, G, 5
+    mov i, 0
+f1: ge z, i, n
+    jnz z, no
+    add a, i, SYK
+    ld k, a, 0
+    eq z, k, 1
+    jz z, f2
+    add a, i, SYO
+    ld po, a, 0
+    add a, i, SYL
+    ld pl, a, 0
+    call r, streq, o, l, po, pl
+    jz r, f2
+    add a, i, SYV
+    ld v, a, 0
+    ret v
+f2: add i, i, 1
+    jmp f1
+no: ret -1
+}
+
+func datafind(o, l) {     ; data/space adi: sembol indeksi ya da -1
+    ld n, G, 5
+    mov i, 0
+f1: ge z, i, n
+    jnz z, no
+    add a, i, SYK
+    ld k, a, 0
+    eq z, k, 1
+    jnz z, f2
+    add a, i, SYO
+    ld po, a, 0
+    add a, i, SYL
+    ld pl, a, 0
+    call r, streq, o, l, po, pl
+    jz r, f2
+    ret i
+f2: add i, i, 1
+    jmp f1
+no: ret -1
+}
+
+func addsym(o, l, k, v) {
+    ld n, G, 5
+    ge z, n, 65536
+    jz z, a1
+    call x, err, 80
+a1: add a, n, SYO
+    st o, a, 0
+    add a, n, SYL
+    st l, a, 0
+    add a, n, SYK
+    st k, a, 0
+    add a, n, SYV
+    st v, a, 0
+    add n, n, 1
+    st n, G, 5
+    ret 0
+}
+
+; SRC sonuna yazi ekle (sentezlenmis simge): int32 araligindaki bir tam sayiyi onluk yazar; ofseti dondurur, uzunlugu G[30]'a koyar
+func mkint(v) {
+    ld o, G, 0
+    mov ng, 0
+    mov u, v
+    lt z, v, 0
+    jz z, m1
+    mov ng, 1
+    neg u, v
+m1: mov nd, 0
+    add tmp, o, 40
+m2: modi r, u, 10
+    divi u, u, 10
+    addi r, r, 48
+    add a, tmp, nd
+    add a, a, SRC
+    st r, a, 0
+    add nd, nd, 1
+    jnz u, m2
+    mov len, 0
+    jz ng, m3
+    mov c, 45
+    add a, o, SRC
+    st c, a, 0
+    mov len, 1
+m3: mov i, 0
+m4: ge z, i, nd
+    jnz z, m5
+    sub k, nd, 1
+    sub k, k, i
+    add a, tmp, k
+    add a, a, SRC
+    ld c, a, 0
+    add a, o, len
+    add a, a, SRC
+    st c, a, 0
+    add len, len, 1
+    add i, i, 1
+    jmp m4
+m5: st len, G, 30
+    add o2, o, len
+    st o2, G, 0
+    ret o
+}
+
+; parse_int: [o,l) -> 1/0; deger G[13]'te (strtoll semantigi: onluk/onaltilik, +/-, 'c' karakter sabiti)
+func esc_char(c) {
+    eq z, c, 110
+    jz z, e1
+    ret 10
+e1: eq z, c, 116
+    jz z, e2
+    ret 9
+e2: eq z, c, 114
+    jz z, e3
+    ret 13
+e3: eq z, c, 48
+    jz z, e4
+    ret 0
+e4: eq z, c, 92
+    jz z, e5
+    ret 92
+e5: eq z, c, 34
+    jz z, e6
+    ret 34
+e6: eq z, c, 39
+    jz z, e7
+    ret 39
+e7: ret -1
+}
+
+func hexval(c) {      ; -1: onaltilik basamak degil
+    call d, isdig, c
+    jz d, h1
+    sub r, c, 48
+    ret r
+h1: lt z, c, 97
+    jnz z, h2
+    gt z, c, 102
+    jnz z, h2
+    sub r, c, 87
+    ret r
+h2: lt z, c, 65
+    jnz z, h3
+    gt z, c, 70
+    jnz z, h3
+    sub r, c, 55
+    ret r
+h3: ret -1
+}
+
+func parse_int(o, l) {
+    lti z, l, 3
+    jnz z, num
+    call c0, sc, o
+    eq z, c0, 39
+    jz z, num
+    sub e, l, 1
+    add e, e, o
+    call c1, sc, e
+    eq z, c1, 39
+    jz z, num
+    add p, o, 1
+    call c1, sc, p
+    eq z, c1, 92
+    jz z, ch2
+    eq z, l, 4
+    jz z, ch2
+    add p, o, 2
+    call c2, sc, p
+    call v, esc_char, c2
+    lti z, v, 0
+    jnz z, bad
+    st v, G, 13
+    ret 1
+ch2: eq z, l, 3
+    jz z, bad
+    add p, o, 1
+    call c1, sc, p
+    st c1, G, 13
+    ret 1
+num: jnz l, n1
+    ret 0
+n1: call c, sc, o
+    eq z, c, 45
+    jnz z, sg
+    eq z, c, 43
+    jnz z, sg
+    call d, isdig, c
+    jnz d, n2
+    ret 0
+n2: mov k, 0
+    jmp n3
+sg: mov k, 1
+n3: ge z, k, l
+    jz z, n4
+    ret 0
+n4: add p, o, k
+    call c, sc, p
+    call d, isdig, c
+    jnz d, n5
+    ret 0
+n5: mov hex, 0
+    add k1, k, 1
+    ge z, l, k1
+    jnz z, n6
+    jmp n7
+n6: gt z, l, k1
+    jz z, n7
+    call c0, sc, p
+    eq z, c0, 48
+    jz z, n7
+    add p1, p, 1
+    call c1, sc, p1
+    eq z, c1, 120
+    jnz z, n8
+    eq z, c1, 88
+    jz z, n7
+n8: mov hex, 1
+n7: ; basamaklari topla (isaretsiz, tasma denetimli)
+    mov val, 0
+    add i, o, k
+    jz hex, n9
+    add i, i, 2
+    ; en az bir onaltilik basamak
+    add e, o, l
+    ge z, i, e
+    jz z, n9
+    ret 0
+n9: add e, o, l
+n10: ge z, i, e
+    jnz z, n13
+    call c, sc, i
+    jnz hex, n11
+    call d, isdig, c
+    jnz d, n12
+    ret 0
+n11: call d, hexval, c
+    lti z, d, 0
+    jz z, n12
+    ret 0
+n12: ; (hex ise d zaten onaltilik deger; onluk ise d=1 -> yeniden hesapla)
+    jnz hex, n14
+    sub d, c, 48
+n14: jnz hex, hx
+    ; onluk: val*10+d tasma (isaretsiz)
+    xor tx, val, -9223372036854775808
+    gt o2, tx, -7378697629483820647
+    jnz o2, ovf
+    eq o2, val, 1844674407370955161
+    jz o2, ok10
+    gt o2, d, 5
+    jnz o2, ovf
+ok10: muli val, val, 10
+    add val, val, d
+    add i, i, 1
+    jmp n10
+hx: xor tx, val, -9223372036854775808
+    gt o2, tx, -8070450532247928833
+    jnz o2, ovf
+    shli val, val, 4
+    add val, val, d
+    add i, i, 1
+    jmp n10
+ovf: ret 0
+n13: ; isaret ve aralik: negatifse |val| <= 2^63, degilse <= 2^63-1
+    call c, sc, o
+    eq z, c, 45
+    jz z, pos
+    xor tx, val, -9223372036854775808
+    gt o2, tx, 0
+    jnz o2, ovf
+    neg val, val
+    st val, G, 13
+    ret 1
+pos: lt z, val, 0
+    jnz z, ovf
+    st val, G, 13
+    ret 1
+bad: ret 0
+}
+
+; ';' ile baslayan yorumu kes (string ve karakter sabiti icinde sayma): [a,b) icin yeni bitis
+func strip_comment(a, b) {
+    mov i, a
+    mov ins, 0
+s1: ge z, i, b
+    jnz z, done
+    call c, sc, i
+    jz ins, s3
+    eq z, c, 92
+    jz z, s2
+    add i, i, 2
+    jmp s1
+s2: eq z, c, 34
+    jz z, s6
+    mov ins, 0
+s6: add i, i, 1
+    jmp s1
+s3: eq z, c, 34
+    jz z, s4
+    mov ins, 1
+    add i, i, 1
+    jmp s1
+s4: eq z, c, 39
+    jz z, s5
+    add k, i, 1
+    lt z, k, b
+    jz z, s7
+    call c2, sc, k
+    eq z, c2, 92
+    jz z, s7
+    add i, i, 4
+    jmp s1
+s7: add i, i, 3
+    jmp s1
+s5: eq z, c, 59
+    jz z, s8
+    ret i
+s8: add i, i, 1
+    jmp s1
+done: ret b
+}
+
+; [a,b) icindeki simgeleri TOKO/TOKL'ye ekler (ayirici: bosluk, sekme, virgul, CR); eklenen simge sayisini dondurur
+func tokenize(a, b) {
+    mov i, a
+    mov cnt, 0
+    mov sx, -1
+t1: ge z, i, b
+    jnz z, t9
+    call c, sc, i
+    eq z, c, 32
+    jnz z, sep
+    eq z, c, 9
+    jnz z, sep
+    eq z, c, 44
+    jnz z, sep
+    eq z, c, 13
+    jnz z, sep
+    gei z, sx, 0
+    jnz z, t2
+    mov sx, i
+t2: add i, i, 1
+    jmp t1
+sep: lti z, sx, 0
+    jnz z, t3
+    call x, addtok, sx, i
+    add cnt, cnt, 1
+    mov sx, -1
+t3: add i, i, 1
+    jmp t1
+t9: lti z, sx, 0
+    jnz z, t10
+    call x, addtok, sx, i
+    add cnt, cnt, 1
+t10: ret cnt
+}
+
+func addtok(s, e) {
+    ld n, G, 2
+    ge z, n, 262144
+    jz z, a1
+    call x, err, 81
+a1: add a, n, TOKO
+    st s, a, 0
+    sub l, e, s
+    add a, n, TOKL
+    st l, a, 0
+    add n, n, 1
+    st n, G, 2
+    ret 0
+}
+
+func kw(ti, o2, l2) {     ; jeton ti, [o2,l2) metnine esit mi? (anahtar sozcuk icin SRC sonuna konmus metin)
+    add a, ti, TOKO
+    ld o, a, 0
+    add a, ti, TOKL
+    ld l, a, 0
+    call r, streq, o, l, o2, l2
+    ret r
+}
+
+func findch(a, b, ch) {    ; [a,b) icinde ilk ch; yoksa -1
+    mov i, a
+f1: ge z, i, b
+    jnz z, no
+    call c, sc, i
+    eq z, c, ch
+    jz z, f2
+    ret i
+f2: add i, i, 1
+    jmp f1
+no: ret -1
+}
+
+func addstmt(ln, t0, nt) {
+    ld n, G, 3
+    ge z, n, 131072
+    jz z, a1
+    call x, err, 82
+a1: add a, n, STLN
+    st ln, a, 0
+    add a, n, STT0
+    st t0, a, 0
+    add a, n, STNT
+    st nt, a, 0
+    add n, n, 1
+    st n, G, 3
+    ret 0
+}
+
+; ---------- data satiri: [a,b) = "ad = degerler" ----------
+func data_line(a, b) {
+    call eq_, findch, a, b, 61
+    lti z, eq_, 0
+    jz z, d1
+    call x, err, 10
+d1: ld n0, G, 2
+    call nt, tokenize, a, eq_
+    eq z, nt, 1
+    jnz z, d2
+    call x, err, 11
+d2: add a1, n0, TOKO
+    ld no, a1, 0
+    add a1, n0, TOKL
+    ld nl, a1, 0
+    call r, is_ident, no, nl
+    jnz r, d3
+    call x, err, 11
+d3: call r, datafind, no, nl
+    lti z, r, 0
+    jnz z, d4
+    call x, err, 12
+d4: ld before, G, 7
+    add addr, before, 1
+    call x, addsym, no, nl, 2, addr
+    st n0, G, 2
+    add i, eq_, 1
+d5: ge z, i, b
+    jnz z, d99
+    call c, sc, i
+    eq z, c, 32
+    jnz z, d6
+    eq z, c, 9
+    jnz z, d6
+    eq z, c, 44
+    jnz z, d6
+    eq z, c, 13
+    jnz z, d6
+    eq z, c, 34
+    jnz z, str
+    ; bosluksuz simge
+    mov j, i
+    eq z, c, 39
+    jz z, d7
+    add k, i, 1
+    lt z, k, b
+    jz z, d8
+    call c2, sc, k
+    eq z, c2, 92
+    jz z, d8
+    add j, i, 4
+    jmp d9
+d8: add j, i, 3
+    jmp d9
+d7: ge z, j, b
+    jnz z, d9
+    call c3, sc, j
+    eq z, c3, 32
+    jnz z, d9
+    eq z, c3, 9
+    jnz z, d9
+    eq z, c3, 44
+    jnz z, d9
+    eq z, c3, 13
+    jnz z, d9
+    add j, j, 1
+    jmp d7
+d9: gt z, j, b
+    jz z, d10
+    mov j, b
+d10: sub l, j, i
+    call r, parse_int, i, l
+    jz r, d11
+    ld v, G, 13
+    call x, pushdata, v
+    mov i, j
+    jmp d5
+d11: call r, isfloat, i, l
+    jz r, d12
+    call x, err, 90
+d12: call x, err, 13
+d6: add i, i, 1
+    jmp d5
+str: add i, i, 1
+s1: ge z, i, b
+    jnz z, s9
+    call c, sc, i
+    eq z, c, 34
+    jnz z, s8
+    eq z, c, 92
+    jz z, s2
+    add k, i, 1
+    ge z, k, b
+    jz z, s3
+    call x, err, 14
+s3: call c2, sc, k
+    eq z, c2, 120
+    jz z, s4
+    add k, i, 3
+    ge z, k, b
+    jz z, s5
+    call x, err, 15
+s5: add p, i, 2
+    call h1, sc, p
+    call h1, hexval, h1
+    add p, i, 3
+    call h2, sc, p
+    call h2, hexval, h2
+    ; strtol: en cok 2 onaltilik basamak; ilk gecersizde dur
+    lti z, h1, 0
+    jz z, s6
+    mov hv, 0
+    jmp s7
+s6: lti z, h2, 0
+    jz z, s6b
+    mov hv, h1
+    jmp s7
+s6b: muli hv, h1, 16
+    add hv, hv, h2
+s7: call x, pushdata, hv
+    add i, i, 4
+    jmp s1
+s4: call v, esc_char, c2
+    lti z, v, 0
+    jz z, s4b
+    call x, err, 16
+s4b: call x, pushdata, v
+    add i, i, 2
+    jmp s1
+s2: call x, pushdata, c
+    add i, i, 1
+    jmp s1
+s8: add i, i, 1
+    jmp d5
+s9: call x, err, 17
+d99: ld nd, G, 7
+    ne z, nd, before
+    jnz z, d98
+    call x, err, 18
+d98: ret 0
+}
+
+func pushdata(v) {
+    ld n, G, 7
+    ge z, n, 262144
+    jz z, p1
+    call x, err, 83
+p1: add a, n, DATAV
+    st v, a, 0
+    add n, n, 1
+    st n, G, 7
+    ret 0
+}
+
+; parse_float'in kabul edecegi bir jeton mu? (yalniz karar; deger hesaplanmaz)
+func isfloat(o, l) {
+    jnz l, f0
+    ret 0
+f0: call c, sc, o
+    call d, isdig, c
+    jnz d, f1
+    eq z, c, 45
+    jnz z, f1
+    eq z, c, 43
+    jnz z, f1
+    eq z, c, 46
+    jnz z, f1
+    ret 0
+f1: mov hasd, 0
+    mov i, 0
+f2: ge z, i, l
+    jnz z, f3
+    add p, o, i
+    call c, sc, p
+    eq z, c, 46
+    jnz z, f2a
+    eq z, c, 101
+    jnz z, f2a
+    eq z, c, 69
+    jnz z, f2a
+    eq z, c, 120
+    jnz z, f2x
+    eq z, c, 88
+    jnz z, f2x
+    jmp f2b
+f2a: mov hasd, 1
+    jmp f2b
+f2x: ret 0
+f2b: add i, i, 1
+    jmp f2
+f3: jnz hasd, f4
+    ret 0
+f4: ; dilbilgisi: [+-]? ( d+ (. d*)? | . d+ ) ([eE] [+-]? d+)?
+    mov i, 0
+    call c, sc, o
+    eq z, c, 45
+    jnz z, g1
+    eq z, c, 43
+    jz z, g2
+g1: mov i, 1
+g2: mov nd1, 0
+g3: ge z, i, l
+    jnz z, g4
+    add p, o, i
+    call c, sc, p
+    call d, isdig, c
+    jz d, g4
+    add nd1, nd1, 1
+    add i, i, 1
+    jmp g3
+g4: mov nd2, 0
+    ge z, i, l
+    jnz z, g7
+    add p, o, i
+    call c, sc, p
+    eq z, c, 46
+    jz z, g7
+    add i, i, 1
+g5: ge z, i, l
+    jnz z, g6
+    add p, o, i
+    call c, sc, p
+    call d, isdig, c
+    jz d, g6
+    add nd2, nd2, 1
+    add i, i, 1
+    jmp g5
+g6: ; '.' sonrasi: tam kisim yoksa en az 1 kesir basamagi gerekir
+g7: add nn, nd1, nd2
+    jnz nn, g8
+    ret 0
+g8: ; us kismi
+    ge z, i, l
+    jnz z, g20
+    add p, o, i
+    call c, sc, p
+    eq z, c, 101
+    jnz z, e1
+    eq z, c, 69
+    jnz z, e1
+    ret 0
+e1: add i, i, 1
+    ge z, i, l
+    jz z, e2
+    ret 0
+e2: add p, o, i
+    call c, sc, p
+    eq z, c, 45
+    jnz z, e3
+    eq z, c, 43
+    jz z, e4
+e3: add i, i, 1
+e4: mov ne_, 0
+e5: ge z, i, l
+    jnz z, e6
+    add p, o, i
+    call c, sc, p
+    call d, isdig, c
+    jz d, e6
+    add ne_, ne_, 1
+    add i, i, 1
+    jmp e5
+e6: jnz ne_, e7
+    ret 0
+e7: ge z, i, l
+    jz z, e8
+    ret 1
+e8: ret 0
+g20: ret 1
+}
+
+; ---------- ust duzey ayristirma ----------
+func ckw(ti, k) {      ; jeton ti, k. anahtar sozcuge esit mi (G[40+2k], G[41+2k])
+    mul k2, k, 2
+    add k2, k2, 40
+    add a, k2, G
+    ld o2, a, 0
+    add a, k2, 1
+    add a, a, G
+    ld l2, a, 0
+    call r, kw, ti, o2, l2
+    ret r
+}
+
+func parse_all() {
+    ld n0, G, 17
+    mov ls, 0
+    mov line, 0
+    mov infunc, 0
+    mov cur, 0
+pl: ge z, ls, n0
+    jnz z, pend
+    call lne, findch, ls, n0, 10
+    lti z, lne, 0
+    jz z, p1
+    mov lne, n0
+p1: add line, line, 1
+    st line, G, 1
+    add nxt, lne, 1
+    call lend, strip_comment, ls, lne
+    ld nt0, G, 2
+    call nt, tokenize, ls, lend
+    jz nt, advance
+    jnz infunc, body
+    ; ---- ust duzey
+    add a, nt0, TOKO
+    ld t0o, a, 0
+    call r, ckw, nt0, 0
+    jz r, tp1
+    ; memory
+    eq z, nt, 2
+    jnz z, m1
+    call x, err, 20
+m1: add t1, nt0, 1
+    add a, t1, TOKO
+    ld o, a, 0
+    add a, t1, TOKL
+    ld l, a, 0
+    call r, parse_int, o, l
+    jnz r, m2
+    call x, err, 20
+m2: ld v, G, 13
+    gti z, v, 0
+    jnz z, m3
+    call x, err, 20
+m3: st v, G, 9
+    jmp reset
+tp1: call r, ckw, nt0, 1
+    jz r, tp2
+    ; entry
+    eq z, nt, 2
+    jnz z, e1
+    call x, err, 21
+e1: add t1, nt0, 1
+    add a, t1, TOKO
+    ld o, a, 0
+    add a, t1, TOKL
+    ld l, a, 0
+    call r, is_ident, o, l
+    jnz r, e2
+    call x, err, 21
+e2: st o, G, 10
+    st l, G, 11
+    st line, G, 12
+    jmp reset
+tp2: call r, ckw, nt0, 2
+    jz r, tp3
+    ; data: "data" sozcugunden sonrasi
+    add s0, t0o, 4
+    call x, data_line, s0, lend
+    jmp reset
+tp3: call r, ckw, nt0, 3
+    jz r, tp4
+    ; space ad N
+    eq z, nt, 3
+    jnz z, s1
+    call x, err, 22
+s1: add t1, nt0, 1
+    add a, t1, TOKO
+    ld no, a, 0
+    add a, t1, TOKL
+    ld nl, a, 0
+    call r, is_ident, no, nl
+    jnz r, s2
+    call x, err, 22
+s2: add t2, nt0, 2
+    add a, t2, TOKO
+    ld o, a, 0
+    add a, t2, TOKL
+    ld l, a, 0
+    call r, parse_int, o, l
+    jnz r, s3
+    call x, err, 22
+s3: ld v, G, 13
+    gti z, v, 0
+    jnz z, s4
+    call x, err, 22
+s4: gti z, v, 67108864
+    jz z, s5
+    call x, err, 22
+s5: call r, datafind, no, nl
+    lti z, r, 0
+    jnz z, s6
+    call x, err, 23
+s6: call x, addsym, no, nl, 3, v
+    jmp reset
+tp4: call r, ckw, nt0, 4
+    jz r, tp5
+    ; func ad(p1, p2) {
+    add fpos, t0o, 4
+    call lp, findch, ls, lend, 40
+    call rp, findch, ls, lend, 41
+    call br, findch, ls, lend, 123
+    lti z, lp, 0
+    jnz z, fbad
+    lti z, rp, 0
+    jnz z, fbad
+    lti z, br, 0
+    jnz z, fbad
+    ge z, lp, rp
+    jnz z, fbad
+    ge z, rp, br
+    jnz z, fbad
+    ; ad
+    ld c0, G, 2
+    call nn, tokenize, fpos, lp
+    eq z, nn, 1
+    jnz z, f1
+    call x, err, 24
+f1: add a, c0, TOKO
+    ld no, a, 0
+    add a, c0, TOKL
+    ld nl, a, 0
+    call r, is_ident, no, nl
+    jnz r, f2
+    call x, err, 24
+f2: add b1, br, 1
+    ld c1, G, 2
+    call nn, tokenize, b1, lend
+    jz nn, f3
+    call x, err, 25
+f3: ld c2, G, 2
+    add lp1, lp, 1
+    call np, tokenize, lp1, rp
+    ; parametreleri kalici alana kopyala
+    ld npar, G, 18
+    mov k, 0
+f4: ge z, k, np
+    jnz z, f5
+    add tk, c2, k
+    add a, tk, TOKO
+    ld o, a, 0
+    add a, tk, TOKL
+    ld l, a, 0
+    call r, is_ident, o, l
+    jnz r, f4a
+    call x, err, 26
+f4a: add a, npar, PARO
+    st o, a, 0
+    add a, npar, PARL
+    st l, a, 0
+    add npar, npar, 1
+    add k, k, 1
+    jmp f4
+f5: st npar, G, 18
+    call r, funcfind, no, nl
+    lti z, r, 0
+    jnz z, f6
+    call x, err, 27
+f6: ld cur, G, 4
+    ge z, cur, 65535
+    jz z, f7
+    call x, err, 28
+f7: add a, cur, FNNO
+    st no, a, 0
+    add a, cur, FNNL
+    st nl, a, 0
+    add a, cur, FNLN
+    st line, a, 0
+    add a, cur, FNNP
+    st np, a, 0
+    sub pt, npar, np
+    add a, cur, FNPT
+    st pt, a, 0
+    ld nst, G, 3
+    add a, cur, FNBS
+    st nst, a, 0
+    call x, addsym, no, nl, 1, cur
+    add nf1, cur, 1
+    st nf1, G, 4
+    mov infunc, 1
+    jmp reset
+fbad: call x, err, 29
+tp5: call x, err, 19
+body:
+    ; ---- fonksiyon govdesi
+    eq z, nt, 1
+    jz z, b1
+    add a, nt0, TOKL
+    ld l, a, 0
+    eq z, l, 1
+    jz z, b1
+    add a, nt0, TOKO
+    ld o, a, 0
+    call c, sc, o
+    eq z, c, 125
+    jz z, b1
+    ; "}" : fonksiyon bitti
+    ld nst, G, 3
+    ld cf, G, 4
+    sub cf, cf, 1
+    add a, cf, FNBE
+    st nst, a, 0
+    mov infunc, 0
+    st nt0, G, 2
+    jmp advance
+b1: ; etiket + komut ayni satirda
+    add a, nt0, TOKO
+    ld o, a, 0
+    add a, nt0, TOKL
+    ld l, a, 0
+    sub e, l, 1
+    add e, e, o
+    call c, sc, e
+    eq z, c, 58
+    jz z, b2
+    gti z, nt, 1
+    jz z, b2
+    call x, addstmt, line, nt0, 1
+    add n1, nt0, 1
+    sub n2, nt, 1
+    call x, addstmt, line, n1, n2
+    jmp advance
+b2: call x, addstmt, line, nt0, nt
+    jmp advance
+reset:
+    st nt0, G, 2
+advance:
+    mov ls, nxt
+    jmp pl
+pend:
+    jz infunc, pdone
+    call x, err, 30
+pdone:
+    ret 0
+}
+
+; ---------- sonlandirma: space adreslerini ver ----------
+func finish() {
+    ld nd, G, 7
+    add off, nd, 1
+    ld ns, G, 5
+    mov i, 0
+    mov bss, 0
+f1: ge z, i, ns
+    jnz z, f9
+    add a, i, SYK
+    ld k, a, 0
+    eq z, k, 3
+    jz z, f2
+    add a, i, SYV
+    ld sz, a, 0
+    st off, a, 0
+    mov two, 2
+    add a, i, SYK
+    st two, a, 0
+    add off, off, sz
+    add bss, bss, sz
+f2: add i, i, 1
+    jmp f1
+f9: gti z, bss, 134217728
+    jz z, f10
+    call x, err, 31
+f10: st bss, G, 8
+    ret 0
+}
+
+; ---------- yazmac/etiket/sabit tablolari ----------
+func regfind(o, l) {
+    ld n, G, 20
+    mov i, 0
+r1: ge z, i, n
+    jnz z, no
+    add a, i, REGO
+    ld po, a, 0
+    add a, i, REGL
+    ld pl, a, 0
+    call r, streq, o, l, po, pl
+    jz r, r2
+    ret i
+r2: add i, i, 1
+    jmp r1
+no: ret -1
+}
+
+func addreg(o, l) {
+    call r, is_ident, o, l
+    jnz r, a1
+    call x, err, 50
+a1: call r, funcfind, o, l
+    lti z, r, 0
+    jnz z, a2
+    call x, err, 51
+a2: call r, datafind, o, l
+    lti z, r, 0
+    jnz z, a3
+    call x, err, 51
+a3: call r, hostid, o, l
+    lti z, r, 0
+    jnz z, a4
+    call x, err, 51
+a4: call r, opid, o, l
+    lti z, r, 0
+    jnz z, a5
+    call x, err, 51
+a5: call r, regfind, o, l
+    gei z, r, 0
+    jz z, a6
+    ret r
+a6: ld n, G, 20
+    ge z, n, 65535
+    jz z, a7
+    call x, err, 52
+a7: add a, n, REGO
+    st o, a, 0
+    add a, n, REGL
+    st l, a, 0
+    add n2, n, 1
+    st n2, G, 20
+    ret n
+}
+
+func labfind(o, l) {
+    ld n, G, 21
+    mov i, 0
+l1: ge z, i, n
+    jnz z, no
+    add a, i, LABO
+    ld po, a, 0
+    add a, i, LABL
+    ld pl, a, 0
+    call r, streq, o, l, po, pl
+    jz r, l2
+    add a, i, LABV
+    ld v, a, 0
+    ret v
+l2: add i, i, 1
+    jmp l1
+no: ret -1
+}
+
+func konst(bits) {
+    ld n, G, 6
+    mov i, 0
+k1: ge z, i, n
+    jnz z, k3
+    add a, i, CONSTV
+    ld v, a, 0
+    eq z, v, bits
+    jz z, k2
+    ret i
+k2: add i, i, 1
+    jmp k1
+k3: ge z, n, 65536
+    jz z, k4
+    call x, err, 53
+k4: add a, n, CONSTV
+    st bits, a, 0
+    add n2, n, 1
+    st n2, G, 6
+    ret n
+}
+
+func litidx(bits) {      ; yerel sabit yazmaci indeksi (tekrarsiz)
+    ld n, G, 24
+    mov i, 0
+k1: ge z, i, n
+    jnz z, k3
+    add a, i, LITV
+    ld v, a, 0
+    eq z, v, bits
+    jz z, k2
+    ret i
+k2: add i, i, 1
+    jmp k1
+k3: ge z, n, 65536
+    jz z, k4
+    call x, err, 54
+k4: add a, n, LITV
+    st bits, a, 0
+    add n2, n, 1
+    st n2, G, 24
+    ret n
+}
+
+; ---------- jeton yardimcilari (yerel IR operandlari) ----------
+func mnid(o, l) {      ; komut indeksi (0..54), sahte komutlar gt=100 ge=101 fgt=102 fge=103, yoksa -1
+    call r, opid, o, l
+    gei z, r, 0
+    jz z, m1
+    ret r
+m1: mov k, 0
+m2: gei z, k, 4
+    jnz z, no
+    mov j, k
+    mul j, j, 2
+    add j, j, 50
+    add a, j, G
+    ld po, a, 0
+    add a, j, 1
+    add a, a, G
+    ld pl, a, 0
+    call r, streq, o, l, po, pl
+    jz r, m3
+    add r, k, 100
+    ret r
+m3: add k, k, 1
+    jmp m2
+no: ret -1
+}
+
+func immof(o, l) {      ; 32 bite sigan tamsayi ya da data adresi? deger G[60]
+    call r, parse_int, o, l
+    jz r, i1
+    ld v, G, 13
+    st v, G, 60
+    lti z, v, -2147483648
+    jnz z, no
+    gti z, v, 2147483647
+    jnz z, no
+    ret 1
+no: ret 0
+i1: call d, datafind, o, l
+    lti z, d, 0
+    jz z, i2
+    ret 0
+i2: add a, d, SYV
+    ld v, a, 0
+    st v, G, 60
+    gti z, v, 2147483647
+    jnz z, no
+    ret 1
+}
+
+func litbits(o, l) {    ; parse_int / ondalik / data adresi -> 1 ve G[63]=bit deseni; yoksa 0
+    call r, parse_int, o, l
+    jz r, b1
+    ld v, G, 13
+    st v, G, 63
+    ret 1
+b1: call r, isfloat, o, l
+    jz r, b2
+    call x, err, 90
+b2: call d, datafind, o, l
+    lti z, d, 0
+    jz z, b3
+    ret 0
+b3: add a, d, SYV
+    ld v, a, 0
+    st v, G, 63
+    ret 1
+}
+
+func opr(i, j) {      ; IR i'nin j. operandi (ofset) ; uzunluk G[64]
+    add a, i, IRS
+    ld s, a, 0
+    add s, s, j
+    add a, s, OPL
+    ld l, a, 0
+    st l, G, 64
+    add a, s, OPO
+    ld o, a, 0
+    ret o
+}
+
+func setopr(i, j, o, l) {
+    add a, i, IRS
+    ld s, a, 0
+    add s, s, j
+    add a, s, OPO
+    st o, a, 0
+    add a, s, OPL
+    st l, a, 0
+    ret 0
+}
+
+func swapopr(i) {      ; operand 1 ve 2'yi degistir
+    call o1, opr, i, 1
+    ld l1, G, 64
+    call o2, opr, i, 2
+    ld l2, G, 64
+    call x, setopr, i, 1, o2, l2
+    call x, setopr, i, 2, o1, l1
+    ret 0
+}
+
+; rewriteImm: IR i icin (C++ ile ayni kurallar)
+func rewrite(i) {
+    add a, i, IRMN
+    ld m, a, 0
+    add a, i, IRN
+    ld na, a, 0
+    ; gt ge fgt fge 3 operand ister
+    lti z, m, 100
+    jnz z, w1
+    eq z, na, 3
+    jnz z, w1
+    call x, err, 55
+w1: eq z, na, 3
+    jnz z, w2
+    ret 0
+w2: call o2, opr, i, 2
+    ld l2, G, 64
+    call i2, immof, o2, l2
+    ld v, G, 60
+    mov i1, 0
+    mov v1, 0
+    jnz i2, w3
+    call o1, opr, i, 1
+    ld l1, G, 64
+    call i1, immof, o1, l1
+    ld v1, G, 60
+w3: ; add mul and eq ne
+    eq z, m, 3
+    jnz z, g1
+    eq z, m, 5
+    jnz z, g1
+    eq z, m, 8
+    jnz z, g1
+    eq z, m, 14
+    jnz z, g1
+    eq z, m, 15
+    jnz z, g1
+    jmp w4
+g1: ; im
+    mov im, 41
+    eq z, m, 5
+    jz z, g2
+    mov im, 42
+g2: eq z, m, 8
+    jz z, g3
+    mov im, 43
+g3: eq z, m, 14
+    jz z, g4
+    mov im, 49
+g4: eq z, m, 15
+    jz z, g5
+    mov im, 50
+g5: jz i2, g6
+    add a, i, IRMN
+    st im, a, 0
+    ret 0
+g6: jz i1, g7
+    call x, swapopr, i
+    add a, i, IRMN
+    st im, a, 0
+g7: ret 0
+w4: eq z, m, 4
+    jz z, w5
+    jz i2, w4r
+    eq z, v, -2147483648
+    jnz z, w4r
+    mov c41, 41
+    add a, i, IRMN
+    st c41, a, 0
+    neg nv, v
+    call o, mkint, nv
+    ld l, G, 30
+    call x, setopr, i, 2, o, l
+w4r: ret 0
+w5: eq z, m, 16
+    jnz z, c1
+    eq z, m, 17
+    jnz z, c1
+    eq z, m, 100
+    jnz z, c1
+    eq z, m, 101
+    jnz z, c1
+    jmp w6
+c1: ; lt le gt ge
+    jz i2, c3
+    mov nm, 54
+    eq z, m, 16
+    jz z, c2
+    mov nm, 51
+c2: eq z, m, 17
+    jz z, c2b
+    mov nm, 52
+c2b: eq z, m, 100
+    jz z, c2c
+    mov nm, 53
+c2c: add a, i, IRMN
+    st nm, a, 0
+    ret 0
+c3: jz i1, c5
+    call x, swapopr, i
+    mov nm, 52
+    eq z, m, 16
+    jz z, c4
+    mov nm, 53
+c4: eq z, m, 17
+    jz z, c4b
+    mov nm, 54
+c4b: eq z, m, 100
+    jz z, c4c
+    mov nm, 51
+c4c: add a, i, IRMN
+    st nm, a, 0
+    ret 0
+c5: eq z, m, 100
+    jnz z, c6
+    eq z, m, 101
+    jnz z, c6
+    ret 0
+c6: call x, swapopr, i
+    mov nm, 17
+    eq z, m, 100
+    jz z, c7
+    mov nm, 16
+c7: add a, i, IRMN
+    st nm, a, 0
+    ret 0
+w6: lti z, m, 11
+    jnz z, w7
+    gti z, m, 13
+    jnz z, w7
+    jz i2, w6r
+    add nm, m, 33
+    add a, i, IRMN
+    st nm, a, 0
+w6r: ret 0
+w7: eq z, m, 6
+    jnz z, d1
+    eq z, m, 7
+    jnz z, d1
+    jmp w8
+d1: jz i2, d9
+    eq z, v, 0
+    jnz z, d9
+    eq z, v, -1
+    jnz z, d9
+    add nm, m, 41
+    add a, i, IRMN
+    st nm, a, 0
+d9: ret 0
+w8: eq z, m, 102
+    jnz z, f1
+    eq z, m, 103
+    jnz z, f1
+    ret 0
+f1: call x, swapopr, i
+    mov nm, 28
+    eq z, m, 102
+    jz z, f2
+    mov nm, 27
+f2: add a, i, IRMN
+    st nm, a, 0
+    ret 0
+}
+
+; ---------- gecis 1: etiketler, dogrudan operand donusumu, hedef yazmaclar ----------
+func pass1(f) {
+    add a, f, FNBS
+    ld bs, a, 0
+    add a, f, FNBE
+    ld be, a, 0
+    mov s, bs
+p1: ge z, s, be
+    jnz z, pend
+    add a, s, STT0
+    ld t0, a, 0
+    add a, s, STNT
+    ld nt, a, 0
+    add a, s, STLN
+    ld ln, a, 0
+    st ln, G, 1
+    add a, t0, TOKO
+    ld mo, a, 0
+    add a, t0, TOKL
+    ld ml, a, 0
+    sub e, ml, 1
+    add e, e, mo
+    call c, sc, e
+    eq z, c, 58
+    jz z, st1
+    ; etiket
+    eq z, nt, 1
+    jnz z, lb1
+    call x, err, 60
+lb1: sub ll, ml, 1
+    call r, is_ident, mo, ll
+    jnz r, lb2
+    call x, err, 61
+lb2: call r, labfind, mo, ll
+    lti z, r, 0
+    jnz z, lb3
+    call x, err, 62
+lb3: ld n, G, 21
+    ge z, n, 65536
+    jz z, lb4
+    call x, err, 63
+lb4: add a, n, LABO
+    st mo, a, 0
+    add a, n, LABL
+    st ll, a, 0
+    ld nir, G, 22
+    add a, n, LABV
+    st nir, a, 0
+    add n, n, 1
+    st n, G, 21
+    jmp next
+st1: ld i, G, 22
+    ge z, i, 65536
+    jz z, st2
+    call x, err, 64
+st2: ld nop, G, 23
+    add a, i, IRS
+    st nop, a, 0
+    sub na, nt, 1
+    add a, i, IRN
+    st na, a, 0
+    add a, i, IRLN
+    st ln, a, 0
+    mov k, 1
+st3: ge z, k, nt
+    jnz z, st4
+    add tk, t0, k
+    add a, tk, TOKO
+    ld o, a, 0
+    add a, tk, TOKL
+    ld l, a, 0
+    ld n, G, 23
+    ge z, n, 262144
+    jz z, st3a
+    call x, err, 65
+st3a: add a, n, OPO
+    st o, a, 0
+    add a, n, OPL
+    st l, a, 0
+    add n, n, 1
+    st n, G, 23
+    add k, k, 1
+    jmp st3
+st4: call m, mnid, mo, ml
+    add a, i, IRMN
+    st m, a, 0
+    call x, rewrite, i
+    add a, i, IRMN
+    ld op, a, 0
+    lti z, op, 0
+    jnz z, bad
+    gei z, op, 55
+    jnz z, bad
+    eq z, op, 2
+    jz z, st5
+    call x, err, 66
+st5: eq z, op, 34
+    jnz z, ccall
+    eq z, op, 40
+    jnz z, chost
+    ; genel
+    add a, op, NOPS
+    ld nops, a, 0
+    ne z, na, nops
+    jz z, st6
+    call x, err, 67
+st6: mov j, 0
+st7: ge z, j, nops
+    jnz z, fin
+    mul kk, op, 3
+    add kk, kk, j
+    add a, kk, KIND
+    ld kind, a, 0
+    eq z, kind, 1
+    jz z, st8
+    call o, opr, i, j
+    ld l, G, 64
+    call x, addreg, o, l
+st8: add j, j, 1
+    jmp st7
+ccall: jnz na, cc1
+    call x, err, 68
+cc1: call o, opr, i, 0
+    ld l, G, 64
+    call r, funcfind, o, l
+    gei z, r, 0
+    jnz z, fin
+    lti z, na, 2
+    jz z, cc2
+    call x, err, 69
+cc2: call o1, opr, i, 1
+    ld l1, G, 64
+    call r, funcfind, o1, l1
+    gei z, r, 0
+    jnz z, cc3
+    call x, err, 69
+cc3: call x, addreg, o, l
+    jmp fin
+chost: jnz na, ch1
+    call x, err, 70
+ch1: call o, opr, i, 0
+    ld l, G, 64
+    call r, hostid, o, l
+    gei z, r, 0
+    jnz z, fin
+    lti z, na, 2
+    jz z, ch2
+    call x, err, 71
+ch2: call o1, opr, i, 1
+    ld l1, G, 64
+    call r, hostid, o1, l1
+    gei z, r, 0
+    jnz z, ch3
+    call x, err, 71
+ch3: call x, addreg, o, l
+    jmp fin
+bad: call x, err, 72
+fin: ld nir, G, 22
+    add nir, nir, 1
+    st nir, G, 22
+next: add s, s, 1
+    jmp p1
+pend: ret 0
+}
+
+; ---------- gecis 2: operand cozumleme ----------
+; tur kodlari: 1 REG 2 LIT 3 IMM 4 LAB 5 FUN 6 HOST 7 CONST ; sonuc: G[61]=tur G[62]=deger
+func src_opd(o, l, kind) {
+    call r, parse_int, o, l
+    jz r, s1
+    ld v, G, 13
+    eq z, kind, 3
+    jz z, s0
+    call x, err, 80
+s0: call li, litidx, v
+    mov t, 2
+    st t, G, 61
+    st li, G, 62
+    ret 0
+s1: call r, isfloat, o, l
+    jz r, s2
+    call x, err, 90
+s2: call r, is_ident, o, l
+    jnz r, s3
+    call x, err, 81
+s3: call rr, regfind, o, l
+    lti z, rr, 0
+    jnz z, s4
+    mov t, 1
+    st t, G, 61
+    st rr, G, 62
+    ret 0
+s4: call d, datafind, o, l
+    lti z, d, 0
+    jz z, s5
+    call x, err, 82
+s5: eq z, kind, 3
+    jz z, s6
+    call x, err, 83
+s6: add a, d, SYV
+    ld v, a, 0
+    call li, litidx, v
+    mov t, 2
+    st t, G, 61
+    st li, G, 62
+    ret 0
+}
+
+func dst_opd(o, l) {
+    call rr, regfind, o, l
+    gei z, rr, 0
+    jnz z, d1
+    call x, err, 84
+d1: ret rr
+}
+
+func setio(i, j, t, v) {
+    eq z, j, 0
+    jz z, a1
+    add a, i, IOT0
+    st t, a, 0
+    add a, i, IOV0
+    st v, a, 0
+    ret 0
+a1: eq z, j, 1
+    jz z, a2
+    add a, i, IOT1
+    st t, a, 0
+    add a, i, IOV1
+    st v, a, 0
+    ret 0
+a2: add a, i, IOT2
+    st t, a, 0
+    add a, i, IOV2
+    st v, a, 0
+    ret 0
+}
+
+func pass2() {
+    ld nir, G, 22
+    mov i, 0
+    mov zero, 0
+q1: ge z, i, nir
+    jnz z, qend
+    add a, i, IRLN
+    ld ln, a, 0
+    st ln, G, 1
+    add a, i, IRMN
+    ld op, a, 0
+    add a, i, IIOP
+    st op, a, 0
+    add a, i, IIHAS
+    st zero, a, 0
+    add a, i, IAS
+    ld nargs, G, 26
+    st nargs, a, 0
+    add a, i, IAN
+    st zero, a, 0
+    add a, i, IRN
+    ld na, a, 0
+    eq z, op, 34
+    jnz z, qcall
+    eq z, op, 40
+    jnz z, qcall
+    ; mov d, sabit
+    eq z, op, 0
+    jz z, q2
+    call o1, opr, i, 1
+    ld l1, G, 64
+    call r, litbits, o1, l1
+    jz r, q2
+    ld bits, G, 63
+    mov one, 1
+    add a, i, IIOP
+    st one, a, 0
+    call o0, opr, i, 0
+    ld l0, G, 64
+    call dr, dst_opd, o0, l0
+    call x, setio, i, 0, 1, dr
+    call x, setio, i, 1, 7, bits
+    jmp qnext
+q2: eq z, op, 35
+    jz z, q3
+    call o0, opr, i, 0
+    ld l0, G, 64
+    call r, litbits, o0, l0
+    jz r, q3
+    ld bits, G, 63
+    call x, setio, i, 0, 7, bits
+    jmp qnext
+q3: add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+q4: ge z, j, nops
+    jnz z, qnext
+    mul kk, op, 3
+    add kk, kk, j
+    add a, kk, KIND
+    ld kind, a, 0
+    call o, opr, i, j
+    ld l, G, 64
+    eq z, kind, 1
+    jz z, q5
+    call dr, dst_opd, o, l
+    call x, setio, i, j, 1, dr
+    jmp q9
+q5: eq z, kind, 2
+    jnz z, q6
+    eq z, kind, 3
+    jnz z, q6
+    eq z, kind, 4
+    jnz z, q6
+    jmp q7
+q6: call x, src_opd, o, l, kind
+    ld t, G, 61
+    ld v, G, 62
+    call x, setio, i, j, t, v
+    jmp q9
+q7: eq z, kind, 5
+    jz z, q8
+    call r, parse_int, o, l
+    jz r, q7a
+    ld v, G, 13
+    jmp q7c
+q7a: call d, datafind, o, l
+    gei z, d, 0
+    jnz z, q7b
+    call x, err, 85
+q7b: add a, d, SYV
+    ld v, a, 0
+q7c: lti z, v, -2147483648
+    jnz z, q7d
+    gti z, v, 2147483647
+    jz z, q7e
+q7d: call x, err, 86
+q7e: call x, setio, i, j, 3, v
+    jmp q9
+q8: eq z, kind, 7
+    jz z, q9
+    call lv, labfind, o, l
+    gei z, lv, 0
+    jnz z, q8a
+    call x, err, 87
+q8a: call x, setio, i, j, 4, lv
+q9: add j, j, 1
+    jmp q4
+qcall:
+    mov k, 0
+    eq z, op, 34
+    jz z, ch1
+    call o0, opr, i, 0
+    ld l0, G, 64
+    call r, funcfind, o0, l0
+    gei z, r, 0
+    jnz z, direct
+    jmp nodirect
+ch1: call o0, opr, i, 0
+    ld l0, G, 64
+    call r, hostid, o0, l0
+    gei z, r, 0
+    jnz z, direct
+nodirect:
+    mov one, 1
+    add a, i, IIHAS
+    st one, a, 0
+    call dr, dst_opd, o0, l0
+    add a, i, IIDEST
+    st dr, a, 0
+    mov k, 1
+direct:
+    call ok_, opr, i, k
+    ld lk, G, 64
+    eq z, op, 34
+    jz z, ch2
+    call id, funcfind, ok_, lk
+    jmp ch3
+ch2: call id, hostid, ok_, lk
+ch3: mov ty, 5
+    eq z, op, 34
+    jnz z, ch4
+    mov ty, 6
+ch4: call x, setio, i, 0, ty, id
+    add k, k, 1
+    eq z, op, 34
+    jz z, ch5
+    add a, id, FNNP
+    ld want, a, 0
+    jmp ch6
+ch5: add a, id, ARITY
+    ld want, a, 0
+ch6: sub got, na, k
+    eq z, got, want
+    jnz z, ch7
+    call x, err, 88
+ch7: add a, i, IAN
+    st got, a, 0
+    ; argumanlar
+    mov j, k
+ch8: ge z, j, na
+    jnz z, ch9
+    call o, opr, i, j
+    ld l, G, 64
+    call r, litbits, o, l
+    jz r, ch8a
+    ld bits, G, 63
+    ld n, G, 26
+    add a, n, ARGT
+    mov seven, 7
+    st seven, a, 0
+    add a, n, ARGV
+    st bits, a, 0
+    add n, n, 1
+    st n, G, 26
+    jmp ch8b
+ch8a: call x, src_opd, o, l, 4
+    ld t, G, 61
+    ld v, G, 62
+    ld n, G, 26
+    add a, n, ARGT
+    st t, a, 0
+    add a, n, ARGV
+    st v, a, 0
+    add n, n, 1
+    st n, G, 26
+ch8b: add j, j, 1
+    jmp ch8
+ch9: ld mw, G, 25
+    mov one, 1
+    mov gw, got
+    gt z, one, gw
+    jz z, ch10
+    mov gw, 1
+ch10: gt z, gw, mw
+    jz z, ch11
+    st gw, G, 25
+ch11:
+qnext:
+    add i, i, 1
+    jmp q1
+qend:
+    ret 0
+}
+
+; ---------- komut uretimi ----------
+func emit(op, a, b, c) {
+    ld n, G, 27
+    ge z, n, 131072
+    jz z, e1
+    call x, err, 100
+e1: add p, n, COP
+    st op, p, 0
+    add p, n, CA
+    st a, p, 0
+    add p, n, CB
+    st b, p, 0
+    add p, n, CC
+    st c, p, 0
+    add n, n, 1
+    st n, G, 27
+    ret 0
+}
+
+func emitc(dest, v) {      ; sabiti dest yazmacina yukle (ldi ya da ldk)
+    lti z, v, -2147483648
+    jnz z, big
+    gti z, v, 2147483647
+    jnz z, big
+    call x, emit, 1, dest, v, 0
+    ret 0
+big: call k, konst, v
+    call x, emit, 2, dest, k, 0
+    ret 0
+}
+
+func regof(t, v) {       ; LIT -> nNamed + v ; digerleri v
+    eq z, t, 2
+    jz z, r1
+    ld nn, G, 20
+    add r, nn, v
+    ret r
+r1: ret v
+}
+
+; ---------- erisim yardimcilari (gozetleme deligi) ----------
+func isrd(i, r) {
+    add a, i, COP
+    ld op, a, 0
+    add a, i, CA
+    ld ca, a, 0
+    add a, i, CB
+    ld cb, a, 0
+    add a, i, CC
+    ld cc, a, 0
+    eq z, op, 34
+    jnz z, c1
+    eq z, op, 40
+    jnz z, h1
+    jmp gen
+c1: add a, ca, FNNP
+    ld cnt, a, 0
+    jmp win
+h1: add a, ca, ARITY
+    ld cnt, a, 0
+win: lt z, r, cb
+    jnz z, no
+    add e, cb, cnt
+    ge z, r, e
+    jnz z, no
+    ret 1
+no: ret 0
+gen: add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+g1: ge z, j, nops
+    jnz z, no
+    mul kk, op, 3
+    add kk, kk, j
+    add a, kk, KIND
+    ld kind, a, 0
+    eq z, j, 0
+    jz z, g2
+    mov v, ca
+    jmp g4
+g2: eq z, j, 1
+    jz z, g3
+    mov v, cb
+    jmp g4
+g3: mov v, cc
+g4: eq z, kind, 2
+    jnz z, g5
+    eq z, kind, 3
+    jnz z, g5
+    eq z, kind, 4
+    jz z, g6
+g5: eq z, v, r
+    jz z, g6
+    ret 1
+g6: add j, j, 1
+    jmp g1
+}
+
+func iswr(i, r) {
+    add a, i, COP
+    ld op, a, 0
+    add a, i, CA
+    ld ca, a, 0
+    add a, i, CB
+    ld cb, a, 0
+    add a, i, CC
+    ld cc, a, 0
+    eq z, op, 34
+    jnz z, w1
+    eq z, op, 40
+    jnz z, w1
+    jmp gen
+w1: eq z, cb, r
+    ret z
+gen: add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+g1: ge z, j, nops
+    jnz z, no
+    mul kk, op, 3
+    add kk, kk, j
+    add a, kk, KIND
+    ld kind, a, 0
+    eq z, kind, 1
+    jz z, g6
+    eq z, j, 0
+    jz z, g2
+    mov v, ca
+    jmp g4
+g2: eq z, j, 1
+    jz z, g3
+    mov v, cb
+    jmp g4
+g3: mov v, cc
+g4: eq z, v, r
+    jz z, g6
+    ret 1
+g6: add j, j, 1
+    jmp g1
+no: ret 0
+}
+
+func isstop(op) {
+    eq z, op, 31
+    jnz z, y
+    eq z, op, 32
+    jnz z, y
+    eq z, op, 33
+    jnz z, y
+    eq z, op, 35
+    jnz z, y
+    eq z, op, 36
+    jnz z, y
+    eq z, op, 34
+    jnz z, y
+    eq z, op, 40
+    jnz z, y
+    ret 0
+y:  ret 1
+}
+
+func countacc(i) {       ; RD/WR sayaclarini artir
+    add a, i, COP
+    ld op, a, 0
+    add a, i, CA
+    ld ca, a, 0
+    add a, i, CB
+    ld cb, a, 0
+    add a, i, CC
+    ld cc, a, 0
+    eq z, op, 34
+    jnz z, c1
+    eq z, op, 40
+    jnz z, h1
+    jmp gen
+c1: add a, ca, FNNP
+    ld cnt, a, 0
+    jmp win
+h1: add a, ca, ARITY
+    ld cnt, a, 0
+win: mov k, 0
+w1: ge z, k, cnt
+    jnz z, w2
+    add r, cb, k
+    add a, r, RD
+    ld v, a, 0
+    add v, v, 1
+    st v, a, 0
+    add k, k, 1
+    jmp w1
+w2: add a, cb, WR
+    ld v, a, 0
+    add v, v, 1
+    st v, a, 0
+    ret 0
+gen: add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+g1: ge z, j, nops
+    jnz z, done
+    mul kk, op, 3
+    add kk, kk, j
+    add a, kk, KIND
+    ld kind, a, 0
+    eq z, j, 0
+    jz z, g2
+    mov v, ca
+    jmp g4
+g2: eq z, j, 1
+    jz z, g3
+    mov v, cb
+    jmp g4
+g3: mov v, cc
+g4: eq z, kind, 1
+    jnz z, gw
+    eq z, kind, 2
+    jnz z, gr
+    eq z, kind, 3
+    jnz z, gr
+    eq z, kind, 4
+    jnz z, gr
+    jmp g6
+gr: add a, v, RD
+    ld t, a, 0
+    add t, t, 1
+    st t, a, 0
+    jmp g6
+gw: add a, v, WR
+    ld t, a, 0
+    add t, t, 1
+    st t, a, 0
+g6: add j, j, 1
+    jmp g1
+done: ret 0
+}
+
+func refs(i, r) {
+    call a1, isrd, i, r
+    jz a1, f1
+    ret 1
+f1: call a2, iswr, i, r
+    ret a2
+}
+
+; ---------- gozetleme deligi (peephole): C++ ile ayni uc kural ----------
+func peephole(f, nn, w) {
+    ld m, G, 27
+    add a, f, FNNP
+    ld np, a, 0
+    ld nr, G, 20
+    add nr, nr, 0
+    ; sayaclari sifirla
+    ld nregs, G, 29
+    mov zero, 0
+    mov i, 0
+z1: ge z, i, nregs
+    jnz z, z2
+    add a, i, RD
+    st zero, a, 0
+    add a, i, WR
+    st zero, a, 0
+    add i, i, 1
+    jmp z1
+z2: mov i, 0
+z3: gt z, i, m
+    jnz z, z4
+    add a, i, TGT
+    st zero, a, 0
+    add a, i, DEL
+    st zero, a, 0
+    add i, i, 1
+    jmp z3
+z4: ; tgt: etiket hedefleri
+    mov i, 0
+t1: ge z, i, m
+    jnz z, t9
+    add a, i, COP
+    ld op, a, 0
+    add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+t2: ge z, j, nops
+    jnz z, t8
+    mul kk, op, 3
+    add kk, kk, j
+    add a, kk, KIND
+    ld kind, a, 0
+    eq z, kind, 7
+    jz z, t7
+    eq z, j, 0
+    jz z, t3
+    add a, i, CA
+    ld v, a, 0
+    jmp t6
+t3: eq z, j, 1
+    jz z, t4
+    add a, i, CB
+    ld v, a, 0
+    jmp t6
+t4: add a, i, CC
+    ld v, a, 0
+t6: add a, v, TGT
+    mov one, 1
+    st one, a, 0
+t7: add j, j, 1
+    jmp t2
+t8: add i, i, 1
+    jmp t1
+t9: mov i, 0
+    ; rd/wr
+r1: ge z, i, m
+    jnz z, r9
+    call x, countacc, i
+    add i, i, 1
+    jmp r1
+r9: ; ---- A
+    mov u, 0
+A1: ge z, u, m
+    jnz z, A99
+    add a, u, DEL
+    ld dv, a, 0
+    jnz dv, A9
+    add a, u, COP
+    ld op, a, 0
+    jnz op, A9
+    add a, u, CA
+    ld ma, a, 0
+    add a, u, CB
+    ld mb, a, 0
+    lt z, ma, w
+    jnz z, A9
+    ge z, mb, nn
+    jnz z, A9
+    lt z, mb, np
+    jnz z, A9
+    add a, mb, RD
+    ld rv, a, 0
+    ne z, rv, 1
+    jnz z, A9
+    add a, mb, WR
+    ld rv, a, 0
+    ne z, rv, 1
+    jnz z, A9
+    add a, u, TGT
+    ld tv, a, 0
+    jnz tv, A9
+    mov t, mb
+    mov slot, ma
+    mov d, -1
+    sub p, u, 1
+A2: lti z, p, 0
+    jnz z, A5
+    add q, p, 1
+    add a, q, TGT
+    ld tv, a, 0
+    jnz tv, A5
+    add a, p, DEL
+    ld dv, a, 0
+    jnz dv, A4
+    call wt, iswr, p, t
+    jz wt, A3
+    mov d, p
+    jmp A5
+A3: add a, p, COP
+    ld qop, a, 0
+    call sp, isstop, qop
+    jnz sp, A5
+    call rf, refs, p, slot
+    jnz rf, A5
+A4: sub p, p, 1
+    jmp A2
+A5: lti z, d, 0
+    jnz z, A9
+    add a, d, CA
+    st slot, a, 0
+    mov one, 1
+    add a, u, DEL
+    st one, a, 0
+    add a, t, RD
+    st zero, a, 0
+    add a, t, WR
+    st zero, a, 0
+A9: add u, u, 1
+    jmp A1
+A99: ; ---- B
+    mov p, 0
+B1: add pm1, p, 1
+    ge z, pm1, m
+    jnz z, B99
+    add a, p, DEL
+    ld dv, a, 0
+    jnz dv, B9
+    mov q, pm1
+    add a, q, TGT
+    ld bad, a, 0
+B2: ge z, q, m
+    jnz z, B3
+    add a, q, DEL
+    ld dv, a, 0
+    jz dv, B3
+    add q, q, 1
+    ge z, q, m
+    jnz z, B2
+    add a, q, TGT
+    ld tv, a, 0
+    jz tv, B2
+    mov bad, 1
+    jmp B2
+B3: ge z, q, m
+    jnz z, B9
+    jnz bad, B9
+    add a, p, COP
+    ld aop, a, 0
+    add a, q, COP
+    ld bop, a, 0
+    jnz aop, B9
+    jnz bop, B9
+    add a, p, CA
+    ld aa, a, 0
+    add a, p, CB
+    ld ab, a, 0
+    add a, q, CA
+    ld ba, a, 0
+    add a, q, CB
+    ld bb, a, 0
+    lt z, ab, w
+    jnz z, B9
+    ge z, aa, nn
+    jnz z, B9
+    ne z, ba, ab
+    jnz z, B9
+    ne z, bb, aa
+    jnz z, B9
+    mov one, 1
+    add a, q, DEL
+    st one, a, 0
+    add a, aa, RD
+    ld rv, a, 0
+    sub rv, rv, 1
+    st rv, a, 0
+B9: add p, p, 1
+    jmp B1
+B99: ; ---- C
+    mov p, 0
+C1: ge z, p, m
+    jnz z, C99
+    add a, p, DEL
+    ld dv, a, 0
+    jnz dv, C9
+    add a, p, COP
+    ld op, a, 0
+    jnz op, C9
+    add a, p, CA
+    ld ca, a, 0
+    add a, p, CB
+    ld cb, a, 0
+    eq z, ca, cb
+    jnz z, C8
+    lt z, cb, w
+    jnz z, C9
+    ge z, ca, nn
+    jnz z, C9
+    add a, ca, RD
+    ld rv, a, 0
+    jnz rv, C9
+C8: mov one, 1
+    add a, p, DEL
+    st one, a, 0
+C9: add p, p, 1
+    jmp C1
+C99: ; ---- sikistir ve etiketleri yeniden numarala
+    mov k, 0
+    mov p, 0
+X1: ge z, p, m
+    jnz z, X2
+    add a, p, IDX
+    st k, a, 0
+    add a, p, DEL
+    ld dv, a, 0
+    jnz dv, X1a
+    add k, k, 1
+X1a: add p, p, 1
+    jmp X1
+X2: add a, m, IDX
+    st k, a, 0
+    mov k, 0
+    mov p, 0
+X3: ge z, p, m
+    jnz z, X9
+    add a, p, DEL
+    ld dv, a, 0
+    jnz dv, X8
+    add a, p, COP
+    ld op, a, 0
+    add a, p, CA
+    ld oa, a, 0
+    add a, p, CB
+    ld ob, a, 0
+    add a, p, CC
+    ld oc, a, 0
+    add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+X4: ge z, j, nops
+    jnz z, X7
+    mul kk, op, 3
+    add kk, kk, j
+    add a, kk, KIND
+    ld kind, a, 0
+    eq z, kind, 7
+    jz z, X6
+    eq z, j, 0
+    jz z, X4a
+    add a, oa, IDX
+    ld oa, a, 0
+    jmp X6
+X4a: eq z, j, 1
+    jz z, X4b
+    add a, ob, IDX
+    ld ob, a, 0
+    jmp X6
+X4b: add a, oc, IDX
+    ld oc, a, 0
+X6: add j, j, 1
+    jmp X4
+X7: add a, k, COP
+    st op, a, 0
+    add a, k, CA
+    st oa, a, 0
+    add a, k, CB
+    st ob, a, 0
+    add a, k, CC
+    st oc, a, 0
+    add k, k, 1
+X8: add p, p, 1
+    jmp X3
+X9: st k, G, 27
+    ret 0
+}
+
+; ---------- bir fonksiyonun kurulumu ----------
+func build(f) {
+    mov zero, 0
+    st zero, G, 20
+    st zero, G, 21
+    st zero, G, 22
+    st zero, G, 23
+    st zero, G, 24
+    mov one, 1
+    st one, G, 25
+    st zero, G, 26
+    st zero, G, 27
+    st f, G, 16
+    add a, f, FNLN
+    ld fl, a, 0
+    st fl, G, 1
+    add a, f, FNNP
+    ld np, a, 0
+    add a, f, FNPT
+    ld pt, a, 0
+    mov k, 0
+b1: ge z, k, np
+    jnz z, b2
+    add j, pt, k
+    add a, j, PARO
+    ld o, a, 0
+    add a, j, PARL
+    ld l, a, 0
+    call r, regfind, o, l
+    lti z, r, 0
+    jnz z, b1a
+    call x, err, 110
+b1a: call x, addreg, o, l
+    add k, k, 1
+    jmp b1
+b2: call x, pass1, f
+    ; sonlandirici: son komut jmp/ret/halt degilse ya da sonda etiket varsa `ret 0` ekle
+    ld nir, G, 22
+    mov need, 0
+    jnz nir, b3
+    mov need, 1
+    jmp b6
+b3: sub last, nir, 1
+    add a, last, IRMN
+    ld lop, a, 0
+    eq z, lop, 31
+    jnz z, b4
+    eq z, lop, 35
+    jnz z, b4
+    eq z, lop, 36
+    jnz z, b4
+    mov need, 1
+b4: ld nl, G, 21
+    mov i, 0
+b5: ge z, i, nl
+    jnz z, b6
+    add a, i, LABV
+    ld v, a, 0
+    eq z, v, nir
+    jz z, b5a
+    mov need, 1
+b5a: add i, i, 1
+    jmp b5
+b6: jz need, b7
+    ld nop, G, 23
+    add a, nir, IRS
+    st nop, a, 0
+    mov one, 1
+    add a, nir, IRN
+    st one, a, 0
+    add a, nir, IRLN
+    st fl, a, 0
+    mov c35, 35
+    add a, nir, IRMN
+    st c35, a, 0
+    mov z0, 0
+    call o, mkint, z0
+    ld l, G, 30
+    add a, nop, OPO
+    st o, a, 0
+    add a, nop, OPL
+    st l, a, 0
+    add nop, nop, 1
+    st nop, G, 23
+    add nir, nir, 1
+    st nir, G, 22
+b7: call x, pass2
+    ; yerlesim
+    ld nn, G, 20
+    ld nlit, G, 24
+    add w, nn, nlit
+    ld mw, G, 25
+    add nregs, w, mw
+    gti z, nregs, 65535
+    jz z, b8
+    call x, err, 111
+b8: st nregs, G, 29
+    mov i, 0
+b9: ge z, i, nlit
+    jnz z, b10
+    add a, i, LITV
+    ld v, a, 0
+    add d, nn, i
+    call x, emitc, d, v
+    add i, i, 1
+    jmp b9
+b10: ld pre, G, 27
+    mov pc, pre
+    mov i, 0
+b11: ge z, i, nir
+    jnz z, b14
+    add a, i, PCOF
+    st pc, a, 0
+    add a, i, IIOP
+    ld op, a, 0
+    eq z, op, 34
+    jnz z, b12
+    eq z, op, 40
+    jnz z, b12
+    eq z, op, 35
+    jz z, b13
+    add a, i, IOT0
+    ld t0, a, 0
+    eq z, t0, 7
+    jz z, b13
+    add pc, pc, 2
+    jmp b13a
+b12: add a, i, IAN
+    ld an, a, 0
+    add a, i, IIHAS
+    ld hs, a, 0
+    add pc, pc, an
+    add pc, pc, hs
+    add pc, pc, 1
+    jmp b13a
+b13: add pc, pc, 1
+b13a: add i, i, 1
+    jmp b11
+b14: add a, nir, PCOF
+    st pc, a, 0
+    gti z, pc, 4194304
+    jz z, b15
+    call x, err, 112
+b15: mov i, 0
+e1: ge z, i, nir
+    jnz z, e99
+    add a, i, IIOP
+    ld op, a, 0
+    eq z, op, 34
+    jnz z, ecall
+    eq z, op, 40
+    jnz z, ecall
+    eq z, op, 1
+    jnz z, eldi
+    eq z, op, 35
+    jz z, egen
+    add a, i, IOT0
+    ld t0, a, 0
+    eq z, t0, 7
+    jz z, egen
+    add a, i, IOV0
+    ld v, a, 0
+    call x, emitc, w, v
+    call x, emit, 35, w, 0, 0
+    jmp enext
+eldi: add a, i, IOV0
+    ld t, a, 0
+    add a, i, IOT0
+    ld ty, a, 0
+    call rg, regof, ty, t
+    add a, i, IOV1
+    ld v, a, 0
+    call x, emitc, rg, v
+    jmp enext
+ecall:
+    add a, i, IAS
+    ld as, a, 0
+    add a, i, IAN
+    ld an, a, 0
+    mov j, 0
+e2: ge z, j, an
+    jnz z, e3
+    add b2_, as, j
+    add a, b2_, ARGT
+    ld ty, a, 0
+    add a, b2_, ARGV
+    ld v, a, 0
+    add d, w, j
+    eq z, ty, 7
+    jz z, e2a
+    call x, emitc, d, v
+    jmp e2b
+e2a: call rg, regof, ty, v
+    call x, emit, 0, d, rg, 0
+e2b: add j, j, 1
+    jmp e2
+e3: add a, i, IOV0
+    ld id, a, 0
+    call x, emit, op, id, w, 0
+    add a, i, IIHAS
+    ld hs, a, 0
+    jz hs, enext
+    add a, i, IIDEST
+    ld dr, a, 0
+    call x, emit, 0, dr, w, 0
+    jmp enext
+egen:
+    add a, op, NOPS
+    ld nops, a, 0
+    mov o0, 0
+    mov o1, 0
+    mov o2, 0
+    mov j, 0
+e4: ge z, j, nops
+    jnz z, e8
+    eq z, j, 0
+    jz z, e4a
+    add a, i, IOT0
+    ld ty, a, 0
+    add a, i, IOV0
+    ld v, a, 0
+    jmp e4c
+e4a: eq z, j, 1
+    jz z, e4b
+    add a, i, IOT1
+    ld ty, a, 0
+    add a, i, IOV1
+    ld v, a, 0
+    jmp e4c
+e4b: add a, i, IOT2
+    ld ty, a, 0
+    add a, i, IOV2
+    ld v, a, 0
+e4c: mov res, 0
+    eq z, ty, 1
+    jnz z, e5
+    eq z, ty, 2
+    jnz z, e5
+    eq z, ty, 3
+    jnz z, e6
+    eq z, ty, 4
+    jnz z, e7
+    jmp e4d
+e5: call res, regof, ty, v
+    jmp e4d
+e6: mov res, v
+    jmp e4d
+e7: add a, v, PCOF
+    ld res, a, 0
+e4d: eq z, j, 0
+    jz z, e4e
+    mov o0, res
+    jmp e4g
+e4e: eq z, j, 1
+    jz z, e4f
+    mov o1, res
+    jmp e4g
+e4f: mov o2, res
+e4g: add j, j, 1
+    jmp e4
+e8: call x, emit, op, o0, o1, o2
+enext: add i, i, 1
+    jmp e1
+e99: call x, peephole, f, nn, w
+    ; global dizilere kopyala
+    ld ng, G, 14
+    ld m, G, 27
+    add a, f, FNCS
+    st ng, a, 0
+    add a, f, FNCN
+    st m, a, 0
+    add a, f, FNNR
+    st nregs, a, 0
+    add e, ng, m
+    gti z, e, 524288
+    jz z, c0
+    call x, err, 113
+c0: mov i, 0
+c1: ge z, i, m
+    jnz z, c9
+    add a, i, COP
+    ld v, a, 0
+    add a, ng, i
+    add a, a, GOP
+    st v, a, 0
+    add a, i, CA
+    ld v, a, 0
+    add a, ng, i
+    add a, a, GA
+    st v, a, 0
+    add a, i, CB
+    ld v, a, 0
+    add a, ng, i
+    add a, a, GB
+    st v, a, 0
+    add a, i, CC
+    ld v, a, 0
+    add a, ng, i
+    add a, a, GC
+    st v, a, 0
+    add i, i, 1
+    jmp c1
+c9: add ng, ng, m
+    st ng, G, 14
+    ret 0
+}
+
+; ---------- ikili kodlama (PMB1, adlar atilmis) ----------
+func outb(v) {
+    ld n, G, 15
+    ge z, n, 1048576
+    jz z, o1
+    call x, err, 130
+o1: add a, n, OUTB
+    st v, a, 0
+    add n, n, 1
+    st n, G, 15
+    ret 0
+}
+
+func uleb(v) {
+u1: andi b, v, 127
+    shri v, v, 7
+    jz v, u2
+    or b, b, 128
+u2: call x, outb, b
+    jnz v, u1
+    ret 0
+}
+
+func zig(v) {
+    shli t, v, 1
+    sari s, v, 63
+    xor r, t, s
+    ret r
+}
+
+func encode(entry) {
+    call x, outb, 80
+    call x, outb, 77
+    call x, outb, 66
+    call x, outb, 49
+    call x, outb, 0
+    ld mem, G, 9
+    call x, uleb, mem
+    call x, uleb, entry
+    ld nc, G, 6
+    call x, uleb, nc
+    mov i, 0
+n1: ge z, i, nc
+    jnz z, n2
+    add a, i, CONSTV
+    ld v, a, 0
+    call x, uleb, v
+    add i, i, 1
+    jmp n1
+n2: ld nd, G, 7
+    call x, uleb, nd
+    mov i, 0
+n3: ge z, i, nd
+    jnz z, n4
+    add a, i, DATAV
+    ld v, a, 0
+    call zv, zig, v
+    call x, uleb, zv
+    add i, i, 1
+    jmp n3
+n4: ld bss, G, 8
+    call x, uleb, bss
+    ld nf, G, 4
+    call x, uleb, nf
+    mov f, 0
+f1: ge z, f, nf
+    jnz z, fend
+    add a, f, FNNP
+    ld np, a, 0
+    call x, uleb, np
+    add a, f, FNNR
+    ld nr, a, 0
+    call x, uleb, nr
+    add a, f, FNCN
+    ld m, a, 0
+    call x, uleb, m
+    add a, f, FNCS
+    ld cs, a, 0
+    mov p, 0
+p1: ge z, p, m
+    jnz z, p9
+    add g, cs, p
+    add a, g, GOP
+    ld op, a, 0
+    call x, outb, op
+    add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+j1: ge z, j, nops
+    jnz z, j9
+    mul kk, op, 3
+    add kk, kk, j
+    add a, kk, KIND
+    ld kind, a, 0
+    eq z, j, 0
+    jz z, j2
+    add a, g, GA
+    ld v, a, 0
+    jmp j4
+j2: eq z, j, 1
+    jz z, j3
+    add a, g, GB
+    ld v, a, 0
+    jmp j4
+j3: add a, g, GC
+    ld v, a, 0
+j4: eq z, kind, 7
+    jz z, j5
+    sub v, v, p
+    call zv, zig, v
+    call x, uleb, zv
+    jmp j8
+j5: eq z, kind, 5
+    jz z, j6
+    call zv, zig, v
+    call x, uleb, zv
+    jmp j8
+j6: and v, v, 4294967295
+    call x, uleb, v
+j8: add j, j, 1
+    jmp j1
+j9: add p, p, 1
+    jmp p1
+p9: add f, f, 1
+    jmp f1
+fend: ret 0
+}
+
+; ---------- baslangic: SRC sonuna sabit metinler ----------
+func copyz(src_base, idx) {      ; NUL ile ayrilmis tablodan idx. metni SRC sonuna kopyala: ofset dondur, uzunluk G[30]
+    mov k, 0
+    mov i, 0
+c1: ge z, i, idx
+    jnz z, c4
+c2: add a, src_base, k
+    ld ch, a, 0
+    add k, k, 1
+    jnz ch, c2
+    add i, i, 1
+    jmp c1
+c4: ld o, G, 0
+    mov len, 0
+c5: add a, src_base, k
+    ld ch, a, 0
+    jz ch, c6
+    add a, o, len
+    add a, a, SRC
+    st ch, a, 0
+    add len, len, 1
+    add k, k, 1
+    jmp c5
+c6: add o2, o, len
+    st o2, G, 0
+    st len, G, 30
+    ret o
+}
+
+func init_names() {
+    mov i, 0
+n1: gei z, i, 62
+    jnz z, n2
+    call o, copyz, OPNAMES, i
+    ld l, G, 30
+    add a, i, NMO
+    st o, a, 0
+    add a, i, NML
+    st l, a, 0
+    add i, i, 1
+    jmp n1
+n2: ; anahtar sozcukler: memory entry data space func -> G[40..49]; gt ge fgt fge -> G[50..57]; main -> G[10],G[11]
+    mov i, 0
+k1: gei z, i, 9
+    jnz z, k9
+    call o, copyz, KWS, i
+    ld l, G, 30
+    lti z, i, 5
+    jz z, k2
+    mul j, i, 2
+    add j, j, 40
+    jmp k3
+k2: sub j, i, 5
+    mul j, j, 2
+    add j, j, 50
+k3: add a, j, G
+    st o, a, 0
+    add a, j, 1
+    add a, a, G
+    st l, a, 0
+    add i, i, 1
+    jmp k1
+k9: call o, copyz, KWS, 9
+    ld l, G, 30
+    st o, G, 10
+    st l, G, 11
+    ret 0
+}
+
+func main() {
+    ; stdin -> SRC
+    mov n, 0
+r1: host ch, getc
+    lti z, ch, 0
+    jnz z, r2
+    ge z, n, 1048576
+    jz z, r1a
+    call x, err, 140
+r1a: add a, n, SRC
+    st ch, a, 0
+    add n, n, 1
+    jmp r1
+r2: st n, G, 17
+    st n, G, 0
+    mov v, 65536
+    st v, G, 9
+    call x, init_names
+    call x, parse_all
+    call x, finish
+    ; giris fonksiyonu
+    ld eo, G, 10
+    ld el, G, 11
+    ld eln, G, 12
+    st eln, G, 1
+    call entry, funcfind, eo, el
+    gei z, entry, 0
+    jnz z, m1
+    call x, err, 141
+m1: ld nf, G, 4
+    mov f, 0
+m2: ge z, f, nf
+    jnz z, m3
+    call x, build, f
+    add f, f, 1
+    jmp m2
+m3: ; validate_program'in iki kosulu
+    ld mem, G, 9
+    ld nd, G, 7
+    ld bss, G, 8
+    add need, nd, bss
+    add need, need, 1
+    ge z, mem, need
+    jnz z, m4
+    call x, err, 142
+m4: add a, entry, FNNP
+    ld np, a, 0
+    jz np, m5
+    call x, err, 143
+m5: call x, encode, entry
+    ld no, G, 15
+    mov i, 0
+m6: ge z, i, no
+    jnz z, m7
+    add a, i, OUTB
+    ld v, a, 0
+    host putc, v
+    add i, i, 1
+    jmp m6
+m7: ret 0
+}
