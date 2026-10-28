@@ -16,6 +16,7 @@ space FBASE 65536
 space FNP 65536
 space FNR 65536
 space G 64
+space EV 65536
 data NOPS = @NOPS@
 data MSGOFF = 0 11 21 33 45
 data MSGS = @MSGS@
@@ -23,6 +24,8 @@ data PUTIB = @PUTIB@
 data PUTCB = @PUTCB@
 data TPLS = @TPLS@
 data TPL = @TPL@
+data RTL = @RTL@
+data RTLN = @RTLN@
 
 ; G: 0 NT  1 imlec  2 KONUM  3 GECIS  4 bellek  5 giris  6 nsabit  7 sabit tabani  8 nveri  9 veri tabani  10 bss  11 nfonk  12 toplam komut
 ;    20 a  21 b  22 c  23 fonksiyon taban komutu  24 gecerli fonksiyon
@@ -100,47 +103,65 @@ n1: add a, c, T
     ret v
 }
 
-func parse() {
-    ld nt0, G, 0
-    jnz nt0, pf0
-    call x, fail
-pf0: ld t0, T, 0
-    eq z, t0, -1
-    jnz z, pf1
+; secenekler (stdin on eki): -1 yakit | -2 n (kare kod)*n olaylar | -3 azami_kare | -4 ascii_K | -5 bayrak (1 rapor, 2 PPM)
+func options() {
     mov fu, 4000000000
     st fu, G, 44
-    jmp pf2
-pf1: call x, nx
-    call fu, nx
-    st fu, G, 44
-pf2:
-    call fl, nx
-    call mem, nx
-    st mem, G, 4
-    call en, nx
-    st en, G, 5
-    call nc, nx
-    st nc, G, 6
-    ld c, G, 1
-    st c, G, 7
-    add c, c, nc
-    st c, G, 1
-    call nd, nx
-    st nd, G, 8
-    ld c, G, 1
-    st c, G, 9
-    add c, c, nd
-    st c, G, 1
-    call bss, nx
-    st bss, G, 10
-    call nf, nx
-    gt z, nf, 65535
-    jz z, q1
+op0: ld c, G, 1
+    ld n, G, 0
+    ge z, c, n
+    jnz z, opd
+    add t, c, T
+    ld tk, t, 0
+    gei z, tk, 0
+    jnz z, opd
+    call x, nx
+    eqi z, tk, -1
+    jz z, op2
+    call v, nx
+    st v, G, 44
+    jmp op0
+op2: eqi z, tk, -2
+    jz z, op3
+    call cnt, nx
+    gti z, cnt, 30000
+    jz z, op2a
     call x, fail
-q1: st nf, G, 11
-    mov f, 0
-    mov gi, 0
-pf: ge z, f, nf
+op2a: st cnt, G, 57
+    mov i, 0
+op2l: ge z, i, cnt
+    jnz z, op0
+    call k, nx
+    call cd, nx
+    shli t, i, 1
+    add a, t, EV
+    st k, a, 0
+    st cd, a, 1
+    addi i, i, 1
+    jmp op2l
+op3: eqi z, tk, -3
+    jz z, op4
+    call v, nx
+    st v, G, 54
+    jmp op0
+op4: eqi z, tk, -4
+    jz z, op5
+    call v, nx
+    st v, G, 55
+    jmp op0
+op5: eqi z, tk, -5
+    jz z, op6
+    call v, nx
+    st v, G, 56
+    jmp op0
+op6: call x, fail
+opd: ret 0
+}
+
+; [f0,f1) fonksiyonlarini oku (gi: ilk komut dizini); yeni gi dondurur
+func pfuncs(f0, f1, gi) {
+    mov f, f0
+pf: ge z, f, f1
     jnz z, pfd
     call np, nx
     call nr, nx
@@ -190,6 +211,90 @@ pid:
     add f, f, 1
     jmp pf
 pfd:
+    ret gi
+}
+
+; uygulamada present/poll/frame (host 4..6) var mi?
+func scanrt(n) {
+    mov i, 0
+sr: ge z, i, n
+    jnz z, srn
+    add a, i, OPS
+    ld op, a, 0
+    eqi z, op, 40
+    jz z, sr1
+    add a, i, OA
+    ld h, a, 0
+    lti z, h, 4
+    jnz z, sr1
+    lei z, h, 6
+    jz z, sr1
+    ret 1
+sr1: addi i, i, 1
+    jmp sr
+srn: ret 0
+}
+
+; RTL (rt.pma listesi) ayricalikli fonksiyon olarak ekle: belirteclerini T'ye kopyala, imleci oraya al
+func loadrt(napp, gi) {
+    ld nt, G, 0
+    ld nr, RTLN, 0
+    add e, nt, nr
+    gt z, e, 524288
+    jz z, lr0
+    call x, fail
+lr0: mov i, 0
+lr: ge z, i, nr
+    jnz z, lrd
+    add a, i, RTL
+    ld v, a, 0
+    add b, nt, i
+    add b, b, T
+    st v, b, 0
+    addi i, i, 1
+    jmp lr
+lrd: st e, G, 0
+    addi c, nt, 6
+    st c, G, 1
+    call nrt, nx
+    add f1, napp, nrt
+    call gi2, pfuncs, napp, f1, gi
+    st f1, G, 11
+    ret gi2
+}
+
+func parse() {
+    ld nt0, G, 0
+    jnz nt0, pf0
+    call x, fail
+pf0: call x, options
+    call fl, nx
+    call mem, nx
+    st mem, G, 4
+    call en, nx
+    st en, G, 5
+    call nc, nx
+    st nc, G, 6
+    ld c, G, 1
+    st c, G, 7
+    add c, c, nc
+    st c, G, 1
+    call nd, nx
+    st nd, G, 8
+    ld c, G, 1
+    st c, G, 9
+    add c, c, nd
+    st c, G, 1
+    call bss, nx
+    st bss, G, 10
+    call nf, nx
+    gt z, nf, 65500
+    jz z, q1
+    call x, fail
+q1: st nf, G, 11
+    st nf, G, 45
+    mov z0, 0
+    call gi, pfuncs, z0, nf, z0
     st gi, G, 12
     jz fl, pend
     mov f, 0
@@ -202,6 +307,20 @@ pn: ge z, f, nf
     add f, f, 1
     jmp pn
 pend:
+    call u, scanrt, gi
+    ld fg, G, 56
+    jz fg, nfg
+    mov u, 1
+nfg:
+    st u, G, 47
+    jz u, pdone
+    mov rw, 65536
+    st rw, G, 48
+    ld m, G, 4
+    st m, G, 49
+    call gi2, loadrt, nf, gi
+    st gi2, G, 12
+pdone:
     ret 0
 }
 
@@ -317,7 +436,7 @@ v17: eq z, k, 17
     ret r
 v18: eq z, k, 18
     jz z, v19
-    ld r, G, 43
+    ld r, G, 53
     ret r
 v19: eq z, k, 19
     jz z, v20
@@ -344,8 +463,10 @@ v23: eq z, k, 23
     ret r
 v24: eq z, k, 24
     jz z, v25
-    ld r, G, 43
+    ld r, G, 53
     ld m, G, 4
+    ld fc, G, 49
+    add m, m, fc
     mul m, m, 8
     add r, r, m
     sub r, r, 4194304
@@ -354,9 +475,52 @@ v25: eq z, k, 25
     jz z, v26
     ld r, G, 44
     ret r
-v26: ld r, G, 38
+v26: eq z, k, 26
+    jz z, v27
+    ld r, G, 38
     add r, r, 57
     add r, r, 4194304
+    ret r
+v27: eq z, k, 27
+    jz z, v28
+    ld r, G, 48
+    ld m, G, 4
+    add r, r, m
+    ld fc, G, 49
+    add r, r, fc
+    ret r
+v28: eq z, k, 28
+    jz z, v29
+    ld r, G, 48
+    ret r
+v29: eq z, k, 29
+    jz z, v30
+    ld r, G, 48
+    mul r, r, -8
+    ret r
+v30: eq z, k, 30
+    jz z, v31
+    ld r, G, 43
+    sub r, r, 32768
+    ret r
+v31: eq z, k, 31
+    jz z, v32
+    add r, b, 1
+    mul r, r, 8
+    ret r
+v32: eq z, k, 32
+    jz z, v33
+    add r, b, 2
+    mul r, r, 8
+    ret r
+v33: eq z, k, 33
+    jz z, v34
+    ld r, G, 51
+    add r, r, 4194304
+    ret r
+v34: ld r, G, 57
+    shli r, r, 1
+    add r, r, 64
     ret r
 }
 
@@ -366,8 +530,21 @@ func target(k) {
     ld b, G, 21
     ld fb, G, 23
     eq z, k, 12
-    jz z, tk0
+    jz z, tk1
     ld r, G, 46
+    ret r
+tk1: eq z, k, 13
+    jz z, tk2
+    ld r, G, 50
+    ret r
+tk2: eq z, k, 14
+    jz z, tk0
+    ld nap, G, 45
+    addi nap, nap, 4
+    add t, nap, FBASE
+    ld t, t, 0
+    add t, t, OFF
+    ld r, t, 0
     ret r
 tk0: lt z, k, 7
     jz z, t7
@@ -472,7 +649,13 @@ func emit_all() {
     mov z0, 0
     st z0, G, 2
     call x, etpl, 69
+    ld ur, G, 47
+    jz ur, plain
+    call x, etpl, 80
+    jmp plainx
+plain:
     call x, etpl, 62
+plainx:
     ld nf, G, 11
     mov f, 0
 ef: ge z, f, nf
@@ -492,6 +675,13 @@ lastf:
 gotn:
     st fb, G, 23
     st f, G, 24
+    ld na, G, 45
+    ld ur, G, 47
+    mov pv, 0
+    jz ur, pv0
+    ge pv, f, na
+pv0:
+    st pv, G, 52
     mov gi, fb
 ei: ge z, gi, nxt
     jnz z, eid
@@ -512,8 +702,35 @@ ei: ge z, gi, nxt
     eq z, op, 40
     jz z, noh
     ld h, G, 20
-    add op, h, 55
+    lti z, h, 4
+    jnz z, hn
+    jnz pv, hpv
+    sub t, h, 3
+    add t, t, na
+    st t, G, 20
+    mov op, 34
+    jmp noh
+hpv: mov op, 77
+    jmp noh
+hn: add op, h, 55
 noh:
+    jz pv, nopv
+    eq z, op, 37
+    jz z, pv1
+    mov op, 74
+    jmp nb
+pv1: eq z, op, 38
+    jz z, pv2
+    mov op, 75
+    jmp nb
+pv2: eq z, op, 34
+    jz z, nb
+    ld t, G, 20
+    add t, t, na
+    st t, G, 20
+    mov op, 76
+    jmp nb
+nopv:
     lti z, op, 31
     jnz z, nb
     gti z, op, 33
@@ -556,6 +773,14 @@ efd:
     mov s, 46
     call x, mark, s
     call x, etpl, 73
+    mov s, 50
+    call x, mark, s
+    ld ur, G, 47
+    jz ur, ex0
+    call x, etpl, 79
+    jmp ex1
+ex0: call x, etpl, 78
+ex1:
     mov s, 36
     call x, mark, s
     call x, blob, PUTIB, 82
@@ -593,9 +818,58 @@ ev: ge z, i, nd
     add i, i, 1
     jmp ev
 evd:
+    ld ur, G, 47
+    jz ur, evz
+    mov s, 51
+    call x, mark, s
+    call x, rtimg
+evz:
     mov s, 41
     call x, mark, s
     ret 0
+}
+
+; RT durum blogu goruntusu (bellegin altindaki RT bolgesinin ilk 64 + 2*olay sozcugu)
+func rtimg() {
+    ld v, G, 4
+    call x, eb64, v
+    mov z0, 0
+    call x, eb64, z0
+    mov v, -3750763034362895579
+    call x, eb64, v
+    call x, eb64, z0
+    call x, eb64, z0
+    call x, eb64, z0
+    call x, eb64, z0
+    call x, eb64, z0
+    ld v, G, 54
+    call x, eb64, v
+    ld v, G, 55
+    call x, eb64, v
+    ld v, G, 56
+    call x, eb64, v
+    ld nev, G, 57
+    call x, eb64, nev
+    mov v, 1099511628211
+    call x, eb64, v
+    mov v, -3750763034362895579
+    call x, eb64, v
+    mov i, 14
+ri: ge z, i, 64
+    jnz z, rid
+    call x, eb64, z0
+    addi i, i, 1
+    jmp ri
+rid: mov i, 0
+    shli nw, nev, 1
+re: ge z, i, nw
+    jnz z, red
+    add a, i, EV
+    ld v, a, 0
+    call x, eb64, v
+    addi i, i, 1
+    jmp re
+red: ret 0
 }
 
 func main() {
@@ -611,6 +885,10 @@ func main() {
     st e, G, 42
     add e, e, 8388608
     st e, G, 43
+    ld rw, G, 48
+    mul rw, rw, 8
+    add e, e, rw
+    st e, G, 53
     mov two, 2
     st two, G, 3
     call x, emit_all

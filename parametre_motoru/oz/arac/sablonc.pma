@@ -1,5 +1,5 @@
 ; sablonc.pma -- x86-64 sablon bildirimi (sablon.txt) -> sayi tablolari TPLS/TPL (sablon.awk yerine).
-; stdin: ops.h metni, "@@SABLON" satiri, sablon.txt. stdout: sozluk satirlari "TPLS ..." (74 baslangic, -1: tanimsiz) ve "TPL ..." (simge akisi, her sablon -1 ile biter).
+; stdin: ops.h metni, "@@SABLON" satiri, sablon.txt. stdout: sozluk satirlari "TPLS ..." (81 baslangic, -1: tanimsiz) ve "TPL ..." (simge akisi, her sablon -1 ile biter).
 ; Simge: iki haneli buyuk onaltilik = bayt; LDA(x)/LDC(x)/STA(x) ve FUELCHK makrolari; R_A.. I_A.. K_B MEMW ... (imm32, kod 256+), REL_* (kod 300+), IMM8C (320).
 memory 4194304
 entry main
@@ -9,9 +9,9 @@ space NML 128
 space START 128
 space TB 262144
 space G 16
-data IMMN = "R_A\0R_B\0R_C\0I_A\0I_B\0I_C\0K_B\0MEMW\0STKEND\0NREGS8\0NP8\0CNT\0MSG_DIV0\0MSG_OOB\0MSG_STACK\0MSG_DEPTH\0MSG_ALLOC\0RSBASE\0MBASE\0HEAP0\0DATAIMG\0ND\0HDR_ENTRY\0FILESZ\0MEMSZ\0FUEL0\0MSG_FUEL\0"
-data RELN = "REL_DIV0\0REL_OOB\0REL_STACK\0REL_DEPTH\0REL_ALLOC\0REL_PUTI\0REL_PUTC\0REL_TA\0REL_TB\0REL_FA\0REL_EXIT\0REL_ENTRY\0REL_FUEL\0"
-data XTRN = "host_putc\0host_puti\0host_putf\0host_getc\0host_present\0host_poll\0host_frame\0prologue\0exit0\0trap_div0\0trap_oob\0trap_stack\0trap_depth\0trap_alloc\0header\0jmp_back\0jz_back\0jnz_back\0trap_fuel\0"
+data IMMN = "R_A\0R_B\0R_C\0I_A\0I_B\0I_C\0K_B\0MEMW\0STKEND\0NREGS8\0NP8\0CNT\0MSG_DIV0\0MSG_OOB\0MSG_STACK\0MSG_DEPTH\0MSG_ALLOC\0RSBASE\0MBASE\0HEAP0\0DATAIMG\0ND\0HDR_ENTRY\0FILESZ\0MEMSZ\0FUEL0\0MSG_FUEL\0LIMRT\0RTW\0RTNEG\0STK4\0R_B8\0R_B16\0RTIMG\0RTNW\0"
+data RELN = "REL_DIV0\0REL_OOB\0REL_STACK\0REL_DEPTH\0REL_ALLOC\0REL_PUTI\0REL_PUTC\0REL_TA\0REL_TB\0REL_FA\0REL_EXIT\0REL_ENTRY\0REL_FUEL\0REL_EXITC\0REL_RTEND\0"
+data XTRN = "host_putc\0host_puti\0host_putf\0host_getc\0host_present\0host_poll\0host_frame\0prologue\0exit0\0trap_div0\0trap_oob\0trap_stack\0trap_depth\0trap_alloc\0header\0jmp_back\0jz_back\0jnz_back\0trap_fuel\0ldp\0stp\0call_p\0host_sysw\0exitc\0exitc_rt\0prologue_rt\0"
 data KW1 = "IMM8C\0FUELCHK\0"
 
 func err(code) {
@@ -291,7 +291,7 @@ nm1b: mov idx, j
     jmp nm4
 nm2: addi j, j, 1
     jmp nm1
-nm3: call r, findn, XTRN, 19, ts, tl
+nm3: call r, findn, XTRN, 26, ts, tl
     lti z, r, 0
     jnz z, nm3a
     addi idx, r, 55
@@ -345,7 +345,7 @@ out: ; ---- cikti
     host putc, 76
     host putc, 83
     mov j, 0
-o1: gei z, j, 74
+o1: gei z, j, 81
     jnz z, o2
     host putc, 32
     add a, j, START
@@ -467,13 +467,13 @@ t2: ; iki haneli onaltilik bayt
     call x, push, v
     ret 0
 t3: ; imm32 / rel32 adlari
-    call r, findn, IMMN, 27, o, l
+    call r, findn, IMMN, 35, o, l
     lti z, r, 0
     jnz z, t4
     addi code, r, 256
     call x, push, code
     ret 0
-t4: call r, findn, RELN, 13, o, l
+t4: call r, findn, RELN, 15, o, l
     lti z, r, 0
     jnz z, t5
     addi code, r, 300

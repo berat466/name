@@ -233,11 +233,8 @@ for kk in 1:0 12:0 14:0 30:0 60:0 13:13; do k=${kk%%:*}; ml=${kk##*:}
   for d in $((lo - 1)) $lo $hi $((hi + 1)); do mk $d; cmpone "esik:k=$k:derinlik=$d" $T/st.pmb $T/bos; done
 done
 # ---- 1d) desteklenmeyen girdiler: uretici reddeder ve stdout BOS kalir (kismi ELF yok)
-for t in "fadd x, a, b" "host present, a, b, c" "host putf, a" "host x, poll" "host x, frame"; do
-  case "$t" in host\ present*) body="ldi a, 1
-  ldi b, 1
-  ldi c, 1
-  host r, present, a, b, c";; host\ putf*) body="ldi a, 1
+for t in "fadd x, a, b" "host putf, a"; do
+  case "$t" in host\ putf*) body="ldi a, 1
   host putf, a";; host\ x*) body="$t";; *) body="ldi a, 1
   ldi b, 2
   $t";; esac

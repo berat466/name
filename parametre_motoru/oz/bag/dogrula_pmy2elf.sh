@@ -2,11 +2,22 @@
 # UCTAN UCA BAGIMSIZ URETIM: yeni bir PMY1 tanimindan, YALNIZ ELF araclarla (yap.elf -> asm.elf -> coz.elf -> valid.elf -> gen2.elf; pm/g++/awk/sed yok)
 # bagimsiz ELF uretilir; ELF'in davranisi `pm run tanim.pmy` (C++ yorumlayici, YALNIZ referans) ile ayni olmali.
 # Kullanim: dogrula_pmy2elf.sh [pm] [rastgele_model_sayisi]   (BAG: arac ELF dizini; yoksa kur.sh ile gecici kurulur)
-PM=${1:-../../pm}; NR=${2:-150}; D=$(cd "$(dirname "$0")" && pwd); cd "$D"; PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); ok=0; bad=0; uret=0; ret=0; skip=0
+PM=${1:-../../pm}; NR=${2:-150}; D=$(cd "$(dirname "$0")" && pwd); cd "$D"; PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); ok=0; bad=0; uret=0; ret=0; skip=0; gk=0
 pass() { ok=$((ok+1)); }; fail() { bad=$((bad+1)); echo "HATA: $1"; }
 if [ -z "$BAG" ]; then ./kur.sh $PM $T/bag > /dev/null || { echo "kur.sh basarisiz"; exit 1; }; BAG=$T/bag; fi; export BAG
 mkdir -p $T/bin; for c in bash cat chmod cmp cp dirname ls mkdir mktemp realpath rm stat timeout head; do p=$(command -v $c) && ln -sf $p $T/bin/$c; done
 PF() { env -i PATH=$T/bin BAG="$BAG" bash "$@"; }       # pm/g++/awk/sed erisilemez ortam
+gr() {   # grafik: ayni model, ELF secenekleri (olay, azami kare, ascii, kare raporu, son kare) = pm run secenekleri
+  printf '0 1\n2 5\n4 7\n' > $T/ev.txt
+  ONEK="-2 3 0 1 2 5 4 7 -3 5 -4 4 -5 3" PF ./zincir.sh "$2" $T/g.elf > /dev/null 2>&1 || { fail "$1: grafik ELF uretilemedi"; return; }
+  rm -f $T/pm.ppm $T/g.ppm
+  (ulimit -v 900000; timeout 10 $PM run "$2" --max-kare 5 --ascii 4 --girdi $T/ev.txt --kare-rapor --ekran $T/pm.ppm < /dev/null > $T/go1 2> $T/ge1); g1=$?
+  (ulimit -v 900000; timeout 10 $T/g.elf < /dev/null > $T/go2 2> $T/ge2 3> $T/g.ppm); g2=$?
+  [ -s $T/g.ppm ] || rm -f $T/g.ppm
+  if [ $g1 = 124 ] || [ $g1 = 134 ] || grep -q "TRAP: FUEL" $T/ge1; then return; fi
+  gk=$((gk+1)); grep -a '^ekran:' $T/ge1 > $T/gr1; grep -a '^ekran:' $T/ge2 > $T/gr2
+  [ $g1 = $g2 ] && cmp -s $T/go1 $T/go2 && cmp -s $T/gr1 $T/gr2 && [ "$(grep -a '^TRAP:' $T/ge1 | cut -d" " -f1-2)" = "$(grep -a '^TRAP:' $T/ge2 | cut -d" " -f1-2)" ] && { [ ! -e $T/pm.ppm ] && [ ! -e $T/g.ppm ] || cmp -s $T/pm.ppm $T/g.ppm; } && pass || fail "$1: grafik davranis farkli (pm rc=$g1, elf rc=$g2; $(head -c 80 $T/gr1) <> $(head -c 80 $T/gr2))"
+}
 one() {   # etiket tanim.pmy
   IFS= read -r -n 4 H0 < "$2"; [ "$H0" = "PMY1" ] || return
   rm -f $T/u.elf; PF ./zincir.sh "$2" $T/u.elf > $T/z.out 2>&1; rz=$?
@@ -21,6 +32,7 @@ one() {   # etiket tanim.pmy
   if [ $r1 = 124 ] || [ $r1 = 134 ] || grep -q "TRAP: FUEL" $T/e1; then skip=$((skip+1)); return; fi
   (ulimit -v 900000; timeout 10 $T/u.elf < /dev/null > $T/o2 2> $T/e2); r2=$?
   [ $r1 = $r2 ] && cmp -s $T/o1 $T/o2 && pass || fail "$1: davranis farkli (pm rc=$r1, elf rc=$r2)"
+  gr "$1" "$2"
   # uretilen ELF'in PMB1'i C++ zincirinin PMB1'iyle ayni mi? (yap.elf|asm.elf == pm yapisal -o)
   (ulimit -v 900000; $BAG/yap.elf < "$2" 2>/dev/null | $BAG/asm.elf > $T/mine.pmb 2>/dev/null); cmp -s $T/ref.pmb $T/mine.pmb && pass || fail "$1: PMB1 farkli (yap.elf|asm.elf != pm yapisal)"
 }
@@ -36,4 +48,4 @@ echo "uygulama sayisi: $n"
 # ---- 3) rastgele PMY1 modelleri (metin cikisli olanlar ELF olur; ekran/girdi/kayan nokta olanlar reddedilir)
 for s in $(seq 1 $NR); do awk -v seed=$s -f $D/../yap/rastgele_pmy.awk | awk -f $R/ai_testi3/paketle.awk > $T/r.pmy 2>/dev/null || continue; one "rastgele-$s" $T/r.pmy; done
 rm -rf $T
-echo "uctan uca (PMY1 -> ELF, yalniz ELF araclar): gecen $ok, kalan $bad (ELF uretilen $uret, reddedilen $ret, zaman asimi nedeniyle atlanan $skip)"; [ $bad = 0 ]
+echo "uctan uca (PMY1 -> ELF, yalniz ELF araclar): gecen $ok, kalan $bad (ELF uretilen $uret, reddedilen $ret, zaman asimi nedeniyle atlanan $skip; grafik secenekli karsilastirma $gk)"; [ $bad = 0 ]

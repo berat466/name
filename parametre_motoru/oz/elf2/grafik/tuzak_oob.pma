@@ -1,0 +1,16 @@
+; iki kare sunduktan sonra OOB tuzagi: kare raporu + son kare + tuzak
+memory 1000
+func main() {
+    mov i, 0
+    st i, i, 1
+    host r, present, 1, 4, 4
+    mov v, 7777
+    st v, i, 2
+    host r, present, 1, 4, 4
+    host puti, r
+    mov q, 5000
+    ld z, q, 0
+    host puti, z
+    ret 0
+}
+entry main
