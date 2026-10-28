@@ -10,7 +10,7 @@ mut() {   # etiket ifade
 }
 mut tie_cift       's/andi t, m, 1\n    jz t, nrd/andi t, m, 1\n    jz zr, nrd/'
 mut tie_yapisik    's/    jnz sb, up\n/    jmp nrd\n/'
-mut alt_normal     's/gei z, eb, -1022\n    jnz z, i8/gei z, eb, -1021\n    jnz z, i8/'
+mut alt_normal     's/mov t, -1022\n    sub t, t, eb/mov t, -1021\n    sub t, t, eb/'
 mut tasma_esik     's/gti z, mag, 309/gti z, mag, 308/'
 mut sifir_esik     's/lti z, mag, -323/lti z, mag, -322/'
 mut drop_sinir     's/gei z, drop, 64/gei z, drop, 60/'
