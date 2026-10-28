@@ -1,6 +1,6 @@
 # Parametre Motoru — Şartname (v0.1)
 
-Durum: **Aşama 1 uygulandı** (bölüm 1–8, 10). Bölüm 9 ve 11 yalnızca tasarım notudur, henüz kodlanmadı.
+Durum: **Aşama 1 + kod üretimi sadeleştirmesi uygulandı** (bölüm 1–8, 13). Bölüm 9–12 tasarım notu / yol haritası, henüz kodlanmadı.
 
 ## 0. Amaç ve ilkeler
 - Motor sıradan bir C++ programıdır. Sinir ağı, öğrenilmiş ağırlık, vektör uzayı yoktur.
@@ -16,14 +16,14 @@ Durum: **Aşama 1 uygulandı** (bölüm 1–8, 10). Bölüm 9 ve 11 yalnızca ta
 
 ## 2. Yürütme modeli
 - Yazmaç makinesi. Komut: `op` + en çok 3 operand.
-- **Pencereli çağrı:** `call` çağıranın `w` numaralı yazmacından başlayan pencereyi çağrılanın 0. yazmacı yapar. Argümanlar pencereye kopyalanır, dönüş değeri pencerenin ilk yazmacına yazılır. Çağrılanın parametre dışı yazmaçları sıfırlanır (belirli davranış).
-- **Yakıt:** her komut 1 birim yakıt harcar; bitince `TRAP: FUEL`. Böylece her program sonlanır ya da tuzağa düşer.
+- **Pencereli çağrı:** `call` çağıranın `w` numaralı yazmacından başlayan pencereyi çağrılanın 0. yazmacı yapar. Argümanlar pencereye kopyalanır, dönüş değeri pencerenin ilk yazmacına yazılır. Anlam: çağrılanın parametre dışı yazmaçları sıfırdır. Yükleyici **kesin atama** ispatlarsa (hiçbir yazmaç yazılmadan okunmuyor; çağrıdan sonra pencere ve ötesi tanımsız sayılır) VM bu sıfırlamayı atlar, çünkü gözlemlenemez; ispat yoksa sıfırlama korunur (bölüm 13).
+- **Yakıt:** her komut 1 birim yakıt harcar; bitince `TRAP: FUEL`. Böylece her program sonlanır ya da tuzağa düşer. **Not:** yakıt, üretilen kodun çalışan komut sayısıdır; kod üretimi sadeleşince aynı program daha az yakıt harcar (fib35: −%31,6), yani yakıt değeri derleyici sürümüne bağlıdır. Bu kural değiştirilmedi; karar bekliyor (`KOD_URETIMI_RAPORU.md`, "Karar bekleyenler").
 - **Tuzaklar** (belirli, tanımsız davranış yok): `DIV0`, `OOB`, `STACK`, `DEPTH`, `FUEL`, `ALLOC`.
 - Tamsayı: iki tamamlayıcı sarma; `INT64_MIN / -1` = `INT64_MIN`, `% -1` = 0; kaydırma miktarı 63 ile maskelenir. `f2i`: NaN→0, taşma→doygunluk.
 - Ondalık: IEEE-754, FMA birleştirme yok, hızlı-matematik yok.
 
-## 3. Komut kümesi (41 komut)
-`mov ldi ldk` · `add sub mul div mod and or xor shl shr sar` · `eq ne lt le` (+ `gt ge` sözdizimsel kısaltma) · `neg not` · `fadd fsub fmul fdiv fneg fsqrt feq flt fle` (+ `fgt fge`) · `i2f f2i` · `jmp jz jnz call ret halt` · `ld st alloc` · `host`.
+## 3. Komut kümesi (55 komut)
+`mov ldi ldk` · `add sub mul div mod and or xor shl shr sar` · `eq ne lt le` (+ `gt ge` sözdizimsel kısaltma) · `neg not` · `fadd fsub fmul fdiv fneg fsqrt feq flt fle` (+ `fgt fge`) · `i2f f2i` · `jmp jz jnz call ret halt` · `ld st alloc` · `host` · doğrudan-operand biçimleri (32 bit işaretli sabit son operandda): `addi muli andi shli shri sari divi modi eqi nei lti lei gti gei` (14; `divi/modi` sabiti 0 ve -1 olamaz).
 Komut tablosunun tek kaynağı `src/ops.h`; ayrıştırıcı, ikili kodlayıcı, doğrulayıcı, döküm ve VM buradan beslenir.
 
 ## 4. Host arayüzü (sistem çağrıları)
@@ -47,7 +47,7 @@ Sabitler (tamsayı `42`, `0x1f`, `'A'`; ondalık `2.5`, `1e-3`) her operandda ya
 `"PMB1"`, bayrak, bellek, giriş, sabit havuzu, veri, bss, işlevler (`parametre, yazmaç, komut sayısı`, komutlar), isteğe bağlı ad bölümü (`--strip` ile atılır). Tüm tamsayılar LEB128; işaretli değerler zigzag; atlama hedefleri **göreli**. Aynı program her zaman aynı baytları üretir (kanonik).
 
 ## 7. Doğrulama
-Yükleyici ikiliyi çözerken ve çözdükten sonra denetler: başlık, boyut sınırları, komut kodu, yazmaç/etiket/işlev/sabit/host indeksleri, çağrı penceresinin yazmaçlara sığması, her işlevin `jmp/ret/halt` ile bitmesi. Doğrulamayı geçen program VM'i çökertemez; kalan hatalar tuzak olarak bildirilir. (Ölçüm: bölüm 12.)
+Yükleyici ikiliyi çözerken ve çözdükten sonra denetler (doğrudan-operand `divi/modi` sabiti 0/-1 ise reddedilir): başlık, boyut sınırları, komut kodu, yazmaç/etiket/işlev/sabit/host indeksleri, çağrı penceresinin yazmaçlara sığması, her işlevin `jmp/ret/halt` ile bitmesi. Doğrulamayı geçen program VM'i çökertemez; kalan hatalar tuzak olarak bildirilir. (Ölçüm: bölüm 12.)
 
 ## 8. Üç koşulun gerilimi ve çözüm yönü
 | Koşul | İster | Çatışma |
@@ -71,5 +71,13 @@ C++ çekirdek tamamen ortadan kalkmaz (evrensel yürütücü + host arayüzü ge
 ## 11. Bildirimsel ilişki katmanı — *tasarım notu, kodlanmadı*
 Kural/ilişki tabanlı kısım (düzen, kısıt, veri akışı) zorunlu çekirdeğin **üstünde** olacak; saf bildirimsel sistem algoritmik işlerde yavaş kalır. Hangi biçimcilik (veri akışı grafı, yeniden yazma kuralları, ilişkisel sorgu) seçileceği açık sorudur.
 
-## 12. Ölçütler (Aşama 1 sonuçları `RAPOR.md`'de)
+## 12. Ölçütler (Aşama 1 sonuçları `RAPOR.md`, kod üretimi `KOD_URETIMI_RAPORU.md`)
 bayt boyutu · adım/s · yerel C++ karşılığına oran · rastgele bozulmada geçerlilik oranı · çökme sayısı · (sonra) AI üretim başarı oranı · (sonra) kendini yenileme bayt eşitliği.
+
+## 13. Kod üretimi sadeleştirmeleri (uygulandı)
+Yükleyici/ayrıştırıcı, davranışı değiştirmeden şunları yapar (ölçüm: `KOD_URETIMI_RAPORU.md`):
+1. **Doğrudan-operand:** son operand (ya da değişmeli işlemde ilk operand) 32 bite sığan sabitse/data adresiyse `addi muli andi eqi nei lti lei gti gei shli shri sari divi modi` kullanılır; `sub x, k` → `addi x, -k`; `lt/le/gt/ge` sabit solda ise yön çevrilir. 32 bit dışı sabit ya da `div/mod` 0/-1 yazmaç biçiminde kalır.
+2. **Sabit yükleme:** `mov d, k`, `ret k`, `call/host` argümanı `k` doğrudan yüklenir (ön hazırlık yazmacı üretilmez). Diğer sabitler (ör. ondalık, `st` değeri) işlev girişinde bir kez yazmaca yüklenir.
+3. **Çağrı penceresi:** tek yazılıp tek okunan, hemen çağrı argümanına kopyalanan geçici doğrudan pencereye yazılır; `mov x, W` ardından `mov W, x` ve hiç okunmayan çağrı sonucu kopyası silinir; kendine kopya silinir.
+4. **Sıfırlama atlama:** kesin atama analizi (`analyze_program`): bütün işlevlerde her yazmaç okunmadan önce her yoldan yazılmışsa `zero_free` olur. Bu bayrak **ikiliye yazılmaz**, yüklenirken hesaplanır; ikili biçim ve anlam değişmez.
+Yapılmayanlar (ölçümle gerekçe çıkmadı ya da mimariyi büyütür): ortak alt ifade, sabit katlama, yazmaç yeniden kullanımı/renklendirme, karşılaştır-ve-atla birleşik komutu.
