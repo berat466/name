@@ -9,14 +9,15 @@ PM=${1:-../../pm}; NR=${2:-150}; NV=${3:-200}; D=$(cd "$(dirname "$0")" && pwd);
 ok=0; bad=0; n=0; unsup=0; skip=0; traps=0
 pass() { ok=$((ok+1)); }; fail() { bad=$((bad+1)); echo "HATA: $1"; }
 [ -n "$GEN2" ] || { $PM asm gen2.pma -o $T/g.pmb --strip > /dev/null 2>&1 && cmp -s $T/g.pmb gen2.pmb; } && pass || fail "gen2.pmb guncel degil (uret.sh)"
-G2=${GEN2:-$D/gen2.pmb}; GEN="$PM run $G2"
+G2=${GEN2:-$D/gen2.pmb}; GEN="${GENELF:-$PM run $G2}"
 lim() { (ulimit -v 700000; timeout 20 "$@"); }
 cmpone() {   # etiket pmb stdin
   $PM liste $2 > $T/l.txt 2>/dev/null || { fail "$1: pm liste"; return; }
-  if ! lim $GEN < $T/l.txt > $T/p.elf 2>/dev/null; then unsup=$((unsup+1)); [ -s $T/p.elf ] && fail "$1: reddedilen girdide cikti var"; return; fi
+  if [ -n "$FUELN" ]; then { printf -- "-1 %s\n" $FUELN; cat $T/l.txt; } > $T/l2.txt; else cp $T/l.txt $T/l2.txt; fi
+  if ! lim $GEN < $T/l2.txt > $T/p.elf 2>/dev/null; then unsup=$((unsup+1)); [ -s $T/p.elf ] && fail "$1: reddedilen girdide cikti var"; return; fi
   chmod +x $T/p.elf
-  lim $PM run $2 < $3 > $T/o1 2> $T/e1; r1=$?
-  if grep -q "TRAP: FUEL" $T/e1 || [ $r1 = 124 ]; then skip=$((skip+1)); return; fi
+  lim $PM run $2 ${FUELN:+--fuel $FUELN} < $3 > $T/o1 2> $T/e1; r1=$?
+  if { [ -z "$FUELN" ] && grep -q "TRAP: FUEL" $T/e1; } || [ $r1 = 124 ]; then skip=$((skip+1)); return; fi
   lim $T/p.elf < $3 > $T/o2 2> $T/e2; r2=$?
   n=$((n+1)); [ $r1 = 2 ] && traps=$((traps+1))
   if [ $r1 = $r2 ] && cmp -s $T/o1 $T/o2; then pass; else fail "$1: pm rc=$r1 elf rc=$r2 $(cmp $T/o1 $T/o2 2>&1 | head -c 60)"; return; fi
@@ -243,6 +244,88 @@ for t in "fadd x, a, b" "host present, a, b, c" "host putf, a" "host x, poll" "h
   printf 'memory 16\nfunc main() {\n  %s\n}\n' "$body" > $T/u.pma; $PM asm $T/u.pma -o $T/u.pmb --strip > /dev/null 2>&1 || { fail "desteklenmeyen ornek derlenmedi: $t"; continue; }
   $PM liste $T/u.pmb > $T/u.l; lim $GEN < $T/u.l > $T/u.elf 2>/dev/null; rc=$?; [ $rc != 0 ] && [ ! -s $T/u.elf ] && pass || fail "desteklenmeyen '$t': rc=$rc cikti=$(stat -c %s $T/u.elf)"
 done
+# ---- 1f) YAKIT (FUEL): ELF'e "-1 N" oneki ile yakit verilir; `pm run --fuel N` ile ayni stdout / cikis kodu / tuzak adi (tuzak noktasi dahil)
+fcount=0
+for f in $(find $R/tests $R/uygulamalar $R/bench -name '*.pma' 2>/dev/null | sort | head -45); do $PM asm $f -o $T/k.pmb --strip > /dev/null 2>&1 || continue
+  for N in 1 3 50 1234; do FUELN=$N cmpone "yakit:$f:N=$N" $T/k.pmb $T/bos; fcount=$((fcount+1)); done; done
+for s in $(seq 1 ${NF:-100}); do awk -v seed=$s -f rastgele2.awk > $T/r.pma; $PM asm $T/r.pma -o $T/r.pmb --strip > /dev/null 2>&1 || continue
+  head -c $((s % 37)) $T/r.pma > $T/in.txt; N=$((1 + (s * 37) % 3000)); FUELN=$N cmpone "yakit-rastgele2-$s:N=$N" $T/r.pmb $T/in.txt; fcount=$((fcount+1)); done
+fprog() { cat > $T/h.pma; $PM asm $T/h.pma -o $T/h.pmb --strip > /dev/null 2>$T/ae || { fail "$1 derlenmedi: $(head -c 100 $T/ae)"; return; }; for N in "${@:2}"; do FUELN=$N cmpone "yakit-elle:$1:N=$N" $T/h.pmb $T/bos; fcount=$((fcount+1)); done; }
+fprog jmp_geri 0 1 2 5 100 <<'EOP'
+func main() {
+    ldi i, 0
+L:  addi i, i, 1
+    host puti, i
+    jmp L
+}
+EOP
+fprog jz_jnz_geri 1 2 3 9 77 <<'EOP'
+func main() {
+    ldi i, 5
+    ldi z, 0
+A:  addi i, i, 1
+    jz z, A
+}
+EOP
+fprog jnz_geri 1 2 3 9 77 <<'EOP'
+func main() {
+    ldi i, 5
+A:  addi i, i, -1
+    host puti, i
+    jnz i, A
+    host puti, 99
+}
+EOP
+fprog ileri_atlama_yakit_harcamaz 0 1 2 <<'EOP'
+func main() {
+    ldi i, 5
+    jmp A
+A:  jnz i, B
+    host puti, 1
+B:  jz i, C
+    host puti, 2
+C:  halt
+}
+EOP
+fprog ozyineleme_sonsuz_yakit_once 1 10 1000 65000 65535 65536 70000 200000 <<'EOP'
+func f(n) {
+    addi m, n, 1
+    call r, f, m
+    ret r
+}
+func main() {
+    call r, f, 0
+    host puti, r
+}
+EOP
+fprog host_dongusu 0 1 2 10 500 <<'EOP'
+func main() {
+L:  host c, getc
+    host puti, c
+    jmp L
+}
+EOP
+fprog yalniz_host 1 2 3 4 <<'EOP'
+func main() {
+    host puti, 1
+    host puti, 2
+    host puti, 3
+    host puti, 4
+    host puti, 5
+}
+EOP
+fprog yalniz_cagri 0 1 2 3 <<'EOP'
+func g() {
+    ret 1
+}
+func main() {
+    call a, g
+    call b, g
+    call c, g
+    host puti, c
+}
+EOP
+echo "yakit karsilastirmalari: $fcount"
 # ---- 2) bagimsizlik
 $PM asm $R/tests/collatz.pma -o $T/c.pmb --strip > /dev/null; $PM liste $T/c.pmb > $T/c.l; lim $GEN < $T/c.l > $T/c.elf; chmod +x $T/c.elf
 readelf -lW $T/c.elf 2>/dev/null | grep -qE "INTERP|DYNAMIC" && fail "ELF dinamik/yorumlayicili" || pass

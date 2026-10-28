@@ -6,7 +6,7 @@ ok=0; bad=0; acc=0; rej=0; flt=0
 pass() { ok=$((ok+1)); }; fail() { bad=$((bad+1)); echo "HATA: $1"; }
 AS="$D/asm.pmb"
 [ -n "$ASMPMB" ] && AS=$ASMPMB
-runasm() { (ulimit -v 900000; timeout 30 $PM run $AS < $1 > $T/mine.pmb 2> $T/mine.err); }
+runasm() { if [ -n "$ASMELF" ]; then (ulimit -v 900000; timeout 30 $ASMELF < $1 > $T/mine.pmb 2> $T/mine.err); else (ulimit -v 900000; timeout 30 $PM run $AS < $1 > $T/mine.pmb 2> $T/mine.err); fi; }
 cmpsrc() {   # etiket kaynak  (ondalik sabit iceren kaynaklar bilinen farktir, sayilir)
   $PM asm $2 -o $T/ref.pmb --strip > /dev/null 2>&1; rr=$?
   runasm $2; rm_=$?

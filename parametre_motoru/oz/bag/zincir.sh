@@ -1,7 +1,7 @@
 #!/bin/bash
 # pm ve g++ OLMADAN arac zinciri: x.pmb --coz.elf--> sayi listesi --valid.elf--> "1 Z" ise --gen2.elf--> bagimsiz ELF.
 # Dogrulayici reddederse (ya da coz.elf bicimi reddederse) ELF URETILMEZ. Kullanim: zincir.sh girdi.pmb cikti.elf
-D=$(cd "$(dirname "$0")" && pwd); IN=${1:?girdi.pmb}; OUT=${2:?cikti.elf}; L=$OUT.liste.$$
+D=${BAG:-$(cd "$(dirname "$0")" && pwd)}; IN=${1:?girdi.pmb}; OUT=${2:?cikti.elf}; L=$OUT.liste.$$
 trap 'rm -f $L' EXIT
 (ulimit -v 700000; $D/coz.elf < "$IN" > $L 2>/dev/null) || { echo "zincir: cozucu reddetti (bicim)" >&2; rm -f "$OUT"; exit 1; }
 read -r V < <( (ulimit -v 700000; timeout 20 $D/valid.elf < $L 2>/dev/null) )

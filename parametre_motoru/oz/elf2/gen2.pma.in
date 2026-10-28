@@ -100,6 +100,19 @@ n1: add a, c, T
 }
 
 func parse() {
+    ld nt0, G, 0
+    jnz nt0, pf0
+    call x, fail
+pf0: ld t0, T, 0
+    eq z, t0, -1
+    jnz z, pf1
+    mov fu, 4000000000
+    st fu, G, 44
+    jmp pf2
+pf1: call x, nx
+    call fu, nx
+    st fu, G, 44
+pf2:
     call fl, nx
     call mem, nx
     st mem, G, 4
@@ -328,11 +341,21 @@ v23: eq z, k, 23
     jz z, v24
     ld r, G, 41
     ret r
-v24: ld r, G, 43
+v24: eq z, k, 24
+    jz z, v25
+    ld r, G, 43
     ld m, G, 4
     mul m, m, 8
     add r, r, m
     sub r, r, 4194304
+    ret r
+v25: eq z, k, 25
+    jz z, v26
+    ld r, G, 44
+    ret r
+v26: ld r, G, 38
+    add r, r, 57
+    add r, r, 4194304
     ret r
 }
 
@@ -341,7 +364,11 @@ func target(k) {
     ld a, G, 20
     ld b, G, 21
     ld fb, G, 23
-    lt z, k, 7
+    eq z, k, 12
+    jz z, tk0
+    ld r, G, 46
+    ret r
+tk0: lt z, k, 7
     jz z, t7
     add t, k, 31
     add t, t, G
@@ -486,6 +513,20 @@ ei: ge z, gi, nxt
     ld h, G, 20
     add op, h, 55
 noh:
+    lti z, op, 31
+    jnz z, nb
+    gti z, op, 33
+    jnz z, nb
+    ld tg, G, 20
+    eq z, op, 31
+    jnz z, hv
+    ld tg, G, 21
+hv: sub pcl, gi, fb
+    le z, tg, pcl
+    jz z, nb
+    sub op, op, 31
+    add op, op, 70
+nb:
     call x, etpl, op
     add gi, gi, 1
     jmp ei
@@ -511,6 +552,9 @@ efd:
     mov s, 35
     call x, mark, s
     call x, etpl, 68
+    mov s, 46
+    call x, mark, s
+    call x, etpl, 73
     mov s, 36
     call x, mark, s
     call x, blob, PUTIB, 82
@@ -519,7 +563,7 @@ efd:
     call x, blob, PUTCB, 32
     mov s, 38
     call x, mark, s
-    call x, blob, MSGS, 57
+    call x, blob, MSGS, 68
     mov s, 39
     call x, mark, s
     ld nc, G, 6
