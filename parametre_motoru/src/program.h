@@ -49,6 +49,7 @@ std::string disassemble(const Program& p);
 // liste.cpp: PMB1 tablosunun duz sayi listesi (referans/dogrulama araci)
 std::string program_to_liste(const Program& p);
 Program liste_to_program(const std::string& text);
+std::string liste_dogrula(const std::string& text);   // referans dogrulayici: "1 Z\n" ya da "0\n"
 
 // vm.cpp
 enum Trap { T_OK = 0, T_DIV0, T_OOB, T_STACK, T_DEPTH, T_FUEL, T_ALLOC, T_COUNT };

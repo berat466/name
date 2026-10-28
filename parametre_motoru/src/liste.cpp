@@ -57,3 +57,71 @@ Program liste_to_program(const std::string& text) {
   if (is >> t) throw PmError("liste: sonunda fazla simge");
   return p;
 }
+
+// ---- Dogrulayici referansi (pm listedogrula): liste bicimini KATI cozer (parse_program'in sinir denetimleriyle ayni), sonra
+// validate_program + analyze_program. Cikti: "1 Z\n" (Z = zero_free) ya da "0\n". Parametre tabanli oz/dogr/valid.pmb ile karsilastirilir.
+// Simge: [-]rakam+ (bosluk: 9..13, 32). Isaretsiz alan: '-' yok, <= 2^64-1; isaretli alan: [-2^63, 2^63-1] ("-0" gecerli).
+std::string liste_dogrula(const std::string& text) {
+  try {
+    size_t pos = 0; const size_t n = text.size();
+    auto isws = [](unsigned char c) { return c == 32 || (c >= 9 && c <= 13); };
+    auto tok = [&](bool& neg, unsigned __int128& mag) {   // sonraki simge; yoksa/gecersizse atar
+      while (pos < n && isws(text[pos])) pos++;
+      if (pos >= n) throw PmError("liste: beklenmedik sonu");
+      neg = false; mag = 0; size_t nd = 0;
+      if (text[pos] == '-') { neg = true; pos++; }
+      for (; pos < n && !isws(text[pos]); pos++) {
+        if (text[pos] < '0' || text[pos] > '9') throw PmError("liste: gecersiz simge");
+        mag = mag * 10 + (text[pos] - '0'); nd++;
+        if (mag > ((unsigned __int128)1 << 64)) throw PmError("liste: sayi cok buyuk");
+      }
+      if (nd == 0) throw PmError("liste: gecersiz simge");
+    };
+    auto U = [&](uint64_t lim) -> uint64_t {   // isaretsiz, 0..lim
+      bool ng; unsigned __int128 m; tok(ng, m);
+      if (ng || m > lim) throw PmError("liste: isaretsiz alan sinir disi");
+      return uint64_t(m);
+    };
+    auto C = [&]() -> uint64_t {   // sabit: isaretsiz 64 bit
+      bool ng; unsigned __int128 m; tok(ng, m);
+      if (ng || m > UINT64_MAX) throw PmError("liste: sabit sinir disi");
+      return uint64_t(m);
+    };
+    auto S = [&]() -> int64_t {   // isaretli 64 bit
+      bool ng; unsigned __int128 m; tok(ng, m);
+      if (ng) { if (m > ((unsigned __int128)1 << 63)) throw PmError("liste: isaretli alan sinir disi"); return int64_t(0 - uint64_t(m)); }
+      if (m > uint64_t(INT64_MAX)) throw PmError("liste: isaretli alan sinir disi");
+      return int64_t(m);
+    };
+    // Dogrulayicinin sabit sinirlari (524288 simge) bu referansta da uygulanir: simge sayisini bastan say.
+    { size_t cnt = 0, q = 0; while (true) { while (q < n && isws(text[q])) q++; if (q >= n) break; cnt++; while (q < n && !isws(text[q])) q++; } if (cnt > 524288) throw PmError("liste: simge sayisi sinirda"); }
+    Program p;
+    p.has_names = U(1) != 0;
+    p.mem_words = U(Limits::kMaxMemWords); if (p.mem_words == 0) throw PmError("liste: bellek 0");
+    p.entry = uint32_t(U(Limits::kMaxFuncs - 1));
+    for (uint64_t c = U(524288), i = 0; i < c; i++) p.consts.push_back(C());
+    for (uint64_t c = U(524288), i = 0; i < c; i++) p.data.push_back(S());
+    p.bss = U(Limits::kMaxMemWords); if (p.bss > p.mem_words) throw PmError("liste: bss bellekten buyuk");
+    uint64_t nf = U(Limits::kMaxFuncs); p.funcs.resize(nf);
+    for (Func& f : p.funcs) {
+      uint64_t np = U(Limits::kMaxRegs), nr = U(Limits::kMaxRegs), nc = U(Limits::kMaxCode);
+      if (np > nr) throw PmError("liste: np > nr");
+      f.nparams = uint32_t(np); f.nregs = uint32_t(nr);
+      for (uint64_t i = 0; i < nc; i++) {
+        Ins in; in.a = in.b = in.c = 0;
+        uint64_t op = U(OP_COUNT - 1); in.op = uint8_t(op); const OpInfo& oi = kOpInfo[op];
+        for (int j = 0; j < oi.nops; j++) {
+          int64_t v = S(); if (v < INT32_MIN || v > INT32_MAX) throw PmError("liste: operand sinir disi");
+          (j == 0 ? in.a : j == 1 ? in.b : in.c) = int32_t(v);
+        }
+        f.code.push_back(in);
+      }
+    }
+    if (p.has_names) for (Func& f : p.funcs) { for (uint64_t len = U(256), i = 0; i < len; i++) f.name.push_back(char(U(255))); }
+    while (pos < n && isws(text[pos])) pos++;
+    if (pos < n) throw PmError("liste: sonunda fazla simge");
+    validate_program(p);
+    analyze_program(p);
+    return std::string("1 ") + (p.zero_free ? "1" : "0") + "\n";
+  } catch (PmError&) { return "0\n"; }
+}

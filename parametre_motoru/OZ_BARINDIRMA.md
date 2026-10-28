@@ -74,7 +74,27 @@ Her adımda **ölçü**: bayt/çıktı eşitliği (otomatik, ajan yok), hız (pa
 - Test kapsamı: rastgele program üreticisi yalnızca desteklenen altkümeden üretir; stdin her zaman boş (getc desteklenmiyor); OOB tuzağı rastgele kümede çıkmıyor, yalnızca `trap_oob.pma` ile sınandı [Muhtemel yetersiz kapsam].
 - Bulunan 3 üretici hatası düzeltildi (başlık çıktısı, `j==2` işlenen yazımı, `sayi` `-` bloğu); bunlar farksal test olmadan fark edilmezdi.
 
-**Sıradaki adım (kullanıcı sırası):** PMB1 doğrulayıcısını (`validate_program` + analiz) PMY1'e taşımak; ardından makine kodu üretici (bu fizibilite onun altkümesidir), birleştirme, kendi yeni sürümünü üretme, C++ önyükleme bağımlılığını kaldırma.
+**Sıradaki adım (kullanıcı sırası):** doğrulayıcı + analiz taşındı (§3c); sırada bağımsız ELF üreticisini genişletmek (call, alloc, getc/G-Ç), sonra üreticiyi `pm`'siz çalıştırmak.
+
+## 3c. PMB1 doğrulayıcı + analiz parametre tablosunda (`oz/dogr/`)
+
+**Ne taşındı [Kesin]:** C++ `validate_program` (indeks/ofset/pencere denetimleri) ve `analyze_program` (kesin atama analizi → `zero_free`), ayrıca `parse_program`'ın sayı sınırı denetimleri. Artefakt: `oz/dogr/valid.pmb` (3165 bayt PMB1 tablosu, 16 fonksiyon, 777 komut). Girdi: düz sayı listesi (`oz/coz.pmy` / `pm liste` çıktısı); çıktı: `1 Z` (Z=1: analiz ispatladı) ya da `0 K` (K: ret nedeni kodu).
+
+**Yazım biçimi (dürüstlük):** Doğrulayıcı `valid.pma.in` (+ `tablolar.txt`'den üretilen komut tabloları) metin assembly'sinden `pm asm` ile üretilen PMB1 tablosudur; önceki üç bileşen (PMY1) elle sayı yazılarak yapılmıştı, 786 satırlık veri-akışı analizi için bu pratik değildi. Yani assembler (C++) hâlâ önyükleme aracı; yorumlayıcı da (C++ VM). Kullanılan komutlar: `call`, `ld/st`, `host getc/putc/puti`, tamsayı ALU — `alloc`, kayan nokta yok. Bu, ELF üreticisinin sıradaki genişletmesi (call + getc) tamamlanınca doğrulayıcının kendisinin bağımsız ELF'e çevrilmesine olanak verir [Tahmin: yapılabilir; denenmedi].
+
+**Analiz hakkında düzeltme [Kesin]:** Plandaki "yazmaç/çağrı/bellek/kontrol akışı güvenlik koşulları" ayrımı koda tam oturmuyor: güvenlik denetimleri (yazmaç/atlama/sabit/fonksiyon/host indeksi, çağrı ve host penceresi, `divi/modi` sabiti, son komut, giriş fonksiyonu, veri sığması) **doğrulayıcıda**; C++ `analyze_program` ise yalnızca tek bir bool üretir (`zero_free`: "her yazmaç okunmadan önce her yolda yazılmış mı", VM'in çağrıda yazmaç sıfırlamasını atlaması için bir **eniyileme**). Bellek erişimi (OOB) statik denetlenmez, çalışma zamanı tuzağıdır. İkisi de taşındı; ek bir "bellek analizi" yoktu, yazılmadı.
+
+**Doğrulama (`oz/dogr/dogrula_valid.sh`, otomatik, ajan yok) — tam çalışma: 4882 denetim, hepsi geçti:**
+- 77 PMB1 (tüm `.pma/.pmt/.pmy` kaynakları): parametre tablosu = C++ referansı (`pm listedogrula`, yeni; liste biçimini katı çözer + `validate_program` + `analyze_program`).
+- 84 elle yazılmış liste, **beklenen sonuç sabit** ("1 1", "1 0" ya da ret) ve hem C++ hem parametre tablosu buna eşit olmak zorunda: her ret kuralı, sınır değerleri (bellek 2^27, giriş 65534, operand int32 sınırları, sabit 2^64−1, veri ±2^63, "-0", `+36`, `--36`, 257 karakterli ad…), çağrı/host penceresi, analiz (dal birleşimi, döngü, ulaşılamayan kod, çağrı sonrası pencere, kullanılmayan fonksiyon).
+- ~3000 liste düzeyinde rastgele mutant (belirteç değiştirme/silme/ekleme, satır silme/kopyalama/takas; 38 sınır değerinden seçim): kabul/ret kararı ve `zero_free` aynı (kabul 649, bunlardan `zero_free=0` 162, ret 4148).
+- ~1500 bayt mutantı **zincirden** geçirildi: `coz.pmy → valid.pmb` kararı = C++ yükleyicinin (`decode_program`) kararı.
+- **Test duyarlılığı (sabotaj):** doğrulayıcıya 17 kasıtlı hata sokuldu; 14'ünü ilk turda test yakaladı. Kaçan 3'ten ikisi için (alt fonksiyonda `np>nr`, 257 karakterli ad) test eklendi ve yakalandı; üçüncüsü (giriş indeksi üst sınırı 65534→65535) denk bir hata çıktı (`entry<nf` denetimi zaten reddeder), yani gözlemlenebilir davranış değişmiyor.
+- `oz/boru.sh`: zincir `x.pmb → coz.pmy → valid.pmb → (yalnız "1 …" ise) elf.pmy → ELF`; bozuk bayt, doğrulayıcının reddettiği geçersiz yazmaç ve üreticinin desteklemediği program (`heap.pma`) için ELF **üretilmedi**, `collatz.pma` için üretildi ve çıktı `pm run` ile aynı. Bu, "doğrulayıcı hazır olmadan bilinmeyen tablodan makine kodu üretme" şartının mekanik karşılığıdır.
+
+**Sınırlar [Kesin]:** (1) En çok 524288 sayı (belirteç); referans komut aynı sınırı uygular, `decode_program` uygulamaz. (2) Analizde bit kümesi boyutu M·W ≤ 524288 (C++: 2^24); aşılırsa `zero_free=0` (güvenli yön), kabul kararı değişmez; bu aralık (524288 < M·W ≤ 2^24) test edilmedi. (3) Bayt düzeyinde ad uzunluğu/dosya-boyutu kontrolleri (`nc > n` gibi) listede bulunmayan bilgiye dayandığı için `coz.pmy` tarafında kalır. (4) Hız: 300 bin belirteçli sentetik girdide 0,21 s (C++ referans 0,016 s); 682 belirteçli en büyük gerçek program 27 ms (süreç tabanı baskın). (5) Doğrulayıcı kendisi hâlâ `pm` ile çalışıyor.
+
+**ELF OOB tamamlaması (`oz/elf/dogrula_oob.sh`):** 890 program (ld/st × 5 bellek boyutu × 11 taban × 8 ofset + 10 döngü/geri-sayım), 1640 denetim hepsi geçti; 750 program OOB tuzağına, 140'ı sınır içinde bitti; çıktı, çıkış kodu ve tuzak adı `pm run` ile aynı. Tüm koşular `ulimit -v` + `timeout` altında.
 
 ## 4. Açık sorular ve riskler
 - **Çekirdek sınırı:** hangi parçalar C++'ta kalmalı? Öneri: çözücü+doğrulayıcı+yorumlayıcı+host (yaklaşık 800 satır) en küçük gerçekçi çekirdek; native üretici ve özelleştiriciler parametreye taşınır; `exec` yeni ilkeldir.

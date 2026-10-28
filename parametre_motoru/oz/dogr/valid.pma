@@ -1,0 +1,787 @@
+; valid.pma -- PMB1 DOGRULAYICI + ANALIZ (parametre tablosu olarak derlenir: valid.pmb).
+; stdin : duz sayi listesi (pm liste / oz/coz.pmy ciktisi; etiketler MUTLAK).
+; stdout: "1 Z\n" kabul (Z=1: kesin atama analizi ispatladi, zero_free) ya da "0 K\n" ret (K: ret nedeni kodu).
+; C++ karsiligi: parse_program'in sinir/aralik denetimleri + validate_program + analyze_program (src/ikili.cpp).
+; Sinirlar: en fazla 524288 sayi (simge); analiz bit kumesi M*W <= 524288 (asarsa zero_free=0, kabul ayni).
+; Kullanilan komutlar: call, ld/st, host getc/putc/puti, tamsayi ALU (alloc, kayan nokta YOK).
+memory 4194304
+entry main
+space TOK 524288
+space FL 524288
+space INSPOS 524288
+space IN 524288
+space RCH 524288
+space QUE 524288
+space WRK 524288
+space FNP 65536
+space FNR 65536
+space FNC 65536
+space FNB 65536
+space S 1024
+space G 64
+data NOPS = 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 2 2 3 3 3 3 2 2 3 3 3 2 2 1 2 2 2 1 0 3 3 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+data KIND = 1 4 0 1 5 0 1 6 0 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 0 1 2 0 1 3 3 1 3 3 1 3 3 1 3 3 1 3 0 1 3 0 1 3 3 1 3 3 1 3 3 1 2 0 1 3 0 7 0 0 2 7 0 2 7 0 8 9 0 4 0 0 0 0 0 1 2 5 4 2 5 1 2 0 10 9 0 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5
+data ARITY = 1 1 1 0 3 0 0
+
+; G: 0 NT  1 bayrak  2 bellek  3 giris  4 nsabit  5 nveri  6 bss  7 nfonk  8 imlec  9 toplam komut
+;    12 W  13 M  14 base  15 nparam  16 nregs
+
+func rej(code) {
+    host putc, 48
+    host putc, 32
+    host puti, code
+    host putc, 10
+    halt
+}
+
+; ---------- okuyucu ----------
+func store(nt, ng, val, nd, bad) {
+    ge e, nt, 524288
+    jz e, c1
+    call x, rej, 1
+c1: jz bad, c2
+    call x, rej, 2
+c2: jnz nd, c3
+    call x, rej, 2
+c3: mov fl, 0
+    mov v, val
+    jz ng, c4
+    xor t, val, -9223372036854775808
+    gt o, t, 0
+    jz o, c5
+    call x, rej, 2
+c5: neg v, val
+    mov fl, 1
+c4: add a, nt, FL
+    st fl, a, 0
+    add a, nt, TOK
+    st v, a, 0
+    ret 0
+}
+
+func readall() {
+    mov nt, 0
+    mov inn, 0
+    mov len, 0
+    mov ng, 0
+    mov val, 0
+    mov nd, 0
+    mov bad, 0
+loop:
+    host ch, getc
+    lt e, ch, 0
+    jnz e, eof
+    eq w, ch, 32
+    jnz w, ws
+    lt t, ch, 9
+    jnz t, tok
+    gt t, ch, 13
+    jnz t, tok
+    jmp ws
+tok:
+    jnz inn, started
+    mov inn, 1
+    mov ng, 0
+    mov val, 0
+    mov nd, 0
+    mov bad, 0
+    mov len, 0
+started:
+    lt t, ch, 48
+    jnz t, nondig
+    gt t, ch, 57
+    jnz t, nondig
+    sub d, ch, 48
+    xor tx, val, -9223372036854775808
+    gt o, tx, -7378697629483820647
+    jnz o, ovf
+    eq o, val, 1844674407370955161
+    jz o, okd
+    gt o, d, 5
+    jnz o, ovf
+okd:
+    mul val, val, 10
+    add val, val, d
+    add nd, nd, 1
+    add len, len, 1
+    jmp loop
+ovf:
+    mov bad, 1
+    add len, len, 1
+    jmp loop
+nondig:
+    eq o, ch, 45
+    jz o, notminus
+    jnz len, notminus
+    mov ng, 1
+    add len, len, 1
+    jmp loop
+notminus:
+    mov bad, 1
+    add len, len, 1
+    jmp loop
+ws:
+    jz inn, loop
+    call x, store, nt, ng, val, nd, bad
+    add nt, nt, 1
+    mov inn, 0
+    jmp loop
+eof:
+    jz inn, done
+    call x, store, nt, ng, val, nd, bad
+    add nt, nt, 1
+done:
+    st nt, G, 0
+    ret nt
+}
+
+; ---------- imlecli okuyucular ----------
+func fetch(kind) {   ; kind 0: isaretsiz, 1: isaretli  -> deger
+    ld c, G, 8
+    ld n, G, 0
+    ge e, c, n
+    jz e, f1
+    call x, rej, 3
+f1: add a, c, FL
+    ld f, a, 0
+    add a, c, TOK
+    ld v, a, 0
+    add c, c, 1
+    st c, G, 8
+    jnz kind, sg
+    jz f, ret_
+    call x, rej, 4
+sg: jnz f, ret_
+    lt z, v, 0
+    jz z, ret_
+    call x, rej, 4
+ret_:
+    ret v
+}
+
+func nextu(lim) {   ; isaretsiz alan, 0..lim
+    call v, fetch, 0
+    lt z, v, 0
+    jz z, n1
+    call x, rej, 5
+n1: gt z, v, lim
+    jz z, n2
+    call x, rej, 5
+n2: ret v
+}
+
+; ---------- bicim ----------
+func parse() {
+    call fl, nextu, 1
+    st fl, G, 1
+    call mem, nextu, 134217728
+    jnz mem, p1
+    call x, rej, 6
+p1: st mem, G, 2
+    call e, nextu, 65534
+    st e, G, 3
+    call nc, nextu, 524288
+    st nc, G, 4
+    mov i, 0
+l1: ge z, i, nc
+    jnz z, l1e
+    call x, fetch, 0
+    add i, i, 1
+    jmp l1
+l1e:
+    call nd, nextu, 524288
+    st nd, G, 5
+    mov i, 0
+l2: ge z, i, nd
+    jnz z, l2e
+    call x, fetch, 1
+    add i, i, 1
+    jmp l2
+l2e:
+    call bss, nextu, 134217728
+    gt z, bss, mem
+    jz z, p2
+    call x, rej, 7
+p2: st bss, G, 6
+    call nf, nextu, 65535
+    st nf, G, 7
+    mov f, 0
+    mov gi, 0
+fl_:
+    ge z, f, nf
+    jnz z, fdone
+    call np, nextu, 65535
+    call nr, nextu, 65535
+    gt z, np, nr
+    jz z, p3
+    call x, rej, 8
+p3: call ncode, nextu, 4194304
+    add a, f, FNP
+    st np, a, 0
+    add a, f, FNR
+    st nr, a, 0
+    add a, f, FNC
+    st ncode, a, 0
+    add a, f, FNB
+    st gi, a, 0
+    mov pc, 0
+il: ge z, pc, ncode
+    jnz z, idone
+    ld cur, G, 8
+    add a, gi, INSPOS
+    st cur, a, 0
+    call op, nextu, 54
+    add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+ol: ge z, j, nops
+    jnz z, odone
+    call v, fetch, 1
+    lt z, v, -2147483648
+    jz z, p4
+    call x, rej, 9
+p4: gt z, v, 2147483647
+    jz z, p5
+    call x, rej, 9
+p5: add j, j, 1
+    jmp ol
+odone:
+    add pc, pc, 1
+    add gi, gi, 1
+    jmp il
+idone:
+    add f, f, 1
+    jmp fl_
+fdone:
+    st gi, G, 9
+    ld fg, G, 1
+    jz fg, nonames
+    mov f, 0
+nl: ge z, f, nf
+    jnz z, nonames
+    call len, nextu, 256
+    mov i, 0
+nl2:
+    ge z, i, len
+    jnz z, nl3
+    call x, nextu, 255
+    add i, i, 1
+    jmp nl2
+nl3:
+    add f, f, 1
+    jmp nl
+nonames:
+    ld c, G, 8
+    ld n, G, 0
+    eq z, c, n
+    jnz z, pend
+    call x, rej, 10
+pend:
+    ret 0
+}
+
+; ---------- dogrulama (validate_program) ----------
+func validate() {
+    ld nf, G, 7
+    ld e, G, 3
+    lt z, e, nf
+    jnz z, v1
+    call x, rej, 11
+v1: add a, e, FNP
+    ld t, a, 0
+    jz t, v2
+    call x, rej, 12
+v2: ld mem, G, 2
+    ld nd, G, 5
+    ld bss, G, 6
+    add need, nd, bss
+    add need, need, 1
+    ge z, mem, need
+    jnz z, v3
+    call x, rej, 13
+v3: ld nc, G, 4
+    mov f, 0
+vf: ge z, f, nf
+    jnz z, vdone
+    add a, f, FNC
+    ld ncode, a, 0
+    jnz ncode, v4
+    call x, rej, 14
+v4: add a, f, FNB
+    ld base, a, 0
+    add a, f, FNR
+    ld nr, a, 0
+    sub l, ncode, 1
+    add g, base, l
+    add a, g, INSPOS
+    ld p, a, 0
+    add a, p, TOK
+    ld op, a, 0
+    eq z, op, 31
+    jnz z, lastok
+    eq z, op, 35
+    jnz z, lastok
+    eq z, op, 36
+    jnz z, lastok
+    call x, rej, 15
+lastok:
+    mov pc, 0
+vi: ge z, pc, ncode
+    jnz z, vidone
+    add g, base, pc
+    add a, g, INSPOS
+    ld p, a, 0
+    add a, p, TOK
+    ld op, a, 0
+    add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+vj: ge z, j, nops
+    jnz z, vjdone
+    mul k, op, 3
+    add k, k, j
+    add a, k, KIND
+    ld kind, a, 0
+    add a, p, 1
+    add a, a, j
+    add a, a, TOK
+    ld v, a, 0
+    eq z, kind, 5
+    jnz z, vnext
+    eq z, kind, 7
+    jnz z, klab
+    eq z, kind, 8
+    jnz z, kfun
+    eq z, kind, 6
+    jnz z, kcon
+    eq z, kind, 10
+    jnz z, khost
+    lt z, v, 0
+    jnz z, vbad
+    ge z, v, nr
+    jnz z, vbad
+    jmp vnext
+klab:
+    lt z, v, 0
+    jnz z, vbad
+    ge z, v, ncode
+    jnz z, vbad
+    jmp vnext
+kfun:
+    lt z, v, 0
+    jnz z, vbad
+    ge z, v, nf
+    jnz z, vbad
+    jmp vnext
+kcon:
+    lt z, v, 0
+    jnz z, vbad
+    ge z, v, nc
+    jnz z, vbad
+    jmp vnext
+khost:
+    lt z, v, 0
+    jnz z, vbad
+    ge z, v, 7
+    jnz z, vbad
+vnext:
+    add j, j, 1
+    jmp vj
+vbad:
+    call x, rej, 16
+vjdone:
+    eq z, op, 47
+    jnz z, dm
+    eq z, op, 48
+    jnz z, dm
+    jmp vcall
+dm: add a, p, 3
+    add a, a, TOK
+    ld c3, a, 0
+    jz c3, dmbad
+    eq z, c3, -1
+    jz z, vcall
+dmbad:
+    call x, rej, 17
+vcall:
+    eq z, op, 34
+    jz z, vhost
+    add a, p, 1
+    add a, a, TOK
+    ld fa, a, 0
+    add a, p, 2
+    add a, a, TOK
+    ld fb, a, 0
+    add a, fa, FNP
+    ld np2, a, 0
+    mov need, np2
+    jnz need, wc
+    mov need, 1
+wc: add t, fb, need
+    gt z, t, nr
+    jz z, vend
+    call x, rej, 18
+vhost:
+    eq z, op, 40
+    jz z, vend
+    add a, p, 1
+    add a, a, TOK
+    ld ha, a, 0
+    add a, p, 2
+    add a, a, TOK
+    ld hb, a, 0
+    add a, ha, ARITY
+    ld ar, a, 0
+    mov need, ar
+    jnz need, wh
+    mov need, 1
+wh: add t, hb, need
+    gt z, t, nr
+    jz z, vend
+    call x, rej, 19
+vend:
+    add pc, pc, 1
+    jmp vi
+vidone:
+    add f, f, 1
+    jmp vf
+vdone:
+    ret 0
+}
+
+; ---------- analiz: bit kumesi yardimcilari (S = gecerli durum) ----------
+func getbit(r) {
+    shr q, r, 6
+    and b, r, 63
+    add a, q, S
+    ld x, a, 0
+    shr x, x, b
+    and x, x, 1
+    ret x
+}
+
+func setbit(r) {
+    shr q, r, 6
+    and b, r, 63
+    shl m, 1, b
+    add a, q, S
+    ld x, a, 0
+    or x, x, m
+    st x, a, 0
+    ret 0
+}
+
+func clrfrom(b0) {   ; r >= b0 olan yazmaclari temizle (r < nregs)
+    ld nr, G, 16
+    mov r, b0
+cl: ge z, r, nr
+    jnz z, cd
+    shr q, r, 6
+    and b, r, 63
+    shl m, 1, b
+    not m, m
+    add a, q, S
+    ld x, a, 0
+    and x, x, m
+    st x, a, 0
+    add r, r, 1
+    jmp cl
+cd: ret 0
+}
+
+func push(to) {
+    ld sp, G, 17
+    add a, sp, WRK
+    st to, a, 0
+    add sp, sp, 1
+    st sp, G, 17
+    add a, to, QUE
+    mov one, 1
+    st one, a, 0
+    ret 0
+}
+
+func flow(to) {
+    ld w, G, 12
+    add a, to, RCH
+    ld rc, a, 0
+    mul o, to, w
+    jnz rc, merge
+    mov one, 1
+    st one, a, 0
+    mov i, 0
+f1: ge z, i, w
+    jnz z, f1d
+    add a, i, S
+    ld x, a, 0
+    add a, o, i
+    add a, a, IN
+    st x, a, 0
+    add i, i, 1
+    jmp f1
+f1d:
+    add a, to, QUE
+    ld qd, a, 0
+    jnz qd, fret
+    call x, push, to
+    jmp fret
+merge:
+    mov ch, 0
+    mov i, 0
+f2: ge z, i, w
+    jnz z, f2d
+    add a, i, S
+    ld s, a, 0
+    add a, o, i
+    add a, a, IN
+    ld t, a, 0
+    and nn, t, s
+    eq z, nn, t
+    jnz z, f2n
+    st nn, a, 0
+    mov ch, 1
+f2n:
+    add i, i, 1
+    jmp f2
+f2d:
+    jz ch, fret
+    add a, to, QUE
+    ld qd, a, 0
+    jnz qd, fret
+    call x, push, to
+fret:
+    ret 0
+}
+
+; bir komut: 1 = tamam, 0 = ihlal (okunmadan once tanimsiz yazmac)
+func step(pc, p, op) {
+    ld nrg, G, 16
+    ld m, G, 13
+    eq z, op, 34
+    jnz z, scall
+    eq z, op, 40
+    jnz z, shost
+    ; genel: okumalar sonra yazmalar
+    add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+s1: ge z, j, nops
+    jnz z, s1d
+    mul k, op, 3
+    add k, k, j
+    add a, k, KIND
+    ld kind, a, 0
+    add a, p, 1
+    add a, a, j
+    add a, a, TOK
+    ld v, a, 0
+    eq z, kind, 2
+    jnz z, srd
+    eq z, kind, 3
+    jnz z, srd
+    eq z, kind, 4
+    jnz z, srd
+    jmp s1n
+srd:
+    call g, getbit, v
+    jnz g, s1n
+    ret 0
+s1n:
+    add j, j, 1
+    jmp s1
+s1d:
+    mov j, 0
+s2: ge z, j, nops
+    jnz z, s2d
+    mul k, op, 3
+    add k, k, j
+    add a, k, KIND
+    ld kind, a, 0
+    eq z, kind, 1
+    jz z, s2n
+    add a, p, 1
+    add a, a, j
+    add a, a, TOK
+    ld v, a, 0
+    call x, setbit, v
+s2n:
+    add j, j, 1
+    jmp s2
+s2d:
+    jmp sflow
+scall:
+    add a, p, 1
+    add a, a, TOK
+    ld fa, a, 0
+    add a, p, 2
+    add a, a, TOK
+    ld fb, a, 0
+    add a, fa, FNP
+    ld cnt, a, 0
+    jmp swin
+shost:
+    add a, p, 1
+    add a, a, TOK
+    ld ha, a, 0
+    add a, p, 2
+    add a, a, TOK
+    ld fb, a, 0
+    add a, ha, ARITY
+    ld cnt, a, 0
+swin:
+    mov j, 0
+s3: ge z, j, cnt
+    jnz z, s3d
+    add r, fb, j
+    call g, getbit, r
+    jnz g, s3n
+    ret 0
+s3n:
+    add j, j, 1
+    jmp s3
+s3d:
+    eq z, op, 34
+    jz z, s4
+    call x, clrfrom, fb
+s4: call x, setbit, fb
+sflow:
+    eq z, op, 35
+    jnz z, sok
+    eq z, op, 36
+    jnz z, sok
+    eq z, op, 31
+    jz z, s5
+    add a, p, 1
+    add a, a, TOK
+    ld tg, a, 0
+    call x, flow, tg
+    ret 1
+s5: eq z, op, 32
+    jnz z, s6
+    eq z, op, 33
+    jz z, s7
+s6: add a, p, 2
+    add a, a, TOK
+    ld tg, a, 0
+    call x, flow, tg
+s7: add nx, pc, 1
+    ge z, nx, m
+    jnz z, sok
+    call x, flow, nx
+sok:
+    ret 1
+}
+
+; bir fonksiyonun kesin atama analizi: 1 = ispatlandi, 0 = ihlal ya da sinir asildi
+func analyze_func(f) {
+    add a, f, FNP
+    ld np, a, 0
+    add a, f, FNR
+    ld nr, a, 0
+    add a, f, FNC
+    ld m, a, 0
+    add a, f, FNB
+    ld base, a, 0
+    add w, nr, 63
+    shr w, w, 6
+    mul mw, m, w
+    gt z, mw, 524288
+    jz z, a1
+    ret 0
+a1: st w, G, 12
+    st m, G, 13
+    st base, G, 14
+    st np, G, 15
+    st nr, G, 16
+    mov zero, 0
+    st zero, G, 17
+    mov i, 0
+z1: ge z, i, mw
+    jnz z, z1d
+    add a, i, IN
+    st zero, a, 0
+    add i, i, 1
+    jmp z1
+z1d:
+    mov i, 0
+z2: ge z, i, m
+    jnz z, z2d
+    add a, i, RCH
+    st zero, a, 0
+    add a, i, QUE
+    st zero, a, 0
+    add i, i, 1
+    jmp z2
+z2d:
+    mov r, 0
+pl: ge z, r, np
+    jnz z, pld
+    shr q, r, 6
+    and b, r, 63
+    shl bit, 1, b
+    add a, q, IN
+    ld x, a, 0
+    or x, x, bit
+    st x, a, 0
+    add r, r, 1
+    jmp pl
+pld:
+    mov one, 1
+    st one, RCH, 0
+    call x, push, 0
+wl: ld sp, G, 17
+    jz sp, wdone
+    sub sp, sp, 1
+    st sp, G, 17
+    add a, sp, WRK
+    ld pc, a, 0
+    add a, pc, QUE
+    st zero, a, 0
+    mul o, pc, w
+    mov i, 0
+cp: ge z, i, w
+    jnz z, cpd
+    add a, o, i
+    add a, a, IN
+    ld x, a, 0
+    add a, i, S
+    st x, a, 0
+    add i, i, 1
+    jmp cp
+cpd:
+    add g, base, pc
+    add a, g, INSPOS
+    ld p, a, 0
+    add a, p, TOK
+    ld op, a, 0
+    call ok, step, pc, p, op
+    jnz ok, wl
+    ret 0
+wdone:
+    ret 1
+}
+
+func analyze() {
+    ld nf, G, 7
+    mov f, 0
+af: ge z, f, nf
+    jnz z, adone
+    call ok, analyze_func, f
+    jnz ok, an
+    ret 0
+an: add f, f, 1
+    jmp af
+adone:
+    ret 1
+}
+
+func main() {
+    call nt, readall
+    call x, parse
+    call x, validate
+    call zf, analyze
+    host putc, 49
+    host putc, 32
+    host puti, zf
+    host putc, 10
+}

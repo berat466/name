@@ -44,6 +44,7 @@ static int usage() {
     "  pm yapisal tablo.pmy [--pma x.pma] [-o x.pmb] [--strip]   sayisal yapisal tabloyu (PMY1) .pmb/.pma uretir\n"
     "  pm tablo  tablo.pmy                         yapisal tabloyu okunabilir agac olarak basar\n"
     "  pm liste x.pmb / pm yazliste liste.txt -o x.pmb   PMB1 <-> duz sayi listesi (dogrulamasiz; referans araci)\n"
+    "  pm listedogrula liste.txt                         liste -> kati dogrulama + analiz (\"1 Z\" / \"0\"; oz/dogr referansi)\n"
     "  pm dump  dosya.(pma|pmb)                    motorun calistirdigi tabloyu okunabilir basar\n"
     "  pm fuzz  dosya.pmb [N] [tohum]               ikiliyi rastgele bozar; yukleyici/VM cokmemeli\n"
     "cikis kodu: 0 basari, 1 hata (dosya/ayristirma/dogrulama), 2 calisma tuzagi (TRAP)\n");
@@ -110,6 +111,10 @@ int main(int argc, char** argv) {
     if (cmd == "liste") {   // pm liste x.pmb : bicim cozumu (dogrulamasiz) -> duz sayi listesi
       std::string txt; if (!read_file(file, txt)) throw PmError("dosya okunamadi: " + file);
       std::string s = program_to_liste(parse_program((const uint8_t*)txt.data(), txt.size())); fwrite(s.data(), 1, s.size(), stdout); return 0;
+    }
+    if (cmd == "listedogrula") {   // pm listedogrula liste.txt : kati cozum + validate_program + analyze_program (parametre tabanli dogrulayicinin referansi)
+      std::string txt; if (!read_file(file, txt)) throw PmError("dosya okunamadi: " + file);
+      std::string s = liste_dogrula(txt); fwrite(s.data(), 1, s.size(), stdout); return 0;
     }
     if (cmd == "yazliste") {   // pm yazliste liste.txt -o x.pmb : duz sayi listesi -> PMB1 (kodlayici referansi)
       std::string outp; for (int i = 3; i < argc; i++) { if (!strcmp(argv[i], "-o") && i + 1 < argc) outp = argv[++i]; else return usage(); }
