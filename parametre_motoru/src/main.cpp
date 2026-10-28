@@ -31,6 +31,7 @@ static Program load_any(const std::string& path) {
   if (ends_with(path, ".pmt")) return assemble(sablon_to_pma(path));
   std::string txt;
   if (!read_file(path, txt)) throw PmError("dosya okunamadi: " + path);
+  if (is_yapisal(txt)) return assemble(yapisal_to_pma(txt));
   if (txt.size() >= 4 && memcmp(txt.data(), "PMB1", 4) == 0) return decode_program((const uint8_t*)txt.data(), txt.size());
   return assemble(txt);
 }
@@ -40,6 +41,8 @@ static int usage() {
     "kullanim:\n"
     "  pm asm   kaynak.pma -o cikti.pmb [--strip]   yazma bicimini ikili tabloya cevirir\n"
     "  pm run   dosya.(pma|pmb) [--fuel N] [--mem SOZCUK] [--stack S] [--frames F] [--result] [--stats] [--native | --native-strict] [--max-kare N] [--girdi olaylar.txt] [--ekran son.ppm] [--ascii K] [--kare-rapor]   calistirir (stdin -> getc)\n"
+    "  pm yapisal tablo.pmy [--pma x.pma] [-o x.pmb] [--strip]   sayisal yapisal tabloyu (PMY1) .pmb/.pma uretir\n"
+    "  pm tablo  tablo.pmy                         yapisal tabloyu okunabilir agac olarak basar\n"
     "  pm dump  dosya.(pma|pmb)                    motorun calistirdigi tabloyu okunabilir basar\n"
     "  pm fuzz  dosya.pmb [N] [tohum]               ikiliyi rastgele bozar; yukleyici/VM cokmemeli\n"
     "cikis kodu: 0 basari, 1 hata (dosya/ayristirma/dogrulama), 2 calisma tuzagi (TRAP)\n");
@@ -82,6 +85,25 @@ int main(int argc, char** argv) {
       auto bin = encode_program(p, strip);
       if (!binOut.empty() && !write_file(binOut, bin.data(), bin.size())) throw PmError("yazilamadi: " + binOut);
       printf("%s: tanim -> %zu satir .pma, %zu bayt parametre dosyasi, %zu fonksiyon, %zu komut, bellek %llu sozcuk\n", file.c_str(), size_t(std::count(pma.begin(), pma.end(), '\n')), bin.size(), p.funcs.size(), ncode, (unsigned long long)p.mem_words);
+      return 0;
+    }
+    if (cmd == "tablo") { std::string txt; if (!read_file(file, txt)) throw PmError("dosya okunamadi: " + file); std::string s = yapisal_dump(txt); fwrite(s.data(), 1, s.size(), stdout); return 0; }
+    if (cmd == "yapisal") {   // pm yapisal tablo.pmy [--pma uretilen.pma] [-o cikti.pmb] [--strip]
+      std::string pmaOut, binOut; bool strip = false;
+      for (int i = 3; i < argc; i++) {
+        if (!strcmp(argv[i], "--pma") && i + 1 < argc) pmaOut = argv[++i];
+        else if (!strcmp(argv[i], "-o") && i + 1 < argc) binOut = argv[++i];
+        else if (!strcmp(argv[i], "--strip")) strip = true;
+        else return usage();
+      }
+      std::string txt; if (!read_file(file, txt)) throw PmError("dosya okunamadi: " + file);
+      std::string pma = yapisal_to_pma(txt);
+      if (!pmaOut.empty() && !write_file(pmaOut, pma.data(), pma.size())) throw PmError("yazilamadi: " + pmaOut);
+      Program p = assemble(pma);
+      size_t ncode = 0; for (auto& f : p.funcs) ncode += f.code.size();
+      auto bin = encode_program(p, strip);
+      if (!binOut.empty() && !write_file(binOut, bin.data(), bin.size())) throw PmError("yazilamadi: " + binOut);
+      printf("%s: tablo %zu bayt -> %zu satir .pma, %zu bayt .pmb, %zu fonksiyon, %zu komut, bellek %llu sozcuk\n", file.c_str(), txt.size(), size_t(std::count(pma.begin(), pma.end(), '\n')), bin.size(), p.funcs.size(), ncode, (unsigned long long)p.mem_words);
       return 0;
     }
     if (cmd == "dump") { std::string s = disassemble(load_any(file)); fwrite(s.data(), 1, s.size(), stdout); return 0; }
@@ -168,7 +190,7 @@ int main(int argc, char** argv) {
         }
         if (rng() % 16 == 0 && m.size() > 8) m.resize(rng() % m.size());
         Program p;
-        try { p = decode_program((const uint8_t*)m.data(), m.size()); } catch (const PmError&) { rejected++; continue; }
+        try { p = is_yapisal(raw) ? assemble(yapisal_to_pma(m)) : decode_program((const uint8_t*)m.data(), m.size()); } catch (const PmError&) { rejected++; continue; }
         if (p.mem_words > cfg.max_mem_words) { skipped++; continue; }
         IO io;
         RunResult r = run_program(p, io, cfg);

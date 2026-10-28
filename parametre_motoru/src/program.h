@@ -37,6 +37,11 @@ Program assemble(const std::string& text);
 // sablon.cpp: .pmt (bildirimsel uygulama tanimi) -> .pma metni (sablon/ornekleme katmani)
 std::string sablon_to_pma(const std::string& path);
 
+// yapisal.cpp: sayisal yapisal tablo (PMY1, yalniz sayilar) -> .pma metni; okunabilir dokum
+bool is_yapisal(const std::string& bytes);
+std::string yapisal_to_pma(const std::string& bytes);
+std::string yapisal_dump(const std::string& bytes);
+
 // dump.cpp
 std::string disassemble(const Program& p);
 

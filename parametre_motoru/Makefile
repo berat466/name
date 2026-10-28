@@ -1,6 +1,6 @@
 CXX ?= g++
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -fno-fast-math -ffp-contract=off
-SRC := src/main.cpp src/asm.cpp src/ikili.cpp src/vm.cpp src/dump.cpp src/native_x64.cpp src/sablon.cpp
+SRC := src/main.cpp src/asm.cpp src/ikili.cpp src/vm.cpp src/dump.cpp src/native_x64.cpp src/sablon.cpp src/yapisal.cpp
 
 pm: $(SRC) src/ops.h src/program.h src/anlam.h src/host.h
 	$(CXX) $(CXXFLAGS) -o $@ $(SRC)
