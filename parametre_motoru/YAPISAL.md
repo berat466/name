@@ -87,3 +87,9 @@ Tablo hatası `tablo: sayi #N (bayt B): ...` biçiminde N. sayıyı gösterir (b
 
 ## 7. Örnekler
 `ornek_toplam.sayi` (işlev + döngü + yazdırma, ekransız) ve `ornek_sahne.sayi` (ekran + şablon + olay + çizim) kitte vardır; her satır açıklamalıdır.
+
+## 8. Sık sorulanlar (AI testinde sorulan noktalar)
+- Ekransız uygulamada `KARE=1` kare döngüsünü tam bir kez çalıştırır (olaylar yok, kurallar, etkileşimler ve toplamalar bir kez, sonra SON). Kare döngüsü gerekmiyorsa `KARE=0` ve şablonsuz bırak (yalnız ILK/SON).
+- Dizide `NVER=0` geçerlidir (tüm elemanlar 0). Sabit değerler ifade içinde `1 zV` ile yazılır; dizi indeksi de bir ifadedir (`1 zK` ya da başka ifade).
+- Toplama, aynı karede şablon kuralları ve etkileşimlerden sonra çalışır; toplama sonucu aynı karede BITIS ve SON tarafından görülür.
+- `satir`/`yazi` çıktısı `calistir.sh` ile stdout'a gider.

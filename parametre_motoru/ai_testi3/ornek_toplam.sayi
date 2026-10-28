@@ -1,0 +1,22 @@
+# ORNEK 1 (yalniz hesap, ekran yok): 1..10 sayilarinin karelerinin toplamini yazar -> 385
+80 77 89 49           # "PMY1"
+0 0 0 0               # sahne: W=0 H=0 (ekran yok), arkaplan 0, kare sayisi 0 (kare dongusu yok)
+0                     # 0 global
+0                     # 0 dizi
+1                     # 1 islev (indeks 0): kare(n) = n * n
+  1 1                 #   parametre sayisi=1, yerel sayisi=1 (yerel 0 = n)
+  1                   #   govde: 1 komut
+    7  15 3  4 0  4 0        # don ( yerel0 * yerel0 )      [7=don, 15=ikili, 3='*', 4 0=yerel 0]
+0                     # 0 davranis
+0                     # 0 sablon
+0                     # 0 etkilesim
+0                     # 0 girdi
+0                     # 0 toplama
+0                     # bitis yok
+# ILK blok: 3 komut (yerel 1 = toplam, yerel 0 = sayac)
+3
+  1  4 1  1 z0                            # ata: yerel1 = 0                       [1=ata, 4 1=yerel 1, 1 z0=sayi 0]
+  4 0  1 z1  1 z10  1                     # say yerel0 = 1 .. 10, govde 1 komut   [4=say]
+    1  4 1  15 1  4 1  13 0 1 4 0         #   ata: yerel1 = yerel1 + kare(yerel0)   [13 0 1 = cagri islev0, 1 arguman]
+  12 1  4 1                               # satir: yerel1 yazar (bosluk ayrili, sonda satir sonu)  [12=satir, 1 oge]
+0                     # SON blok: bos

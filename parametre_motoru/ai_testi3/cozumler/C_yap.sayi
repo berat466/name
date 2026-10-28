@@ -1,0 +1,27 @@
+# Collatz taramasi n=1..3000 (ekran yok, kare dongusu yok; hepsi ILK blogunda)
+80 77 89 49           # "PMY1"
+0 0 0 0               # sahne: W=0 H=0 BG=0 KARE=0
+0                     # 0 global
+0                     # 0 dizi
+1                     # 1 islev (indeks 0): St(n) = Collatz adim sayisi
+  1 2 3               #   1 parametre, 2 yerel (yerel0 = x, yerel1 = adim), govde 3 komut
+  1 4 1 1 z0                          # ata: yerel1 = 0
+  3  15 12 4 0 1 z1  2                # surde (yerel0 != 1), govde 2 komut
+    1 4 0  17  15 6 4 0 1 z1  15 1 15 3 1 z3 4 0 1 z1  15 4 4 0 1 z2   # ata: x = (x&1) ? 3x+1 : x/2
+    1 4 1  15 1 4 1 1 z1          # ata: adim = adim + 1
+  7 4 1                               # don yerel1
+0                     # 0 davranis
+0                     # 0 sablon
+0                     # 0 etkilesim
+0                     # 0 girdi
+0                     # 0 toplama
+0                     # bitis yok
+# ILK: yerel0=n, yerel1=St(n), yerel2=en iyi n, yerel3=en buyuk adim, yerel4=toplam, yerel5=sayac(>100)
+2
+  4 0  1 z1  1 z3000  4                       # say yerel0 = 1..3000, govde 4 komut
+    1 4 1  13 0 1 4 0                         #   yerel1 = St(yerel0)
+    2  15 15 4 1 4 3  2  1 4 2 4 0  1 4 3 4 1  0   #   eger St > en buyuk: en iyi n = n; en buyuk = St
+    1 4 4  15 1 4 4 4 1                       #   toplam += St
+    2  15 15 4 1 1 z100  1  1 4 5 15 1 4 5 1 z1  0   #   eger St > 100: sayac += 1
+  12 5  13 0 1 1 z27  4 2  4 3  4 4  4 5      # satir: St(27) eniyi_n en_buyuk toplam sayac
+0                     # SON bos
