@@ -51,6 +51,18 @@ for f in $D/grafik/*.pma; do
   g=""; [ -f ${f%.pma}.girdi ] && g="--girdi ${f%.pma}.girdi"
   for sec in "" "--max-kare 1" "--max-kare 3" "--ascii 2"; do kos "$b $sec" $T/g.pmb $sec $g; done
 done
+# ---- 3) YAKIT: ayni kural (CALL, alinan geri atlama, HOST = 1 yakit) => tuzak noktasindaki kare sayisi ve cikti pm ile ayni
+for f in $R/uygulamalar/pong.pma $R/uygulamalar/hayat.pma $R/uygulamalar/sahne.pma $D/grafik/olay.pma $D/grafik/cokkare.pma $D/grafik/boyut.pma $D/grafik/tuzak_ozyin.pma; do
+  asm $f $T/y.pmb || { fail "yakit: $f derlenmedi"; continue; }; $PM liste $T/y.pmb > $T/yl.txt
+  for N in 1 2 5 17 100 1000 5000 20000 100000; do
+    { printf -- '-1 %s -5 1\n' $N; cat $T/yl.txt; } > $T/yin.txt
+    lim $GEN < $T/yin.txt > $T/y.elf 2>/dev/null || { fail "yakit: $f N=$N ELF uretilemedi"; continue; }; chmod +x $T/y.elf
+    lim $PM run $T/y.pmb --fuel $N --kare-rapor < /dev/null > $T/yo1 2> $T/ye1; y1=$?
+    lim $T/y.elf < /dev/null > $T/yo2 2> $T/ye2; y2=$?
+    n=$((n+1))
+    [ $y1 = $y2 ] && cmp -s $T/yo1 $T/yo2 && [ "$(grep -a '^ekran:' $T/ye1)" = "$(grep -a '^ekran:' $T/ye2)" ] && [ "$(grep -a ^TRAP: $T/ye1 | cut -d' ' -f1-2)" = "$(grep -a ^TRAP: $T/ye2 | cut -d' ' -f1-2)" ] && pass || fail "yakit $(basename $f) N=$N: pm rc=$y1 elf rc=$y2 | $(grep -a '^ekran:' $T/ye1 | head -c 70) <> $(grep -a '^ekran:' $T/ye2 | head -c 70)"
+  done
+done
 echo "grafik: $ok gecti, $bad basarisiz ($n karsilastirma)"
 rm -rf $T
 [ $bad = 0 ]
