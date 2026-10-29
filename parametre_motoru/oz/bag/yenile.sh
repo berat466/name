@@ -6,7 +6,7 @@
 #          5) sabit nokta: son gen2.elf kendi ELF'ini bayt-bayt uretir.
 # Kullanim: yenile.sh ESKI_DIZIN YENI_DIZIN [KAYNAK_KOK]   (KAYNAK_KOK: oz/ altini iceren agac; varsayilan depo koku)
 ESKI=$(realpath "${1:?eski arac dizini}"); YENI=${2:?yeni dizin}; mkdir -p "$YENI"; YENI=$(realpath "$YENI"); D=$(cd "$(dirname "$0")" && pwd); R=$(realpath "${3:-$D/../..}")
-W=$YENI/work; rm -rf $W; mkdir -p $W/oz; cp -r $R/oz/komut $W/oz/; cp -r $R/oz/arac $R/oz/asm $R/oz/elf2 $R/oz/dogr $R/oz/yap $W/oz/; cp $R/oz/coz.pmy $R/oz/yaz.pmy $W/oz/
+W=$YENI/work; rm -rf $W; mkdir -p $W/oz; cp -r $R/oz/komut $W/oz/; cp -r $R/oz/arac $R/oz/asm $R/oz/elf2 $R/oz/dogr $R/oz/yap $W/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $W/oz/
 rm -f $W/oz/asm/asm.pmb $W/oz/elf2/gen2.pmb $W/oz/dogr/valid.pmb $W/oz/yap/yap.pmb $W/oz/arac/*.pmb
 cat > $W/asmwrap.sh <<EOW
 #!/bin/bash
@@ -14,9 +14,11 @@ cat > $W/asmwrap.sh <<EOW
 EOW
 chmod +x $W/asmwrap.sh; export ASM2=$W/asmwrap.sh ARAC=$ESKI
 for t in arac asm elf2 dogr yap; do (cd $W/oz/$t && ./uret.sh) > $W/uret_$t.log 2>&1 || { echo "yenile: $t derlenemedi: $(tail -2 $W/uret_$t.log)"; exit 1; }; done
-for t in coz yaz; do (ulimit -v 900000; timeout 60 $ESKI/yap.elf < $W/oz/$t.pmy > $W/$t.pma && timeout 60 $ESKI/asm.elf < $W/$t.pma > $W/$t.pmb) || { echo "yenile: $t.pmy cevrilemedi"; exit 1; }; done
-declare -A KAYNAK=([gen2]=$W/oz/elf2/gen2.pmb [asm]=$W/oz/asm/asm.pmb [valid]=$W/oz/dogr/valid.pmb [yap]=$W/oz/yap/yap.pmb [doldur]=$W/oz/arac/doldur.pmb [opstab]=$W/oz/arac/opstab.pmb [fmtc]=$W/oz/arac/fmtc.pmb [sablonc]=$W/oz/arac/sablonc.pmb [komut]=$W/oz/arac/komut.pmb [coz]=$W/coz.pmb [yaz]=$W/yaz.pmb)
-ARALAR="gen2 asm valid yap doldur opstab fmtc sablonc komut coz yaz"
+(cd $W/oz && ./uret_ikili.sh "" $W) > $W/uret_ikili.log 2>&1 || { echo "yenile: coz/yaz tablolari komut tablosundan uretilemedi: $(tail -2 $W/uret_ikili.log)"; exit 1; }
+cp $W/oz/paketle.pmy $W/paketle.pmy
+for t in paketle coz yaz; do (ulimit -v 900000; timeout 60 $ESKI/yap.elf < $W/$t.pmy > $W/$t.pma && timeout 60 $ESKI/asm.elf < $W/$t.pma > $W/$t.pmb) || { echo "yenile: $t.pmy cevrilemedi"; exit 1; }; done
+declare -A KAYNAK=([gen2]=$W/oz/elf2/gen2.pmb [asm]=$W/oz/asm/asm.pmb [valid]=$W/oz/dogr/valid.pmb [yap]=$W/oz/yap/yap.pmb [doldur]=$W/oz/arac/doldur.pmb [opstab]=$W/oz/arac/opstab.pmb [fmtc]=$W/oz/arac/fmtc.pmb [sablonc]=$W/oz/arac/sablonc.pmb [komut]=$W/oz/arac/komut.pmb [paketle]=$W/paketle.pmb [coz]=$W/coz.pmb [yaz]=$W/yaz.pmb)
+ARALAR="gen2 asm valid yap doldur opstab fmtc sablonc komut paketle coz yaz"
 for b in $ARALAR; do (ulimit -v 900000; timeout 60 $ESKI/coz.elf < ${KAYNAK[$b]} > $W/$b.l) || { echo "yenile: coz.elf reddetti: $b"; exit 1; }
   read -r V < <( (ulimit -v 900000; timeout 60 $ESKI/valid.elf < $W/$b.l) ); case "$V" in 1*) ;; *) echo "yenile: dogrulayici reddetti $b ('$V')"; exit 1;; esac; done
 mkdir -p $YENI/ara $YENI/son

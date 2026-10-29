@@ -808,6 +808,9 @@ data STR_NOPS = "NOPS\0"
 data STR_KIND = "KIND\0"
 data STR_HOSTCOUNT = "HOSTCOUNT \0"
 data STR_OPLAST = "OPLAST \0"
+data STR_NOPSZ = "NOPSZ\0"
+data STR_KINDWN = "KINDWN \0"
+data STR_KINDWZ = "KINDWZ\0"
 data STR_NAMECOUNT = "NAMECOUNT \0"
 data STR_ARITY = "ARITY\0"
 data STR_OPSYM = "OP_\0"
@@ -829,6 +832,29 @@ s1: ge z, i, n
     addi i, i, 1
     jmp s1
 s2: ret 0
+}
+
+; tur kimliginin tel (PMB1) sinifi: KIND kaydi ext anahtar 2 (0 duz, 1 isaretli dogrudan, 2 goreli etiket); yoksa 0
+func kwire(kid) {
+    add a, kid, KA
+    ld o, a, 0
+    add b, o, T
+    ld ne2, b, 3
+    mov i, 0
+w1: ge z, i, ne2
+    jnz z, w9
+    shli t, i, 1
+    add t, t, o
+    addi t, t, 4
+    add b, t, T
+    ld k, b, 0
+    eqi z, k, 2
+    jz z, w2
+    ld v, b, 1
+    ret v
+w2: addi i, i, 1
+    jmp w1
+w9: ret 0
 }
 
 func emit_tab() {
@@ -875,6 +901,49 @@ t5: ge z, i, n
     addi i, i, 1
     jmp t5
 t6: host putc, 10
+    call x, pdat, STR_NOPSZ
+    mov i, 0
+z7: ge z, i, n
+    jnz z, z8
+    call r, oprec, i
+    call x, opfields, r
+    ld nk, G, 24
+    host putc, 32
+    host putc, 122
+    host puti, nk
+    addi i, i, 1
+    jmp z7
+z8: host putc, 10
+    call x, pdat, STR_KINDWN
+    muli t, n, 3
+    host puti, t
+    host putc, 10
+    call x, pdat, STR_KINDWZ
+    mov i, 0
+kw1: ge z, i, n
+    jnz z, kw9
+    call r, oprec, i
+    call x, opfields, r
+    ld nk, G, 24
+    ld kp, G, 25
+    mov k, 0
+kw2: gei z, k, 3
+    jnz z, kw8
+    mov cl, 0
+    ge z, k, nk
+    jnz z, kw3
+    add a, kp, k
+    add a, a, T
+    ld kid, a, 0
+    call cl, kwire, kid
+kw3: host putc, 32
+    host putc, 122
+    host puti, cl
+    addi k, k, 1
+    jmp kw2
+kw8: addi i, i, 1
+    jmp kw1
+kw9: host putc, 10
     call x, pdat, STR_KIND
     mov i, 0
 t7: ge z, i, n

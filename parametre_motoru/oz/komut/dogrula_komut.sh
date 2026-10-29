@@ -23,7 +23,7 @@ grep -qE '^ *X\([A-Z0-9_]+,' $R/src/ops.h && fail "src/ops.h hala komut tanimi i
 # ---- 2) gecis esdegerligi (donmus ops.h.txt + bagimsiz awk)
 awk -f gecis/ops_to_pmk.awk gecis/ops.h.txt | mod kanon > $T/gecis.pmk
 cmp -s $T/gecis.pmk gecis/komutlar_v1.pmk && pass || fail "awk gecisi (ops.h.txt) komutlar_v1.pmk ile ayni degil"
-mod tab < gecis/komutlar_v1.pmk | head -4 > $T/t4.new
+mod tab < gecis/komutlar_v1.pmk | grep -E '^(OPCOUNT|OPNAMES|NOPS|KIND) ' > $T/t4.new
 arac opstab < gecis/ops.h.txt > $T/t4.old
 [ "$(tr -s ' \n' ' ' < $T/t4.new)" = "$(tr -s ' \n' ' ' < $T/t4.old)" ] && pass || fail "sozluk (OPCOUNT/OPNAMES/NOPS/KIND) eski opstab ciktisindan farkli"
 # eski ops.h'in X satirlari = tablodan uretilen X satirlari (bosluk duzeninden bagimsiz)
@@ -32,13 +32,18 @@ mod opsh < gecis/komutlar_v1.pmk | norm > $T/x.new; norm < gecis/ops.h.txt > $T/
 [ -s $T/x.old ] && cmp -s $T/x.new $T/x.old && pass || fail "ops_gen.h komut satirlari eski ops.h ile farkli"
 cmp -s $TAB gecis/komutlar_v1.pmk && echo "bilgi: komutlar.pmk == komutlar_v1.pmk (tablo genisletilmedi)" || echo "bilgi: komutlar.pmk komutlar_v1.pmk'den farkli (kasitli genisletme)"
 # ---- 3) tablodan yeniden uretim (ops.h OKUNMADAN): bayt-bayt ayni
-rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $T/w/oz/
+rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $T/w/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w/oz/
 rm -f $T/w/oz/asm/asm.pmb $T/w/oz/dogr/valid.pmb $T/w/oz/elf2/gen2.pmb
 (cd $T/w/oz/arac && ./uret.sh $PM > /dev/null 2>&1) && for t in asm dogr elf2; do (cd $T/w/oz/$t && ./uret.sh $PM > /dev/null 2>&1) || fail "$t: tablodan uretilemedi"; done
 cmp -s $T/w/oz/asm/asm.pmb $R/oz/asm/asm.pmb && pass || fail "tablodan uretilen asm.pmb depodakiyle farkli"
 cmp -s $T/w/oz/dogr/valid.pmb $R/oz/dogr/valid.pmb && pass || fail "tablodan uretilen valid.pmb depodakiyle farkli"
 cmp -s $T/w/oz/elf2/gen2.pmb $R/oz/elf2/gen2.pmb && pass || fail "tablodan uretilen gen2.pmb depodakiyle farkli"
 cmp -s $T/w/oz/arac/sablonc.pmb $R/oz/arac/sablonc.pmb && pass || fail "sablonc.pmb farkli"
+# PMB1 cozucu/kodlayici tablolari (NOPS dizisi + komut siniri) komut tablosundan uretilir
+(cd $T/w/oz && ./uret_ikili.sh $PM $T/w/oz > /dev/null 2>&1) || fail "coz/yaz tablosu uretilemedi"
+cmp -s $T/w/oz/coz.pmy $R/oz/coz.pmy && pass || fail "tablodan uretilen coz.pmy depodakiyle farkli"
+cmp -s $T/w/oz/yaz.pmy $R/oz/yaz.pmy && pass || fail "tablodan uretilen yaz.pmy depodakiyle farkli"
+$PM yapisal $R/oz/paketle.pmy -o $T/pk.pmb --strip > /dev/null 2>&1; cmp -s $T/pk.pmb ../arac/paketle.pmb && pass || fail "paketle.pmb guncel degil"
 # ---- 4) kayipsiz gidis-donus
 rt() {   # etiket sayisal_tablo_dosyasi
   mod kanon < "$2" > $T/r.k 2> /dev/null || { fail "$1: kanon reddetti ($(head -c 30 $T/r.k))"; return; }
@@ -111,7 +116,7 @@ cmp -s $T/p_new.pmb $T/p_old.pmb && pass || fail "farkli mnemonikle ayni komut a
 [ "$($PM run $T/p_new.pmb)" = "42" ] && pass || fail "yeni adli program calismadi"
 $PM liste $T/p_new.pmb > $T/p.l; (ulimit -v 900000; $PM run $T/w2/oz/elf2/gen2.pmb < $T/p.l > $T/p.elf 2>/dev/null) && chmod +x $T/p.elf && [ "$($T/p.elf)" = "42" ] && pass || fail "adi degisen tablodan uretilen gen2 ile ELF calismadi"
 # ---- 7) genisletme: yeni komut FMIN (d,f,f) = yalniz tablo satiri + tek sablon satiri
-rm -rf $T/w3; mkdir -p $T/w3/oz $T/w3/src; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $T/w3/oz/; cp -r $R/src $R/Makefile $T/w3/; rm -f $T/w3/oz/asm/asm.pmb $T/w3/oz/dogr/valid.pmb $T/w3/oz/elf2/gen2.pmb
+rm -rf $T/w3; mkdir -p $T/w3/oz $T/w3/src; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $T/w3/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w3/oz/; cp -r $R/src $R/Makefile $T/w3/; rm -f $T/w3/oz/asm/asm.pmb $T/w3/oz/dogr/valid.pmb $T/w3/oz/elf2/gen2.pmb
 mod gor < $TAB | awk '{print} /^op 54 GEI/{print "op 55 FMIN fmin d,f,f"}' | mod yaz > $T/w3/oz/komut/komutlar.pmk
 [ "$(mod dogrula < $T/w3/oz/komut/komutlar.pmk)" = "1" ] && pass || fail "genisletilmis tablo gecersiz"
 echo 'fmin: F2 0F 10 83 R_B F2 0F 5D 83 R_C F2 0F 11 83 R_A' >> $T/w3/oz/elf2/sablon.txt
@@ -121,7 +126,10 @@ for t in asm dogr elf2; do (cd $T/w3/oz/$t && ./uret.sh $PM > /dev/null 2>&1) ||
 printf 'func main() {\n mov a, 1.5\n mov b, 2.5\n fmin c, a, b\n host putf, c\n host putc, 10\n mov d, -3.0\n fmin e, b, d\n host putf, e\n host putc, 10\n halt\n}\n' > $T/fm.pma
 (ulimit -v 900000; $PM run $T/w3/oz/asm/asm.pmb < $T/fm.pma > $T/fm.pmb 2> $T/fm.err) && pass || fail "genisletilmis assembler fmin'i kabul etmedi: $(head -c 80 $T/fm.pmb)"
 (ulimit -v 900000; $PM run $R/oz/asm/asm.pmb < $T/fm.pma > /dev/null 2>&1) && fail "eski assembler fmin'i kabul etti" || pass
-$T/w3/pm liste $T/fm.pmb > $T/fm.l 2>/dev/null && pass || fail "yeni liste araci fmin'i bilmiyor"
+$T/w3/pm liste $T/fm.pmb > $T/fm.cpp.l 2>/dev/null && pass || fail "yeni C++ liste araci fmin'i bilmiyor"
+(cd $T/w3/oz && ./uret_ikili.sh $PM $T/w3/oz > /dev/null 2>&1) || fail "genisletilmis tablodan coz/yaz uretilemedi"
+(ulimit -v 900000; $PM run $T/w3/oz/coz.pmy < $T/fm.pmb > $T/fm.l 2>/dev/null) && pass || fail "tablodan uretilen cozucu fmin'li PMB1'i cozemedi"
+cmp -s $T/fm.l $T/fm.cpp.l && pass || fail "tablodan uretilen cozucu ile yeni C++ liste araci farkli liste uretti"
 v=$( (ulimit -v 900000; $PM run $T/w3/oz/dogr/valid.pmb < $T/fm.l 2>/dev/null) | head -c 1 ); [ "$v" = "1" ] && pass || fail "genisletilmis dogrulayici fmin programini kabul etmedi ($v)"
 (ulimit -v 900000; $PM run $T/w3/oz/elf2/gen2.pmb < $T/fm.l > $T/fm.elf 2>/dev/null) && chmod +x $T/fm.elf && [ "$($T/fm.elf)" = "$(printf '1.5\n-3')" ] && pass || fail "fmin ELF'i beklenen cikti vermedi: $($T/fm.elf 2>&1 | head -c 60)"
 echo "komut tablosu: $ok gecti, $bad basarisiz"
