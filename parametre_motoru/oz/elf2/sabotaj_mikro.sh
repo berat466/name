@@ -8,7 +8,7 @@ mut() {   # etiket ifade (sablon.txt uzerinde)
   rm -rf $T/w; mkdir -p $T/w/src $T/w/oz; cp -r $R/oz/komut $T/w/oz/; cp -r $R/oz/arac $R/oz/elf2 $T/w/oz/
   (cd $T/w/oz/elf2 && perl -0pi -e "$2" sablon.txt && ! cmp -s sablon.txt $D/sablon.txt) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
   (cd $T/w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: uretici derlenemedi"; kacti=$((kacti+1)); return; }
-  if GEN2=$T/w/oz/elf2/gen2.pmb $D/dogrula_mikro.sh $PM 40 > $T/log 2>&1; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+  if ELF2DIR=$T/w/oz/elf2 GEN2=$T/w/oz/elf2/gen2.pmb $D/dogrula_mikro.sh $PM 40 > $T/log 2>&1; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
 }
 mut sub_op 's/(p_alu_sub:.*?) 48 29 C8/$1 48 01 C8/'
 mut mul_op 's/(p_alu_mul:.*?) 48 0F AF C1/$1 48 21 C8 90/'

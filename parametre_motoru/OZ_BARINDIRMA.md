@@ -212,7 +212,7 @@ Bu bölüm kullanıcı kararının dört maddesini kapatır: (1) `pm yapisal` pa
 
 ### Hâlâ metne / elle yazılmış kurala bağlı olanlar (dürüst liste) [Kesin]
 Komutun *kimliği, adı, operand sayısı/türleri, tel sınıfı, host listesi* artık sayıdır. Aşağıdakiler **henüz değil**:
-1. **Komut anlamı (yürütme):** C++ `anlam.h` (55 `SEM_*` makrosu, mikro-işlem listeleri), `vm.cpp` (ondalık işlemler elle), `native_x64.cpp`, `host.h` (host anlamı). Yeni komutun `pm run` ile çalışması için bunlar elle yazılır (`FMIN` testinde `pm` yalnızca liste/asm için kullanıldı, yürütmeyi ELF yaptı).
+1. **Komut anlamı (yürütme) — §3j ile sayıya taşındı (komut→mikro-işlem düzeyinde); mikro-işlemlerin kendisi hâlâ elle:** C++ `anlam.h` (55 `SEM_*` makrosu, mikro-işlem listeleri), `vm.cpp` (ondalık işlemler elle), `native_x64.cpp`, `host.h` (host anlamı). Yeni komutun `pm run` ile çalışması için bunlar elle yazılır (`FMIN` testinde `pm` yalnızca liste/asm için kullanıldı, yürütmeyi ELF yaptı).
 2. **Assembler yeniden yazma kuralları:** `asm.pma.in` `rewrite` işlevi: anlık-biçim eşlemeleri (`add→addi` …), karşılaştırma takasları, takma komutlar (`gt ge fgt fge`) **komut numaralarıyla ve aralarındaki aritmetik ilişkilerle** (`m+33`, `m+41`…) kodlanmış (~33 literal). Yeni komutun anlık biçimi/yer değiştirme kuralı tabloda tanımlanamıyor.
 3. **Doğrulayıcı kuralları:** `valid.pma.in` komut başına özel durumlar (`call ret halt jmp jz jnz divi modi …`) sembolik ama komut-özel; genel bir "kural bölümü" yok.
 4. **ELF üretici:** komutların x86-64 şablonları **metin** (`sablon.txt`, 83 satır, baytlar onaltılık); şablon dili simgeleri (`R_A`, `REL_*`…) `sablonc.pma` kodunda sabit; `gen2` özel işlemleri (host→RT çağrısı, `ld/st` ayrıcalık, geri-atlama yakıtı) komut sembollerine göre elle yazılmış; RT işlev sırası (`RTF_*`) `statik.sozluk`'ta elle.
@@ -224,6 +224,24 @@ Komutun *kimliği, adı, operand sayısı/türleri, tel sınıfı, host listesi*
 
 ### Önerilen sıra (sonraki adımlar, ana sırayı bozmadan)
 (a) Yeniden yazma kuralları ve doğrulayıcı kurallarını tabloya (ayrılmış bölüm 4–15) taşı → bir komutun anlık biçimi/takası/doğrulama kuralı sayıyla tanımlanır; (b) x86 şablonlarını sayısal bölüme taşı (şablon dili kendi sayısal tablosu); (c) `fmt.txt`'te mnemonikleri sembolle yaz (`@M_ADD@`); (d) komut *anlamını* (mikro-işlem listeleri) sayısal bölüme taşı ve C++ `anlam.h`'yi ondan üret; (e) araç kaynaklarının kanonik biçimini PMB1/liste yap, `.pma` görünümü `dump`+ad yan tablosundan üret.
+
+
+## 3j. Yedinci aşama (4/5): komut anlamları sayıya taşındı (`PRIM` + `SEM` bölümleri, `svm`, mikro-işlem şablonları)
+
+**Karar (kullanıcı):** komutların yalnızca *adları* değil *ne yaptıkları* da sayısal parametre olacak; eski C++ motor bağımsız doğrulama referansı olarak kalacak; yeni anlam tanımı "C++ üreten başka bir şablon" olmayacak, işleyen mantık gerçekten sayıyla ifade edilecek.
+
+### Yapılan [Kesin]
+- **PMK1 bölüm 4 PRIM, bölüm 5 SEM** (`oz/komut/KOMUT_TABLOSU.md`): 47 mikro-işlem (okuma/yazma, ALU, karşılaştırma, bölme, bellek, denetim akışı, host, ondalık, `sel`) ve 55 komutun mikro-programı. `src/anlam.h`'deki (C++) mikro-programlar `anlam_dump.cpp` ile dökülüp tablodaki `sem` satırlarıyla **satır satır eşit** bulundu (`dogrula_komut.sh` bölüm 8). `komut` aracı bölümleri doğrular (bilinmeyen işlem, geçicinin tanımdan önce kullanılması, operand yuvası, yinelenen anlam …), `gor`/`yaz` ile kayıpsız metin görünümü, `tab` ile sözlük (`PR_*`, `PRCLS`, `PRNF`, `SEMOFF`, `SEMDAT`) üretir.
+- **Sayısal yürütücü `svm`** (`oz/sayisal/svm.pma`, 188 geçti / 0 hata): tabloyu **çalışma anında** okur, her komutu SEM mikro-programından yürütür; kimlik değil işlem *adı* ile eşler (yeniden numaralama güvenli). C++ `pm run` ile karşılaştırma (`dogrula_svm.sh`): depodaki tüm programlar, yakıt sınırlı koşular (tuzak noktası dahil), 2 rastgele program üreteci, ondalık özel değerler (NaN, ±sonsuz, ±0, alt normal; bit düzeyinde), grafik (kare raporu, PPM) — **188 geçti, 0 kalan** (2 program zaman aşımı nedeniyle atlandı).
+- **Yerel kod üretimi SEM'den:** `sablon.txt`'te 40 mikro-işlem şablonu (`p_<işlem>`); `gen2` bir komutun yerleşik x86 şablonu yoksa SEM'den üretir, `-6 1` seçeneğiyle şablonu olan komutlar için de zorlar. Geçiciler `[rsp-8t]` (kırmızı bölge), alan simgeleri `TMP_Fk/OPR_Fk/OPV_Fk/KAD_Fk/LIT_Fk`. Zorlanmış mikro yolu ile yerleşik şablon yolu aynı sonuçları verir: `dogrula_elf2.sh` zorlanmış (`GENPRE="-6 1"`, sabit nokta dahil) ve normal koşu; `dogrula_mikro.sh` (ondalık özel değerler × tüm ondalık komutlar, tamsayı sınır değerleri × tüm ikili/anlık/bölme komutları, sıfıra bölme, 40 rastgele program).
+- **FMIN, yalnızca iki tablo kaydıyla** (`op 55 FMIN fmin d,f,f` + `sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4`): assembler, doğrulayıcı, çözücü, `svm` ve ELF üretici **C++ ve x86 şablonu yazılmadan** çalıştı. Bağımsız oracle (elle yazılmış C++ `(x<y)?x:y`) ile 41×41 bit deseni (NaN yükleri, ±sonsuz, ±0, alt normal, 2^63 sınırı dahil): `svm` = ELF(yalnız-SEM) = ELF(elle yazılmış `minsd` şablonu) = ELF(`-6 1`) = oracle. Yeni işlem (`xyz`) tanımlandığında yürütücü bilmediği işlemi **reddeder** (gen2 çıktı vermez, svm uydurma sonuç vermez).
+
+### Dürüst sınırlar [Kesin]
+- Mikro-işlemlerin **kendi anlamı** hâlâ her yürütücüde elle yazılmış (C++ `anlam.h`/`vm.cpp`, svm'de bir kol, gen2'de bir x86 şablonu). Sayısal olan, *komutların bu işlemlerden nasıl oluştuğu*. Yeni komut kod gerektirmez; yeni **işlem** gerektirir (bilinçli genişletme noktası).
+- C++ `pm` hâlâ kendi (elle yazılmış) `anlam.h`'sini kullanır: `pm run` tabloya eklenen yeni komutu (FMIN) çalıştırmaz; referans rolü korunur, yeni komutlar için oracle testte ayrıca yazılır.
+- Mikro-işlem şablonları geçicileri bellekte tutar (kayıt tahsisi yok): yerleşik şablonlardan yavaş/uzun kod; eniyileme sonraki katmanın işidir.
+- Yeniden yazma kuralları, doğrulayıcı kuralları ve x86 şablon metni hâlâ elle (aşağıdaki §3i listesi geçerli; 1. madde artık kapandı).
+- Test düzeneği hâlâ awk/sed/g++ (oracle) kullanır.
 
 
 ## 4. Açık sorular ve riskler

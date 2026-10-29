@@ -6,7 +6,7 @@ PM=${1:-../../pm}; NR=${2:-60}; D=$(cd "$(dirname "$0")" && pwd); cd "$D"; PM=$(
 TABLO=${TABLO:-$D/../komut/komutlar.pmk}; SVM=${SVM:-$D/svm.pmb}
 ok=0; bad=0; skip=0
 pass() { ok=$((ok+1)); }; fail() { bad=$((bad+1)); echo "HATA: $1"; }
-lim() { (ulimit -v 2000000; timeout 120 "$@"); }
+lim() { (ulimit -v 2000000; timeout ${LIMS:-120} "$@"); }
 # kos etiket pmb stdin_dosyasi [yakit] : pm run ile svm ayni cikti/cikis/tuzak
 kos() {
   local et=$1 pmb=$2 inp=$3 fuel=$4
@@ -15,26 +15,30 @@ kos() {
   lim $PM run $pmb ${fuel:+--fuel $fuel} < $inp > $T/o1 2> $T/e1; r1=$?
   if [ $r1 = 124 ]; then skip=$((skip+1)); return; fi
   lim $PM run $SVM < $T/in.txt > $T/o2 2> $T/e2; r2=$?
-  if [ $r2 = 124 ]; then skip=$((skip+1)); return; fi
+  if [ $r2 = 124 ]; then if [ -n "$HIZLI" ]; then fail "$et: svm zaman asimi"; else skip=$((skip+1)); fi; return; fi
   local exp=$T/o1x; cp $T/o1 $exp
   if [ $r1 = 2 ]; then tn=$(grep -a '^TRAP:' $T/e1 | cut -d' ' -f2); printf '@@TRAP %s\n' "$tn" >> $exp; fi
   if [ $r1 = $r2 ] && cmp -s $exp $T/o2; then pass; else fail "$et: pm rc=$r1 svm rc=$r2 $(cmp $exp $T/o2 2>&1 | head -c 70) $(head -c 60 $T/e2)"; fi
 }
-: > $T/bos; printf 'abc\n\200\377\000xyz 123\n' > $T/girdi
-# ---- 1) depodaki programlar
-for f in $(find $R/tests $R/uygulamalar $R/bench -name '*.pma' | sort); do
+: > $T/bos; $PM asm svm.pma -o $T/s.pmb --strip > /dev/null 2>&1 && cmp -s $T/s.pmb svm.pmb && pass || fail "svm.pmb guncel degil (pm asm svm.pma --strip)"
+ printf 'abc\n\200\377\000xyz 123\n' > $T/girdi
+# ---- 1) depodaki programlar (HIZLI=1: yalniz sinir degerleri ve ondalik; sabotaj icin)
+[ -n "$HIZLI" ] || for f in $(find $R/tests $R/uygulamalar $R/bench -name '*.pma' | sort); do
   $PM asm $f -o $T/k.pmb --strip > /dev/null 2>&1 || continue
   kos "$f" $T/k.pmb $T/bos; kos "$f (girdili)" $T/k.pmb $T/girdi
 done
 # ---- 2) yakit sinirli (tuzak noktasi)
-n=0; for f in $(find $R/tests $R/uygulamalar -name '*.pma' | sort | head -30); do
+[ -n "$HIZLI" ] || { n=0; for f in $(find $R/tests $R/uygulamalar -name '*.pma' | sort | head -30); do
   $PM asm $f -o $T/k.pmb --strip > /dev/null 2>&1 || continue
-  for N in 1 3 50 1234; do kos "yakit:$f N=$N" $T/k.pmb $T/bos $N; done; done
+  for N in 1 3 50 1234; do kos "yakit:$f N=$N" $T/k.pmb $T/bos $N; done; done; }
 # ---- 3) rastgele programlar (iki uretec)
-for s in $(seq 1 $NR); do
+[ -n "$HIZLI" ] || for s in $(seq 1 $NR); do
   awk -v seed=$s -f ../elf2/rastgele2.awk > $T/r.pma; $PM asm $T/r.pma -o $T/k.pmb --strip > /dev/null 2>&1 && kos "rastgele2-$s" $T/k.pmb $T/girdi
   awk -v seed=$s -f ../elf/rastgele_pma.awk > $T/r.pma; $PM asm $T/r.pma -o $T/k.pmb --strip > /dev/null 2>&1 && kos "rastgele1-$s" $T/k.pmb $T/girdi
 done
+# ---- 3b) tamsayi sinir degerleri (INT64_MIN/MAX, -1, kaydirma 63/64/65, bolme/mod INT64_MIN/-1, anlik bicimler) ve sifira bolme tuzaklari
+../elf2/tamsayi_prog.sh $T/ti > /dev/null
+for f in int dz1 dz2; do $PM asm $T/ti/$f.pma -o $T/k.pmb --strip > /dev/null 2>&1 && kos "tamsayi:$f" $T/k.pmb $T/bos; done
 # ---- 4) ondalik: ozel degerler (NaN, sonsuz, -0, alt normal ...) ve rastgele desenler, putf
 ../elf2/ondalik_prog.sh $T/fp > /dev/null
 for f in ozel pf1; do $PM asm $T/fp/$f.pma -o $T/k.pmb --strip > /dev/null 2>&1 && kos "ondalik:$f" $T/k.pmb $T/bos; done

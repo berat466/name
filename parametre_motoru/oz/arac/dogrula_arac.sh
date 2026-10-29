@@ -18,7 +18,8 @@ cmp_fmt "fmt.txt" $D/../yap/fmt.txt
 for s in $(seq 1 $NR); do awk -v seed=$s 'function r(n){x=(x*1664525+1013904223)%4294967296;return int(x/65536)%n}
   BEGIN{x=seed*7919+3; n=1+r(30); A=" !\"#$%&\x27()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"; for(i=0;i<n;i++){ if(r(6)==0) print "# yorum " r(100); if(r(9)==0) print ""; nm=""; l=1+r(8); for(j=0;j<l;j++) nm=nm substr("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_",1+r(37),1); t=""; l=r(30); for(j=0;j<l;j++) t=t substr(A,1+r(length(A)),1); if (r(8)==0) print nm; else print nm " " t } }' > $T/fmt_r.txt; cmp_fmt "rastgele-$s" $T/fmt_r.txt; done
 # ---- 3) sablonc: gercek sablon.txt ve rastgele sablon bildirimleri; reddedilen girdilerde ikisi de reddetmeli
-cmp_sab() { { cat $R/oz/komut/komutlar.pmk; echo "@@SABLON"; cat "$2"; } > $T/sin.txt; awk -f ref/sablon_ref.awk $R/oz/komut/gecis/ops.h.txt "$2" 2>/dev/null | sed -E 's/^data (TPLS|TPL) =/\1/' > $T/rs.txt; rr=${PIPESTATUS[0]}; arac sablonc < $T/sin.txt > $T/ms.txt 2>/dev/null; rm_=$?
+PRIMS=$( { echo "@@gor"; cat $R/oz/komut/komutlar.pmk; } | arac komut | awk '/^prim /{print $3}' | tr '\n' ' ')
+cmp_sab() { { cat $R/oz/komut/komutlar.pmk; echo "@@SABLON"; cat "$2"; } > $T/sin.txt; awk -v PRIMS="$PRIMS" -f ref/sablon_ref.awk $R/oz/komut/gecis/ops.h.txt "$2" 2>/dev/null | sed -E 's/^data (TPLS|TPL) =/\1/' > $T/rs.txt; rr=${PIPESTATUS[0]}; arac sablonc < $T/sin.txt > $T/ms.txt 2>/dev/null; rm_=$?
   if [ $rr = 0 ]; then [ $rm_ = 0 ] && [ "$(nrm $T/rs.txt)" = "$(nrm $T/ms.txt)" ] && pass || fail "sablonc farkli: $1 (rr=$rr rm=$rm_)"; else [ $rm_ != 0 ] && { pass; nrej=$((nrej+1)); } || fail "sablonc: referans reddetti, arac kabul etti: $1"; fi; }
 cmp_sab "sablon.txt" $R/oz/elf2/sablon.txt
 for s in $(seq 1 $NR); do awk -v seed=$s 'function r(n){x=(x*1664525+1013904223)%4294967296;return int(x/65536)%n}
@@ -27,6 +28,9 @@ for s in $(seq 1 $NR); do awk -v seed=$s 'function r(n){x=(x*1664525+1013904223)
    m=1+r(20); for(i=1;i<=nn;i++) used[i]=0; for(q=0;q<m;q++){ i=1+r(nn); if(used[i]) continue; used[i]=1; line=N[i] ":"; t=r(12); for(j=0;j<t;j++){ if(r(3)==0) line=line " " K[1+r(nk)]; else line=line " " substr(hx,1+r(16),1) substr(hx,1+r(16),1) } if(r(9)==0) line=line " # yorum"; if(r(15)==0) line=line " BILINMEZ"; if(r(40)==0) line="bilinmeyen_ad: 00"; print line; if(r(8)==0) print "# aciklama"; if(r(10)==0) print "" } }' > $T/sab_r.txt; cmp_sab "rastgele-$s" $T/sab_r.txt; done
 # yinelenen tanim: arac reddeder (referans sessizce ustune yazar) -> bilincli fark
 printf 'mov: 48 90\nmov: 90\n' > $T/dup.txt; { cat $R/oz/komut/komutlar.pmk; echo "@@SABLON"; cat $T/dup.txt; } | arac sablonc > /dev/null 2>&1 && fail "sablonc yinelenen tanimi reddetmedi" || pass
+printf 'p_zzz: 90\n' > $T/pz.txt; { cat $R/oz/komut/komutlar.pmk; echo "@@SABLON"; cat $T/pz.txt; } | arac sablonc > /dev/null 2>&1 && fail "sablonc bilinmeyen mikro-islem sablonunu kabul etti" || pass
+printf 'p_rd: TMP_F4\n' > $T/pz.txt; { cat $R/oz/komut/komutlar.pmk; echo "@@SABLON"; cat $T/pz.txt; } | arac sablonc > /dev/null 2>&1 && fail "sablonc bilinmeyen mikro simgeyi kabul etti" || pass
+printf 'p_rd: 90\np_rd: 90\n' > $T/pz.txt; { cat $R/oz/komut/komutlar.pmk; echo "@@SABLON"; cat $T/pz.txt; } | arac sablonc > /dev/null 2>&1 && fail "sablonc yinelenen mikro sablonu kabul etti" || pass
 # ---- 4) doldur: rastgele sozluk ve sablonlar
 cmp_dol() { awk -f ref/doldur_ref.awk "$2" > $T/rd.txt 2>/dev/null; rr=$?; arac doldur < "$2" > $T/md.txt 2>/dev/null; rm_=$?
   if [ $rr = 0 ]; then [ $rm_ = 0 ] && cmp -s $T/rd.txt $T/md.txt && pass || fail "doldur farkli: $1 (rr=$rr rm=$rm_)"; else [ $rm_ != 0 ] && { pass; nrej=$((nrej+1)); } || fail "doldur: referans reddetti, arac kabul etti: $1"; fi; }

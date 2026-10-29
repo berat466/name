@@ -1,18 +1,22 @@
 # sablon.txt -> "data TPLS = ..." (baslangic dizinleri, -1: yok) ve "data TPL = ..." (simge akisi, -1 ile biter). Yalnizca bicim donusumu.
-# kullanim: awk -f sablon.awk ops.h sablon.txt
+# kullanim: awk -v PRIMS="rd im lk ..." -f sablon.awk ops.h sablon.txt   (PRIMS: komut tablosundaki islem adlari, kimlik sirasiyla 1..; p_<ad> sablonlari TS_PRIM0 + kimlik yuvasina gider)
 BEGIN {
   n = split("R_A R_B R_C I_A I_B I_C K_B MEMW STKEND NREGS8 NP8 CNT MSG_DIV0 MSG_OOB MSG_STACK MSG_DEPTH MSG_ALLOC RSBASE MBASE HEAP0 DATAIMG ND HDR_ENTRY FILESZ MEMSZ FUEL0 MSG_FUEL LIMRT RTW RTNEG STK4 R_B8 R_B16 RTIMG RTNW", S, " ")
   for (i = 1; i <= n; i++) code[S[i]] = 255 + i
   n = split("REL_DIV0 REL_OOB REL_STACK REL_DEPTH REL_ALLOC REL_PUTI REL_PUTC REL_TA REL_TB REL_FA REL_EXIT REL_ENTRY REL_FUEL REL_EXITC REL_RTEND", S, " ")
   for (i = 1; i <= n; i++) code[S[i]] = 299 + i
   code["IMM8C"] = 320
+  n = split("TMP_F0 TMP_F1 TMP_F2 TMP_F3 OPR_F0 OPR_F1 OPR_F2 OPR_F3 OPV_F0 OPV_F1 OPV_F2 OPV_F3 KAD_F0 KAD_F1 KAD_F2 KAD_F3 LIT_F0 LIT_F1 LIT_F2 LIT_F3", S, " ")
+  for (i = 1; i <= n; i++) code[S[i]] = 399 + i
+  np = split(PRIMS, PN, " ")
   nops = 0; pos = 0
 }
 FILENAME ~ /ops\.h/ { if ($0 ~ /^  X\(/) { s = $0; sub(/^  X\(/, "", s); sub(/,.*/, "", s); idx[tolower(s)] = nops; nops++ } ; next }
 FNR == 1 && FILENAME !~ /ops\.h/ {
   nx = split("host_putc host_puti host_putf host_getc host_present host_poll host_frame prologue exit0 trap_div0 trap_oob trap_stack trap_depth trap_alloc header jmp_back jz_back jnz_back trap_fuel ldp stp call_p host_sysw exitc exitc_rt prologue_rt", XN, " ")
   for (i = 1; i <= nx; i++) idx[XN[i]] = nops + i - 1
-  for (i = 0; i < nops + nx; i++) start[i] = -1
+  for (i = 1; i <= np; i++) idx["p_" PN[i]] = nops + nx + i
+  for (i = 0; i < nops + nx + np + 1; i++) start[i] = -1
 }
 FILENAME !~ /ops\.h/ {
   sub(/#.*/, ""); if ($0 ~ /^[ \t]*$/) next
@@ -30,5 +34,5 @@ FILENAME !~ /ops\.h/ {
   }
   tpl = tpl " -1"; pos++
 }
-END { s = ""; for (i = 0; i < nops + nx; i++) s = s " " start[i]; print "data TPLS =" s; print "data TPL =" tpl; for (i = 1; i <= nx; i++) print "TS_" toupper(XN[i]) " " (nops + i - 1) }
+END { s = ""; for (i = 0; i < nops + nx + np + 1; i++) s = s " " start[i]; print "data TPLS =" s; print "data TPL =" tpl; for (i = 1; i <= nx; i++) print "TS_" toupper(XN[i]) " " (nops + i - 1); print "TS_PRIM0 " (nops + nx) }
 function hex(s,   i, v, c) { v = 0; for (i = 1; i <= length(s); i++) { c = index("0123456789ABCDEF", substr(s, i, 1)) - 1; v = v * 16 + c } return v }
