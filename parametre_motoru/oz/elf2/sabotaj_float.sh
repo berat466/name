@@ -34,7 +34,7 @@ mut putf_nan_isaret rt.pma 's/jz sg, pos\n    call x, wb, 45/jz sg, pos\n    jz 
 mut putf_sifir_pad rt.pma 's/f1w: addi c, dg, 48/f1w: addi c, dg, 49/'
 mut putf_alt_normal rt.pma 's/addi e2, ex, -1075/addi e2, ex, -1074/'
 mut putf_borc rt.pma 's/mov br, 1\n    add x, x, big/mov br, 0\n    add x, x, big/'
-mut putf_kare gen2.pma.in 's/    eqi z, h, 2\n    jnz z, srh\n/    eqi z, h, 99\n    jnz z, srh\n/'
+mut putf_kare gen2.pma.in 's/eqi z, h, \@H_PUTF\@\n    jnz z, srh/eqi z, h, 99\n    jnz z, srh/'
 echo "sabotaj(ondalik): $yakalandi yakalandi, $kacti kacti"
 rm -rf $T
 [ $kacti = 0 ]
