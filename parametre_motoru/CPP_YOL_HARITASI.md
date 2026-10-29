@@ -4,9 +4,13 @@
 
 **Çerçeve [Tasarım ilkesi]:** hedef C++ *sözdizimini* derlemek değil, C++'ın *yeteneklerini* sayısal tablolarla sağlamak. Her yetenek: (1) yeni komut/anlam/şablon kaydı ya da (2) motorun kendi dilinde (PMY1 genişletmesi) yazılmış sayısal kitaplık. C++ kaynak dilinin tamamını ayrıştırmak ve `#include/#define` önişlemcisi bilerek kapsam dışıdır (metin tabanlı; sayısal-önce ilkesiyle çelişir).
 
-## Aşama 0 — çekirdek tamamlama (sırada)
-- `call/ret/halt/host` mikro-işlem şablonları (şu an yalnızca sabit şablon)
-- Mikro-işlemlerin en alt uygulamalarının sayısallaşması (kalan elle kod)
+## Aşama 0 — çekirdek tamamlama
+Gösterim: ✅ tamam (kanıtıyla), ❌ eksik. Her madde: bağımsız referans (C++ `pm run`) + hedefli test + regresyon, kanıt satırı ve commit.
+- ✅ `ret` mikro-işlem şablonu (`tpl prim ret`) — kanıt: `oz/elf2/dogrula_cagri.sh` (yalnızca SEM ile tanımlı `RETX s`; fib/özyineleme, yığın taşması, derinlik sınırı, yakıt sayacı, bölme-sıfır tuzağı: ELF = svm = C++ `pm`); sabotaj: şablon silinince ve 3 bozuk şablonda test başarısız
+- ✅ `halt` mikro-işlem şablonu (`tpl prim halt`) — kanıt: aynı betik (`STOP`, çağrılan işlevde erken halt dahil); bozuk şablon (`REL_EXITC`) yakalandı
+- ❌ `call` mikro-işlem şablonu
+- ❌ `host` mikro-işlem şablonu
+- ❌ Mikro-işlemlerin en alt uygulamalarının sayısallaşması (kalan elle kod)
 
 ## Aşama 1 — çalışma zamanı ve sistem (Linux)
 - Bellek geri verme (`free`) ve genel amaçlı ayırıcı (`new/delete`)

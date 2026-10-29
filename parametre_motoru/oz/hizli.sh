@@ -38,6 +38,7 @@ nesne|oz/nesne|dogrula_nesne.sh|||15|PMO1 nesneleri ve baglayici
 gorunum|oz/nesne|dogrula_gorunum.sh|10 10||40|PMO1 okunabilir gorunum ve duzenleme (gor/yaz, uctan uca duzenleme)
 elf|oz/elf|dogrula_elf.sh|10||13|eski ELF ureticisi
 mikro|oz/elf2|dogrula_mikro.sh|5||10|mikro-islem yerel uretimi (zorlanmis)
+cagri|oz/elf2|dogrula_cagri.sh|||5|call/ret/halt/host mikro-islem sablonlari (yalniz SEM ile tanimli komutlar)
 arac|oz/arac|dogrula_arac.sh|20||5|arac/sozluk tazeligi
 testler|tests|run_tests.sh|||3|ana test kosucusu
 ondalik|oz/asm|dogrula_ondalik.sh|5||1|ondalik sabit ayrisimi
@@ -59,14 +60,14 @@ svm|oz/sayisal|sabotaj_svm.sh
 nesne|oz/nesne|sabotaj_nesne.sh
 "
 KRITIK="testler valid mikro arac"
-TUMALAN="elf2 oob yap ikili komut valid asm kural grafik svm nesne gorunum elf mikro arac testler ondalik float"
+TUMALAN="elf2 oob yap ikili komut valid asm kural grafik svm nesne gorunum elf mikro cagri arac testler ondalik float"
 
 # ---- degisen dosya -> alanlar
 alan_dosya() {
   case "$1" in
     *.md|*.txt|*.gitignore|LICENSE*|docs/*) ;;                                  # belge: test gerekmez
     src/*|Makefile|tests/*) echo "testler ikili elf elf2 oob mikro asm kural valid yap svm komut nesne arac ondalik float grafik" ;;   # C++ cekirdek = bagimsiz referans: her sey ona karsi karsilastirilir
-    oz/komut/komutlar.pmk) echo "komut nesne gorunum kural mikro svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
+    oz/komut/komutlar.pmk) echo "komut nesne gorunum kural mikro cagri svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
     oz/komut/*) echo "komut" ;;                                                  # tablo disi: test/belge/gecis dosyalari
     oz/arac/*.sh|oz/arac/ref/*) echo "arac" ;;
     oz/arac/komut.*) echo "arac komut nesne gorunum asm valid elf2" ;;         # komut.pmb tum sozlukleri uretir
@@ -77,8 +78,8 @@ alan_dosya() {
     oz/asm/dogrula_asm.sh|oz/asm/mutpma.awk) echo "asm" ;;
     oz/asm/*) echo "asm kural ondalik" ;;
     oz/dogr/*) echo "valid" ;;
-    oz/elf2/dogrula_*.sh|oz/elf2/sabotaj_*.sh|oz/elf2/*_prog.sh|oz/elf2/rastgele2.awk) echo "elf2 mikro float grafik" ;;
-    oz/elf2/*) echo "elf2 mikro float grafik" ;;
+    oz/elf2/dogrula_*.sh|oz/elf2/sabotaj_*.sh|oz/elf2/*_prog.sh|oz/elf2/rastgele2.awk) echo "elf2 mikro float grafik cagri" ;;
+    oz/elf2/*) echo "elf2 mikro float grafik cagri" ;;
     oz/elf/*) echo "elf oob" ;;
     oz/yap/*) echo "yap" ;;
     oz/nesne/dogrula_gorunum.sh|oz/nesne/sabotaj_gorunum.sh|oz/nesne/duzenle.sh|oz/nesne/ref/*) echo "gorunum" ;;

@@ -83,6 +83,8 @@ Komut tablosuna bağlı üç araç (`asm`, `valid`, `gen2`) artık **sayısal ne
 - **Geri atlama (yakıt) varyantları** tabloda: özel şablonlar `jmp_back jz_back jnz_back` (komutlar) ve `br_back brz_back brnz_back` (işlemler); adlandırma kuralı `<ad>_back` ile `OPBACK`/`PBACK` dizileri üretilir. `gen2` artık `OP_JMP..OP_JNZ` aralığını bilmez: atlama sınıfını (`OPFLOW`, SEM'den) ve hedef yuvasını (`OPTGT`) kullanır.
 - **Denetim akışı mikro-işlemleri (`br brz brnz`) için x86 şablonu var**: yalnızca SEM ile tanımlı yeni bir atlama komutu (`GOTO l`, SEM `br a`) ELF üreticide de çalışır, geri atlamalarda yakıt sayılır (`dogrula_komut.sh` bölüm 9). `call`, `ret`, `halt`, `host` için mikro-işlem şablonu **yok** (çerçeve kurulumu, host/RT çağrısı özel); bu komutlar yerleşik şablonlarla üretilir.
 
+- **`ret` ve `halt` mikro-işlem şablonları var** (`tpl prim ret : 48 8B 44 24 TMP_F0 48 89 03 C3`, `tpl prim halt : E9 REL_EXIT`): yalnızca SEM ile tanımlı yeni bir dönüş/durma komutu ELF üreticide de çalışır (`oz/elf2/dogrula_cagri.sh`). `call` ve `host` sonraki adımlar.
+
 ## Genişletme noktaları
 - **Yeni komut** = OP kaydı + SEM kaydı (x86 şablonu isteğe bağlı eniyilemedir). `dogrula_komut.sh` bölüm 7: `FMIN` (d,f,f) yalnızca bu iki tablo kaydıyla assembler, doğrulayıcı, svm ve ELF üreticide çalıştı; elle yazılmış `minsd` şablonu eklenince aynı sonuç.
 - **Yeni operand türü** = KIND bölümüne kayıt.
