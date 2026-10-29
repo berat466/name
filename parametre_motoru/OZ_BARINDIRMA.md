@@ -305,9 +305,40 @@ Komutun *kimliği, adı, operand sayısı/türleri, tel sınıfı, host listesi*
 
 ### Dürüst sınırlar [Kesin]
 - **Metin hâlâ depoda:** `.pma.in`/`.pma` kaynakları (yorumlar ve adlarla) duruyor; ayrıca `ice_aktar` onlardan nesne üretir ve kapı testi ikisinin eşitliğini sınar. Yani **iki kopya** var, tek doğruluk kaynağı **nesne**; metin kopyası insan düzenleme kolaylığı için. Bir araç yalnızca sayılarla düzenlenirse metin kopyası eskir (kapı testi bunu yakalar).
-- Nesneyi doğrudan sayılarla düzenlemek: tablo tanımlarıyla (komut/anlam/kural/şablon) mümkün ve test edildi; **program mantığını** (asm'nin kendi algoritması) sayılarla düzenlemek kâğıt üzerinde mümkün ama kullanışlı değil (yorumsuz, adsız); görünüm olarak dökücü (disassembler) yapılmadı.
+- Nesneyi doğrudan sayılarla düzenlemek: tablo tanımlarıyla (komut/anlam/kural/şablon) mümkün ve test edildi; **program mantığını** (asm'nin kendi algoritması) sayılarla düzenlemek kâğıt üzerinde mümkün ama kullanışlı değil (yorumsuz, adsız); görünüm olarak dökücü bu aşamada yapılmadı (**§3n'de yapıldı**).
 - `coz/yaz`: sayısal sablonlardan (.sayi.in) PMY1 üretilir; PMB1'e dönüşümde yap + assembler ara metni (üretilmiş, insan metni değil) kullanılır. `yap.pmb` ve `komut/doldur/opstab/fmtc/baglayici.pmb` depodaki sayısal ikililerdir; `fmt.txt` mnemonikleri hâlâ metin.
 - svm ve C++ `pm` hâlâ elle yazılmış anlam kodu içerir (bağımsız referans olarak kalır); mikro-işlem ve şablon-simge uygulamaları elle; `call/ret/halt/host` mikro-işlem şablonu yok; güvenlik katmanları (imza, yetki, izolasyon) yok.
+
+
+## 3n. Yedinci aşama sonrası: hızlı test sistemi ve PMO1 sayısal düzenleme (okunabilir görünüm)
+
+**Karar (kullanıcı):** önce testleri hızlandır, ardından sayısal parametreleri düzenlemeyi kolaylaştır. Akış: *asıl kaynak sayısal parametreler (.pmo) → isteğe bağlı okunabilir görünüm ve düzenleme → güncellenmiş sayısal program → yeni makine kodu.* Bunun ardından (sıra): `call/ret/host` mikro-işlemleri, sonra güvenlik katmanları.
+
+### 1. Hızlı test sistemi (`oz/hizli.sh`) [Kesin]
+- **Ne yapar:** değişen dosyaları (git: çalışma ağacı + izlenmeyenler; `--son`, `--since REF`) alanlara eşler ve yalnızca ilgili paketleri **azaltılmış örnek sayısıyla**, **paralel** (çekirdek sayısı kadar) çalıştırır. Örnek: `oz/asm/*` değişince `asm kural ondalik`; `src/*` (bağımsız C++ referans) ya da `komutlar.pmk` değişince neredeyse hepsi. Belge dosyaları test gerektirmez.
+- **Kritik denetimler her çalıştırmada, kapatılamaz:** ana test kosucusu (`tests/`), PMB1 doğrulayıcı (reddetme/güvenlik kapısı), mikro-işlem yerel üretimi (bellek sınırı, tuzak, denetim akışı, pm ile bit-bit), araç/sözlük tazeliği.
+- **Büyük aşamalardan sonra:** `oz/hizli.sh --tam` (her betik kendi varsayılan, tam argümanlarıyla), `--bag` (yavaş ELF/kendini yeniden üretme zincirleri), `--sabotaj` (test-testi betikleri). `--liste` yalnızca planı yazar.
+- **Mevcut test sistemine dokunmaz:** betikleri kendi argümanlarıyla çağırır; hızlı mod = aynı karşılaştırma yöntemi, daha az rastgele/mutasyon örneği. Ölçüm (4 çekirdek, paralel): hızlı modun **tüm paketleri ≈ 115 sn**, tek alan değişikliği ≈ 35–60 sn (kritik denetimler dahil); **tam koşu (`--tam --bag`, 21 paket) 953 sn, hepsi geçti** (assembler 2252, ELF üretici gen2 2787, doğrulayıcı 5662, PMB1 kodlayıcı/çözücü 3757, pm'siz zincir 1256, PMO1 görünüm 803 denetim …). Yani her değişiklikte tam koşu yerine yaklaşık 8–25 kat daha kısa koşu; büyük aşama sonunda tam koşu.
+- **Kendi denetimi** `oz/dogrula_hizli.sh` (51 geçti): dosya→alan eşlemeleri (gereksiz ve eksik alan), kritik denetimlerin hiçbir değişiklikte eksilmemesi, bozuk `pm` ile hızlı sistemin hata bildirmesi ve çıkış kodu.
+- **Bulunan zayıflık:** `dogrula_ondalik.sh` bozuk bir `pm` ile **boş geçiyordu** (iki taraf da hep reddedince "geçti"); artık hiç kabul edilmeyen koşuyu hata sayar.
+
+### 2. PMO1 okunabilir görünüm ve sayısal düzenleme [Kesin]
+- **Araçlar:** `oz/arac/gorunum.pma/.pmb` (PMA; bağımsız ELF'e çevrilir ve zincire dahildir: `kur.sh`, `yenile.sh`), `oz/nesne/duzenle.sh` (`gor`, `yaz`, `uygula`, `elf`), yan dosyalar `oz/nesne/{asm,valid,gen2}.adlar` (işlev adları + bss bölgeleri; nesnenin parçası değil). Biçim, hata kodları ve sınırlar: `oz/nesne/GORUNUM.md`.
+- **Görünüm:** komut adları, operand sayıları ve türleri komut **tablosundan** okunur (yeni komut otomatik tanınır); etiketler sembolik (araya komut eklenince atlamalar kendiliğinden düzelir); işlev çağrıları ad ile; bellek adresleri bağıl kayıtlardan `&DİZİ`, `~DİZİ`, `&bölge+n` olarak; kayıpsız ham biçim `n{DİZİ*k|…}`. `gor → yaz` **bayt-bayt kimlik**tir (üç depo nesnesi ve rastgele nesneler).
+- **Uçtan uca düzenleme (kopya ağaçta, `dogrula_gorunum.sh` bölüm 5):**
+  - **valid:** yeni kural — *bir işlev 100'den fazla komut içeremez (ret kodu 99)* — görünüme beş satır (komutlar + yeni etiket) eklenerek; sayıya döner, bağlayıcı yeni `valid.pmb`'yi üretir; 101 komutlu program `0 99` ile reddedilir, 100'lüğü ve 12 rastgele program C++ referansıyla aynı sonucu alır.
+  - **gen2 (makine kodu üretici):** varsayılan kod üretim yolu değiştirildi (mikro-işlem yolu artık varsayılan; `main`'e iki komut + bir yazmaç): aynı girdiden **farklı makine kodu**, eski aracın `-6 1` çıktısıyla bayt-bayt aynı; üretilen `fib` ve `asm` ELF'leri doğru çalışır.
+  - **asm:** yorum karakteri `;` → `#` (sözcük analizindeki tek karşılaştırma); eski assembler `#` yorumunu reddeder, yenisi kabul eder ve `;` artık yorum değildir.
+  - **yeni tablo komutu** (`xori`): eski tabloda görünüm reddeder, yeni tabloda kabul eder; `uygula` başarısız üretimde eski nesne/yan dosya/`.pmb`'yi geri koyar.
+- **Doğrulama:** bağımsız Python referansı (`oz/nesne/ref/pmo_ref.py`, ayrı yazılmış; aynı görünüm, aynı sayılar, aynı hata kodu) ile PMA aracı **bayt-bayt aynı**. Geliştirme koşuları: 782 rastgele görünüm (yaz / gor sidecar'lı ve sidecar'sız / adlar / gor→yaz kimliği; bunların 274'ü hatasız derlendi, geri kalanı bilerek hatalı üretimdi ve aynı hata koduyla reddedildi) ve 150 bozulmuş görünüm: **0 fark**. Test varsayılanı 120 rastgele + 120 bozulmuş görünüm; ayrıca 49 görünüm→sayı, 31 sayı→görünüm ve 10 yan dosya olumsuz/sınır örneği beklenen `HATA` koduyla; üç depo nesnesinde gor/yaz/adlar kimliği; `gorunum.pmb` gen2 ile ELF'e çevrilip aynı çıktıları verir ve `pm` olmadan (`env -i`, yalnızca ELF araçları) `duzenle.sh gor/yaz` aynı sonucu üretir.
+- **Sabotaj (`sabotaj_gorunum.sh`):** `gorunum.pma`'ya 60 tek-noktalı mutant (sabit/ofset/karşılaştırma/ayırıcı değişiklikleri, doğrulama kapılarının çıkarılması) → **60/60 yakalandı**; 2 mutant bilerek yok (aynı hata kodunu veren ikinci kapı: bağıl kayıt tüketim sayacı; boş anahtar adı). Test düzeneğinde iki hata bulundu ve düzeltildi: olumsuz örnekler boru hattı alt kabuğunda koşup sayaca yansımıyordu (ilk sabotajda 14 mutant "kaçtı" göründü; sayaçlar düzeltilince gerçek boşluklar — sınır değerleri, yalnız sıfırdan oluşan satır, işlev sonu etiketi, ≥2^63 sözcük, yinelenen işlev adı — yeni testlerle kapatıldı) ve bir mutant regex'i geri izlemede takıldı.
+
+### Dürüst sınırlar [Kesin]
+- **İlk dizi başlığından önceki adresler düz sayıdır** (nesne orada bağıl kayıt taşımaz): `ldi r0, 3` bir adres olabilir ama görünüm bunu sayıdan ayıramaz. Diğer tüm adresler (sonraki diziler, sonraki sözcükler, bss) simgeseldir.
+- **Yazmaç adları yok** (numara: `r17`); algoritmayı okumak için yan dosyada yalnızca işlev adları ve bölgeler var. Veri ve sabit havuzu içine yeni dizi eklemek mümkündür (`array`), ama eski adres düz sayıyla yazılmışsa (yukarıdaki durum) kaymaz.
+- Görünüm düzenlemesi algoritmayı *anlamayı* kolaylaştırır, doğrulamaz: değişiklikten sonra yine ilgili test paketleri (`oz/hizli.sh`) çalıştırılmalıdır; düzenleme araçları yanlış programı da sayıya çevirir (yalnızca biçim denetimi yapar).
+- Metin kopyaları (`.pma.in/.pma`) hâlâ depoda ve kapı testleri onları nesneyle eşitliyor; bir nesne doğrudan görünümden düzenlenirse metin kopyası eskir (bilinen, belgelendi).
+- **Sıradaki:** `call/ret/halt/host` mikro-işlem şablonları (şu an yalnızca sabit şablonlar), sonra güvenlik katmanları (imza, yetki, izolasyon — ayrı, sürümlü katmanlar; bu aşamada yok).
 
 
 ## 4. Açık sorular ve riskler

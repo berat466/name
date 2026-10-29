@@ -20,8 +20,8 @@ for t in asm elf2 dogr; do (cd $W/oz/$t && ./uret.sh) > $W/uret_$t.log 2>&1 || {
 (cd $W/oz && ./uret_ikili.sh "" $W) > $W/uret_ikili.log 2>&1 || { echo "yenile: coz/yaz tablolari komut tablosundan uretilemedi: $(tail -2 $W/uret_ikili.log)"; exit 1; }
 cp $W/oz/paketle.pmy $W/paketle.pmy
 for t in paketle coz yaz; do (ulimit -v 900000; timeout 60 $ESKI/yap.elf < $W/$t.pmy > $W/$t.pma && timeout 60 $ESKI/asm.elf < $W/$t.pma > $W/$t.pmb) || { echo "yenile: $t.pmy cevrilemedi"; exit 1; }; done
-declare -A KAYNAK=([gen2]=$W/oz/elf2/gen2.pmb [asm]=$W/oz/asm/asm.pmb [valid]=$W/oz/dogr/valid.pmb [yap]=$W/oz/yap/yap.pmb [doldur]=$W/oz/arac/doldur.pmb [opstab]=$W/oz/arac/opstab.pmb [fmtc]=$W/oz/arac/fmtc.pmb [komut]=$W/oz/arac/komut.pmb [baglayici]=$W/oz/arac/baglayici.pmb [paketle]=$W/paketle.pmb [coz]=$W/coz.pmb [yaz]=$W/yaz.pmb)
-ARALAR="gen2 asm valid yap doldur opstab fmtc komut baglayici paketle coz yaz"
+declare -A KAYNAK=([gen2]=$W/oz/elf2/gen2.pmb [asm]=$W/oz/asm/asm.pmb [valid]=$W/oz/dogr/valid.pmb [yap]=$W/oz/yap/yap.pmb [doldur]=$W/oz/arac/doldur.pmb [opstab]=$W/oz/arac/opstab.pmb [fmtc]=$W/oz/arac/fmtc.pmb [komut]=$W/oz/arac/komut.pmb [baglayici]=$W/oz/arac/baglayici.pmb [gorunum]=$W/oz/arac/gorunum.pmb [paketle]=$W/paketle.pmb [coz]=$W/coz.pmb [yaz]=$W/yaz.pmb)
+ARALAR="gen2 asm valid yap doldur opstab fmtc komut baglayici gorunum paketle coz yaz"
 for b in $ARALAR; do (ulimit -v 900000; timeout 60 $ESKI/coz.elf < ${KAYNAK[$b]} > $W/$b.l) || { echo "yenile: coz.elf reddetti: $b"; exit 1; }
   read -r V < <( (ulimit -v 900000; timeout 60 $ESKI/valid.elf < $W/$b.l) ); case "$V" in 1*) ;; *) echo "yenile: dogrulayici reddetti $b ('$V')"; exit 1;; esac; done
 mkdir -p $YENI/ara $YENI/son

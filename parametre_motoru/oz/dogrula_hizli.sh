@@ -15,6 +15,9 @@ var oz/komut/rastgele_pmk.awk komut; yok oz/komut/rastgele_pmk.awk asm
 var oz/nesne/asm.pmo asm; var oz/nesne/asm.pmo nesne; var oz/nesne/asm.pmo valid
 var oz/sayisal/svm.pma svm; yok oz/sayisal/svm.pma asm
 var oz/arac/baglayici.pma nesne
+var oz/arac/gorunum.pma gorunum; yok oz/arac/gorunum.pma asm
+var oz/nesne/ref/pmo_ref.py gorunum; yok oz/nesne/ref/pmo_ref.py asm
+var oz/nesne/asm.pmo gorunum
 var src/vm.cpp asm; var src/vm.cpp elf2; var src/vm.cpp valid; var src/vm.cpp ikili
 var oz/yap/yap.pma.in yap; yok oz/yap/yap.pma.in asm
 var oz/coz.pmy ikili

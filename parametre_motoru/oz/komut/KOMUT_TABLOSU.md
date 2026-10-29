@@ -76,6 +76,8 @@ Komut tablosuna bağlı üç araç (`asm`, `valid`, `gen2`) artık **sayısal ne
 - **Sınır (bilinçli ve yüksek sesle reddedilir):** bir skaler yer tutucu `space` boyutunu (yerleşimi) belirleyemez; ice aktarma bunu reddeder.
 - **Oluşturulan araç takımı:** `oz/arac/baglayici.pma/.pmb` (ELF olarak zincirde); `oz/bag/yenile.sh` yalnızca sayısal girdileri kopyalar (`komutlar.pmk`, `*.pmo`, `*.pmb`, `rt.pmb`, `statik.sozluk`, `paketle.pmy`, `*.sayi.in`) ve ESKİ ELF takımıyla yeni takımı üretir; çalışma ağacında hiç `.pma/.pma.in/fmt.txt` bulunmadığı test edilir.
 
+- **Okunabilir görünüm ve düzenleme (PMV):** nesne `oz/nesne/duzenle.sh gor` ile okunabilir metne (komut adları, sembolik etiketler, işlev adları, `&DIZI`/`~DIZI`/`&bölge` adresleri) çevrilir ve `yaz` ile **aynı sayılara** döner (bayt-bayt kimlik). Böylece asm/valid/gen2 algoritmaları `.pma` kaynağına dönmeden sayısal kaynaktan düzenlenir; ayrıntı ve hata kodları: `oz/nesne/GORUNUM.md`.
+
 ## x86 şablonları sayıdır [Kesin]
 - `komut @@tab` `TPLS/TPL/TS_*` sözlüğünü doğrudan tablodan üretir; `sablonc` ve `sablon.txt` **kaldırıldı**. Okunabilir görünümde şablonlar `tpl op ADD : 48 8B 83 R_B …`, `tpl sp 7 prologue : …`, `tpl prim alu_add : …` satırlarıdır (iki hanelik büyük onaltılık bayt ya da simge adı; makro yok, açılmış biçim). `gor`/`yaz` kayıpsız. Şablon düzenlemek = görünümde satırı değiştirip `komut @@yaz`.
 - **Geri atlama (yakıt) varyantları** tabloda: özel şablonlar `jmp_back jz_back jnz_back` (komutlar) ve `br_back brz_back brnz_back` (işlemler); adlandırma kuralı `<ad>_back` ile `OPBACK`/`PBACK` dizileri üretilir. `gen2` artık `OP_JMP..OP_JNZ` aralığını bilmez: atlama sınıfını (`OPFLOW`, SEM'den) ve hedef yuvasını (`OPTGT`) kullanır.

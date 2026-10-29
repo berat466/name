@@ -59,3 +59,10 @@ derle "" taslak taslak.tok
 "$PM" liste $T/v.pmb > $T/taslak.l
 { cat $T/ust; cat $T/taslak.l; } > "$OUT"
 echo "ice_aktar: $OUT ($nk anahtar, $nb bagil kayit)"
+# SIDECAR (adlar): islev adlari ve bss bolgeleri (space) -- yalniz OKUNABILIR GORUNUM icin (oz/arac/gorunum.pmb); sayisal nesnenin parcasi degildir, derleme zinciri kullanmaz.
+#   func AD (islev sirasiyla) / space AD OFSET (bss tabanina gore, bildirim sirasiyla birikimli). Toplam boyut listedeki bss ile ayni olmali.
+AD="${OUT%.pmo}.adlar"
+{ grep -E '^func[[:space:]]' "$SRC" | sed -E 's/^func[[:space:]]+([A-Za-z0-9_]+).*/func \1/'
+  awk '/^space[ \t]/ { printf "space %s %d\n", $2, s; s += $3 }' "$SRC"; } > "$AD"
+toplam=$(awk '/^space[ \t]/ { s += $3 } END { print s+0 }' "$SRC"); bssl=$(sed -n 4p $T/taslak.l)
+[ "$toplam" = "$bssl" ] || { echo "ice_aktar: space boyutlari toplami ($toplam) listedeki bss ($bssl) ile ayni degil"; exit 1; }

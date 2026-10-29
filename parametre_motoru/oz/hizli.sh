@@ -35,6 +35,7 @@ kural|oz/asm|dogrula_kural.sh|||27|yeniden yazma kurallari
 grafik|oz/elf2|dogrula_grafik.sh|||27|grafik ana makinesi
 svm|oz/sayisal|dogrula_svm.sh|10||22|sayisal anlam yurutucusu (HIZLI=1)
 nesne|oz/nesne|dogrula_nesne.sh|||15|PMO1 nesneleri ve baglayici
+gorunum|oz/nesne|dogrula_gorunum.sh|10 10||40|PMO1 okunabilir gorunum ve duzenleme (gor/yaz, uctan uca duzenleme)
 elf|oz/elf|dogrula_elf.sh|10||13|eski ELF ureticisi
 mikro|oz/elf2|dogrula_mikro.sh|5||10|mikro-islem yerel uretimi (zorlanmis)
 arac|oz/arac|dogrula_arac.sh|20||5|arac/sozluk tazeligi
@@ -46,6 +47,7 @@ pmy2elf|oz/bag|dogrula_pmy2elf.sh|30||300|pmy -> ELF zinciri
 yenile|oz/bag|dogrula_yenile.sh|||600|kendini yeniden uretme zinciri
 "
 SABOTAJ="
+gorunum|oz/nesne|sabotaj_gorunum.sh
 valid|oz/dogr|sabotaj_valid.sh
 kural|oz/asm|sabotaj_kural.sh
 ondalik|oz/asm|sabotaj_ondalik.sh
@@ -57,18 +59,19 @@ svm|oz/sayisal|sabotaj_svm.sh
 nesne|oz/nesne|sabotaj_nesne.sh
 "
 KRITIK="testler valid mikro arac"
-TUMALAN="elf2 oob yap ikili komut valid asm kural grafik svm nesne elf mikro arac testler ondalik float"
+TUMALAN="elf2 oob yap ikili komut valid asm kural grafik svm nesne gorunum elf mikro arac testler ondalik float"
 
 # ---- degisen dosya -> alanlar
 alan_dosya() {
   case "$1" in
     *.md|*.txt|*.gitignore|LICENSE*|docs/*) ;;                                  # belge: test gerekmez
     src/*|Makefile|tests/*) echo "testler ikili elf elf2 oob mikro asm kural valid yap svm komut nesne arac ondalik float grafik" ;;   # C++ cekirdek = bagimsiz referans: her sey ona karsi karsilastirilir
-    oz/komut/komutlar.pmk) echo "komut nesne kural mikro svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
+    oz/komut/komutlar.pmk) echo "komut nesne gorunum kural mikro svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
     oz/komut/*) echo "komut" ;;                                                  # tablo disi: test/belge/gecis dosyalari
     oz/arac/*.sh|oz/arac/ref/*) echo "arac" ;;
-    oz/arac/komut.*) echo "arac komut nesne asm valid elf2" ;;                 # komut.pmb tum sozlukleri uretir
-    oz/arac/*) echo "arac nesne komut" ;;
+    oz/arac/komut.*) echo "arac komut nesne gorunum asm valid elf2" ;;         # komut.pmb tum sozlukleri uretir
+    oz/arac/gorunum.*) echo "arac gorunum" ;;
+    oz/arac/*) echo "arac nesne gorunum komut" ;;
     oz/asm/dogrula_kural.sh|oz/asm/sabotaj_kural.sh) echo "kural" ;;
     oz/asm/dogrula_ondalik.sh|oz/asm/sabotaj_ondalik.sh|oz/asm/ondalik_gen.awk) echo "ondalik" ;;
     oz/asm/dogrula_asm.sh|oz/asm/mutpma.awk) echo "asm" ;;
@@ -78,8 +81,9 @@ alan_dosya() {
     oz/elf2/*) echo "elf2 mikro float grafik" ;;
     oz/elf/*) echo "elf oob" ;;
     oz/yap/*) echo "yap" ;;
+    oz/nesne/dogrula_gorunum.sh|oz/nesne/sabotaj_gorunum.sh|oz/nesne/duzenle.sh|oz/nesne/ref/*) echo "gorunum" ;;
     oz/nesne/*.sh) echo "nesne" ;;
-    oz/nesne/*) echo "nesne asm valid elf2 mikro" ;;
+    oz/nesne/*) echo "nesne gorunum asm valid elf2 mikro" ;;
     oz/sayisal/*) echo "svm" ;;
     oz/bag/*) echo "bag pmy2elf yenile" ;;
     oz/hizli.sh) ;;

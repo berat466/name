@@ -1,0 +1,29 @@
+func rej
+func store
+func readall
+func fetch
+func nextu
+func parse
+func validate
+func getbit
+func setbit
+func clrfrom
+func push
+func flow
+func step
+func analyze_func
+func analyze
+func main
+space TOK 0
+space FL 524288
+space INSPOS 1048576
+space IN 1572864
+space RCH 2097152
+space QUE 2621440
+space WRK 3145728
+space FNP 3670016
+space FNR 3735552
+space FNC 3801088
+space FNB 3866624
+space S 3932160
+space G 3933184
