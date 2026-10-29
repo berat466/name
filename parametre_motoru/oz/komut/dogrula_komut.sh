@@ -115,11 +115,12 @@ sed 's/toplam/add/' $T/p_new.pma > $T/p_old.pma
 cmp -s $T/p_new.pmb $T/p_old.pmb && pass || fail "farkli mnemonikle ayni komut ayni PMB1'i uretmedi"
 [ "$($PM run $T/p_new.pmb)" = "42" ] && pass || fail "yeni adli program calismadi"
 $PM liste $T/p_new.pmb > $T/p.l; (ulimit -v 900000; $PM run $T/w2/oz/elf2/gen2.pmb < $T/p.l > $T/p.elf 2>/dev/null) && chmod +x $T/p.elf && [ "$($T/p.elf)" = "42" ] && pass || fail "adi degisen tablodan uretilen gen2 ile ELF calismadi"
-# ---- 7) genisletme: yeni komut FMIN (d,f,f) = yalniz tablo satiri + tek sablon satiri
-rm -rf $T/w3; mkdir -p $T/w3/oz $T/w3/src; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $T/w3/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w3/oz/; cp -r $R/src $R/Makefile $T/w3/; rm -f $T/w3/oz/asm/asm.pmb $T/w3/oz/dogr/valid.pmb $T/w3/oz/elf2/gen2.pmb
-mod gor < $TAB | awk '{print} /^op 54 GEI/{print "op 55 FMIN fmin d,f,f"}' | mod yaz > $T/w3/oz/komut/komutlar.pmk
+# ---- 7) genisletme: yeni komut FMIN (d,f,f) = yalniz sayisal tablo: OP kaydi + SEM (anlam) kaydi. x86 sablonu YOK, C++ anlam kodu YOK.
+#   anlam: fmin a,b,c = (b < c) ? b : c  (mikro-islemler: rd rd flt sel wr). Yurutme: svm (tabloyu calisma aninda okur) ve ELF (mikro-islem sablonlarindan).
+#   Bagimsiz oracle: elle yazilmis C++ (b < c ? b : c) -- NaN, +-sonsuz, +-0, alt normal dahil tum cift desenleri bit duzeyinde.
+rm -rf $T/w3; mkdir -p $T/w3/oz $T/w3/src; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $R/oz/sayisal $T/w3/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w3/oz/; cp -r $R/src $R/Makefile $T/w3/; rm -f $T/w3/oz/asm/asm.pmb $T/w3/oz/dogr/valid.pmb $T/w3/oz/elf2/gen2.pmb
+mod gor < $TAB | awk '{print} /^op 54 GEI/{print "op 55 FMIN fmin d,f,f"} /^sem GEI /{print "sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4"}' | mod yaz > $T/w3/oz/komut/komutlar.pmk
 [ "$(mod dogrula < $T/w3/oz/komut/komutlar.pmk)" = "1" ] && pass || fail "genisletilmis tablo gecersiz"
-echo 'fmin: F2 0F 10 83 R_B F2 0F 5D 83 R_C F2 0F 11 83 R_A' >> $T/w3/oz/elf2/sablon.txt
 mod opsh < $T/w3/oz/komut/komutlar.pmk > $T/w3/src/ops_gen.h
 for t in asm dogr elf2; do (cd $T/w3/oz/$t && ./uret.sh $PM > /dev/null 2>&1) || fail "genisletilmis tablodan $t uretilemedi"; done
 (cd $T/w3 && make pm > $T/make.log 2>&1) || fail "genisletilmis ops_gen.h ile C++ derlenemedi: $(grep -m1 error $T/make.log)"
@@ -131,7 +132,71 @@ $T/w3/pm liste $T/fm.pmb > $T/fm.cpp.l 2>/dev/null && pass || fail "yeni C++ lis
 (ulimit -v 900000; $PM run $T/w3/oz/coz.pmy < $T/fm.pmb > $T/fm.l 2>/dev/null) && pass || fail "tablodan uretilen cozucu fmin'li PMB1'i cozemedi"
 cmp -s $T/fm.l $T/fm.cpp.l && pass || fail "tablodan uretilen cozucu ile yeni C++ liste araci farkli liste uretti"
 v=$( (ulimit -v 900000; $PM run $T/w3/oz/dogr/valid.pmb < $T/fm.l 2>/dev/null) | head -c 1 ); [ "$v" = "1" ] && pass || fail "genisletilmis dogrulayici fmin programini kabul etmedi ($v)"
-(ulimit -v 900000; $PM run $T/w3/oz/elf2/gen2.pmb < $T/fm.l > $T/fm.elf 2>/dev/null) && chmod +x $T/fm.elf && [ "$($T/fm.elf)" = "$(printf '1.5\n-3')" ] && pass || fail "fmin ELF'i beklenen cikti vermedi: $($T/fm.elf 2>&1 | head -c 60)"
+(ulimit -v 900000; $PM run $T/w3/oz/elf2/gen2.pmb < $T/fm.l > $T/fm.elf 2>/dev/null) && chmod +x $T/fm.elf && [ "$($T/fm.elf)" = "$(printf '1.5\n-3')" ] && pass || fail "fmin ELF'i (yalniz SEM'den uretildi) beklenen cikti vermedi: $($T/fm.elf 2>&1 | head -c 60)"
+# svm: ayni program, tablo calisma aninda okunur (derleme yok)
+{ cat $T/w3/oz/komut/komutlar.pmk; echo "@@PROGRAM"; cat $T/fm.l; echo "@@GIRDI"; } > $T/fm.svm.in
+[ "$( (ulimit -v 900000; $PM run $T/w3/oz/sayisal/svm.pmb < $T/fm.svm.in 2>/dev/null) )" = "$(printf '1.5\n-3')" ] && pass || fail "svm fmin'i SEM'den yurutemedi"
+# tam desen taramasi: oracle (C++) = svm = ELF (yalniz-SEM) = ELF (minsd sablonu) = ELF (mikro-islemler zorlanmis)
+$R/oz/elf2/ondalik_prog.sh $T/fo > /dev/null 2>&1
+OZ=$(grep '^data tab' $T/fo/ozel.pma); NP=$(echo "$OZ" | wc -w); NP=$((NP-3))
+{ echo "memory 4096"; echo "$OZ"; cat <<EOT
+func main() {
+    mov i, 0
+li: gei z, i, $NP
+    jnz z, ld
+    add a, i, tab
+    ld x, a, 0
+    mov j, 0
+lj: gei z, j, $NP
+    jnz z, nj
+    add a, j, tab
+    ld y, a, 0
+    fmin r, x, y
+    host puti, r
+    host putc, 32
+    addi j, j, 1
+    jmp lj
+nj: host putc, 10
+    addi i, i, 1
+    jmp li
+ld: halt
+}
+entry main
+EOT
+} > $T/fmall.pma
+(ulimit -v 900000; $PM run $T/w3/oz/asm/asm.pmb < $T/fmall.pma > $T/fmall.pmb 2>/dev/null) && pass || fail "fmin tarama programi derlenemedi"
+cat > $T/fmin_oracle.cpp <<'EOT'
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
+#include <cstdlib>
+int main(int argc, char** argv) {
+    int n = argc - 1; uint64_t v[64];
+    for (int i = 0; i < n; i++) v[i] = strtoull(argv[i + 1], 0, 16);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            double x, y; memcpy(&x, &v[i], 8); memcpy(&y, &v[j], 8);
+            double r = (x < y) ? x : y; int64_t b; memcpy(&b, &r, 8);
+            printf("%lld ", (long long)b);
+        }
+        printf("\n");
+    }
+}
+EOT
+HEX=$(sed -n 's/^OZEL="\(.*\)"$/\1/p' $R/oz/elf2/ondalik_prog.sh | head -1 | tr ' ' '\n' | head -$NP | tr '\n' ' ')
+g++ -O0 -o $T/fmin_oracle $T/fmin_oracle.cpp 2>/dev/null && $T/fmin_oracle $HEX > $T/fm.exp || fail "fmin oracle derlenemedi"
+$PM liste $T/fmall.pmb > $T/fmall.l
+[ -s $T/fm.exp ] && [ "$(wc -l < $T/fm.exp)" = "$NP" ] && pass || fail "oracle ciktisi beklenmedik"
+{ cat $T/w3/oz/komut/komutlar.pmk; echo "@@PROGRAM"; cat $T/fmall.l; echo "@@GIRDI"; } > $T/fmall.svm.in
+(ulimit -v 900000; timeout 120 $PM run $T/w3/oz/sayisal/svm.pmb < $T/fmall.svm.in > $T/fm.o_svm 2>/dev/null); cmp -s $T/fm.o_svm $T/fm.exp && pass || fail "svm fmin cikti oracle'dan farkli: $(cmp $T/fm.o_svm $T/fm.exp 2>&1 | head -c 80)"
+(ulimit -v 900000; $PM run $T/w3/oz/elf2/gen2.pmb < $T/fmall.l > $T/fmall.elf 2>/dev/null) && chmod +x $T/fmall.elf && $T/fmall.elf > $T/fm.o_elf; cmp -s $T/fm.o_elf $T/fm.exp && pass || fail "ELF (yalniz SEM) fmin cikti oracle'dan farkli: $(cmp $T/fm.o_elf $T/fm.exp 2>&1 | head -c 80)"
+# elle yazilmis x86 sablonu (minsd) eklenirse SEM yolu ile ayni sonucu vermeli (iki farkli yerel uretim = ayni davranis)
+cp -r $T/w3/oz/elf2 $T/w3/oz/elf2b; echo 'fmin: F2 0F 10 83 R_B F2 0F 5D 83 R_C F2 0F 11 83 R_A' >> $T/w3/oz/elf2b/sablon.txt; rm -f $T/w3/oz/elf2b/gen2.pmb
+(cd $T/w3/oz/elf2b && ./uret.sh $PM > /dev/null 2>&1) || fail "sablonlu gen2 uretilemedi"
+(ulimit -v 900000; $PM run $T/w3/oz/elf2b/gen2.pmb < $T/fmall.l > $T/fmall_b.elf 2>/dev/null) && chmod +x $T/fmall_b.elf && $T/fmall_b.elf > $T/fm.o_b; cmp -s $T/fm.o_b $T/fm.exp && pass || fail "ELF (minsd sablonu) fmin cikti oracle'dan farkli"
+cmp -s $T/fmall.elf $T/fmall_b.elf && fail "sablonlu ve SEM'li ELF ayni bayt (SEM yolu kullanilmadi?)" || pass
+(ulimit -v 900000; { echo "-6 1"; cat $T/fmall.l; } | $PM run $T/w3/oz/elf2b/gen2.pmb > $T/fmall_z.elf 2>/dev/null) && chmod +x $T/fmall_z.elf && $T/fmall_z.elf > $T/fm.o_z; cmp -s $T/fm.o_z $T/fm.exp && pass || fail "ELF (-6 1: sablonlu komut da SEM'den) fmin cikti oracle'dan farkli"
+cmp -s $T/fmall_z.elf $T/fmall.elf && pass || fail "-6 1 ELF'i yalniz-SEM ELF'inden farkli (ayni mikro-islem yolu beklenirdi)"
 echo "komut tablosu: $ok gecti, $bad basarisiz"
 rm -rf $T
 [ $bad = 0 ]

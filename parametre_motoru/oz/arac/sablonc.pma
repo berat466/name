@@ -6,7 +6,9 @@ entry main
 space IB 1100000
 space NMO 128
 space NML 128
-space START 128
+space START 512
+space PNMO 1100
+space PNML 1100
 space TK 200000
 space NB 8192
 space TB 262144
@@ -14,6 +16,7 @@ space G 16
 data IMMN = "R_A\0R_B\0R_C\0I_A\0I_B\0I_C\0K_B\0MEMW\0STKEND\0NREGS8\0NP8\0CNT\0MSG_DIV0\0MSG_OOB\0MSG_STACK\0MSG_DEPTH\0MSG_ALLOC\0RSBASE\0MBASE\0HEAP0\0DATAIMG\0ND\0HDR_ENTRY\0FILESZ\0MEMSZ\0FUEL0\0MSG_FUEL\0LIMRT\0RTW\0RTNEG\0STK4\0R_B8\0R_B16\0RTIMG\0RTNW\0"
 data RELN = "REL_DIV0\0REL_OOB\0REL_STACK\0REL_DEPTH\0REL_ALLOC\0REL_PUTI\0REL_PUTC\0REL_TA\0REL_TB\0REL_FA\0REL_EXIT\0REL_ENTRY\0REL_FUEL\0REL_EXITC\0REL_RTEND\0"
 data XTRN = "host_putc\0host_puti\0host_putf\0host_getc\0host_present\0host_poll\0host_frame\0prologue\0exit0\0trap_div0\0trap_oob\0trap_stack\0trap_depth\0trap_alloc\0header\0jmp_back\0jz_back\0jnz_back\0trap_fuel\0ldp\0stp\0call_p\0host_sysw\0exitc\0exitc_rt\0prologue_rt\0"
+data MICN = "TMP_F0\0TMP_F1\0TMP_F2\0TMP_F3\0OPR_F0\0OPR_F1\0OPR_F2\0OPR_F3\0OPV_F0\0OPV_F1\0OPV_F2\0OPV_F3\0KAD_F0\0KAD_F1\0KAD_F2\0KAD_F3\0LIT_F0\0LIT_F1\0LIT_F2\0LIT_F3\0"
 data KW1 = "IMM8C\0FUELCHK\0"
 
 func err(code) {
@@ -187,7 +190,47 @@ w1: ge z, si, ns
     add a, q, TK
     ld id, a, 0
     ld ln, a, 3
-    eqi z, id, 2
+    eqi z, id, 4
+    jz z, w6
+    addi r0, q, 4
+    add a, r0, TK
+    ld nrec, a, 0
+    addi r, r0, 1
+    mov j, 0
+v2: ge z, j, nrec
+    jnz z, w5
+    add a, r, TK
+    ld rl, a, 0
+    ld pid, a, 1
+    ld sl, a, 2
+    gei z, pid, 1100
+    jz z, v2a
+    call x, err, 32
+v2a: add a, pid, PNMO
+    st nb, a, 0
+    add a, pid, PNML
+    st sl, a, 0
+    mov m, 0
+v3: ge z, m, sl
+    jnz z, v4
+    add a, r, m
+    add a, a, TK
+    ld c, a, 3
+    add a, nb, NB
+    st c, a, 0
+    addi nb, nb, 1
+    addi m, m, 1
+    jmp v3
+v4: addi t, pid, 1
+    ld pc2, G, 4
+    gt z, t, pc2
+    jz z, v4a
+    st t, G, 4
+v4a: add r, r, rl
+    addi r, r, 1
+    addi j, j, 1
+    jmp v2
+w6: eqi z, id, 2
     jz z, w5
     addi r0, q, 4
     add a, r0, TK
@@ -262,7 +305,7 @@ nosep: call x, err, 3
 spec: ; ---- sablon.txt satirlari
     mov zero, 0
     mov i, 0
-sv0: gei z, i, 128
+sv0: gei z, i, 512
     jnz z, sv1
     add a, i, START
     mov m1v, -1
@@ -361,7 +404,49 @@ nm3: call r, findn, XTRN, 26, ts, tl
     jnz z, nm3a
     add idx, r, nop
     jmp nm4
-nm3a: call x, err, 4
+nm3a: ; p_<prim adi>
+    lti z, tl, 3
+    jnz z, nm3x
+    add a, ts, IB
+    ld c0, a, 0
+    eqi z, c0, 112
+    jz z, nm3x
+    addi a, ts, 1
+    add a, a, IB
+    ld c1, a, 0
+    eqi z, c1, 95
+    jz z, nm3x
+    addi pl, tl, -2
+    ld pcn, G, 4
+    mov id2, 0
+np1: ge z, id2, pcn
+    jnz z, nm3x
+    add a, id2, PNML
+    ld l, a, 0
+    ne z, l, pl
+    jnz z, np3
+    add a, id2, PNMO
+    ld po, a, 0
+    mov q, 0
+np2: ge z, q, pl
+    jnz z, np4
+    add a, po, q
+    add a, a, NB
+    ld c1, a, 0
+    add a, ts, q
+    addi a, a, 2
+    add a, a, IB
+    ld c2, a, 0
+    ne z, c1, c2
+    jnz z, np3
+    addi q, q, 1
+    jmp np2
+np4: addi idx, nop, 26
+    add idx, idx, id2
+    jmp nm4
+np3: addi id2, id2, 1
+    jmp np1
+nm3x: call x, err, 4
 nm4: ; tanimsiz mi?
     add a, idx, START
     ld sv, a, 0
@@ -410,6 +495,8 @@ out: ; ---- cikti
     host putc, 76
     host putc, 83
     addi tot, nop, 26
+    ld pcn2, G, 4
+    add tot, tot, pcn2
     mov j, 0
 o1: ge z, j, tot
     jnz z, o2
@@ -460,7 +547,20 @@ ts3: addi k, k, 1
     host putc, 10
     addi nm, nm, 1
     jmp ts0
-ts9: ret 0
+ts9: ; TS_PRIM0: ilk mikro-islem sablon yuvasi
+    host putc, 84
+    host putc, 83
+    host putc, 95
+    host putc, 80
+    host putc, 82
+    host putc, 73
+    host putc, 77
+    host putc, 48
+    host putc, 32
+    addi v, nop, 26
+    host puti, v
+    host putc, 10
+    ret 0
 }
 
 ; bir simge [o,l)
@@ -572,8 +672,14 @@ t4: call r, findn, RELN, 15, o, l
     call x, push, code
     ret 0
 t5: call r, eqn, KW1, 0, o, l
-    jz r, t6
+    jz r, t5m
     call x, push, 320
+    ret 0
+t5m: call r, findn, MICN, 20, o, l
+    lti z, r, 0
+    jnz z, t6
+    addi code, r, 400
+    call x, push, code
     ret 0
 t6: call x, err, 6
 }

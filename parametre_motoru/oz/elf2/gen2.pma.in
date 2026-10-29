@@ -26,6 +26,8 @@ data TPLS = @TPLS@
 data TPL = @TPL@
 data RTL = @RTL@
 data RTLN = @RTLN@
+data SEMOFF = @SEMOFF@
+data SEMDAT = @SEMDAT@
 
 ; G: 0 NT  1 imlec  2 KONUM  3 GECIS  4 bellek  5 giris  6 nsabit  7 sabit tabani  8 nveri  9 veri tabani  10 bss  11 nfonk  12 toplam komut
 ;    20 a  21 b  22 c  23 fonksiyon taban komutu  24 gecerli fonksiyon
@@ -104,6 +106,7 @@ n1: add a, c, T
 }
 
 ; secenekler (stdin on eki): -1 yakit | -2 n (kare kod)*n olaylar | -3 azami_kare | -4 ascii_K | -5 bayrak (1 rapor, 2 PPM)
+;   -6 k: k=1 sablonu olan komutlar da SEM (sayisal anlam) tanimindan, mikro-islem sablonlariyla uretilir (sablonsuz komutlar her zaman)
 func options() {
     mov fu, 4000000000
     st fu, G, 44
@@ -154,7 +157,12 @@ op5: eqi z, tk, -5
     call v, nx
     st v, G, 56
     jmp op0
-op6: call x, fail
+op6: eqi z, tk, -6
+    jz z, op7
+    call v, nx
+    st v, G, 58
+    jmp op0
+op7: call x, fail
 opd: ret 0
 }
 
@@ -605,9 +613,48 @@ k2: lt z, tok, 320
     sub r, r, 4
     call x, eb32, r
     ret 0
-k3: ld c, G, 22
+k3: lt z, tok, 400
+    jz z, k4
+    ld c, G, 22
     and c, c, 63
     call x, eb, c
+    ret 0
+    ; mikro-islem simgeleri (400+): tur = (tok-400)/4: 0 TMP bayti, 1 OPR (8*operand), 2 OPV (operand), 3 KAD (sabit adresi), 4 LIT (alan); k = alan sirasi
+k4: sub d, tok, 400
+    shri ty, d, 2
+    and k, d, 3
+    addi t, k, 60
+    add t, t, G
+    ld fv, t, 0
+    jnz ty, k5
+    mul r, fv, -8
+    and r, r, 255
+    call x, eb, r
+    ret 0
+k5: eqi z, ty, 4
+    jz z, k6
+    call x, eb32, fv
+    ret 0
+k6: gei z, fv, 3
+    jz z, k7
+    call x, fail
+k7: add t, fv, 20
+    add t, t, G
+    ld o, t, 0
+    eqi z, ty, 1
+    jz z, k8
+    mul r, o, 8
+    call x, eb32, r
+    ret 0
+k8: eqi z, ty, 2
+    jz z, k9
+    call x, eb32, o
+    ret 0
+k9: ld t, G, 39
+    mul r, o, 8
+    add r, r, t
+    add r, r, 4194304
+    call x, eb32, r
     ret 0
 }
 
@@ -626,6 +673,75 @@ e1: add t, s, TPL
     add s, s, 1
     jmp e1
 ed: ret 0
+}
+
+; komutun SEM mikro-programi: her ornek [islem, f0..f3]; sablon yuvasi = TS_PRIM0 + islem
+func emit_micro(op) {
+    add t, op, SEMOFF
+    ld lo, t, 0
+    ld hi, t, 1
+    mov i, lo
+em: ge z, i, hi
+    jnz z, emd
+    mul b, i, 5
+    add b, b, SEMDAT
+    ld pid, b, 0
+    ld v, b, 1
+    st v, G, 60
+    ld v, b, 2
+    st v, G, 61
+    ld v, b, 3
+    st v, G, 62
+    ld v, b, 4
+    st v, G, 63
+    addi s, pid, @TS_PRIM0@
+    call x, etpl, s
+    addi i, i, 1
+    jmp em
+emd: ret 0
+}
+
+; SEM'deki her mikro-islemin sablonu var mi (1/0); bos program (HALT gibi) icin 0
+func lowerable(op) {
+    add t, op, SEMOFF
+    ld lo, t, 0
+    ld hi, t, 1
+    ge z, lo, hi
+    jz z, lw0
+    ret 0
+lw0: mov i, lo
+lw: ge z, i, hi
+    jnz z, lwd
+    mul b, i, 5
+    add b, b, SEMDAT
+    ld pid, b, 0
+    addi s, pid, @TS_PRIM0@
+    add t, s, TPLS
+    ld v, t, 0
+    lti z, v, 0
+    jz z, lw1
+    ret 0
+lw1: addi i, i, 1
+    jmp lw
+lwd: ret 1
+}
+
+; komut sablonu: yerlesik x86 sablonu varsa o (-6 1 ise ve SEM sablonlanabiliyorsa mikro-islemlerden), yoksa SEM'den
+func emitop(op) {
+    ge z, op, @OPCOUNT@
+    jnz z, ep
+    add t, op, TPLS
+    ld s, t, 0
+    lti z, s, 0
+    jnz z, em1
+    ld fo, G, 58
+    jz fo, ep
+    call ok, lowerable, op
+    jz ok, ep
+em1: call x, emit_micro, op
+    ret 0
+ep: call x, etpl, op
+    ret 0
 }
 
 func blob(base, n) {
@@ -755,7 +871,7 @@ hv: sub pcl, gi, fb
     sub op, op, @OP_JMP@
     add op, op, @TS_JMP_BACK@
 nb:
-    call x, etpl, op
+    call x, emitop, op
     add gi, gi, 1
     jmp ei
 eid:
