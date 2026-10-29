@@ -264,6 +264,30 @@ Komutun *kimliği, adı, operand sayısı/türleri, tel sınıfı, host listesi*
 - Hâlâ metin: `sablon.txt`, sablonc'ın simge sözlüğü, `fmt.txt` mnemonikleri, tüm araç `.pma` kaynakları; C++ `pm` kendi kurallarıyla bağımsız referanstır.
 
 
+## 3l. Yedinci aşama (5/5, ikinci kısım): x86 şablonları sayıya taşındı; `sablonc` ve `sablon.txt` kaldırıldı
+
+**Karar (kullanıcı):** sıra: anlamlar → yeniden yazma/doğrulayıcı kuralları → **x86 şablonları** → araç kaynakları → tam bağımsızlık testi. Bu bölüm 3. adımı kapsar.
+
+### Yapılan [Kesin]
+- **PMK1 bölüm 8 TOKEN, bölüm 9 TEMPLATE** (biçim: `oz/komut/KOMUT_TABLOSU.md`). Şablon bayt dizileri ve simge sözlüğü (ad↔kod) tablodadır: 126 şablon (komut 54, özel 29, mikro-işlem 43), 75 simge. `komut @@tab` `TPLS/TPL/TS_*` sözlüğünü doğrudan üretir; `gen2` yalnızca tablo + `statik.sozluk` + `rt.pma` ile kurulur. `sablonc.pma/.pmb`, `ref/sablon_ref.awk` ve `oz/elf2/sablon.txt` silindi (toplu araç sayısı 12 → 11).
+- **Okunabilir görünüm kayıpsız:** `komut @@gor`/`@@yaz` şablonları `tpl op ADD : 48 8B 83 R_B …`, `tpl sp 7 prologue : …`, `tpl prim alu_add : …` ve `token 256 R_A 1` satırlarıyla gösterir. Makrolar (`LDA(b)` …) açılmış biçimde (artık görünümün parçası değil).
+- **Geçiş:** eski `sablonc` çıktısı `oz/komut/gecis/sablon_to_pmk.py` ile bir kez tabloya çevrildi; tablodan üretilen `gen2.pmb` ile eski yolla üretilen `gen2.pmb`'nin ELF çıktıları (collatz, pong, hayat) aynı; `dogrula_elf2` 2787/0 (hem normal hem `-6 1` zorlanmış).
+- **Denetim akışı mikro-işlemleri** (`br brz brnz`) için x86 şablonları ve geri-atlama (yakıt) varyantları tabloda (`br_back brz_back brnz_back`; `<ad>_back` adlandırması ile `OPBACK`/`PBACK` türetilir). `gen2`'den sabit kodlu `OP_JMP..OP_JNZ` aralığı kalktı; atlama sınıfı SEM'den (`OPFLOW`, `OPTGT`). Sonuç: yalnızca SEM ile tanımlı yeni atlama komutu `GOTO` ELF üreticide de çalışır ve yakıtı doğru sayar (yakıt 1,3,6,9,100000 için pm'in standart `jmp` programıyla aynı tuzak noktası).
+- Testler/sabotaj betikleri tabloya uyarlandı: şablon sabotajı artık okunabilir görünümü bozup `yaz` ile tabloya işler (float, grafik, mikro).
+- `dogrula_yenile` v1 nesli: eski `nesil_v1/sablon.txt` yerine `nesil_v1/sablonlar.txt` (v1 şablonlarının görünümü) mevcut tabloyla birleştirilir.
+
+### Doğrulama [Kesin]
+- `dogrula_komut` ek olarak: TOKEN/TEMPLATE olumsuz örnekleri hata koduyla (simge kodu/adı yinelenen, bayt gibi görünen ad, bilinmeyen simge/komut/işlem, yinelenen şablon, yoğun olmayan özel sıra …), GOTO ELF'i + yakıtlı döngü, `TS_*` yuvaları. Komut aracı sabotajı: yeni kod (vtoken/vtpl/emit_tpl/gor/yaz/hexd) için 15 mutantın 15'i yakalandı.
+- Mikro-işlem şablonu sabotajı: denetim akışı mutantları (koşul ters, değer yuvası, geri-atlama yakıtı, geri koşul/hedef) 7/7 yakalandı; ilk turda 3 mutant kaçtı → testler eklendi (ileri `jmp`, geriye `jz`, geçici kimliği ≠ yuva olan `JZX`). Bir mutant (`br` için `REL_TF1`) **eşdeğer**: `br`'nin yalnız 1. alanı anlamlı, diğer alanlar 0 olduğundan `REL_TF1` aynı yuvaya (a) işaret eder.
+
+### Dürüst sınırlar [Kesin]
+- Şablon *simgelerinin anlamı* (`R_A`, `REL_*`, `TMP_Fk`… ne hesaplar) hâlâ `gen2.pma.in` içinde elle; tablo yalnızca ad↔kod verir. Yeni simge = gen2'ye de kod.
+- `call`, `ret`, `halt`, `host` için mikro-işlem şablonu yok (çerçeve kurulumu, host/RT çağrısı özel): yeni bir çağrı benzeri komut ELF'te çalışmaz.
+- `gen2` hâlâ komut sembollerine göre elle yazılmış özel işlemler içerir (host→RT çağrısı, ayrıcalıklı `ld/st`, `HOST` kolu); `RTF_*` sırası `statik.sozluk`'ta.
+- Araç kaynakları (`.pma`, `.pma.in`, `fmt.txt`, `statik.sozluk`) hâlâ metin; PMB1/liste kanonik değil.
+- Şablonlar bellek geçicili mikro-işlem yolu yerleşik şablonlardan uzun/yavaş; eniyileme yok.
+
+
 ## 4. Açık sorular ve riskler
 - **Çekirdek sınırı:** hangi parçalar C++'ta kalmalı? Öneri: çözücü+doğrulayıcı+yorumlayıcı+host (yaklaşık 800 satır) en küçük gerçekçi çekirdek; native üretici ve özelleştiriciler parametreye taşınır; `exec` yeni ilkeldir.
 - **Performans:** VM üstünde çalışan araçlar (özelleştirici, birleştirici) yavaşlar; ama bunlar bir kez çalışan yükleme-zamanı araçları ve makine koduna çevrilince (`--native`) kabul edilebilir olmalı. Ölçülecek.

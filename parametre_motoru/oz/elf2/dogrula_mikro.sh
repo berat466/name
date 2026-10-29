@@ -159,8 +159,8 @@ $PM asm $T/aimm.pma -o $T/aimm.pmb --strip > /dev/null 2>&1 && xcmp "AIMM" $T/ai
 # LDK2 = LDK (sabit havuzu): buyuk sabitli program
 printf 'func main() {\n mov a, 1.5\n host puti, a\n host putc, 32\n mov b, 0x7ff8000000000001\n host puti, b\n host putc, 32\n mov c, -123456789012345\n host puti, c\n host putc, 10\n halt\n}\n' > $T/ldk2.pma
 $PM asm $T/ldk2.pma -o $T/ldk2.pmb --strip > /dev/null 2>&1 && xcmp "LDK2" $T/ldk2.pmb 2 57 3 || fail "ldk2 programi derlenemedi"
-# JZX = JZ (kosullu atlama; mikro-islem brz, gecici kimligi != operand yuvasi): dongu + ileri/geri atlama
-printf 'func main() {\n ldi n, 0\n ldi s, 0\nL: addi n, n, 1\n add s, s, n\n subk c, n, 6\n jz c, E\n jmp L\nE: host puti, s\n host putc, 10\n halt\n}\n' | sed 's/subk c, n, 6/addi c, n, -6/' > $T/jzx.pma
+# JZX = JZ (kosullu atlama; mikro-islem brz, gecici kimligi != operand yuvasi): GERI (yakit varyanti) ve ileri atlama
+printf 'func main() {\n ldi n, 0\n ldi s, 0\nL: addi n, n, 1\n add s, s, n\n gei c, n, 6\n jz c, L\n jz s, E\n host puti, s\n host putc, 10\nE: halt\n}\n' > $T/jzx.pma
 $PM asm $T/jzx.pma -o $T/jzx.pmb --strip > /dev/null 2>&1 && xcmp "JZX" $T/jzx.pmb 32 58 3 || fail "jzx programi derlenemedi"
 # ---- 4) mikro yolu gercekten kullanildi
 $PM liste $T/int.pmb > $T/p.l; lim $PM run $G2 < $T/p.l > $T/n.elf 2>/dev/null; lim $T/zorla.sh < $T/p.l > $T/z.elf 2>/dev/null
