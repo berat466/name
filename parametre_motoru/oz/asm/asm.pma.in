@@ -69,15 +69,15 @@ space GA 524288
 space GB 524288
 space GC 524288
 space OUTB 1048576
-space NMO 64
-space NML 64
+space NMO 256
+space NML 256
 space G 128
 space FBN 1024
 space FDG 1024
 data OPNAMES = @OPNAMES@
 data NOPS = @NOPS@
 data KIND = @KIND@
-data ARITY = 1 1 1 0 3 0 0
+data ARITY = @ARITY@
 data KWS = "memory\0entry\0data\0space\0func\0gt\0ge\0fgt\0fge\0main\0"
 
 ; G: 0 NSRC(kullanilan) 1 SATIR 2 NTOK 3 NST 4 NFN 5 NSY 6 NCONST 7 NDATA 8 BSS 9 BELLEK 10 giris-ad-ofset 11 giris-ad-uzunluk 12 giris-satiri
@@ -180,10 +180,10 @@ s3: add k, k, 1
 ok: ret 1
 }
 
-; ad tablolari: NMO/NML = komut (0..54) ve host (55..61) adlari (SRC sonuna kopyalanmis)
+; ad tablolari: NMO/NML = komut (0..OPCOUNT-1) ve host (OPCOUNT..) adlari (SRC sonuna kopyalanmis)
 func opid(o, l) {
     mov i, 0
-o1: ge z, i, 55
+o1: ge z, i, @OPCOUNT@
     jnz z, no
     add a, i, NMO
     ld po, a, 0
@@ -199,9 +199,9 @@ no: ret -1
 
 func hostid(o, l) {
     mov i, 0
-h1: ge z, i, 7
+h1: ge z, i, @HOSTCOUNT@
     jnz z, no
-    add j, i, 55
+    add j, i, @OPCOUNT@
     add a, j, NMO
     ld po, a, 0
     add a, j, NML
@@ -2087,14 +2087,14 @@ st4: call m, mnid, mo, ml
     ld op, a, 0
     lti z, op, 0
     jnz z, bad
-    gei z, op, 55
+    gei z, op, @OPCOUNT@
     jnz z, bad
-    eq z, op, 2
+    eq z, op, @OP_LDK@
     jz z, st5
     call x, err, 66
-st5: eq z, op, 34
+st5: eq z, op, @OP_CALL@
     jnz z, ccall
-    eq z, op, 40
+    eq z, op, @OP_HOST@
     jnz z, chost
     ; genel
     add a, op, NOPS
@@ -2265,12 +2265,12 @@ q1: ge z, i, nir
     st zero, a, 0
     add a, i, IRN
     ld na, a, 0
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jnz z, qcall
-    eq z, op, 40
+    eq z, op, @OP_HOST@
     jnz z, qcall
     ; mov d, sabit
-    eq z, op, 0
+    eq z, op, @OP_MOV@
     jz z, q2
     call o1, opr, i, 1
     ld l1, G, 64
@@ -2286,7 +2286,7 @@ q1: ge z, i, nir
     call x, setio, i, 0, 1, dr
     call x, setio, i, 1, 7, bits
     jmp qnext
-q2: eq z, op, 35
+q2: eq z, op, @OP_RET@
     jz z, q3
     call o0, opr, i, 0
     ld l0, G, 64
@@ -2353,7 +2353,7 @@ q9: add j, j, 1
     jmp q4
 qcall:
     mov k, 0
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jz z, ch1
     call o0, opr, i, 0
     ld l0, G, 64
@@ -2377,18 +2377,18 @@ nodirect:
 direct:
     call ok_, opr, i, k
     ld lk, G, 64
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jz z, ch2
     call id, funcfind, ok_, lk
     jmp ch3
 ch2: call id, hostid, ok_, lk
 ch3: mov ty, 5
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jnz z, ch4
     mov ty, 6
 ch4: call x, setio, i, 0, ty, id
     add k, k, 1
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jz z, ch5
     add a, id, FNNP
     ld want, a, 0
@@ -2498,9 +2498,9 @@ func isrd(i, r) {
     ld cb, a, 0
     add a, i, CC
     ld cc, a, 0
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jnz z, c1
-    eq z, op, 40
+    eq z, op, @OP_HOST@
     jnz z, h1
     jmp gen
 c1: add a, ca, FNNP
@@ -2555,9 +2555,9 @@ func iswr(i, r) {
     ld cb, a, 0
     add a, i, CC
     ld cc, a, 0
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jnz z, w1
-    eq z, op, 40
+    eq z, op, @OP_HOST@
     jnz z, w1
     jmp gen
 w1: eq z, cb, r
@@ -2591,19 +2591,19 @@ no: ret 0
 }
 
 func isstop(op) {
-    eq z, op, 31
+    eq z, op, @OP_JMP@
     jnz z, y
-    eq z, op, 32
+    eq z, op, @OP_JZ@
     jnz z, y
-    eq z, op, 33
+    eq z, op, @OP_JNZ@
     jnz z, y
-    eq z, op, 35
+    eq z, op, @OP_RET@
     jnz z, y
-    eq z, op, 36
+    eq z, op, @OP_HALT@
     jnz z, y
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jnz z, y
-    eq z, op, 40
+    eq z, op, @OP_HOST@
     jnz z, y
     ret 0
 y:  ret 1
@@ -2618,9 +2618,9 @@ func countacc(i) {       ; RD/WR sayaclarini artir
     ld cb, a, 0
     add a, i, CC
     ld cc, a, 0
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jnz z, c1
-    eq z, op, 40
+    eq z, op, @OP_HOST@
     jnz z, h1
     jmp gen
 c1: add a, ca, FNNP
@@ -3103,11 +3103,11 @@ b11: ge z, i, nir
     st pc, a, 0
     add a, i, IIOP
     ld op, a, 0
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jnz z, b12
-    eq z, op, 40
+    eq z, op, @OP_HOST@
     jnz z, b12
-    eq z, op, 35
+    eq z, op, @OP_RET@
     jz z, b13
     add a, i, IOT0
     ld t0, a, 0
@@ -3136,13 +3136,13 @@ e1: ge z, i, nir
     jnz z, e99
     add a, i, IIOP
     ld op, a, 0
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jnz z, ecall
-    eq z, op, 40
+    eq z, op, @OP_HOST@
     jnz z, ecall
-    eq z, op, 1
+    eq z, op, @OP_LDI@
     jnz z, eldi
-    eq z, op, 35
+    eq z, op, @OP_RET@
     jz z, egen
     add a, i, IOT0
     ld t0, a, 0
@@ -3454,7 +3454,7 @@ c6: add o2, o, len
 
 func init_names() {
     mov i, 0
-n1: gei z, i, 62
+n1: gei z, i, @NAMECOUNT@
     jnz z, n2
     call o, copyz, OPNAMES, i
     ld l, G, 30

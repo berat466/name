@@ -21,7 +21,7 @@ space S 1024
 space G 64
 data NOPS = @NOPS@
 data KIND = @KIND@
-data ARITY = 1 1 1 0 3 0 0
+data ARITY = @ARITY@
 
 ; G: 0 NT  1 bayrak  2 bellek  3 giris  4 nsabit  5 nveri  6 bss  7 nfonk  8 imlec  9 toplam komut
 ;    12 W  13 M  14 base  15 nparam  16 nregs
@@ -230,7 +230,7 @@ il: ge z, pc, ncode
     ld cur, G, 8
     add a, gi, INSPOS
     st cur, a, 0
-    call op, nextu, 54
+    call op, nextu, @OPLAST@
     add a, op, NOPS
     ld nops, a, 0
     mov j, 0
@@ -317,11 +317,11 @@ v4: add a, f, FNB
     ld p, a, 0
     add a, p, TOK
     ld op, a, 0
-    eq z, op, 31
+    eq z, op, @OP_JMP@
     jnz z, lastok
-    eq z, op, 35
+    eq z, op, @OP_RET@
     jnz z, lastok
-    eq z, op, 36
+    eq z, op, @OP_HALT@
     jnz z, lastok
     call x, rej, 15
 lastok:
@@ -390,9 +390,9 @@ vnext:
 vbad:
     call x, rej, 16
 vjdone:
-    eq z, op, 47
+    eq z, op, @OP_DIVI@
     jnz z, dm
-    eq z, op, 48
+    eq z, op, @OP_MODI@
     jnz z, dm
     jmp vcall
 dm: add a, p, 3
@@ -404,7 +404,7 @@ dm: add a, p, 3
 dmbad:
     call x, rej, 17
 vcall:
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jz z, vhost
     add a, p, 1
     add a, a, TOK
@@ -422,7 +422,7 @@ wc: add t, fb, need
     jz z, vend
     call x, rej, 18
 vhost:
-    eq z, op, 40
+    eq z, op, @OP_HOST@
     jz z, vend
     add a, p, 1
     add a, a, TOK
@@ -557,9 +557,9 @@ fret:
 func step(pc, p, op) {
     ld nrg, G, 16
     ld m, G, 13
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jnz z, scall
-    eq z, op, 40
+    eq z, op, @OP_HOST@
     jnz z, shost
     ; genel: okumalar sonra yazmalar
     add a, op, NOPS
@@ -640,25 +640,25 @@ s3n:
     add j, j, 1
     jmp s3
 s3d:
-    eq z, op, 34
+    eq z, op, @OP_CALL@
     jz z, s4
     call x, clrfrom, fb
 s4: call x, setbit, fb
 sflow:
-    eq z, op, 35
+    eq z, op, @OP_RET@
     jnz z, sok
-    eq z, op, 36
+    eq z, op, @OP_HALT@
     jnz z, sok
-    eq z, op, 31
+    eq z, op, @OP_JMP@
     jz z, s5
     add a, p, 1
     add a, a, TOK
     ld tg, a, 0
     call x, flow, tg
     ret 1
-s5: eq z, op, 32
+s5: eq z, op, @OP_JZ@
     jnz z, s6
-    eq z, op, 33
+    eq z, op, @OP_JNZ@
     jz z, s7
 s6: add a, p, 2
     add a, a, TOK

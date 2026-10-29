@@ -179,7 +179,7 @@ pi: ge z, pc, ncode
     jz z, q2
     call x, fail
 q2: call op, nx
-    ge z, op, 55
+    ge z, op, @OPCOUNT@
     jz z, q3
     call x, fail
 q3: add a, gi, OPS
@@ -221,15 +221,15 @@ sr: ge z, i, n
     jnz z, srn
     add a, i, OPS
     ld op, a, 0
-    eqi z, op, 40
+    eqi z, op, @OP_HOST@
     jz z, sr1
     add a, i, OA
     ld h, a, 0
-    eqi z, h, 2
+    eqi z, h, @H_PUTF@
     jnz z, srh
-    lti z, h, 4
+    lti z, h, @H_PRESENT@
     jnz z, sr1
-    lei z, h, 6
+    lei z, h, @H_FRAME@
     jz z, sr1
 srh: ret 1
 sr1: addi i, i, 1
@@ -650,13 +650,13 @@ func mark(slot) {
 func emit_all() {
     mov z0, 0
     st z0, G, 2
-    call x, etpl, 69
+    call x, etpl, @TS_HEADER@
     ld ur, G, 47
     jz ur, plain
-    call x, etpl, 80
+    call x, etpl, @TS_PROLOGUE_RT@
     jmp plainx
 plain:
-    call x, etpl, 62
+    call x, etpl, @TS_PROLOGUE@
 plainx:
     ld nf, G, 11
     mov f, 0
@@ -701,58 +701,59 @@ ei: ge z, gi, nxt
     st v, G, 22
     add t, gi, OPS
     ld op, t, 0
-    eq z, op, 40
+    eq z, op, @OP_HOST@
     jz z, noh
     ld h, G, 20
-    eqi z, h, 2
+    eqi z, h, @H_PUTF@
     jz z, hq
     jnz pv, hn
-    addi t, na, 5
+    addi t, na, @RTF_PUTF@
     st t, G, 20
-    mov op, 34
+    mov op, @OP_CALL@
     jmp noh
-hq: lti z, h, 4
+hq: lti z, h, @H_PRESENT@
     jnz z, hn
     jnz pv, hpv
-    sub t, h, 3
+    sub t, h, @H_PRESENT@
+    add t, t, @RTF_PRESENT@
     add t, t, na
     st t, G, 20
-    mov op, 34
+    mov op, @OP_CALL@
     jmp noh
-hpv: mov op, 77
+hpv: mov op, @TS_HOST_SYSW@
     jmp noh
-hn: add op, h, 55
+hn: add op, h, @TS_HOST_PUTC@
 noh:
     jz pv, nopv
-    eq z, op, 37
+    eq z, op, @OP_LD@
     jz z, pv1
-    mov op, 74
+    mov op, @TS_LDP@
     jmp nb
-pv1: eq z, op, 38
+pv1: eq z, op, @OP_ST@
     jz z, pv2
-    mov op, 75
+    mov op, @TS_STP@
     jmp nb
-pv2: eq z, op, 34
+pv2: eq z, op, @OP_CALL@
     jz z, nb
     ld t, G, 20
     add t, t, na
     st t, G, 20
-    mov op, 76
+    mov op, @TS_CALL_P@
     jmp nb
 nopv:
-    lti z, op, 31
+    lti z, op, @OP_JMP@
     jnz z, nb
-    gti z, op, 33
+    gti z, op, @OP_JNZ@
     jnz z, nb
     ld tg, G, 20
-    eq z, op, 31
+    eq z, op, @OP_JMP@
     jnz z, hv
     ld tg, G, 21
 hv: sub pcl, gi, fb
     le z, tg, pcl
     jz z, nb
-    sub op, op, 31
-    add op, op, 70
+    sub op, op, @OP_JMP@
+    add op, op, @TS_JMP_BACK@
 nb:
     call x, etpl, op
     add gi, gi, 1
@@ -763,32 +764,32 @@ eid:
 efd:
     mov s, 30
     call x, mark, s
-    call x, etpl, 63
+    call x, etpl, @TS_EXIT0@
     mov s, 31
     call x, mark, s
-    call x, etpl, 64
+    call x, etpl, @TS_TRAP_DIV0@
     mov s, 32
     call x, mark, s
-    call x, etpl, 65
+    call x, etpl, @TS_TRAP_OOB@
     mov s, 33
     call x, mark, s
-    call x, etpl, 66
+    call x, etpl, @TS_TRAP_STACK@
     mov s, 34
     call x, mark, s
-    call x, etpl, 67
+    call x, etpl, @TS_TRAP_DEPTH@
     mov s, 35
     call x, mark, s
-    call x, etpl, 68
+    call x, etpl, @TS_TRAP_ALLOC@
     mov s, 46
     call x, mark, s
-    call x, etpl, 73
+    call x, etpl, @TS_TRAP_FUEL@
     mov s, 50
     call x, mark, s
     ld ur, G, 47
     jz ur, ex0
-    call x, etpl, 79
+    call x, etpl, @TS_EXITC_RT@
     jmp ex1
-ex0: call x, etpl, 78
+ex0: call x, etpl, @TS_EXITC@
 ex1:
     mov s, 36
     call x, mark, s

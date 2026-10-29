@@ -1,5 +1,5 @@
 ; sablonc.pma -- x86-64 sablon bildirimi (sablon.txt) -> sayi tablolari TPLS/TPL (sablon.awk yerine).
-; stdin: ops.h metni, "@@SABLON" satiri, sablon.txt. stdout: sozluk satirlari "TPLS ..." (81 baslangic, -1: tanimsiz) ve "TPL ..." (simge akisi, her sablon -1 ile biter).
+; stdin: KANONIK SAYISAL KOMUT TABLOSU (PMK1; komutlar.pmk; sablon anahtari = komut SEMBOLU kucuk harf), "@@SABLON" satiri, sablon.txt. stdout: sozluk satirlari "TPLS ..." (81 baslangic, -1: tanimsiz) ve "TPL ..." (simge akisi, her sablon -1 ile biter).
 ; Simge: iki haneli buyuk onaltilik = bayt; LDA(x)/LDC(x)/STA(x) ve FUELCHK makrolari; R_A.. I_A.. K_B MEMW ... (imm32, kod 256+), REL_* (kod 300+), IMM8C (320).
 memory 4194304
 entry main
@@ -7,6 +7,8 @@ space IB 1100000
 space NMO 128
 space NML 128
 space START 128
+space TK 200000
+space NB 8192
 space TB 262144
 space G 16
 data IMMN = "R_A\0R_B\0R_C\0I_A\0I_B\0I_C\0K_B\0MEMW\0STKEND\0NREGS8\0NP8\0CNT\0MSG_DIV0\0MSG_OOB\0MSG_STACK\0MSG_DEPTH\0MSG_ALLOC\0RSBASE\0MBASE\0HEAP0\0DATAIMG\0ND\0HDR_ENTRY\0FILESZ\0MEMSZ\0FUEL0\0MSG_FUEL\0LIMRT\0RTW\0RTNEG\0STK4\0R_B8\0R_B16\0RTIMG\0RTNW\0"
@@ -101,6 +103,143 @@ p1: add a, n, TB
     ret 0
 }
 
+
+; "@@SABLON" satirina kadar sayilari TK'ya oku, OP bolumunden komut simgelerini (kucuk harf) NB'ye cikar. Donus: ayiracin sonrasi konum ya da -1. G[3] = komut sayisi
+func tabnames(n) {
+    mov p, 0
+    mov nt, 0
+t1: ge z, p, n
+    jnz z, bad
+    mov e, p
+t2: ge z, e, n
+    jnz z, t3
+    add a, e, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, t3
+    addi e, e, 1
+    jmp t2
+t3: sub len, e, p
+    eqi z, len, 8
+    jz z, t4
+    add a, p, IB
+    ld c0, a, 0
+    eqi z, c0, 64
+    jz z, t4
+    add a, p, 2
+    add a, a, IB
+    ld c2, a, 0
+    eqi z, c2, 83
+    jz z, t4
+    addi p, e, 1
+    jmp w0
+t4: mov i, p
+t5: ge z, i, e
+    jnz z, t9
+    add a, i, IB
+    ld c, a, 0
+    lei z, c, 32
+    jz z, t6
+    addi i, i, 1
+    jmp t5
+t6: mov ng, 0
+    eqi z, c, 45
+    jz z, t7
+    mov ng, 1
+    addi i, i, 1
+t7: mov v, 0
+t8: ge z, i, e
+    jnz z, t8e
+    add a, i, IB
+    ld c, a, 0
+    lti z, c, 48
+    jnz z, t8e
+    gti z, c, 57
+    jnz z, t8e
+    muli v, v, 10
+    addi c, c, -48
+    add v, v, c
+    addi i, i, 1
+    jmp t8
+t8e: jz ng, t8f
+    neg v, v
+t8f: gei z, nt, 200000
+    jz z, t8g
+    call x, err, 30
+t8g: add a, nt, TK
+    st v, a, 0
+    addi nt, nt, 1
+    jmp t5
+t9: addi p, e, 1
+    jmp t1
+bad: ret -1
+; ---- tablo: bolumleri gez, OP bolumu (id 2) kayitlari
+w0: mov ret_p, p
+    lti z, nt, 4
+    jnz z, bad2
+    ld ns, TK, 3
+    mov q, 4
+    mov si, 0
+    mov nb, 0
+    mov cnt, 0
+w1: ge z, si, ns
+    jnz z, wend
+    add a, q, TK
+    ld id, a, 0
+    ld ln, a, 3
+    eqi z, id, 2
+    jz z, w5
+    addi r0, q, 4
+    add a, r0, TK
+    ld nrec, a, 0
+    addi r, r0, 1
+    mov j, 0
+w2: ge z, j, nrec
+    jnz z, w5
+    add a, r, TK
+    ld rl, a, 0
+    ld opc, a, 1
+    ld sl, a, 2
+    gei z, opc, 128
+    jz z, w2a
+    call x, err, 31
+w2a: add a, opc, NMO
+    st nb, a, 0
+    add a, opc, NML
+    st sl, a, 0
+    mov m, 0
+w3: ge z, m, sl
+    jnz z, w4
+    add a, r, m
+    add a, a, TK
+    ld c, a, 3
+    gei z, c, 65
+    jz z, w3a
+    lei z, c, 90
+    jz z, w3a
+    addi c, c, 32
+w3a: add a, nb, NB
+    st c, a, 0
+    addi nb, nb, 1
+    addi m, m, 1
+    jmp w3
+w4: addi t, opc, 1
+    gt z, t, cnt
+    jz z, w4a
+    mov cnt, t
+w4a: add r, r, rl
+    addi r, r, 1
+    addi j, j, 1
+    jmp w2
+w5: addi q, q, 4
+    add q, q, ln
+    addi si, si, 1
+    jmp w1
+wend: st cnt, G, 3
+    ret ret_p
+bad2: ret -1
+}
+
 func main() {
     mov n, 0
 r1: host ch, getc
@@ -113,86 +252,12 @@ r1a: add a, n, IB
     st ch, a, 0
     addi n, n, 1
     jmp r1
-r2: ; ---- ops.h: komut adlari ("  X(" ile baslayan satirlar) ---- "@@SABLON" satirina kadar
-    mov p, 0
-    mov nop, 0
-l1: ge z, p, n
+r2: ; ---- kanonik sayisal komut tablosu (PMK1): "@@SABLON" satirina kadar; komut simgeleri (kucuk harf) NB'ye
+    call p, tabnames, n
+    lti z, p, 0
     jnz z, nosep
-    mov e, p
-l2: ge z, e, n
-    jnz z, l3
-    add a, e, IB
-    ld c, a, 0
-    eqi z, c, 10
-    jnz z, l3
-    addi e, e, 1
-    jmp l2
-l3: sub len, e, p
-    eqi z, len, 8
-    jz z, l4
-    add a, p, IB
-    ld c0, a, 0
-    eqi z, c0, 64
-    jz z, l4
-    add a, p, 2
-    add a, a, IB
-    ld c2, a, 0
-    eqi z, c2, 83
-    jz z, l4
-    addi p, e, 1
+    ld nop, G, 3
     jmp spec
-l4: ; "  X(" ?
-    lti z, len, 4
-    jnz z, lnext
-    add a, p, IB
-    ld c0, a, 0
-    eqi z, c0, 32
-    jz z, lnext
-    add a, p, 1
-    add a, a, IB
-    ld c1, a, 0
-    eqi z, c1, 32
-    jz z, lnext
-    add a, p, 2
-    add a, a, IB
-    ld c2, a, 0
-    eqi z, c2, 88
-    jz z, lnext
-    add a, p, 3
-    add a, a, IB
-    ld c3, a, 0
-    eqi z, c3, 40
-    jz z, lnext
-    addi i, p, 4
-m1: ge z, i, e
-    jnz z, lnext
-    add a, i, IB
-    ld c, a, 0
-    eqi z, c, 34
-    jnz z, m2
-    addi i, i, 1
-    jmp m1
-m2: addi i, i, 1
-    mov ns, i
-m3: ge z, i, e
-    jnz z, lnext
-    add a, i, IB
-    ld c, a, 0
-    eqi z, c, 34
-    jnz z, m4
-    addi i, i, 1
-    jmp m3
-m4: sub nl, i, ns
-    gei z, nop, 128
-    jz z, m5
-    call x, err, 2
-m5: add a, nop, NMO
-    st ns, a, 0
-    add a, nop, NML
-    st nl, a, 0
-    addi nop, nop, 1
-lnext: addi p, e, 1
-    jmp l1
 nosep: call x, err, 3
 spec: ; ---- sablon.txt satirlari
     mov zero, 0
@@ -278,7 +343,7 @@ nm1: ge z, j, nop
 nm1a: ge z, q, tl
     jnz z, nm1b
     add a, o, q
-    add a, a, IB
+    add a, a, NB
     ld c1, a, 0
     add a, ts, q
     add a, a, IB
@@ -294,7 +359,7 @@ nm2: addi j, j, 1
 nm3: call r, findn, XTRN, 26, ts, tl
     lti z, r, 0
     jnz z, nm3a
-    addi idx, r, 55
+    add idx, r, nop
     jmp nm4
 nm3a: call x, err, 4
 nm4: ; tanimsiz mi?
@@ -344,8 +409,9 @@ out: ; ---- cikti
     host putc, 80
     host putc, 76
     host putc, 83
+    addi tot, nop, 26
     mov j, 0
-o1: gei z, j, 81
+o1: ge z, j, tot
     jnz z, o2
     host putc, 32
     add a, j, START
@@ -368,7 +434,33 @@ o3: ge z, j, cnt
     addi j, j, 1
     jmp o3
 o4: host putc, 10
-    ret 0
+    ; ozel sablon yuvasi adlari: TS_<AD> <yuva> (yuva = komut sayisi + XTRN sirasi); kaynaklar yuva numaralarini yer tutucu olarak kullanir
+    mov k, 0
+    mov nm, 0
+ts0: gei z, nm, 26
+    jnz z, ts9
+    host putc, 84
+    host putc, 83
+    host putc, 95
+ts1: add a, k, XTRN
+    ld c, a, 0
+    jz c, ts3
+    gei z, c, 97
+    jz z, ts2
+    lei z, c, 122
+    jz z, ts2
+    addi c, c, -32
+ts2: host putc, c
+    addi k, k, 1
+    jmp ts1
+ts3: addi k, k, 1
+    host putc, 32
+    add v, nop, nm
+    host puti, v
+    host putc, 10
+    addi nm, nm, 1
+    jmp ts0
+ts9: ret 0
 }
 
 ; bir simge [o,l)

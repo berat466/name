@@ -69,8 +69,8 @@ space GA 524288
 space GB 524288
 space GC 524288
 space OUTB 1048576
-space NMO 64
-space NML 64
+space NMO 256
+space NML 256
 space G 128
 space FBN 1024
 space FDG 1024
@@ -180,7 +180,7 @@ s3: add k, k, 1
 ok: ret 1
 }
 
-; ad tablolari: NMO/NML = komut (0..54) ve host (55..61) adlari (SRC sonuna kopyalanmis)
+; ad tablolari: NMO/NML = komut (0..OPCOUNT-1) ve host (OPCOUNT..) adlari (SRC sonuna kopyalanmis)
 func opid(o, l) {
     mov i, 0
 o1: ge z, i, 55

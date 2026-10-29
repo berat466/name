@@ -8,7 +8,11 @@ const OpInfo kOpInfo[OP_COUNT] = {
   PM_OPS(X)
 #undef X
 };
-const HostInfo kHostInfo[H_COUNT] = {{"putc", 1}, {"puti", 1}, {"putf", 1}, {"getc", 0}, {"present", 3}, {"poll", 0}, {"frame", 0}};
+const HostInfo kHostInfo[H_COUNT] = {
+#define X(E, N, A) {N, A},
+  PM_HOSTS(X)
+#undef X
+};
 
 namespace {
 

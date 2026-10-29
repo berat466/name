@@ -1,0 +1,33 @@
+#!/bin/bash
+# dogrula_komut.sh'in yakaladigini kanitlar: komut.pma'yi tek tek bozar (mutant), kendi kucuk deposunda (src + oz/{komut,arac,asm,dogr,elf2}) yeniden derler, dogrula_komut.sh'in BASARISIZ olmasini bekler.
+# Kullanim: sabotaj_komut.sh [pm]   (SADECE: etiket deseni)
+PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); yakalandi=0; kacti=0
+mut() {   # etiket ifade
+  [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
+  rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/src $R/Makefile $T/w/; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $T/w/oz/
+  (cd $T/w/oz/arac && perl -0pi -e "$2" komut.pma && ! cmp -s komut.pma $R/oz/arac/komut.pma) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
+  (cd $T/w/oz/arac && $PM asm komut.pma -o komut.pmb --strip > /dev/null 2>&1) || { echo "mutant $1: derlenemedi"; kacti=$((kacti+1)); return; }
+  if (cd $T/w/oz/komut && timeout 900 ./dogrula_komut.sh $PM ${NR:-12} > $T/log 2>&1); then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+}
+mut magic        's/eqi z, m, 1347242801\n    jnz z, v1\n    ret 2/eqi z, m, 1347242801\n    jmp v1\n    ret 2/'
+mut buyuk_surum  's/eqi z, mj, 1\n    jnz z, v2\n    ret 3/eqi z, mj, 1\n    jmp v2\n    ret 3/'
+mut zorunlu      's/andi t, fl, 1\n    jz t, v7\n    ret 6/andi t, fl, 1\n    jmp v7\n    ret 6/'
+mut bolum_yinele 's/jz o, v4\n    ret 5/jmp v4\n    ret 5/'
+mut opcode_yinele 's/jz o, o4\n    ret 31/jmp o4\n    ret 31/'
+mut sembol_yinele 's/jz same, o8\n    ret 32/jmp o8\n    ret 32/'
+mut kind_yinele  's/jz o, k2\n    ret 21/jmp k2\n    ret 21/'
+mut tur_basvuru  's/ld o, b, 0\n    jz o, obad2/ld o, b, 0\n    jz kid, obad2/'
+mut gor_ext      's/    ld ne2, a, 0\n    jz ne2, x1\n    call x, pdat, W_EXT_S/    ld ne2, a, 0\n    jmp x1\n    call x, pdat, W_EXT_S/'
+mut yaz_kuyruk   's/addi nt2, nt2, 1\n    jmp l1\nlbad/addi nt2, nt2, 0\n    jmp l1\nlbad/'
+mut tab_ad_sonu  's/host putc, 32\n    host puti, 0\n    addi i, i, 1\n    jmp t1/host putc, 32\n    host puti, 1\n    addi i, i, 1\n    jmp t1/'
+mut opsh_ters    's/addi t, n, -1\n    ge z, i, t\n    jnz z, o4/addi t, n, -2\n    ge z, i, t\n    jnz z, o4/'
+mut profil_yogun 's/jnz o, p3a\n    ret 53/jmp p3a\n    ret 53/'
+mut profil_nk    's/gti z, nk, 3\n    jz z, p3b/gti z, nk, 9\n    jz z, p3b/'
+mut kind_karakter 's/lti z, ch, 48\n    jnz z, kbad\n    gti z, ch, 122/lti z, ch, 33\n    jnz z, kbad\n    gti z, ch, 122/'
+mut sym_kucuk    's/gei z, c, 65\n    jz z, n1a\n    lei z, c, 90\n    jnz z, n9/gei z, c, 65\n    jz z, n1a\n    lei z, c, 122\n    jnz z, n9/'
+mut walk_uzunluk 's/lti z, rl, 4\n    jz z, w2a/lti z, rl, 1\n    jz z, w2a/'
+mut bolum_sonu   's/v8: eq z, p, nt\n    jnz z, v9\n    ret 7/v8: eq z, p, nt\n    jmp v9\n    ret 7/'
+mut host_yinele  's/jz o, h2\n    ret 41/jmp h2\n    ret 41/'
+mut opaque_gor   's/    eqi z, vs, 1\n    jz z, gop\n    ; yapisal bolum/    jmp gop\n    ; yapisal bolum/'
+echo "sabotaj(komut): $yakalandi yakalandi, $kacti kacti"
+rm -rf $T; [ $kacti = 0 ]

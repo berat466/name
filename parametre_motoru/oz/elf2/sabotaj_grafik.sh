@@ -6,7 +6,7 @@ PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/
 yakalandi=0; kacti=0
 mut() {   # etiket dosya ifade   (SADECE: yalniz bu desenle eslesen etiketler)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
-  rm -rf $T/w; mkdir -p $T/w/src $T/w/oz; cp $R/src/ops.h $T/w/src/; cp -r $R/oz/arac $R/oz/elf2 $T/w/oz/
+  rm -rf $T/w; mkdir -p $T/w/src $T/w/oz; cp -r $R/oz/komut $T/w/oz/; cp -r $R/oz/arac $R/oz/elf2 $T/w/oz/
   (cd $T/w/oz/elf2 && perl -0pi -e "$3" $2 && ! cmp -s $2 $D/$2 ) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
   (cd $T/w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: uretici derlenemedi (yakalandi)"; yakalandi=$((yakalandi+1)); return; }
   if GEN2=$T/w/oz/elf2/gen2.pmb $D/dogrula_grafik.sh $PM > $T/log 2>&1; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi

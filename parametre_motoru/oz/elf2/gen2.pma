@@ -714,7 +714,8 @@ ei: ge z, gi, nxt
 hq: lti z, h, 4
     jnz z, hn
     jnz pv, hpv
-    sub t, h, 3
+    sub t, h, 4
+    add t, t, 1
     add t, t, na
     st t, G, 20
     mov op, 34
