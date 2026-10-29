@@ -284,6 +284,18 @@ $PM run $R/oz/asm/asm.pmb < $T/gt.pma > /dev/null 2>&1 && fail "eski asm goto'yu
 v=$( (ulimit -v 900000; $PM run $T/w5/oz/dogr/valid.pmb < $T/gt.l 2>/dev/null) | head -c 1 ); [ "$v" = "1" ] && pass || fail "dogrulayici goto'lu programi reddetti ($v)"
 { cat $T/w5/oz/komut/komutlar.pmk; echo "@@PROGRAM"; cat $T/gt.l; echo "@@GIRDI"; } > $T/gt.in
 [ "$( (ulimit -v 900000; $PM run $T/w5/oz/sayisal/svm.pmb < $T/gt.in 2>/dev/null) )" = "1" ] && pass || fail "svm goto'yu yurutemedi"
+# ELF: GOTO'nun x86 sablonu YOK; SEM'deki 'br' mikro-isleminin sablonundan (p_br) uretilir
+(ulimit -v 900000; $PM run $T/w5/oz/elf2/gen2.pmb < $T/gt.l > $T/gt.elf 2>/dev/null) && chmod +x $T/gt.elf && [ "$($T/gt.elf)" = "1" ] && pass || fail "goto ELF'i (yalniz SEM: br) beklenen ciktiyi vermedi"
+# geri atlama: GOTO ile dongu; yakit sayilir (tuzak noktasi pm'in standart jmp'li esdegeriyle ayni)
+printf 'func main() {\n ldi a, 0\nL: addi a, a, 1\n lti c, a, 5\n jz c, E\n goto L\nE: host puti, a\n host putc, 10\n halt\n}\n' > $T/gl.pma
+sed 's/goto L/jmp L/' $T/gl.pma > $T/gl_std.pma
+(ulimit -v 900000; $PM run $T/w5/oz/asm/asm.pmb < $T/gl.pma > $T/gl.pmb 2>/dev/null) && (ulimit -v 900000; $PM run $T/w5/oz/coz.pmy < $T/gl.pmb > $T/gl.l 2>/dev/null)
+$PM asm $T/gl_std.pma -o $T/gl_std.pmb --strip > /dev/null 2>&1
+for fu in 1 3 6 9 100000; do
+  { echo "-1 $fu"; cat $T/gl.l; } | (ulimit -v 900000; $PM run $T/w5/oz/elf2/gen2.pmb) > $T/gl.elf 2>/dev/null; chmod +x $T/gl.elf; $T/gl.elf > $T/gl.o1 2> $T/gl.e1; r1=$?
+  $PM run $T/gl_std.pmb --fuel $fu > $T/gl.o2 2> $T/gl.e2; r2=$?
+  [ $r1 = $r2 ] && cmp -s $T/gl.o1 $T/gl.o2 && [ "$(head -c 11 $T/gl.e1 | cut -d' ' -f1-2)" = "$(head -c 11 $T/gl.e2 | cut -d' ' -f1-2)" ] && pass || fail "goto dongusu yakit=$fu: ELF rc=$r1 pm(jmp) rc=$r2"
+done
 # goto'dan sonra sonlandirici yok -> dogrulayici reddetmeli (OPFLOW=2 sonlandirici sayilir; JZ gibi kosullu olsaydi reddedilirdi): hedefi gecersiz yap
 printf 'func main() {\n ldi a, 1\n goto L1\nL1: host puti, a\n goto L1\n}\n' > $T/gt2.pma
 (ulimit -v 900000; $PM run $T/w5/oz/asm/asm.pmb < $T/gt2.pma > $T/gt2.pmb 2>/dev/null) && (ulimit -v 900000; $PM run $T/w5/oz/coz.pmy < $T/gt2.pmb > $T/gt2.l 2>/dev/null)

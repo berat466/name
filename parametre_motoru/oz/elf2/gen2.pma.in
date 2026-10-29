@@ -28,6 +28,11 @@ data RTL = @RTL@
 data RTLN = @RTLN@
 data SEMOFF = @SEMOFF@
 data SEMDAT = @SEMDAT@
+data OPFLOW = @OPFLOW@
+data OPTGT = @OPTGT@
+data OPBACK = @OPBACK@
+data PBACK = @PBACK@
+data PRCLS = @PRCLS@
 
 ; G: 0 NT  1 imlec  2 KONUM  3 GECIS  4 bellek  5 giris  6 nsabit  7 sabit tabani  8 nveri  9 veri tabani  10 bss  11 nfonk  12 toplam komut
 ;    20 a  21 b  22 c  23 fonksiyon taban komutu  24 gecerli fonksiyon
@@ -626,7 +631,25 @@ k4: sub d, tok, 400
     addi t, k, 60
     add t, t, G
     ld fv, t, 0
-    jnz ty, k5
+    eqi z, ty, 5
+    jz z, k4a
+    ; REL_TFk: alani fv olan operandin gosterdigi komuta bagil 32 bit hedef
+    gei z, fv, 3
+    jz z, k4b
+    call x, fail
+k4b: add t, fv, 20
+    add t, t, G
+    ld o, t, 0
+    ld fb, G, 23
+    add t, fb, o
+    add t, t, OFF
+    ld r2, t, 0
+    ld p, G, 2
+    sub r2, r2, p
+    sub r2, r2, 4
+    call x, eb32, r2
+    ret 0
+k4a: jnz ty, k5
     mul r, fv, -8
     and r, r, 255
     call x, eb, r
@@ -677,6 +700,7 @@ ed: ret 0
 
 ; komutun SEM mikro-programi: her ornek [islem, f0..f3]; sablon yuvasi = TS_PRIM0 + islem
 func emit_micro(op) {
+    call bk, isbackop, op
     add t, op, SEMOFF
     ld lo, t, 0
     ld hi, t, 1
@@ -695,7 +719,14 @@ em: ge z, i, hi
     ld v, b, 4
     st v, G, 63
     addi s, pid, @TS_PRIM0@
-    call x, etpl, s
+    jz bk, emp
+    add t, pid, PRCLS
+    ld cl, t, 0
+    eqi z, cl, 2
+    jz z, emp
+    add t, pid, PBACK
+    ld s, t, 0
+emp: call x, etpl, s
     addi i, i, 1
     jmp em
 emd: ret 0
@@ -721,12 +752,45 @@ lw: ge z, i, hi
     lti z, v, 0
     jz z, lw1
     ret 0
-lw1: addi i, i, 1
+lw1: add t, pid, PRCLS
+    ld cl, t, 0
+    eqi z, cl, 2
+    jz z, lw2
+    add t, pid, PBACK
+    ld sl, t, 0
+    lti z, sl, 0
+    jz z, lw2
+    ret 0
+lw2: addi i, i, 1
     jmp lw
 lwd: ret 1
 }
 
-; komut sablonu: yerlesik x86 sablonu varsa o (-6 1 ise ve SEM sablonlanabiliyorsa mikro-islemlerden), yoksa SEM'den
+; komut geri atlama mi (yakit denetimi gerekir): ayricalikli (RT) olmayan islevde, atlama/kosullu atlama (OPFLOW 2/3) ve hedef <= gecerli komut
+func isbackop(op) {
+    ld pv, G, 52
+    jz pv, ib0
+    ret 0
+ib0: add t, op, OPFLOW
+    ld fw, t, 0
+    lti z, fw, 2
+    jz z, ib1
+    ret 0
+ib1: add t, op, OPTGT
+    ld ts, t, 0
+    add t, ts, 20
+    add t, t, G
+    ld tg, t, 0
+    ld gi, G, 59
+    ld fb, G, 23
+    sub pcl, gi, fb
+    le z, tg, pcl
+    jz z, ib2
+    ret 1
+ib2: ret 0
+}
+
+; komut sablonu: yerlesik x86 sablonu varsa o (-6 1 ise ve SEM sablonlanabiliyorsa mikro-islemlerden), yoksa SEM'den; geri atlamalarda yakit varyanti (OPBACK / PBACK)
 func emitop(op) {
     ge z, op, @OPCOUNT@
     jnz z, ep
@@ -735,10 +799,19 @@ func emitop(op) {
     lti z, s, 0
     jnz z, em1
     ld fo, G, 58
-    jz fo, ep
+    jz fo, bes
     call ok, lowerable, op
-    jz ok, ep
+    jz ok, bes
 em1: call x, emit_micro, op
+    ret 0
+bes: call bk, isbackop, op
+    jz bk, ep
+    add t, op, OPBACK
+    ld sl, t, 0
+    lti z, sl, 0
+    jz z, bes2
+    call x, fail
+bes2: call x, etpl, sl
     ret 0
 ep: call x, etpl, op
     ret 0
@@ -857,20 +930,8 @@ pv2: eq z, op, @OP_CALL@
     mov op, @TS_CALL_P@
     jmp nb
 nopv:
-    lti z, op, @OP_JMP@
-    jnz z, nb
-    gti z, op, @OP_JNZ@
-    jnz z, nb
-    ld tg, G, 20
-    eq z, op, @OP_JMP@
-    jnz z, hv
-    ld tg, G, 21
-hv: sub pcl, gi, fb
-    le z, tg, pcl
-    jz z, nb
-    sub op, op, @OP_JMP@
-    add op, op, @TS_JMP_BACK@
 nb:
+    st gi, G, 59
     call x, emitop, op
     add gi, gi, 1
     jmp ei
