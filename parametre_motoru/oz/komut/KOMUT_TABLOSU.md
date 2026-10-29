@@ -29,7 +29,9 @@ kayit:  uzunluk(kalan jeton)  alanlar...  ne  (anahtar,deger)*ne  bilinmeyen_kuy
 | 2 OP (komutlar) | `opkod  semlen sembol..  adlen ad..  nk  tur_id*nk` |
 | 3 HOST (sistem işlevleri) | `id  arguman  adlen ad..` ; ext anahtar 1 = yetenek sınıfı etiketi |
 
-Tür bayrakları (bilgi amaçlı, araçlar henüz yalnızca `id`'yi kullanır): 1 yazmaç okur, 2 yazmaca yazar, 4 doğrudan tamsayı, 8 etiket, 16 işlev, 32 sabit havuzu, 64 pencere tabanı, 128 host kimliği.
+Tür bayrakları (bilgi amaçlı, araçlar henüz yalnızca `id`'yi ve ext anahtar 2'yi kullanır): 1 yazmaç okur, 2 yazmaca yazar, 4 doğrudan tamsayı, 8 etiket, 16 işlev, 32 sabit havuzu, 64 pencere tabanı, 128 host kimliği.
+
+**KIND ext anahtar 2 = tel sınıfı [Kesin: PMB1 çözücü/kodlayıcı bunu kullanır]:** 0 düz (varsayılan), 1 işaretli doğrudan sayı (`i`), 2 göreli etiket (`l`). `coz.pmy`/`yaz.pmy` bu sınıfı, ve komut başına operand sayısını (NOPS), tablodan alır (`@` → `NOPSZ`, `KINDWN`, `KINDWZ`; `oz/uret_ikili.sh`).
 
 ## Sürümleme ve uyumluluk politikası [Kesin: aşağıdaki davranışlar `dogrula_komut.sh` ile sınanır]
 - **major** değişirse okuyucular tabloyu reddeder. **minor** artışı (yeni ek alanlar/bölümler) kabul edilir.
