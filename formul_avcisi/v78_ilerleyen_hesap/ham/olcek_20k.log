@@ -1,0 +1,7 @@
+s20k_77: WALL 70.504 USER 216.573 SYS 39.057 MAXRSS_KB 6442504  hazir=30.001 V53H_SONUC|TEST CE=5.531535 PPL=252.531 VAL CE=5.5441
+s20k_78: WALL 54.812 USER 177.369 SYS 21.968 MAXRSS_KB 6442484  hazir=24.402 V53H_SONUC|TEST CE=5.531535 PPL=252.531 VAL CE=5.5441
+--- s20k: CE hari? her sey (hash/top-k/secim) ---
+AYNI
+alfa 8 deger: maks mutlak 3.020e-14 maks bagil 5.437e-15 maks ULP 34.0
+test 1 deger: maks mutlak 0.000e+00 maks bagil 0.000e+00 maks ULP 0.0
+lin 32 deger: maks mutlak 6.697e-13 maks bagil 1.075e-13 maks ULP 754.0

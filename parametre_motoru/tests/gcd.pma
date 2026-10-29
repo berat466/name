@@ -1,0 +1,23 @@
+; iteratif ve ozyinelemeli ebob
+func gcdr(a, b) {
+    jz  b, done
+    mod r, a, b
+    call x, gcdr, b, r
+    ret x
+done:
+    ret a
+}
+func main() {
+    mov a, 1071
+    mov b, 462
+l:  jz  b, d
+    mod t, a, b
+    mov a, b
+    mov b, t
+    jmp l
+d:  host puti, a
+    host putc, 10
+    call g, gcdr, 48, 18
+    host puti, g
+    host putc, 10
+}

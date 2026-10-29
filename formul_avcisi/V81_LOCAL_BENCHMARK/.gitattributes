@@ -1,0 +1,10 @@
+*.sh text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+*.txt text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.ps1 text eol=crlf
+*.f32 binary
+*.i32 binary
+*.f64 binary

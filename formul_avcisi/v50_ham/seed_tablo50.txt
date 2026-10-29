@@ -1,0 +1,18 @@
+tohum 1 | D sinyalsiz kontrol (rho=0, alpha=0) | alpha=0 | val CE=4.8655 | test PPL=123.85 Top1=0.1633 Top5=0.3701
+tohum 1 | A V49 referansi (rho=-0.25, alpha=0) | alpha=0 | val CE=4.8400 | test PPL=120.43 Top1=0.1604 Top5=0.3689
+tohum 1 | B yalniz son asama GERCEK Q (rho=0, alpha) | alpha=0.2 | val CE=4.8316 | test PPL=119.30 Top1=0.1629 Top5=0.3703
+tohum 1 | B yalniz son asama KARISIK Q | alpha=0 | val CE=4.8655 | test PPL=123.85 Top1=0.1633 Top5=0.3701
+tohum 1 | C her iki asama GERCEK Q (rho=-0.25, alpha) | alpha=0.1 | val CE=4.8352 | test PPL=119.71 Top1=0.1590 Top5=0.3695
+tohum 1 | C her iki asama KARISIK Q | alpha=0 | val CE=4.8400 | test PPL=120.43 Top1=0.1604 Top5=0.3689
+tohum 2 | D sinyalsiz kontrol (rho=0, alpha=0) | alpha=0 | val CE=4.8686 | test PPL=124.59 Top1=0.1624 Top5=0.3665
+tohum 2 | A V49 referansi (rho=-0.25, alpha=0) | alpha=0 | val CE=4.8427 | test PPL=120.94 Top1=0.1600 Top5=0.3677
+tohum 2 | B yalniz son asama GERCEK Q (rho=0, alpha) | alpha=0.2 | val CE=4.8345 | test PPL=119.84 Top1=0.1608 Top5=0.3685
+tohum 2 | B yalniz son asama KARISIK Q | alpha=0 | val CE=4.8686 | test PPL=124.59 Top1=0.1624 Top5=0.3665
+tohum 2 | C her iki asama GERCEK Q (rho=-0.25, alpha) | alpha=0.1 | val CE=4.8379 | test PPL=120.19 Top1=0.1592 Top5=0.3703
+tohum 2 | C her iki asama KARISIK Q | alpha=0 | val CE=4.8427 | test PPL=120.94 Top1=0.1600 Top5=0.3677
+tohum 3 | D sinyalsiz kontrol (rho=0, alpha=0) | alpha=0 | val CE=4.8636 | test PPL=124.34 Top1=0.1647 Top5=0.3661
+tohum 3 | A V49 referansi (rho=-0.25, alpha=0) | alpha=0 | val CE=4.8380 | test PPL=120.87 Top1=0.1602 Top5=0.3657
+tohum 3 | B yalniz son asama GERCEK Q (rho=0, alpha) | alpha=0.2 | val CE=4.8302 | test PPL=119.68 Top1=0.1618 Top5=0.3701
+tohum 3 | B yalniz son asama KARISIK Q | alpha=0 | val CE=4.8636 | test PPL=124.34 Top1=0.1647 Top5=0.3661
+tohum 3 | C her iki asama GERCEK Q (rho=-0.25, alpha) | alpha=0.1 | val CE=4.8334 | test PPL=120.13 Top1=0.1604 Top5=0.3675
+tohum 3 | C her iki asama KARISIK Q | alpha=0 | val CE=4.8380 | test PPL=120.87 Top1=0.1602 Top5=0.3657

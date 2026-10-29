@@ -1,0 +1,37 @@
+=== full : orijinal v53 ikilisi (V33_DUMP) ile cmp
+o WC: BIT-OZDES
+o WF: BIT-OZDES
+s WC: BIT-OZDES
+s WF: BIT-OZDES
+d WC: BIT-OZDES
+d WF: BIT-OZDES
+--- V53 orijinal yol vs V54 siki
+dizi  bit-ozdes maks mutlak    maks bagil     farkli eleman 
+Fc    EVET      0.000e+00      0.000e+00      0 / 57992598 (0%)
+AFF   EVET      0.000e+00      0.000e+00      0 / 263169 (0%)
+RF    EVET      0.000e+00      0.000e+00      0 / 1026513 (0%)
+ACCB  EVET      0.000e+00      0.000e+00      0 / 6930102 (0%)
+ACF   EVET      0.000e+00      0.000e+00      0 / 20492298 (0%)
+RC    EVET      0.000e+00      0.000e+00      0 / 79931946 (0%)
+Y0f   EVET      0.000e+00      0.000e+00      0 / 79931946 (0%)
+X     hayir     6.661e-16      6.513e-10      7763431 / 20492298 (37.9%)
+T     hayir     3.638e-12      1.462e-12      58640 / 263169 (22.3%)
+U     hayir     2.274e-13      4.239e-11      311202 / 1026513 (30.3%)
+WC    EVET      0.000e+00      0.000e+00      0 / 79931946 (0%)
+WF    EVET      0.000e+00      0.000e+00      0 / 1026513 (0%)
+Zval  EVET      0.000e+00      0.000e+00      0 / 9964980 (0%)
+--- V53 orijinal yol vs V54 varsayilan
+dizi  bit-ozdes maks mutlak    maks bagil     farkli eleman 
+Fc    EVET      0.000e+00      0.000e+00      0 / 57992598 (0%)
+AFF   EVET      0.000e+00      0.000e+00      0 / 263169 (0%)
+RF    EVET      0.000e+00      0.000e+00      0 / 1026513 (0%)
+ACCB  EVET      0.000e+00      0.000e+00      0 / 6930102 (0%)
+ACF   EVET      0.000e+00      0.000e+00      0 / 20492298 (0%)
+RC    EVET      0.000e+00      0.000e+00      0 / 79931946 (0%)
+Y0f   EVET      0.000e+00      0.000e+00      0 / 79931946 (0%)
+X     hayir     6.661e-16      6.513e-10      7763431 / 20492298 (37.9%)
+T     hayir     3.638e-12      1.462e-12      58640 / 263169 (22.3%)
+U     hayir     2.274e-13      4.239e-11      311202 / 1026513 (30.3%)
+WC    EVET      0.000e+00      0.000e+00      0 / 79931946 (0%)
+WF    EVET      0.000e+00      0.000e+00      0 / 1026513 (0%)
+Zval  EVET      0.000e+00      0.000e+00      0 / 9964980 (0%)

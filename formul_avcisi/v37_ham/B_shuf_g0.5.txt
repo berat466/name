@@ -1,0 +1,60 @@
+V34_MOD|FAST=1 RHS_GRUPLARI=1 CHOL_BLOKLARI=1
+V33_MOD|cekirdekler=OPENBLAS (sgemm/dpotrf/dtrsm/dgemm)|OpenMP=4|OpenBLAS iplik=4
+ZAMAN|veri dosyalarini okuma=0.027s
+ZAMAN|expand_s (X'e fark bloku ekleme)=0.054s
+V27 c=2 H=512 tohum=1 gamma1=0.5 lambda=1 gamma2(F2..F4)=0.5 mod=Z (4 cekirdek); yalniz egitim; dogrusal okuma (alpha,eps dogrulamayla)
+ZAMAN|n-gram ogretici sayimlari+EM (yalniz kategori/rapor icin; agirlik uretimi DEGIL)=0.014s
+V36_OOF|2-kat out-of-fold kimlik ridge (lam=100) residual baslangici ; sure=2.12s ; yalniz egitim etiketleri
+V36_KONTROL|residual SATIRLARI karistirildi (R=onehot(y)-Zc ayni permutasyonla; X ile iliskisi kopuk)
+V35_SVD|F1|girdi_boyutu=8290 (yogun 192 + seyrek 8098) k=128 (sketch l=138) M_sayisal_rank=128 (ust sinir min(D,V)=2001) s1=122.5 sk=7.426 ust-k_enerji_payi=1.000 ; rastgele doldurma YOK
+OLCEK|V31_KIMLIK+4F(4x128)|F2 girdisi|X(genislik 192): ham satir-norm RMS=1.8634 uygulanan olcek=0.5366 ; F1(genislik 128): ham satir-norm RMS=4.6415 uygulanan olcek=0.2154 ; toplam giris boyutu=320
+V35_SVD|F2|girdi_boyutu=8418 (yogun 320 + seyrek 8098) k=128 (sketch l=138) M_sayisal_rank=138 (ust sinir min(D,V)=2001) s1=11.45 sk=0.7958 ust-k_enerji_payi=0.994 ; rastgele doldurma YOK
+OLCEK|V31_KIMLIK+4F(4x128)|F3 girdisi|X(genislik 192): ham satir-norm RMS=1.8634 uygulanan olcek=0.5366 ; F1(genislik 128): ham satir-norm RMS=4.6415 uygulanan olcek=0.2154 ; F2(genislik 128): ham satir-norm RMS=4.6945 uygulanan olcek=0.2130 ; toplam giris boyutu=448
+V35_SVD|F3|girdi_boyutu=8546 (yogun 448 + seyrek 8098) k=128 (sketch l=138) M_sayisal_rank=138 (ust sinir min(D,V)=2001) s1=8.921 sk=1.292 ust-k_enerji_payi=0.988 ; rastgele doldurma YOK
+OLCEK|V31_KIMLIK+4F(4x128)|F4 girdisi|X(genislik 192): ham satir-norm RMS=1.8634 uygulanan olcek=0.5366 ; F1(genislik 128): ham satir-norm RMS=4.6415 uygulanan olcek=0.2154 ; F2(genislik 128): ham satir-norm RMS=4.6945 uygulanan olcek=0.2130 ; F3(genislik 128): ham satir-norm RMS=4.7142 uygulanan olcek=0.2121 ; toplam giris boyutu=576
+V35_SVD|F4|girdi_boyutu=8674 (yogun 576 + seyrek 8098) k=128 (sketch l=138) M_sayisal_rank=138 (ust sinir min(D,V)=2001) s1=11.26 sk=1.757 ust-k_enerji_payi=0.988 ; rastgele doldurma YOK
+RANK|F1|genislik=128 sayisal_rank(>1e-6*max)=128 rank(>1e-3*max)=128 efektif_rank(PR)=100.2 en_buyuk_ozdeger_payi=0.022
+RANK|F2|genislik=128 sayisal_rank(>1e-6*max)=128 rank(>1e-3*max)=128 efektif_rank(PR)=62.1 en_buyuk_ozdeger_payi=0.065
+RANK|F3|genislik=128 sayisal_rank(>1e-6*max)=128 rank(>1e-3*max)=128 efektif_rank(PR)=58.6 en_buyuk_ozdeger_payi=0.063
+RANK|F4|genislik=128 sayisal_rank(>1e-6*max)=128 rank(>1e-3*max)=128 efektif_rank(PR)=54.2 en_buyuk_ozdeger_payi=0.067
+V31_ZINCIR_OZELLIK|V31_KIMLIK+4F(4x128)|hazirlik=9.61s
+V31_HAZIRLIK|F bloku=513 sutun (yogun), C blogu=4001 seyrek sutun (yogun one-hot veri matrisi YOK; C^TC yogun 4001x4001 yalniz Gram, 128 MB)|sure=0.21s
+YALNIZ_KIMLIK_TARAMA|lamC=20|dogr CE=4.9902 PPL=147.0 (alpha=0.5 eps=1e-05)
+SURE|lamC=20 Cholesky(C blogu)+Schur hazirlik=2.75s
+ORTAK_TARAMA|lamC=20 lamF=1e+09|dogr CE=4.9356 PPL=139.2 (alpha=0.7 eps=1e-05)|sure=1.01s
+KONTROL_F_KAPALI|lamC=20 lamF=1e9: F katkisi kapali -> yalniz kimlik ile karsilastirma: ortak dogr CE=4.9356 ; yalniz-kimlik dogr CE (ayni lamC) bkz YALNIZ_KIMLIK_TARAMA
+ORTAK_TARAMA|lamC=20 lamF=3000|dogr CE=5.0150 PPL=150.7 (alpha=0.7 eps=1e-05)|sure=0.48s
+ORTAK_TARAMA|lamC=20 lamF=10000|dogr CE=4.9798 PPL=145.4 (alpha=0.7 eps=1e-05)|sure=0.23s
+ORTAK_TARAMA|lamC=20 lamF=30000|dogr CE=4.9440 PPL=140.3 (alpha=0.75 eps=1e-05)|sure=0.47s
+ORTAK_TARAMA|lamC=20 lamF=100000|dogr CE=4.9219 PPL=137.3 (alpha=0.75 eps=1e-05)|sure=0.26s
+YALNIZ_KIMLIK_TARAMA|lamC=100|dogr CE=4.9840 PPL=146.1 (alpha=0.6 eps=1e-05)
+SURE|lamC=100 Cholesky(C blogu)+Schur hazirlik=1.28s
+ORTAK_TARAMA|lamC=100 lamF=1e+09|dogr CE=4.9625 PPL=142.9 (alpha=0.99 eps=0.0001)|sure=0.26s
+KONTROL_F_KAPALI|lamC=100 lamF=1e9: F katkisi kapali -> yalniz kimlik ile karsilastirma: ortak dogr CE=4.9625 ; yalniz-kimlik dogr CE (ayni lamC) bkz YALNIZ_KIMLIK_TARAMA
+ORTAK_TARAMA|lamC=100 lamF=3000|dogr CE=5.0474 PPL=155.6 (alpha=0.7 eps=1e-05)|sure=0.26s
+ORTAK_TARAMA|lamC=100 lamF=10000|dogr CE=5.0113 PPL=150.1 (alpha=0.75 eps=1e-05)|sure=0.24s
+ORTAK_TARAMA|lamC=100 lamF=30000|dogr CE=4.9644 PPL=143.2 (alpha=0.8 eps=1e-05)|sure=0.26s
+ORTAK_TARAMA|lamC=100 lamF=100000|dogr CE=4.9336 PPL=138.9 (alpha=0.97 eps=0.0001)|sure=0.27s
+SECIM|yalniz kimlik: lamC=100 (dogr CE=4.9840)|ortak (kimlik+4F): lamC=20 lamF=100000 (dogr CE=4.9219)
+SONUC|YALNIZ_KIMLIK(secilen)|lamC=100 lamF=0|alpha=0.6 eps=1e-05|egitim PPL=34.4|dogr CE=4.9840 PPL=146.1|test CE=4.9420 PPL=140.05 top1=0.1610 top5=0.3566|egitim-dogr CE farki=1.4450|baglam GORULDU: PPL=139.7 top1=0.1619 (n=3392)|yalniz bigram: PPL=140.9 top1=0.1593 (n=1588)|olasilik_toplam_sapma=1.5e-13
+SONUC|ORTAK_KIMLIK+4F(secilen)|lamC=20 lamF=100000|alpha=0.75 eps=1e-05|egitim PPL=30.8|dogr CE=4.9219 PPL=137.3|test CE=4.8779 PPL=131.35 top1=0.1681 top5=0.3651|egitim-dogr CE farki=1.4959|baglam GORULDU: PPL=135.8 top1=0.1680 (n=3392)|yalniz bigram: PPL=122.3 top1=0.1681 (n=1588)|olasilik_toplam_sapma=6.8e-14
+SONUC|  ayni W: yalniz C kismi (logit)|lamC=20 lamF=100000|alpha=0.4 eps=1e-07|egitim PPL=33.5|dogr CE=5.0472 PPL=155.6|test CE=5.0184 PPL=151.17 top1=0.1554 top5=0.3434|egitim-dogr CE farki=1.5357|baglam GORULDU: PPL=154.9 top1=0.1574 (n=3392)|yalniz bigram: PPL=143.5 top1=0.1511 (n=1588)|olasilik_toplam_sapma=7.8e-14
+SONUC|  ayni W: yalniz F kismi (logit)|lamC=20 lamF=100000|alpha=0.7 eps=1e-05|egitim PPL=227.5|dogr CE=5.5895 PPL=267.6|test CE=5.5466 PPL=256.37 top1=0.0556 top5=0.2257|egitim-dogr CE farki=0.1625|baglam GORULDU: PPL=279.2 top1=0.0513 (n=3392)|yalniz bigram: PPL=213.7 top1=0.0649 (n=1588)|olasilik_toplam_sapma=1.8e-14
+COZUM_REZIDUSU|||Z^T(ZW-Y)+Lambda W||/||Z^T Y|| = 1.458e+00 (float gemm ile olculdu; blok eliminasyon Cholesky cift duyarlik, cozum float)
+V31_TOPLAM|sure=15.2s
+TT|E1 yalniz-kimlik dogrulama degerlendirmesi (logit+alpha/eps+PPL)|0.700s
+TT|E2 ortak cozum dogrulama degerlendirmesi|2.349s
+TT|E3 final degerlendirme: egitim+dogr+test logit/PPL/kategori + parca okumalari (rapor icin)|6.924s
+TT|M1 A_CC kopya+lambda_C|0.579s
+TT|M2 Cholesky(A_CC+lC I) 4002x4002|0.462s
+TT|M3 Y0=A_CC^-1 R_C cozum (2001 sag taraf) = yalniz-kimlik agirliklari|1.713s
+TT|M4 X=A_CC^-1 A_CF cozum (513 sag taraf)|0.417s
+TT|M5 T=A_FC X, U=A_FC Y0 (Schur parcalari)|0.153s
+TT|M6 Schur sistemi (513) Cholesky+cozum + W_C=Y0-X W_F (lambda_F basina)|1.389s
+TT|P1 dogrulama logitleri|0.128s
+TT|P2 TEST logitleri (tahmin)|0.129s
+TT|P3 egitim logitleri (yalniz rapor)|5.055s
+TT|P4 egitim PPL/Top-k (yalniz rapor)|0.492s
+TT|P5 TEST PPL/Top-1/Top-5 hesabi (tahmin)|0.063s
+ZINCIR_BITTI|V31_KIMLIK+4F(4x128)|toplam=24.8s tepe_RAM=1725MB
+TOPLAM sure=24.9s tepe_RAM=1725MB

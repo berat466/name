@@ -1,0 +1,27 @@
+# ORNEK 2 (ekran + nesne sablonu + olay): 16x8 ekran, 3 noktadan olusan sablon; tus 1 hepsini saga kaydirir. 10 kare. Cikti: ilk noktanin x'i
+80 77 89 49
+16 8 0 10             # sahne 16x8, arkaplan 0, 10 kare
+0                     # global yok
+0                     # dizi yok
+0                     # islev yok
+0                     # davranis yok
+1                     # 1 sablon (indeks 0): nokta
+  3                   #   adet: 3 ornek
+  2                   #   2 alan
+    2 z0 z2           #   alan0 x = 0 + 2*i          (olayda yaziliyor -> bellekte tutulur)
+    2 z3 z0           #   alan1 y = 3 + 0*i          (hic yazilmiyor -> sanal, bellek yok)
+  0                   #   kural blogu: bos (her kare her ornege uygulanacak komut yok)
+  1                   #   1 cizim
+    2                 #   sekil 2 = nokta: x, y, renk
+      2 0             #   x = alan0
+      2 1             #   y = alan1
+      1 z16777215     #   renk 0xFFFFFF
+0                     # etkilesim yok
+1                     # 1 girdi
+  1 1                 #   tus kodu 1, sablon 0 (+1 = 1: tum orneklere uygulanir)
+  1                   #   govde 1 komut
+    1  2 0  15 1  2 0  1 z1      # ata: alan0 = alan0 + 1
+0                     # toplama yok
+0                     # bitis yok
+0                     # ILK bos
+1  12 1  11 0 0 1 z0  # SON: satir ( talan sablon0 alan0 ornek0 ) -> ilk noktanin x'i

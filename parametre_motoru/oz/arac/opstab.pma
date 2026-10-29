@@ -1,0 +1,357 @@
+; opstab.pma -- src/ops.h -> komut tablolari (awk/sed yerine). stdin: ops.h metni; stdout: SOZLUK satirlari
+;   OPNAMES  komut adlari (NUL ile ayrilmis, ardindan host adlari putc puti putf getc present poll frame) -- ASCII kodlari
+;   NOPS     komut basina operand sayisi (kind dizesinin uzunlugu)    KIND  komut basina 3 operand turu kodu (d1 r2 f3 s4 i5 k6 l7 F8 b9 h10, yok 0)
+;   OPCOUNT  komut sayisi
+; Satir bicimi: "  X(ENUM, \"ad\", N, \"turler\")" (iki bosluk + X( ile baslayan satirlar).
+memory 4194304
+entry main
+space IB 1100000
+space NMO 128
+space NML 128
+space KB 512
+space G 16
+
+func err(code) {
+    host putc, 72
+    host putc, 65
+    host putc, 84
+    host putc, 65
+    host putc, 58
+    host putc, 32
+    host puti, code
+    host putc, 10
+    mov z, 0
+    div x, 1, z
+    ret 0
+}
+
+func code_of(c) {
+    eqi z, c, 100
+    jz z, a1
+    ret 1
+a1: eqi z, c, 114
+    jz z, a2
+    ret 2
+a2: eqi z, c, 102
+    jz z, a3
+    ret 3
+a3: eqi z, c, 115
+    jz z, a4
+    ret 4
+a4: eqi z, c, 105
+    jz z, a5
+    ret 5
+a5: eqi z, c, 107
+    jz z, a6
+    ret 6
+a6: eqi z, c, 108
+    jz z, a7
+    ret 7
+a7: eqi z, c, 70
+    jz z, a8
+    ret 8
+a8: eqi z, c, 98
+    jz z, a9
+    ret 9
+a9: eqi z, c, 104
+    jz z, a10
+    ret 10
+a10: call x, err, 10
+}
+
+func main() {
+    mov n, 0
+r1: host ch, getc
+    lti z, ch, 0
+    jnz z, r2
+    gei z, n, 1048576
+    jz z, r1a
+    call x, err, 1
+r1a: add a, n, IB
+    st ch, a, 0
+    addi n, n, 1
+    jmp r1
+r2: mov p, 0
+    mov nop, 0
+l1: ge z, p, n
+    jnz z, l9
+    ; satir basinda "  X(" ?
+    addi q, p, 3
+    ge z, q, n
+    jnz z, skip
+    add a, p, IB
+    ld c0, a, 0
+    eqi z, c0, 32
+    jz z, skip
+    add a, p, 1
+    add a, a, IB
+    ld c1, a, 0
+    eqi z, c1, 32
+    jz z, skip
+    add a, p, 2
+    add a, a, IB
+    ld c2, a, 0
+    eqi z, c2, 88
+    jz z, skip
+    add a, p, 3
+    add a, a, IB
+    ld c3, a, 0
+    eqi z, c3, 40
+    jz z, skip
+    ; ENUM adini atla: ilk ','
+    addi i, p, 4
+e1: ge z, i, n
+    jnz z, bad
+    add a, i, IB
+    ld c, a, 0
+    eqi z, c, 44
+    jnz z, e2
+    addi i, i, 1
+    jmp e1
+e2: addi i, i, 1
+    ; bosluklar, '"'
+e3: add a, i, IB
+    ld c, a, 0
+    eqi z, c, 32
+    jz z, e4
+    addi i, i, 1
+    jmp e3
+e4: eqi z, c, 34
+    jnz z, e5
+    call x, err, 2
+e5: addi i, i, 1
+    mov ns, i
+e6: add a, i, IB
+    ld c, a, 0
+    eqi z, c, 34
+    jnz z, e7
+    ge z, i, n
+    jz z, e6a
+    call x, err, 3
+e6a: addi i, i, 1
+    jmp e6
+e7: sub nl, i, ns
+    gei z, nop, 128
+    jz z, e8
+    call x, err, 4
+e8: add a, nop, NMO
+    st ns, a, 0
+    add a, nop, NML
+    st nl, a, 0
+    ; ad sonrasi: ',' sayi ',' '"' turler '"'
+    addi i, i, 1
+e9: add a, i, IB
+    ld c, a, 0
+    eqi z, c, 34
+    jnz z, e10
+    ge z, i, n
+    jz z, e9a
+    call x, err, 5
+e9a: addi i, i, 1
+    jmp e9
+e10: addi i, i, 1
+    mov k, 0
+e11: add a, i, IB
+    ld c, a, 0
+    eqi z, c, 34
+    jnz z, e12
+    call x, code_of, c
+    mov cc, 0
+    call cc, code_of, c
+    gei z, k, 3
+    jz z, e11a
+    call x, err, 6
+e11a: mul t, nop, 3
+    add t, t, k
+    add a, t, KB
+    st cc, a, 0
+    addi k, k, 1
+    addi i, i, 1
+    jmp e11
+e12: ; kalan turler 0
+e13: gei z, k, 3
+    jnz z, e14
+    mul t, nop, 3
+    add t, t, k
+    add a, t, KB
+    mov zero, 0
+    st zero, a, 0
+    addi k, k, 1
+    jmp e13
+e14: ; operand sayisi = kind dizesinin uzunlugu
+    addi nop, nop, 1
+skip: ; sonraki satira
+s1: ge z, p, n
+    jnz z, l1
+    add a, p, IB
+    ld c, a, 0
+    addi p, p, 1
+    eqi z, c, 10
+    jz z, s1
+    jmp l1
+bad: call x, err, 7
+l9: st nop, G, 0
+    ; ---- OPCOUNT
+    host putc, 79
+    host putc, 80
+    host putc, 67
+    host putc, 79
+    host putc, 85
+    host putc, 78
+    host putc, 84
+    host putc, 32
+    host puti, nop
+    host putc, 10
+    ; ---- OPNAMES
+    host putc, 79
+    host putc, 80
+    host putc, 78
+    host putc, 65
+    host putc, 77
+    host putc, 69
+    host putc, 83
+    mov j, 0
+n1: ge z, j, nop
+    jnz z, n9
+    host putc, 32
+    add a, j, NMO
+    ld o, a, 0
+    add a, j, NML
+    ld l, a, 0
+    mov q, 0
+n2: ge z, q, l
+    jnz z, n3
+    add a, o, q
+    add a, a, IB
+    ld c, a, 0
+    host puti, c
+    host putc, 32
+    addi q, q, 1
+    jmp n2
+n3: host putc, 48
+    addi j, j, 1
+    jmp n1
+n9: ; host adlari: putc puti putf getc present poll frame
+    mov h, 0
+h1: gei z, h, 7
+    jnz z, h9
+    host putc, 32
+    call x, hostname, h
+    host putc, 32
+    host putc, 48
+    addi h, h, 1
+    jmp h1
+h9: host putc, 10
+    ; ---- NOPS (turler dizgesindeki sifir olmayan kod sayisi)
+    host putc, 78
+    host putc, 79
+    host putc, 80
+    host putc, 83
+    mov j, 0
+o1: ge z, j, nop
+    jnz z, o9
+    mov cnt, 0
+    mov k, 0
+o2: gei z, k, 3
+    jnz z, o3
+    mul t, j, 3
+    add t, t, k
+    add a, t, KB
+    ld c, a, 0
+    jz c, o2a
+    addi cnt, cnt, 1
+o2a: addi k, k, 1
+    jmp o2
+o3: host putc, 32
+    host puti, cnt
+    addi j, j, 1
+    jmp o1
+o9: host putc, 10
+    ; ---- KIND
+    host putc, 75
+    host putc, 73
+    host putc, 78
+    host putc, 68
+    mov j, 0
+k1: ge z, j, nop
+    jnz z, k9
+    mov k, 0
+k2: gei z, k, 3
+    jnz z, k3
+    mul t, j, 3
+    add t, t, k
+    add a, t, KB
+    ld c, a, 0
+    host putc, 32
+    host puti, c
+    addi k, k, 1
+    jmp k2
+k3: addi j, j, 1
+    jmp k1
+k9: host putc, 10
+    ret 0
+}
+
+; host adini (ASCII kodlari, sayi olarak) yazar
+func hostname(h) {
+    eqi z, h, 0
+    jz z, h1
+    call x, str4, 112, 117, 116, 99
+    ret 0
+h1: eqi z, h, 1
+    jz z, h2
+    call x, str4, 112, 117, 116, 105
+    ret 0
+h2: eqi z, h, 2
+    jz z, h3
+    call x, str4, 112, 117, 116, 102
+    ret 0
+h3: eqi z, h, 3
+    jz z, h4
+    call x, str4, 103, 101, 116, 99
+    ret 0
+h4: eqi z, h, 4
+    jz z, h5
+    ; present
+    host puti, 112
+    host putc, 32
+    host puti, 114
+    host putc, 32
+    host puti, 101
+    host putc, 32
+    host puti, 115
+    host putc, 32
+    host puti, 101
+    host putc, 32
+    host puti, 110
+    host putc, 32
+    host puti, 116
+    ret 0
+h5: eqi z, h, 5
+    jz z, h6
+    ; poll
+    call x, str4, 112, 111, 108, 108
+    ret 0
+h6: ; frame
+    host puti, 102
+    host putc, 32
+    host puti, 114
+    host putc, 32
+    host puti, 97
+    host putc, 32
+    host puti, 109
+    host putc, 32
+    host puti, 101
+    ret 0
+}
+
+func str4(a, b, c, d) {
+    host puti, a
+    host putc, 32
+    host puti, b
+    host putc, 32
+    host puti, c
+    host putc, 32
+    host puti, d
+    ret 0
+}

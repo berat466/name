@@ -1,0 +1,5 @@
+# v51b_ogrenme_kaybi_denetimi/ — ham ölçümler ve analiz araçları
+Ana kaynak: ../cpp/tek_hamle_v51b.cpp (DEĞİŞTİRİLMEDİ). Ölçüm kancası: ../cpp/tek_hamle_v52.cpp (V51b + V52_DUMP döküm + V52_KNN; model matematiği aynı).
+- model.py — V51b analitik çözümünün Python kopyası (C++ F dökümünden: Gram, RHS, Schur, Ridge, okuma). Doğrulama: λ_F=1000/3000/10000 için val CE 4,8569/4,8527/4,8673 (C++ ile aynı); son karışım val 4,8242, test 4,7783 (C++ ile aynı).
+- a1_girdi.py/.txt — tokenlaştırma, sözlük, UNK, bağlam. a4_cozum.py/.txt — blok katkıları, C büzülmesi, Schur spektrumu, hedef sinyali, λ duyarlılığı. a5_ozellik.py/.txt — özellik türleri, sütun bazında marjinal katkı (512 yeniden çözüm), yedeklilik, η². a6_q_topk_oof.py/.txt — top-k grafı, Q tablosu, K tarayışı, OOF. a8_cikis_baglam.py/.txt — çıkış kırpması, UNK, temsil çakışmaları. a9_v49_atilan.py/.txt — V49'un attığı yönler. cpp_ham/ — C++ koşuları (K tarayışı, düz F). dropone.npy — sütun bazında Δ val CE.
+Önkoşul: /tmp/v8data (veri), /tmp/pg1342.txt (ham metin), /tmp/v52B ve /tmp/v52Q (V52_DUMP çıktıları).

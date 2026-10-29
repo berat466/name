@@ -1,0 +1,33 @@
+# Gorev A (histogram) - yapisal tablo, elle yazilmis referans
+80 77 89 49       # "PMY1"
+0 0 0 0           # sahne W H BG yok; kare=0
+0                 # global yok
+1  8 0            # 1 dizi: boyut 8, baslangic degeri yok
+0 0 0             # islev, davranis, sablon yok
+0 0 0             # etkilesim, girdi, toplama yok
+0                 # bitis yok
+# ---- ILK blok (4 komut)
+4
+1 4 3 1 z100000                    # l3 = 100000
+1 4 4 1 z-100000                   # l4 = -100000
+# say l0 = 0..3999 { 7 komut }
+4 0  1 z0  1 z3999  7
+  # l1 = ((i*i*7 + i*13) % 1009) - 500
+  1 4 1  15 2  15 5  15 1  15 3  15 3 4 0 4 0  1 z7  15 3 4 0 1 z13  1 z1009  1 z500
+  # l6 = (l1 + 500) / 127
+  1 4 6  15 4  15 1 4 1 1 z500  1 z127
+  # dizi0[l6] = dizi0[l6] + 1
+  1 12 0 4 6  15 1  12 0 4 6  1 z1
+  # l2 = l2 + l1
+  1 4 2  15 1 4 2 4 1
+  # eger l1 < l3 : l3 = l1
+  2  15 13 4 1 4 3   1  1 4 3 4 1   0
+  # eger l1 > l4 : l4 = l1
+  2  15 15 4 1 4 4   1  1 4 4 4 1   0
+  # eger (l0 % 3 == 0) ve (l1 > 0) : l5 = l5 + l1
+  2  15 19  15 11 15 5 4 0 1 z3 1 z0   15 15 4 1 1 z0   1  1 4 5 15 1 4 5 4 1   0
+# satir: dizi0[0..7], l2, l3, l4, l5
+12 12
+12 0 1 z0   12 0 1 z1   12 0 1 z2   12 0 1 z3   12 0 1 z4   12 0 1 z5   12 0 1 z6   12 0 1 z7
+4 2   4 3   4 4   4 5
+0                 # SON blok bos

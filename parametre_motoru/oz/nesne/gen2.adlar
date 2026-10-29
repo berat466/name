@@ -1,0 +1,39 @@
+func fail
+func put
+func readall
+func nx
+func options
+func pfuncs
+func hostslot
+func scanrt
+func loadrt
+func parse
+func eb
+func eb32
+func eb64
+func val32
+func target
+func etok_fn
+func etok
+func etpl
+func emit_micro
+func lowerable
+func isbackop
+func emitop
+func blob
+func mark
+func hostmap
+func emit_all
+func rtimg
+func main
+space T 0
+space OPS 524288
+space OA 1048576
+space OB 1572864
+space OC 2097152
+space OFF 2621440
+space FBASE 3145728
+space FNP 3211264
+space FNR 3276800
+space G 3342336
+space EV 3342400

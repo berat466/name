@@ -1,0 +1,1179 @@
+; gen2.pma -- PMB1 listesi -> bagimsiz Linux x86-64 ELF URETICISI (parametre tablosu; sablonlar veridir: sablon.txt -> TPL/TPLS).
+; stdin: pm liste bicimi; stdout: ELF64. Desteklenen: tamsayi ALU, karsilastirma, atlama, CAGRI/RET (cok fonksiyon, pencereli yazmaclar),
+;   ld/st (sinir denetimli), alloc, host putc/puti/getc, tuzaklar DIV0/OOB/STACK/DEPTH/ALLOC (stderr "TRAP: AD", cikis 2).
+; Desteklenmeyen: kayan nokta, present/poll/frame/putf; yakit siniri YOK. Desteklenmeyen girdi -> DIV0 tuzagi (cikis 2), stdout bos.
+; Guvenilen (dogrulanmis) tablolar icin: islenen indeksleri denetlenmez (oz/dogr/valid.pmb once calistirilmali: oz/boru.sh).
+; Iki gecis: 1) boyutlar/konumlar (cikti yok), 2) gercek cikti (ayni sablonlar, ayni boyutlar).
+memory 4194304
+entry main
+space T 524288
+space OPS 524288
+space OA 524288
+space OB 524288
+space OC 524288
+space OFF 524288
+space FBASE 65536
+space FNP 65536
+space FNR 65536
+space G 64
+space EV 65536
+data NOPS = @NOPS@
+data MSGOFF = 0 11 21 33 45
+data MSGS = @MSGS@
+data PUTIB = @PUTIB@
+data PUTCB = @PUTCB@
+data TPLS = @TPLS@
+data TPL = @TPL@
+data RTL = @RTL@
+data RTLN = @RTLN@
+data SEMOFF = @SEMOFF@
+data SEMDAT = @SEMDAT@
+data OPFLOW = @OPFLOW@
+data OPTGT = @OPTGT@
+data OPBACK = @OPBACK@
+data PBACK = @PBACK@
+data PRCLS = @PRCLS@
+
+; G: 0 NT  1 imlec  2 KONUM  3 GECIS  4 bellek  5 giris  6 nsabit  7 sabit tabani  8 nveri  9 veri tabani  10 bss  11 nfonk  12 toplam komut
+;    20 a  21 b  22 c  23 fonksiyon taban komutu  24 gecerli fonksiyon
+;    30 EXIT0  31..35 tuzaklar(DIV0 OOB STACK DEPTH ALLOC)  36 PUTI  37 PUTC  38 MESAJLAR  39 SABITLER  40 VERI  41 DOSYA SONU (dosya konumlari)
+;    42 yazmac yigini adresi  43 bellek adresi (sanal)
+
+func fail() {
+    mov z, 0
+    div x, 1, z
+    ret 0
+}
+
+; ---------- girdi ----------
+func put(nt, ng, val) {
+    ge e, nt, 524288
+    jz e, p1
+    call x, fail
+p1: jz ng, p2
+    neg val, val
+p2: add a, nt, T
+    st val, a, 0
+    ret 0
+}
+
+func readall() {
+    mov nt, 0
+    mov inn, 0
+    mov ng, 0
+    mov val, 0
+loop:
+    host ch, getc
+    lt e, ch, 0
+    jnz e, eof
+    le w, ch, 32
+    jnz w, ws
+    jnz inn, started
+    mov inn, 1
+    mov ng, 0
+    mov val, 0
+started:
+    eq o, ch, 45
+    jz o, dig
+    mov ng, 1
+    jmp loop
+dig:
+    sub d, ch, 48
+    mul val, val, 10
+    add val, val, d
+    jmp loop
+ws:
+    jz inn, loop
+    call x, put, nt, ng, val
+    add nt, nt, 1
+    mov inn, 0
+    jmp loop
+eof:
+    jz inn, done
+    call x, put, nt, ng, val
+    add nt, nt, 1
+done:
+    st nt, G, 0
+    ret nt
+}
+
+func nx() {
+    ld c, G, 1
+    ld n, G, 0
+    ge e, c, n
+    jz e, n1
+    call x, fail
+n1: add a, c, T
+    ld v, a, 0
+    add c, c, 1
+    st c, G, 1
+    ret v
+}
+
+; secenekler (stdin on eki): -1 yakit | -2 n (kare kod)*n olaylar | -3 azami_kare | -4 ascii_K | -5 bayrak (1 rapor, 2 PPM)
+;   -6 k: k=1 sablonu olan komutlar da SEM (sayisal anlam) tanimindan, mikro-islem sablonlariyla uretilir (sablonsuz komutlar her zaman)
+func options() {
+    mov fu, 4000000000
+    st fu, G, 44
+op0: ld c, G, 1
+    ld n, G, 0
+    ge z, c, n
+    jnz z, opd
+    add t, c, T
+    ld tk, t, 0
+    gei z, tk, 0
+    jnz z, opd
+    call x, nx
+    eqi z, tk, -1
+    jz z, op2
+    call v, nx
+    st v, G, 44
+    jmp op0
+op2: eqi z, tk, -2
+    jz z, op3
+    call cnt, nx
+    gti z, cnt, 30000
+    jz z, op2a
+    call x, fail
+op2a: st cnt, G, 57
+    mov i, 0
+op2l: ge z, i, cnt
+    jnz z, op0
+    call k, nx
+    call cd, nx
+    shli t, i, 1
+    add a, t, EV
+    st k, a, 0
+    st cd, a, 1
+    addi i, i, 1
+    jmp op2l
+op3: eqi z, tk, -3
+    jz z, op4
+    call v, nx
+    st v, G, 54
+    jmp op0
+op4: eqi z, tk, -4
+    jz z, op5
+    call v, nx
+    st v, G, 55
+    jmp op0
+op5: eqi z, tk, -5
+    jz z, op6
+    call v, nx
+    st v, G, 56
+    jmp op0
+op6: eqi z, tk, -6
+    jz z, op7
+    call v, nx
+    st v, G, 58
+    jmp op0
+op7: call x, fail
+opd: ret 0
+}
+
+; [f0,f1) fonksiyonlarini oku (gi: ilk komut dizini); yeni gi dondurur
+func pfuncs(f0, f1, gi) {
+    mov f, f0
+pf: ge z, f, f1
+    jnz z, pfd
+    call np, nx
+    call nr, nx
+    call ncode, nx
+    add a, f, FBASE
+    st gi, a, 0
+    add a, f, FNP
+    st np, a, 0
+    add a, f, FNR
+    st nr, a, 0
+    mov pc, 0
+pi: ge z, pc, ncode
+    jnz z, pid
+    ge z, gi, 524288
+    jz z, q2
+    call x, fail
+q2: call op, nx
+    ge z, op, @OPCOUNT@
+    jz z, q3
+    call x, fail
+q3: add a, gi, OPS
+    st op, a, 0
+    add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+pj: ge z, j, nops
+    jnz z, pjd
+    call v, nx
+    jnz j, pj1
+    add a, gi, OA
+    st v, a, 0
+    jmp pj3
+pj1: eq z, j, 1
+    jz z, pj2
+    add a, gi, OB
+    st v, a, 0
+    jmp pj3
+pj2: add a, gi, OC
+    st v, a, 0
+pj3: add j, j, 1
+    jmp pj
+pjd:
+    add pc, pc, 1
+    add gi, gi, 1
+    jmp pi
+pid:
+    add f, f, 1
+    jmp pf
+pfd:
+    ret gi
+}
+
+; uygulamada putf (host 2) ya da present/poll/frame (host 4..6) var mi?
+; komutun SEM'inde host mikro-islemi varsa onun operand yuvasi (alan 0), yoksa -1
+func hostslot(op) {
+    add t, op, SEMOFF
+    ld lo, t, 0
+    ld hi, t, 1
+    mov i, lo
+hs: ge z, i, hi
+    jnz z, hsn
+    mul b, i, 5
+    add b, b, SEMDAT
+    ld pid, b, 0
+    eqi z, pid, @PR_HOST@
+    jz z, hs1
+    ld r, b, 1
+    ret r
+hs1: addi i, i, 1
+    jmp hs
+hsn: ret -1
+}
+
+func scanrt(n) {
+    mov i, 0
+sr: ge z, i, n
+    jnz z, srn
+    add a, i, OPS
+    ld op, a, 0
+    call hsl, hostslot, op
+    jnz hsl, sr1
+    lti z, hsl, 0
+    jnz z, sr1
+    add a, i, OA
+    ld h, a, 0
+    eqi z, h, @H_PUTF@
+    jnz z, srh
+    lti z, h, @H_PRESENT@
+    jnz z, sr1
+    lei z, h, @H_FRAME@
+    jz z, sr1
+srh: ret 1
+sr1: addi i, i, 1
+    jmp sr
+srn: ret 0
+}
+
+; RTL (rt.pma listesi) ayricalikli fonksiyon olarak ekle: belirteclerini T'ye kopyala, imleci oraya al
+func loadrt(napp, gi) {
+    ld nt, G, 0
+    ld nr, RTLN, 0
+    add e, nt, nr
+    gt z, e, 524288
+    jz z, lr0
+    call x, fail
+lr0: mov i, 0
+lr: ge z, i, nr
+    jnz z, lrd
+    add a, i, RTL
+    ld v, a, 0
+    add b, nt, i
+    add b, b, T
+    st v, b, 0
+    addi i, i, 1
+    jmp lr
+lrd: st e, G, 0
+    addi c, nt, 6
+    st c, G, 1
+    call nrt, nx
+    add f1, napp, nrt
+    call gi2, pfuncs, napp, f1, gi
+    st f1, G, 11
+    ret gi2
+}
+
+func parse() {
+    ld nt0, G, 0
+    jnz nt0, pf0
+    call x, fail
+pf0: call x, options
+    call fl, nx
+    call mem, nx
+    st mem, G, 4
+    call en, nx
+    st en, G, 5
+    call nc, nx
+    st nc, G, 6
+    ld c, G, 1
+    st c, G, 7
+    add c, c, nc
+    st c, G, 1
+    call nd, nx
+    st nd, G, 8
+    ld c, G, 1
+    st c, G, 9
+    add c, c, nd
+    st c, G, 1
+    call bss, nx
+    st bss, G, 10
+    call nf, nx
+    gt z, nf, 65500
+    jz z, q1
+    call x, fail
+q1: st nf, G, 11
+    st nf, G, 45
+    mov z0, 0
+    call gi, pfuncs, z0, nf, z0
+    st gi, G, 12
+    jz fl, pend
+    mov f, 0
+pn: ge z, f, nf
+    jnz z, pend
+    call len, nx
+    ld c, G, 1
+    add c, c, len
+    st c, G, 1
+    add f, f, 1
+    jmp pn
+pend:
+    call u, scanrt, gi
+    ld fg, G, 56
+    jz fg, nfg
+    mov u, 1
+nfg:
+    st u, G, 47
+    jz u, pdone
+    mov rw, 65536
+    st rw, G, 48
+    ld m, G, 4
+    st m, G, 49
+    call gi2, loadrt, nf, gi
+    st gi2, G, 12
+pdone:
+    ret 0
+}
+
+; ---------- cikti ----------
+func eb(x) {
+    ld p, G, 2
+    add p, p, 1
+    st p, G, 2
+    ld ps, G, 3
+    eq z, ps, 2
+    jz z, e1
+    host putc, x
+e1: ret 0
+}
+
+func eb32(v) {
+    and t, v, 255
+    call x, eb, t
+    shr t, v, 8
+    and t, t, 255
+    call x, eb, t
+    shr t, v, 16
+    and t, t, 255
+    call x, eb, t
+    shr t, v, 24
+    and t, t, 255
+    call x, eb, t
+    ret 0
+}
+
+func eb64(v) {
+    call x, eb32, v
+    shr h, v, 32
+    call x, eb32, h
+    ret 0
+}
+
+; imm32 simgesi (k = simge-256) degeri
+func val32(k) {
+    ld a, G, 20
+    ld b, G, 21
+    ld c, G, 22
+    eq z, k, 0
+    jz z, v1
+    mul r, a, 8
+    ret r
+v1: eq z, k, 1
+    jz z, v2
+    mul r, b, 8
+    ret r
+v2: eq z, k, 2
+    jz z, v3
+    mul r, c, 8
+    ret r
+v3: eq z, k, 3
+    jz z, v4
+    ret a
+v4: eq z, k, 4
+    jz z, v5
+    ret b
+v5: eq z, k, 5
+    jz z, v6
+    ret c
+v6: eq z, k, 6
+    jz z, v7
+    ld t, G, 39
+    mul r, b, 8
+    add r, r, t
+    add r, r, 4194304
+    ret r
+v7: eq z, k, 7
+    jz z, v8
+    ld r, G, 4
+    ret r
+v8: eq z, k, 8
+    jz z, v9
+    ld r, G, 43
+    ret r
+v9: eq z, k, 9
+    jz z, v10
+    add t, a, FNR
+    ld r, t, 0
+    mul r, r, 8
+    ret r
+v10: eq z, k, 10
+    jz z, v11
+    add t, a, FNP
+    ld r, t, 0
+    mul r, r, 8
+    ret r
+v11: eq z, k, 11
+    jz z, v12
+    add t, a, FNR
+    ld r, t, 0
+    add t, a, FNP
+    ld s, t, 0
+    sub r, r, s
+    ret r
+v12: lt z, k, 12
+    jnz z, v17
+    gt z, k, 16
+    jnz z, v17
+    sub t, k, 12
+    add t, t, MSGOFF
+    ld r, t, 0
+    ld s, G, 38
+    add r, r, s
+    add r, r, 4194304
+    ret r
+v17: eq z, k, 17
+    jz z, v18
+    ld r, G, 42
+    ret r
+v18: eq z, k, 18
+    jz z, v19
+    ld r, G, 53
+    ret r
+v19: eq z, k, 19
+    jz z, v20
+    ld nd, G, 8
+    ld bs, G, 10
+    add r, nd, bs
+    add r, r, 1
+    ret r
+v20: eq z, k, 20
+    jz z, v21
+    ld r, G, 40
+    add r, r, 4194304
+    ret r
+v21: eq z, k, 21
+    jz z, v22
+    ld r, G, 8
+    ret r
+v22: eq z, k, 22
+    jz z, v23
+    ret 4194424
+v23: eq z, k, 23
+    jz z, v24
+    ld r, G, 41
+    ret r
+v24: eq z, k, 24
+    jz z, v25
+    ld r, G, 53
+    ld m, G, 4
+    ld fc, G, 49
+    add m, m, fc
+    mul m, m, 8
+    add r, r, m
+    sub r, r, 4194304
+    ret r
+v25: eq z, k, 25
+    jz z, v26
+    ld r, G, 44
+    ret r
+v26: eq z, k, 26
+    jz z, v27
+    ld r, G, 38
+    add r, r, 57
+    add r, r, 4194304
+    ret r
+v27: eq z, k, 27
+    jz z, v28
+    ld r, G, 48
+    ld m, G, 4
+    add r, r, m
+    ld fc, G, 49
+    add r, r, fc
+    ret r
+v28: eq z, k, 28
+    jz z, v29
+    ld r, G, 48
+    ret r
+v29: eq z, k, 29
+    jz z, v30
+    ld r, G, 48
+    mul r, r, -8
+    ret r
+v30: eq z, k, 30
+    jz z, v31
+    ld r, G, 43
+    sub r, r, 32768
+    ret r
+v31: eq z, k, 31
+    jz z, v32
+    add r, b, 1
+    mul r, r, 8
+    ret r
+v32: eq z, k, 32
+    jz z, v33
+    add r, b, 2
+    mul r, r, 8
+    ret r
+v33: eq z, k, 33
+    jz z, v34
+    ld r, G, 51
+    add r, r, 4194304
+    ret r
+v34: ld r, G, 57
+    shli r, r, 1
+    add r, r, 64
+    ret r
+}
+
+; bagil hedef simgesi (k = simge-300): dosya konumu
+func target(k) {
+    ld a, G, 20
+    ld b, G, 21
+    ld fb, G, 23
+    eq z, k, 12
+    jz z, tk1
+    ld r, G, 46
+    ret r
+tk1: eq z, k, 13
+    jz z, tk2
+    ld r, G, 50
+    ret r
+tk2: eq z, k, 14
+    jz z, tk0
+    ld nap, G, 45
+    addi nap, nap, 4
+    add t, nap, FBASE
+    ld t, t, 0
+    add t, t, OFF
+    ld r, t, 0
+    ret r
+tk0: lt z, k, 7
+    jz z, t7
+    add t, k, 31
+    add t, t, G
+    ld r, t, 0
+    ret r
+t7: eq z, k, 7
+    jz z, t8
+    add t, fb, a
+    add t, t, OFF
+    ld r, t, 0
+    ret r
+t8: eq z, k, 8
+    jz z, t9
+    add t, fb, b
+    add t, t, OFF
+    ld r, t, 0
+    ret r
+t9: eq z, k, 9
+    jz z, t10
+    add t, a, FBASE
+    ld t, t, 0
+    add t, t, OFF
+    ld r, t, 0
+    ret r
+t10: eq z, k, 10
+    jz z, t11
+    ld r, G, 30
+    ret r
+t11: ld e, G, 5
+    add t, e, FBASE
+    ld t, t, 0
+    add t, t, OFF
+    ld r, t, 0
+    ret r
+}
+
+; islev simgeleri (tur 6..10): alan fv'nin gosterdigi OPERAND DEGERI bir islev indeksidir (komutun call mikro-islemi); tur 6 FREL (girise bagil 32 bit), 7 FNR8 (yazmac sayisi*8),
+;   8 FNP8 (parametre sayisi*8), 9 FCNT (yerel yazmac sayisi = yazmac - parametre), 10 HOSTSP (host mikro-islemi: hostmap ile secilen ozel host sablonu ya da calisma zamani CALL'u)
+func etok_fn(ty, fv) {
+    gei z, fv, 3
+    jz z, f1
+    call x, fail
+f1: add t, fv, 20
+    add t, t, G
+    ld fn, t, 0
+    eqi z, ty, 6
+    jz z, f2
+    add t, fn, FBASE
+    ld t, t, 0
+    add t, t, OFF
+    ld r, t, 0
+    ld p, G, 2
+    sub r, r, p
+    sub r, r, 4
+    call x, eb32, r
+    ret 0
+f2: eqi z, ty, 7
+    jz z, f3
+    add t, fn, FNR
+    ld r, t, 0
+    mul r, r, 8
+    call x, eb32, r
+    ret 0
+f3: eqi z, ty, 8
+    jz z, f4
+    add t, fn, FNP
+    ld r, t, 0
+    mul r, r, 8
+    call x, eb32, r
+    ret 0
+f4: eqi z, ty, 9
+    jz z, f5
+    add t, fn, FNR
+    ld r, t, 0
+    add t, fn, FNP
+    ld q, t, 0
+    sub r, r, q
+    call x, eb32, r
+    ret 0
+f5: eqi z, ty, 10
+    jz z, f6
+    ; HOSTSP: host mikro-islemi -- alan 0 host kimligi operandi (yuva 0), alan 1 pencere tabani (yuva 1) olmali (ozel host sablonlari R_B kullanir)
+    jnz fv, f6
+    ld sl, G, 61
+    eqi z, sl, 1
+    jz z, f6
+    ld sa, G, 20
+    call op2, hostmap
+    call x, emitop, op2
+    st sa, G, 20
+    ret 0
+f6: call x, fail
+    ret 0
+}
+
+func etok(tok) {
+    lt z, tok, 256
+    jz z, k1
+    call x, eb, tok
+    ret 0
+k1: lt z, tok, 300
+    jz z, k2
+    sub k, tok, 256
+    call v, val32, k
+    call x, eb32, v
+    ret 0
+k2: lt z, tok, 320
+    jz z, k3
+    sub k, tok, 300
+    call t, target, k
+    ld p, G, 2
+    sub r, t, p
+    sub r, r, 4
+    call x, eb32, r
+    ret 0
+k3: lt z, tok, 400
+    jz z, k4
+    ld c, G, 22
+    and c, c, 63
+    call x, eb, c
+    ret 0
+    ; mikro-islem simgeleri (400+): tur = (tok-400)/4: 0 TMP bayti, 1 OPR (8*operand), 2 OPV (operand), 3 KAD (sabit adresi), 4 LIT (alan); k = alan sirasi
+k4: sub d, tok, 400
+    shri ty, d, 2
+    and k, d, 3
+    addi t, k, 60
+    add t, t, G
+    ld fv, t, 0
+    gei z, ty, 6
+    jz z, k4n
+    call x, etok_fn, ty, fv
+    ret 0
+k4n: eqi z, ty, 5
+    jz z, k4a
+    ; REL_TFk: alani fv olan operandin gosterdigi komuta bagil 32 bit hedef
+    gei z, fv, 3
+    jz z, k4b
+    call x, fail
+k4b: add t, fv, 20
+    add t, t, G
+    ld o, t, 0
+    ld fb, G, 23
+    add t, fb, o
+    add t, t, OFF
+    ld r2, t, 0
+    ld p, G, 2
+    sub r2, r2, p
+    sub r2, r2, 4
+    call x, eb32, r2
+    ret 0
+k4a: jnz ty, k5
+    mul r, fv, -8
+    and r, r, 255
+    call x, eb, r
+    ret 0
+k5: eqi z, ty, 4
+    jz z, k6
+    call x, eb32, fv
+    ret 0
+k6: gei z, fv, 3
+    jz z, k7
+    call x, fail
+k7: add t, fv, 20
+    add t, t, G
+    ld o, t, 0
+    eqi z, ty, 1
+    jz z, k8
+    mul r, o, 8
+    call x, eb32, r
+    ret 0
+k8: eqi z, ty, 2
+    jz z, k9
+    call x, eb32, o
+    ret 0
+k9: ld t, G, 39
+    mul r, o, 8
+    add r, r, t
+    add r, r, 4194304
+    call x, eb32, r
+    ret 0
+}
+
+; sablon idx'i yaz; yoksa (-1) desteklenmiyor
+func etpl(idx) {
+    add t, idx, TPLS
+    ld s, t, 0
+    ge z, s, 0
+    jnz z, e1
+    call x, fail
+e1: add t, s, TPL
+    ld tok, t, 0
+    eq z, tok, -1
+    jnz z, ed
+    call x, etok, tok
+    add s, s, 1
+    jmp e1
+ed: ret 0
+}
+
+; komutun SEM mikro-programi: her ornek [islem, f0..f3]; sablon yuvasi = TS_PRIM0 + islem
+func emit_micro(op) {
+    call bk, isbackop, op
+    add t, op, SEMOFF
+    ld lo, t, 0
+    ld hi, t, 1
+    mov i, lo
+em: ge z, i, hi
+    jnz z, emd
+    mul b, i, 5
+    add b, b, SEMDAT
+    ld pid, b, 0
+    ld v, b, 1
+    st v, G, 60
+    ld v, b, 2
+    st v, G, 61
+    ld v, b, 3
+    st v, G, 62
+    ld v, b, 4
+    st v, G, 63
+    addi s, pid, @TS_PRIM0@
+    jz bk, emp
+    add t, pid, PRCLS
+    ld cl, t, 0
+    eqi z, cl, 2
+    jz z, emp
+    add t, pid, PBACK
+    ld s, t, 0
+emp: call x, etpl, s
+    addi i, i, 1
+    jmp em
+emd: ret 0
+}
+
+; SEM'deki her mikro-islemin sablonu var mi (1/0); bos program (HALT gibi) icin 0
+func lowerable(op) {
+    add t, op, SEMOFF
+    ld lo, t, 0
+    ld hi, t, 1
+    ge z, lo, hi
+    jz z, lw0
+    ret 0
+lw0: mov i, lo
+lw: ge z, i, hi
+    jnz z, lwd
+    mul b, i, 5
+    add b, b, SEMDAT
+    ld pid, b, 0
+    addi s, pid, @TS_PRIM0@
+    add t, s, TPLS
+    ld v, t, 0
+    lti z, v, 0
+    jz z, lw1
+    ret 0
+lw1: add t, pid, PRCLS
+    ld cl, t, 0
+    eqi z, cl, 2
+    jz z, lw2
+    add t, pid, PBACK
+    ld sl, t, 0
+    lti z, sl, 0
+    jz z, lw2
+    ret 0
+lw2: addi i, i, 1
+    jmp lw
+lwd: ret 1
+}
+
+; komut geri atlama mi (yakit denetimi gerekir): ayricalikli (RT) olmayan islevde, atlama/kosullu atlama (OPFLOW 2/3) ve hedef <= gecerli komut
+func isbackop(op) {
+    ld pv, G, 52
+    jz pv, ib0
+    ret 0
+ib0: add t, op, OPFLOW
+    ld fw, t, 0
+    lti z, fw, 2
+    jz z, ib1
+    ret 0
+ib1: add t, op, OPTGT
+    ld ts, t, 0
+    add t, ts, 20
+    add t, t, G
+    ld tg, t, 0
+    ld gi, G, 59
+    ld fb, G, 23
+    sub pcl, gi, fb
+    le z, tg, pcl
+    jz z, ib2
+    ret 1
+ib2: ret 0
+}
+
+; komut sablonu: yerlesik x86 sablonu varsa o (-6 1 ise ve SEM sablonlanabiliyorsa mikro-islemlerden), yoksa SEM'den; geri atlamalarda yakit varyanti (OPBACK / PBACK)
+func emitop(op) {
+    ge z, op, @OPCOUNT@
+    jnz z, ep
+    add t, op, TPLS
+    ld s, t, 0
+    lti z, s, 0
+    jnz z, em1
+    ld fo, G, 58
+    jz fo, bes
+    call ok, lowerable, op
+    jz ok, bes
+em1: call x, emit_micro, op
+    ret 0
+bes: call bk, isbackop, op
+    jz bk, ep
+    add t, op, OPBACK
+    ld sl, t, 0
+    lti z, sl, 0
+    jz z, bes2
+    call x, fail
+bes2: call x, etpl, sl
+    ret 0
+ep: call x, etpl, op
+    ret 0
+}
+
+func blob(base, n) {
+    mov i, 0
+bl: ge z, i, n
+    jnz z, bd
+    add t, base, i
+    ld v, t, 0
+    call x, eb, v
+    add i, i, 1
+    jmp bl
+bd: ret 0
+}
+
+func mark(slot) {
+    ld p, G, 2
+    add t, slot, G
+    st p, t, 0
+    ret 0
+}
+
+; host komutu (G[20] = host kimligi) -> uretilecek komut: ozel host sablonu, calisma zamani islevine CALL (G[20] islev indeksine cevrilir) ya da ayricalikli sistem yazisi
+func hostmap() {
+    ld h, G, 20
+    ld pv, G, 52
+    ld na, G, 45
+    eqi z, h, @H_PUTF@
+    jz z, hq
+    jnz pv, hn
+    addi t, na, @RTF_PUTF@
+    st t, G, 20
+    mov r, @OP_CALL@
+    ret r
+hq: lti z, h, @H_PRESENT@
+    jnz z, hn
+    jnz pv, hpv
+    sub t, h, @H_PRESENT@
+    add t, t, @RTF_PRESENT@
+    add t, t, na
+    st t, G, 20
+    mov r, @OP_CALL@
+    ret r
+hpv: mov r, @TS_HOST_SYSW@
+    ret r
+hn: add r, h, @TS_HOST_PUTC@
+    ret r
+}
+
+func emit_all() {
+    mov z0, 0
+    st z0, G, 2
+    call x, etpl, @TS_HEADER@
+    ld ur, G, 47
+    jz ur, plain
+    call x, etpl, @TS_PROLOGUE_RT@
+    jmp plainx
+plain:
+    call x, etpl, @TS_PROLOGUE@
+plainx:
+    ld nf, G, 11
+    mov f, 0
+ef: ge z, f, nf
+    jnz z, efd
+    add a, f, FBASE
+    ld fb, a, 0
+    add a, f, 1
+    ; sonraki fonksiyonun tabani / toplam: komut sayisi
+    add a, f, 1
+    lt z, a, nf
+    jz z, lastf
+    add t, a, FBASE
+    ld nxt, t, 0
+    jmp gotn
+lastf:
+    ld nxt, G, 12
+gotn:
+    st fb, G, 23
+    st f, G, 24
+    ld na, G, 45
+    ld ur, G, 47
+    mov pv, 0
+    jz ur, pv0
+    ge pv, f, na
+pv0:
+    st pv, G, 52
+    mov gi, fb
+ei: ge z, gi, nxt
+    jnz z, eid
+    ld p, G, 2
+    add t, gi, OFF
+    st p, t, 0
+    add t, gi, OA
+    ld v, t, 0
+    st v, G, 20
+    add t, gi, OB
+    ld v, t, 0
+    st v, G, 21
+    add t, gi, OC
+    ld v, t, 0
+    st v, G, 22
+    add t, gi, OPS
+    ld op, t, 0
+    eq z, op, @OP_HOST@
+    jz z, noh
+    ld fo, G, 58
+    jz fo, hm
+    jnz pv, hm
+    jmp noh
+hm: call op, hostmap
+noh:
+    jz pv, nopv
+    eq z, op, @OP_LD@
+    jz z, pv1
+    mov op, @TS_LDP@
+    jmp nb
+pv1: eq z, op, @OP_ST@
+    jz z, pv2
+    mov op, @TS_STP@
+    jmp nb
+pv2: eq z, op, @OP_CALL@
+    jz z, nb
+    ld t, G, 20
+    add t, t, na
+    st t, G, 20
+    mov op, @TS_CALL_P@
+    jmp nb
+nopv:
+nb:
+    st gi, G, 59
+    call x, emitop, op
+    add gi, gi, 1
+    jmp ei
+eid:
+    add f, f, 1
+    jmp ef
+efd:
+    mov s, 30
+    call x, mark, s
+    call x, etpl, @TS_EXIT0@
+    mov s, 31
+    call x, mark, s
+    call x, etpl, @TS_TRAP_DIV0@
+    mov s, 32
+    call x, mark, s
+    call x, etpl, @TS_TRAP_OOB@
+    mov s, 33
+    call x, mark, s
+    call x, etpl, @TS_TRAP_STACK@
+    mov s, 34
+    call x, mark, s
+    call x, etpl, @TS_TRAP_DEPTH@
+    mov s, 35
+    call x, mark, s
+    call x, etpl, @TS_TRAP_ALLOC@
+    mov s, 46
+    call x, mark, s
+    call x, etpl, @TS_TRAP_FUEL@
+    mov s, 50
+    call x, mark, s
+    ld ur, G, 47
+    jz ur, ex0
+    call x, etpl, @TS_EXITC_RT@
+    jmp ex1
+ex0: call x, etpl, @TS_EXITC@
+ex1:
+    mov s, 36
+    call x, mark, s
+    call x, blob, PUTIB, 82
+    mov s, 37
+    call x, mark, s
+    call x, blob, PUTCB, 32
+    mov s, 38
+    call x, mark, s
+    call x, blob, MSGS, 68
+    mov s, 39
+    call x, mark, s
+    ld nc, G, 6
+    ld cb, G, 7
+    mov i, 0
+ec: ge z, i, nc
+    jnz z, ecd
+    add t, cb, i
+    add t, t, T
+    ld v, t, 0
+    call x, eb64, v
+    add i, i, 1
+    jmp ec
+ecd:
+    mov s, 40
+    call x, mark, s
+    ld nd, G, 8
+    ld db, G, 9
+    mov i, 0
+ev: ge z, i, nd
+    jnz z, evd
+    add t, db, i
+    add t, t, T
+    ld v, t, 0
+    call x, eb64, v
+    add i, i, 1
+    jmp ev
+evd:
+    ld ur, G, 47
+    jz ur, evz
+    mov s, 51
+    call x, mark, s
+    call x, rtimg
+evz:
+    mov s, 41
+    call x, mark, s
+    ret 0
+}
+
+; RT durum blogu goruntusu (bellegin altindaki RT bolgesinin ilk 64 + 2*olay sozcugu)
+func rtimg() {
+    ld v, G, 4
+    call x, eb64, v
+    mov z0, 0
+    call x, eb64, z0
+    mov v, -3750763034362895579
+    call x, eb64, v
+    call x, eb64, z0
+    call x, eb64, z0
+    call x, eb64, z0
+    call x, eb64, z0
+    call x, eb64, z0
+    ld v, G, 54
+    call x, eb64, v
+    ld v, G, 55
+    call x, eb64, v
+    ld v, G, 56
+    call x, eb64, v
+    ld nev, G, 57
+    call x, eb64, nev
+    mov v, 1099511628211
+    call x, eb64, v
+    mov v, -3750763034362895579
+    call x, eb64, v
+    mov i, 14
+ri: ge z, i, 64
+    jnz z, rid
+    call x, eb64, z0
+    addi i, i, 1
+    jmp ri
+rid: mov i, 0
+    shli nw, nev, 1
+re: ge z, i, nw
+    jnz z, red
+    add a, i, EV
+    ld v, a, 0
+    call x, eb64, v
+    addi i, i, 1
+    jmp re
+red: ret 0
+}
+
+func main() {
+    call nt, readall
+    call x, parse
+    mov one, 1
+    st one, G, 3
+    call x, emit_all
+    ld e, G, 41
+    add e, e, 7
+    and e, e, -8
+    add e, e, 4194304
+    st e, G, 42
+    add e, e, 8388608
+    st e, G, 43
+    ld rw, G, 48
+    mul rw, rw, 8
+    add e, e, rw
+    st e, G, 53
+    mov two, 2
+    st two, G, 3
+    call x, emit_all
+}

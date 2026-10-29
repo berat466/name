@@ -1,0 +1,103 @@
+; dogrudan-operand donusumleri: sabit sagda/solda, kenar degerler, 32 bit disi (yazmac biciminde kalir), data adresi
+data tbl = 10, 20, 30
+func main() {
+    mov x, 7
+    mov y, -7
+    add a1, x, 5
+    add a2, 5, x
+    sub a3, x, 5
+    sub a4, 5, x
+    sub a5, x, -2147483648
+    add a6, x, 3000000000
+    host puti, a1
+    host putc, 32
+    host puti, a2
+    host putc, 32
+    host puti, a3
+    host putc, 32
+    host puti, a4
+    host putc, 32
+    host puti, a5
+    host putc, 32
+    host puti, a6
+    host putc, 10
+    mul m1, y, 6
+    mul m2, 6, y
+    and n1, x, 3
+    shl s1, x, 2
+    shr s2, y, 60
+    sar s3, y, 1
+    shl s4, x, 66
+    host puti, m1
+    host putc, 32
+    host puti, m2
+    host putc, 32
+    host puti, n1
+    host putc, 32
+    host puti, s1
+    host putc, 32
+    host puti, s2
+    host putc, 32
+    host puti, s3
+    host putc, 32
+    host puti, s4
+    host putc, 10
+    div d1, y, 2
+    mod d2, y, 2
+    div d3, x, -1
+    mod d4, x, -1
+    host puti, d1
+    host putc, 32
+    host puti, d2
+    host putc, 32
+    host puti, d3
+    host putc, 32
+    host puti, d4
+    host putc, 10
+    eq e1, x, 7
+    eq e2, 7, x
+    ne e3, x, 7
+    host puti, e1
+    host putc, 32
+    host puti, e2
+    host putc, 32
+    host puti, e3
+    host putc, 10
+    lt c1, x, 8
+    lt c2, 8, x
+    le c3, x, 7
+    le c4, 7, x
+    gt c5, x, 7
+    gt c6, 8, x
+    ge c7, x, 7
+    ge c8, 6, x
+    host puti, c1
+    host putc, 32
+    host puti, c2
+    host putc, 32
+    host puti, c3
+    host putc, 32
+    host puti, c4
+    host putc, 32
+    host puti, c5
+    host putc, 32
+    host puti, c6
+    host putc, 32
+    host puti, c7
+    host putc, 32
+    host puti, c8
+    host putc, 10
+    mov i, 0
+l:  lt  c, i, 3
+    jz  c, d
+    add p, tbl, i
+    ld  v, p, 0
+    host puti, v
+    host putc, 32
+    add i, i, 1
+    jmp l
+d:  add q, i, tbl
+    ld w, q, -1
+    host puti, w
+    host putc, 10
+}

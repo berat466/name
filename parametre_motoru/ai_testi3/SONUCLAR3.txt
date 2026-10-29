@@ -1,0 +1,9 @@
+kip=pmt gorev=A davranis=TUTTU katman=- pmb_bayt=1270 tanim_sozcuk=228 tanim_satir=41 tanim_bayt=917 yakit=56039 yorum_ms=6.7 native_ms=4.9 native_toplam_us=10909 bellek_kib=12400
+kip=sayi gorev=A davranis=TUTTU katman=- pmb_bayt=214 sayi_adedi=205 tanim_bayt=1188 komut_adedi=57 yakit=4030 yorum_ms=6.5 native_ms=6.0 native_toplam_us=10943 bellek_kib=11912
+kip=yap gorev=A davranis=TUTTU katman=- pmb_bayt=796 sayi_adedi=171 tanim_bayt=978 tablo_bayt=178 yakit=24033 yorum_ms=5.9 native_ms=4.4 native_toplam_us=10413 bellek_kib=12204
+kip=pmt gorev=B davranis=TUTTU katman=- pmb_bayt=1111 tanim_sozcuk=195 tanim_satir=42 tanim_bayt=787 yakit=1578568 yorum_ms=37.7 native_ms=11.7 native_toplam_us=18435 bellek_kib=12480
+kip=sayi gorev=B davranis=TUTTU katman=- pmb_bayt=365 sayi_adedi=348 tanim_bayt=1652 komut_adedi=97 yakit=1553039 yorum_ms=22.6 native_ms=16.8 native_toplam_us=19924 bellek_kib=12412
+kip=yap gorev=B davranis=TUTTU katman=- pmb_bayt=782 sayi_adedi=159 tanim_bayt=1080 tablo_bayt=168 yakit=1576070 yorum_ms=31.2 native_ms=12.2 native_toplam_us=17692 bellek_kib=12492
+kip=pmt gorev=C davranis=TUTTU katman=- pmb_bayt=896 tanim_sozcuk=170 tanim_satir=30 tanim_bayt=697 yakit=4540738 yorum_ms=135.3 native_ms=14.9 native_toplam_us=21023 bellek_kib=12224
+kip=sayi gorev=C davranis=TUTTU katman=- pmb_bayt=181 sayi_adedi=179 tanim_bayt=991 komut_adedi=52 yakit=218072 yorum_ms=10.5 native_ms=5.2 native_toplam_us=9543 bellek_kib=11896
+kip=yap gorev=C davranis=TUTTU katman=- pmb_bayt=267 sayi_adedi=149 tanim_bayt=819 tablo_bayt=151 yakit=221188 yorum_ms=10.3 native_ms=5.5 native_toplam_us=10606 bellek_kib=12224

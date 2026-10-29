@@ -1,0 +1,45 @@
+; Okuma histogrami: 4000 okuma, v(i) = (i*i*7 + i*13) % 1009 - 500
+kare 1
+global c0 = 0
+global c1 = 0
+global c2 = 0
+global c3 = 0
+global c4 = 0
+global c5 = 0
+global c6 = 0
+global c7 = 0
+global vtop = 0
+global vmin = 0
+global vmax = 0
+global ucli = 0
+
+sablon okuma adet 4000
+  alan t sabit 0
+  alan u sabit 0
+  alan v sabit 0
+  alan kutu sabit 0
+  alan m3 sabit 0
+  kural t = i * i
+  kural t = t * 7
+  kural u = i * 13
+  kural t = t + u
+  kural t = t % 1009
+  kural v = t - 500
+  kural kutu = t / 127
+  kural m3 = i % 3
+son
+
+topla c0 say okuma eger kutu == 0
+topla c1 say okuma eger kutu == 1
+topla c2 say okuma eger kutu == 2
+topla c3 say okuma eger kutu == 3
+topla c4 say okuma eger kutu == 4
+topla c5 say okuma eger kutu == 5
+topla c6 say okuma eger kutu == 6
+topla c7 say okuma eger kutu == 7
+topla vtop toplam okuma v
+topla vmin enkucuk okuma v
+topla vmax enbuyuk okuma v
+topla ucli toplam okuma v eger m3 == 0 ve v > 0
+
+yazdir c0, c1, c2, c3, c4, c5, c6, c7, vtop, vmin, vmax, ucli

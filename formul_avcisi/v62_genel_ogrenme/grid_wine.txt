@@ -1,0 +1,6 @@
+en iyi 5 (val Top1'e gore secim):
+  gamma=0.1 lamF=3 VAL acc=1.0000 CE=0.1204 | TEST acc=1.0000 CE=0.1743 | hazir=0.285s
+  gamma=0.05 lamF=0.3 VAL acc=1.0000 CE=0.1230 | TEST acc=1.0000 CE=0.1589 | hazir=0.268s
+  gamma=0.05 lamF=1 VAL acc=1.0000 CE=0.1252 | TEST acc=1.0000 CE=0.1804 | hazir=0.483s
+  gamma=1.0 lamF=1000 VAL acc=1.0000 CE=0.1291 | TEST acc=0.9444 CE=0.2336 | hazir=0.360s
+  gamma=0.1 lamF=10 VAL acc=1.0000 CE=0.1325 | TEST acc=1.0000 CE=0.2039 | hazir=0.353s

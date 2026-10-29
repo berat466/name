@@ -1,0 +1,59 @@
+; Pong: uygulamaya ozgu HICBIR komut yok; yalnizca sablonlar, davranis secimi, iliski ve olay tablolari.
+ekle std.pmt
+sahne 80 60
+kare 400
+arkaplan 0
+global skor = 0
+
+sablon raket adet 1
+  alan x sabit 33
+  davran sinirla x 0 66
+  ciz dikdortgen x, 56, 14, 2, 0x40C0FF
+son
+
+sablon top adet 1
+  alan x sabit 10
+  alan y sabit 10
+  alan vx sabit 1
+  alan vy sabit 1
+  davran hareket x vx
+  davran hareket y vy
+  davran sek x vx 0 79
+  davran sekalt y vy 0
+  ciz dikdortgen x, y, 2, 2, 0xFFFF00
+son
+
+sablon cubuk adet 1
+  ciz dikdortgen 0, 0, skor * 2, 2, 0x00FF00
+son
+
+; top raketi kacirirsa (sol ya da sag): skor -1, top merkeze doner
+etkilesim top raket eger a.y >= 55 ve a.vy > 0 ve a.x < b.x - 1
+  kural skor = skor - 1
+  kural a.x = 40
+  kural a.y = 10
+  kural a.vx = 1
+  kural a.vy = 1
+son
+etkilesim top raket eger a.y >= 55 ve a.vy > 0 ve a.x > b.x + 14
+  kural skor = skor - 1
+  kural a.x = 40
+  kural a.y = 10
+  kural a.vx = 1
+  kural a.vy = 1
+son
+; raketle carpisma: top geri doner, skor +1
+etkilesim top raket eger a.y >= 55 ve a.vy > 0 ve a.x >= b.x - 1 ve a.x <= b.x + 14
+  kural a.vy = 0 - a.vy
+  kural a.y = 55
+  kural skor = skor + 1
+son
+
+girdi 1 raket
+  kural x = x - 3
+son
+girdi 2 raket
+  kural x = x + 3
+son
+
+yazdir skor, raket.x, top.x, top.y

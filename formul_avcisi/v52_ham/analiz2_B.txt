@@ -1,0 +1,18 @@
+== proxy (yalniz F blogu, intercept var, C blogu YOK) : v52B
+serbestlik derecesi df(lam): lam=300: 109.2, lam=3000: 35.8, lam=30000: 9.3
+PC bazinda sinyal enerjisi payi: ilk 10 PC 0.334, ilk 33 PC 0.480, ilk 133 0.653, ilk 228 0.743, son 284 PC 0.257
+taban (F cikti): {100: np.float64(5.0192), 300: np.float64(4.9968), 1000: np.float64(4.9964), 3000: np.float64(5.0238), 10000: np.float64(5.0937), 30000: np.float64(5.2057)}
+rastgele ortogonal         {1000: np.float64(4.9964), 3000: np.float64(5.0238)}  maks fark taban: 8.881784197001252e-16
+Hadamard                   {1000: np.float64(4.9964), 3000: np.float64(5.0238)}  maks fark taban: 8.881784197001252e-16
+PCA rotasyonu (ortogonal)  {1000: np.float64(4.9964), 3000: np.float64(5.0238)}  maks fark taban: 0.0
+kismi beyazlatma Z=Fc U diag((ev+tau*ev1)^-p) (tersinir, ortogonal DEGIL), olcek: toplam varyans korunur
+  p=0.10 tau=0.0001 : en iyi lam=1000 CE=4.9893
+  p=0.10 tau=0.001 : en iyi lam=1000 CE=4.9903
+  p=0.10 tau=0.01 : en iyi lam=1000 CE=4.9920
+  p=0.25 tau=0.0001 : en iyi lam=3000 CE=4.9971
+  p=0.25 tau=0.001 : en iyi lam=3000 CE=4.9964
+  p=0.25 tau=0.01 : en iyi lam=1000 CE=4.9984
+  p=0.50 tau=0.0001 : en iyi lam=1000 CE=5.1462
+  p=0.50 tau=0.001 : en iyi lam=1000 CE=5.0765
+  p=0.50 tau=0.01 : en iyi lam=3000 CE=5.0194
+proxy en iyi: (np.float64(4.98931121888935), (0.1, 0.0001), 1000)  taban en iyi: 4.996404912064757

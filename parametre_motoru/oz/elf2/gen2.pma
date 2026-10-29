@@ -1,0 +1,1179 @@
+; gen2.pma -- PMB1 listesi -> bagimsiz Linux x86-64 ELF URETICISI (parametre tablosu; sablonlar veridir: sablon.txt -> TPL/TPLS).
+; stdin: pm liste bicimi; stdout: ELF64. Desteklenen: tamsayi ALU, karsilastirma, atlama, CAGRI/RET (cok fonksiyon, pencereli yazmaclar),
+;   ld/st (sinir denetimli), alloc, host putc/puti/getc, tuzaklar DIV0/OOB/STACK/DEPTH/ALLOC (stderr "TRAP: AD", cikis 2).
+; Desteklenmeyen: kayan nokta, present/poll/frame/putf; yakit siniri YOK. Desteklenmeyen girdi -> DIV0 tuzagi (cikis 2), stdout bos.
+; Guvenilen (dogrulanmis) tablolar icin: islenen indeksleri denetlenmez (oz/dogr/valid.pmb once calistirilmali: oz/boru.sh).
+; Iki gecis: 1) boyutlar/konumlar (cikti yok), 2) gercek cikti (ayni sablonlar, ayni boyutlar).
+memory 4194304
+entry main
+space T 524288
+space OPS 524288
+space OA 524288
+space OB 524288
+space OC 524288
+space OFF 524288
+space FBASE 65536
+space FNP 65536
+space FNR 65536
+space G 64
+space EV 65536
+data NOPS = 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 2 2 3 3 3 3 2 2 3 3 3 2 2 1 2 2 2 1 0 3 3 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+data MSGOFF = 0 11 21 33 45
+data MSGS = 84 82 65 80 58 32 68 73 86 48 10 84 82 65 80 58 32 79 79 66 10 84 82 65 80 58 32 83 84 65 67 75 10 84 82 65 80 58 32 68 69 80 84 72 10 84 82 65 80 58 32 65 76 76 79 67 10 84 82 65 80 58 32 70 85 69 76 10 
+data PUTIB = 72 131 236 40 73 137 192 72 141 116 36 39 72 133 192 121 3 72 247 216 185 10 0 0 0 49 210 72 247 241 128 194 48 136 22 72 255 206 72 133 192 117 238 77 133 192 121 6 198 6 45 72 255 206 72 255 198 72 141 84 36 40 72 41 242 184 1 0 0 0 191 1 0 0 0 15 5 72 131 196 40 195 
+data PUTCB = 72 131 236 16 136 4 36 72 137 230 184 1 0 0 0 191 1 0 0 0 186 1 0 0 0 15 5 72 131 196 16 195 
+data TPLS = 0 9 18 28 44 60 77 112 149 165 181 197 213 229 245 267 289 311 333 345 357 373 389 405 421 435 446 472 493 514 526 582 585 596 607 671 680 683 705 727 -1 752 764 777 789 802 815 828 846 867 885 903 921 939 957 975 997 -1 1019 -1 -1 -1 1066 1101 1110 1128 1146 1164 1182 1200 1312 1324 1349 1374 1392 1418 1444 1499 1527 1561 1604 1651 1663 1689 -1 1715 1725 1735 1746 1756 1775 1794 1814 1833 1852 1871 1890 1909 1928 1953 1978 2003 2028 2053 2078 2092 2106 2144 2184 2205 2229 2253 2277 2280 2292 2304 2368 2378 2381 2383 2410 2429 2448 2467 2486 2502 2515 2544 2568 2592 2606 2664
+data TPL = 72 139 131 257 72 137 131 256 -1 72 199 192 260 72 137 131 256 -1 72 139 4 37 262 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 1 200 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 41 200 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 15 175 193 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 133 201 15 132 300 72 131 249 255 117 5 72 247 216 235 5 72 153 72 247 249 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 133 201 15 132 300 72 131 249 255 117 4 49 192 235 8 72 153 72 247 249 72 137 208 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 33 200 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 9 200 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 49 200 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 211 224 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 211 232 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 211 248 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 57 200 15 148 192 15 182 192 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 57 200 15 149 192 15 182 192 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 57 200 15 156 192 15 182 192 72 137 131 256 -1 72 139 131 257 72 139 139 258 72 57 200 15 158 192 15 182 192 72 137 131 256 -1 72 139 131 257 72 247 216 72 137 131 256 -1 72 139 131 257 72 247 208 72 137 131 256 -1 242 15 16 131 257 242 15 88 131 258 242 15 17 131 256 -1 242 15 16 131 257 242 15 92 131 258 242 15 17 131 256 -1 242 15 16 131 257 242 15 89 131 258 242 15 17 131 256 -1 242 15 16 131 257 242 15 94 131 258 242 15 17 131 256 -1 72 139 131 257 72 15 186 248 63 72 137 131 256 -1 242 15 81 131 257 242 15 17 131 256 -1 242 15 16 131 257 102 15 46 131 258 15 155 192 15 148 193 32 200 15 182 192 72 137 131 256 -1 242 15 16 131 258 102 15 46 131 257 15 151 192 15 182 192 72 137 131 256 -1 242 15 16 131 258 102 15 46 131 257 15 147 192 15 182 192 72 137 131 256 -1 242 72 15 42 131 257 242 15 17 131 256 -1 242 15 16 131 257 242 72 15 44 192 72 185 0 0 0 0 0 0 0 128 72 57 200 117 26 102 15 46 192 122 18 102 72 15 126 194 72 133 210 120 10 72 137 200 72 255 200 235 2 49 192 72 137 131 256 -1 233 307 -1 72 139 131 256 72 133 192 15 132 308 -1 72 139 131 256 72 133 192 15 133 308 -1 77 133 246 15 132 312 73 255 206 72 141 131 257 72 199 193 264 72 41 193 72 129 249 265 15 130 302 73 129 253 0 0 1 0 15 131 303 73 255 197 72 141 184 266 185 267 72 137 195 49 192 243 72 171 232 309 73 255 205 72 129 235 257 -1 72 139 131 256 72 137 3 195 -1 233 310 -1 72 139 131 257 72 5 261 72 61 263 15 131 301 73 139 4 196 72 137 131 256 -1 72 139 131 257 72 5 261 72 61 263 15 131 301 72 139 139 256 73 137 12 196 -1 72 139 131 257 72 199 193 263 76 41 249 72 57 200 15 135 304 76 137 187 256 73 1 199 -1 72 139 131 257 72 5 261 72 137 131 256 -1 72 139 131 257 72 105 192 261 72 137 131 256 -1 72 139 131 257 72 37 261 72 137 131 256 -1 72 139 131 257 72 193 224 320 72 137 131 256 -1 72 139 131 257 72 193 232 320 72 137 131 256 -1 72 139 131 257 72 193 248 320 72 137 131 256 -1 72 139 131 257 72 199 193 261 72 153 72 247 249 72 137 131 256 -1 72 139 131 257 72 199 193 261 72 153 72 247 249 72 137 208 72 137 131 256 -1 72 139 131 257 72 61 261 15 148 192 15 182 192 72 137 131 256 -1 72 139 131 257 72 61 261 15 149 192 15 182 192 72 137 131 256 -1 72 139 131 257 72 61 261 15 156 192 15 182 192 72 137 131 256 -1 72 139 131 257 72 61 261 15 158 192 15 182 192 72 137 131 256 -1 72 139 131 257 72 61 261 15 159 192 15 182 192 72 137 131 256 -1 72 139 131 257 72 61 261 15 157 192 15 182 192 72 137 131 256 -1 77 133 246 15 132 312 73 255 206 72 139 131 257 232 306 49 192 72 137 131 257 -1 77 133 246 15 132 312 73 255 206 72 139 131 257 232 305 49 192 72 137 131 257 -1 77 133 246 15 132 312 73 255 206 72 199 131 257 0 0 0 0 49 192 49 255 72 141 179 257 186 1 0 0 0 15 5 72 131 248 1 116 11 72 199 131 257 255 255 255 255 -1 72 199 195 273 73 199 196 274 69 49 237 65 190 281 73 199 199 275 190 276 73 141 124 36 8 185 277 243 72 165 232 311 233 310 -1 69 49 255 69 49 201 233 313 -1 65 185 268 65 186 11 0 0 0 65 191 2 0 0 0 233 313 -1 65 185 269 65 186 10 0 0 0 65 191 2 0 0 0 233 313 -1 65 185 270 65 186 12 0 0 0 65 191 2 0 0 0 233 313 -1 65 185 271 65 186 12 0 0 0 65 191 2 0 0 0 233 313 -1 65 185 272 65 186 12 0 0 0 65 191 2 0 0 0 233 313 -1 127 69 76 70 2 1 1 0 0 0 0 0 0 0 0 0 2 0 62 0 1 0 0 0 278 0 0 0 0 64 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 64 0 56 0 1 0 0 0 0 0 0 0 1 0 0 0 7 0 0 0 0 0 0 0 0 0 0 0 0 0 64 0 0 0 0 0 0 0 64 0 0 0 0 0 279 0 0 0 0 280 0 0 0 0 0 16 0 0 0 0 0 0 -1 77 133 246 15 132 312 73 255 206 233 307 -1 72 139 131 256 72 133 192 15 133 17 0 0 0 77 133 246 15 132 312 73 255 206 233 308 -1 72 139 131 256 72 133 192 15 132 17 0 0 0 77 133 246 15 132 312 73 255 206 233 308 -1 65 185 282 65 186 11 0 0 0 65 191 2 0 0 0 233 313 -1 72 139 131 257 72 5 261 72 5 284 72 61 283 15 131 301 73 139 132 196 285 72 137 131 256 -1 72 139 131 257 72 5 261 72 5 284 72 61 283 15 131 301 72 139 139 256 73 137 140 196 285 -1 72 141 131 257 72 199 193 264 72 41 193 72 129 249 265 15 130 302 73 129 253 0 0 1 0 15 131 303 73 255 197 72 141 184 266 185 267 72 137 195 49 192 243 72 171 232 309 73 255 205 72 129 235 257 -1 72 139 187 257 72 139 179 287 73 141 52 244 72 139 147 288 184 1 0 0 0 15 5 72 137 131 257 -1 69 133 201 116 18 68 137 206 68 137 210 184 1 0 0 0 191 2 0 0 0 15 5 68 137 255 184 60 0 0 0 15 5 -1 72 199 195 286 69 49 237 232 314 69 133 201 116 18 68 137 206 68 137 210 184 1 0 0 0 191 2 0 0 0 15 5 68 137 255 184 60 0 0 0 15 5 -1 72 199 195 273 73 199 196 274 69 49 237 65 190 281 73 199 199 275 190 276 73 141 124 36 8 185 277 243 72 165 190 289 73 141 188 36 285 185 290 243 72 165 232 311 233 310 -1 77 133 246 15 132 312 73 255 206 233 420 -1 72 139 68 36 400 72 133 192 15 133 17 0 0 0 77 133 246 15 132 312 73 255 206 233 421 -1 72 139 68 36 400 72 133 192 15 132 17 0 0 0 77 133 246 15 132 312 73 255 206 233 421 -1 72 139 131 405 72 137 68 36 400 -1 72 199 192 409 72 137 68 36 400 -1 72 139 4 37 413 72 137 68 36 400 -1 72 139 68 36 401 72 137 131 404 -1 72 139 68 36 401 72 139 76 36 402 72 1 200 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 41 200 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 15 175 193 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 33 200 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 9 200 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 49 200 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 211 224 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 211 232 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 211 248 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 57 200 15 148 192 15 182 192 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 57 200 15 149 192 15 182 192 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 57 200 15 156 192 15 182 192 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 57 200 15 158 192 15 182 192 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 57 200 15 159 192 15 182 192 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 57 200 15 157 192 15 182 192 72 137 68 36 400 -1 72 139 68 36 401 72 247 216 72 137 68 36 400 -1 72 139 68 36 401 72 247 208 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 133 201 15 132 300 72 131 249 255 117 5 72 247 216 235 5 72 153 72 247 249 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 133 201 15 132 300 72 131 249 255 117 4 49 192 235 8 72 153 72 247 249 72 137 208 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 153 72 247 249 72 137 68 36 400 -1 72 139 68 36 401 72 139 76 36 402 72 153 72 247 249 72 137 208 72 137 68 36 400 -1 72 139 68 36 401 72 5 410 72 61 263 15 131 301 73 139 4 196 72 137 68 36 400 -1 72 139 68 36 401 72 5 410 72 61 263 15 131 301 72 139 76 36 400 73 137 12 196 -1 233 420 -1 72 139 68 36 400 72 133 192 15 132 421 -1 72 139 68 36 400 72 133 192 15 133 421 -1 77 133 246 15 132 312 73 255 206 72 141 131 405 72 199 193 264 72 41 193 72 129 249 428 15 130 302 73 129 253 0 0 1 0 15 131 303 73 255 197 72 141 184 432 185 436 72 137 195 49 192 243 72 171 232 424 73 255 205 72 129 235 405 -1 72 139 68 36 400 72 137 3 195 -1 233 310 -1 440 -1 72 139 68 36 401 72 199 193 263 76 41 249 72 57 200 15 135 304 76 137 124 36 400 73 1 199 -1 242 15 16 68 36 401 242 15 88 68 36 402 242 15 17 68 36 400 -1 242 15 16 68 36 401 242 15 92 68 36 402 242 15 17 68 36 400 -1 242 15 16 68 36 401 242 15 89 68 36 402 242 15 17 68 36 400 -1 242 15 16 68 36 401 242 15 94 68 36 402 242 15 17 68 36 400 -1 72 139 68 36 401 72 15 186 248 63 72 137 68 36 400 -1 242 15 81 68 36 401 242 15 17 68 36 400 -1 242 15 16 68 36 401 102 15 46 68 36 402 15 155 192 15 148 193 32 200 15 182 192 72 137 68 36 400 -1 242 15 16 68 36 402 102 15 46 68 36 401 15 151 192 15 182 192 72 137 68 36 400 -1 242 15 16 68 36 402 102 15 46 68 36 401 15 147 192 15 182 192 72 137 68 36 400 -1 242 72 15 42 68 36 401 242 15 17 68 36 400 -1 242 15 16 68 36 401 242 72 15 44 192 72 185 0 0 0 0 0 0 0 128 72 57 200 117 26 102 15 46 192 122 18 102 72 15 126 194 72 133 210 120 10 72 137 200 72 255 200 235 2 49 192 72 137 68 36 400 -1 72 139 68 36 403 72 139 76 36 402 72 139 84 36 401 72 133 210 72 15 69 193 72 137 68 36 400 -1
+data RTL = 0 16 0 0 0 0 18 0 1 2 1 0 0 35 0 3 20 80 1 3 -65536 37 4 3 0 32 1 78 32 2 78 51 5 1 0 33 5 78 51 5 2 0 33 5 78 53 5 1 4096 33 5 78 53 5 2 4096 33 5 78 32 0 78 51 5 0 0 33 5 78 16 5 4 0 33 5 78 5 6 1 2 4 7 4 0 16 5 7 6 33 5 78 38 1 3 4 38 2 3 5 37 8 3 12 37 9 3 13 43 10 1 255 10 9 9 10 5 9 9 8 45 11 1 8 43 10 11 255 10 9 9 10 5 9 9 8 43 10 2 255 10 9 9 10 5 9 9 8 45 11 2 8 43 10 11 255 10 9 9 10 5 9 9 8 1 12 0 17 5 6 12 33 5 60 3 13 0 12 37 14 13 0 43 14 14 16777215 3 13 4 12 38 14 13 0 43 10 14 255 10 9 9 10 5 9 9 8 45 11 14 8 43 10 11 255 10 9 9 10 5 9 9 8 45 11 14 16 43 10 11 255 10 9 9 10 5 9 9 8 41 12 12 1 31 40 38 9 3 3 37 15 3 2 10 15 15 9 5 15 15 8 38 15 3 2 37 16 3 1 41 16 16 1 38 16 3 1 37 17 3 7 33 17 76 37 18 3 8 32 18 74 17 5 18 16 33 5 76 1 19 0 35 19 1 19 1 35 19 1 19 -1 35 19 0 12 20 1 0 -65536 37 1 0 6 37 2 0 11 17 3 2 1 33 3 18 44 4 1 1 3 5 0 4 37 6 5 64 37 7 0 1 16 3 7 6 33 3 18 37 8 5 65 41 1 1 1 38 1 0 6 1 9 1 44 10 9 32 9 10 10 8 35 10 1 11 0 35 11 0 3 3 1 0 -65536 37 1 0 1 35 1 0 32 153 1 0 -65536 37 1 0 10 43 2 1 1 32 2 65 1 3 2 38 3 0 15 1 28 101 1 29 107 1 30 114 1 31 97 34 8 28 1 28 110 1 29 58 1 30 32 1 31 107 34 8 28 1 28 97 1 29 114 1 30 101 1 31 61 34 8 28 37 28 0 1 34 9 28 1 28 32 1 29 98 1 30 111 1 31 121 34 8 28 1 28 117 1 29 116 1 30 61 1 31 0 34 8 28 37 6 0 4 0 28 6 34 9 28 1 28 120 34 6 28 37 7 0 5 0 28 7 34 9 28 1 28 32 1 29 122 1 30 105 1 31 110 34 8 28 1 28 99 1 29 105 1 30 114 1 31 61 34 8 28 37 28 0 2 34 10 28 1 28 32 1 29 115 1 30 111 1 31 110 34 8 28 1 28 61 34 6 28 37 28 0 3 34 10 28 1 28 10 34 6 28 34 7 28 37 6 0 4 32 6 151 37 7 0 5 37 10 0 0 5 11 6 7 37 1 0 10 43 12 1 2 32 12 109 1 13 3 38 13 0 15 1 28 80 1 29 54 1 30 10 1 31 0 34 8 28 0 28 6 34 9 28 1 28 32 34 6 28 0 28 7 34 9 28 1 28 10 1 29 50 1 30 53 1 31 53 34 8 28 1 28 10 34 6 28 1 14 0 17 15 11 14 33 15 108 3 16 10 14 37 17 16 0 45 18 17 16 0 28 18 34 6 28 45 18 17 8 0 28 18 34 6 28 0 28 17 34 6 28 41 14 14 1 31 94 34 7 28 37 19 0 9 32 19 151 51 15 19 0 33 15 151 1 20 1 38 20 0 15 1 21 0 17 15 7 21 33 15 150 1 22 0 17 15 6 22 33 15 146 5 18 21 6 3 18 18 22 3 18 18 10 0 16 18 37 17 16 0 45 23 17 16 43 23 23 255 45 24 17 8 43 24 24 255 43 25 17 255 0 26 23 17 15 24 26 33 15 135 0 26 24 17 15 25 26 33 15 138 0 26 25 1 27 46 51 15 26 128 33 15 142 1 27 35 0 28 27 34 6 28 3 22 22 19 31 119 1 28 10 34 6 28 3 21 21 19 31 116 34 7 28 1 28 0 35 28 1 29 260 1 1 -65536 1 2 1 38 2 1 15 45 3 0 63 45 4 0 52 43 4 4 2047 44 5 0 12 45 5 5 12 32 3 11 1 25 45 34 6 25 49 7 4 2047 32 7 26 33 5 20 1 25 105 1 26 110 1 27 102 1 28 0 34 8 25 31 257 1 25 110 1 26 97 1 27 110 1 28 0 34 8 25 31 257 9 8 4 5 33 8 31 1 25 48 34 6 25 31 257 32 4 36 44 8 2 52 9 9 5 8 41 10 4 -1075 31 38 0 9 5 1 10 -1074 1 11 0 0 8 9 32 8 44 45 8 8 1 41 11 11 1 31 40 3 8 10 11 41 8 8 -1 42 8 8 1233 46 12 8 12 1 13 -5440 41 14 13 80 41 15 13 160 0 25 13 0 26 9 34 17 25 0 25 14 0 26 2 34 17 25 51 7 10 0 32 7 64 18 8 10 0 25 14 0 26 8 34 12 25 31 67 0 25 13 0 26 10 34 12 25 51 7 12 0 32 7 74 18 8 12 0 25 13 0 26 8 34 13 25 31 77 0 25 14 0 26 12 34 13 25 1 16 10 0 25 15 0 26 14 34 16 25 0 25 15 0 26 16 34 11 25 0 25 13 0 26 15 34 14 25 0 17 25 51 7 17 0 33 7 95 0 25 14 0 26 16 34 11 25 41 12 12 1 31 78 0 25 13 0 26 14 34 14 25 0 17 25 54 7 17 0 33 7 106 0 25 13 0 26 16 34 11 25 41 12 12 -1 31 95 1 18 0 54 7 18 15 33 7 128 1 19 0 0 25 13 0 26 14 34 14 25 0 17 25 51 7 17 0 33 7 121 0 25 13 0 26 14 34 15 25 41 19 19 1 31 110 3 8 1 18 38 19 8 41 0 25 13 0 26 16 34 11 25 41 18 18 1 31 107 0 25 15 0 26 14 34 16 25 1 26 5 0 25 15 34 11 25 0 25 13 0 26 15 34 14 25 0 17 25 51 7 17 0 33 7 160 33 17 144 37 8 1 55 43 8 8 1 32 8 160 1 18 14 1 21 0 3 8 1 18 37 19 8 41 41 19 19 1 49 7 19 10 32 7 159 38 21 8 41 41 18 18 -1 54 7 18 0 33 7 146 1 19 1 38 19 1 41 41 12 12 1 31 160 38 19 8 41 1 22 15 41 8 22 -1 3 23 1 8 37 19 23 41 33 19 167 0 22 8 31 161 51 7 12 -4 33 7 222 54 7 12 15 33 7 222 51 7 12 0 33 7 200 1 18 0 16 7 12 18 33 7 186 1 19 0 17 7 22 18 33 7 181 3 23 1 18 37 19 23 41 41 17 19 48 0 25 17 34 6 25 41 18 18 1 31 174 41 18 12 1 17 7 22 18 33 7 257 1 25 46 34 6 25 17 7 22 18 33 7 257 3 23 1 18 37 19 23 41 41 17 19 48 0 25 17 34 6 25 41 18 18 1 31 191 1 25 48 1 26 46 1 27 0 1 28 0 34 8 25 18 8 12 41 8 8 -1 32 8 212 1 25 48 34 6 25 41 8 8 -1 31 207 1 18 0 17 7 22 18 33 7 257 3 23 1 18 37 19 23 41 41 17 19 48 0 25 17 34 6 25 41 18 18 1 31 213 37 19 1 41 41 17 19 48 0 25 17 34 6 25 52 7 22 1 33 7 240 1 25 46 34 6 25 1 18 1 17 7 22 18 33 7 240 3 23 1 18 37 19 23 41 41 17 19 48 0 25 17 34 6 25 41 18 18 1 31 231 1 25 101 34 6 25 0 24 12 51 7 12 0 32 7 249 1 25 45 34 6 25 18 24 12 31 251 1 25 43 34 6 25 51 7 24 10 32 7 255 1 25 48 34 6 25 0 25 24 34 9 25 34 7 25 1 25 0 35 25 1 12 21 1 1 -65536 37 2 1 14 45 3 2 3 43 4 2 7 44 4 4 3 43 5 0 255 11 6 5 4 3 7 1 3 33 4 11 38 6 7 61440 31 14 37 8 7 61440 9 6 6 8 38 6 7 61440 41 2 2 1 38 2 1 14 51 9 2 32768 33 9 19 34 7 11 1 11 0 35 11 0 9 11 1 0 -65536 37 1 0 14 32 1 9 37 6 0 15 1 7 -4096 0 8 1 40 4 6 1 5 0 38 5 0 14 1 6 0 35 6 4 6 14 32 0 3 0 5 0 34 6 5 32 1 6 0 5 1 34 6 5 32 2 9 0 5 2 34 6 5 32 3 12 0 5 3 34 6 5 1 5 0 35 5 1 10 19 1 1 -65536 1 2 0 47 3 0 10 42 4 3 10 4 5 0 4 41 5 5 48 3 6 1 2 38 5 6 16 41 2 2 1 0 0 3 33 0 2 32 2 17 41 2 2 -1 3 6 1 2 37 9 6 16 34 6 9 31 11 1 9 0 35 9 1 9 17 1 1 15 51 2 1 0 33 2 15 44 3 1 2 12 4 0 3 43 5 4 15 51 2 5 10 32 2 10 41 6 5 48 31 11 41 6 5 87 0 8 6 34 6 8 41 1 1 -1 31 1 1 8 0 35 8 2 10 22 37 2 0 0 1 3 0 1 4 0 17 5 2 3 33 5 15 3 6 0 3 37 7 6 1 5 7 7 1 3 7 7 4 44 8 7 32 45 8 8 32 38 8 6 1 45 4 7 32 41 3 3 1 31 3 32 4 20 3 6 0 2 38 4 6 1 41 2 2 1 38 2 0 0 1 9 0 35 9 2 9 15 1 2 1073741824 51 3 1 30 33 3 8 0 7 0 0 8 2 34 11 7 41 1 1 -30 31 1 32 1 13 1 5 1 11 8 5 1 0 7 0 34 11 7 1 7 0 35 7 2 8 19 1 2 1000000000 51 3 1 9 33 3 8 0 6 0 0 7 2 34 11 6 41 1 1 -9 31 1 32 1 17 1 5 1 32 1 14 42 5 5 10 41 1 1 -1 31 10 0 6 0 0 7 5 34 11 6 1 6 0 35 6 2 11 24 37 2 0 0 37 3 1 0 16 4 2 3 33 4 20 16 4 3 2 33 4 22 0 5 2 32 5 18 41 5 5 -1 3 6 0 5 37 7 6 1 3 8 1 5 37 9 8 1 16 4 7 9 33 4 20 16 4 9 7 33 4 22 31 7 1 10 0 35 10 1 10 -1 35 10 1 10 1 35 10 2 15 35 37 2 0 0 37 3 1 0 1 4 0 1 5 0 1 6 1 44 7 6 32 17 8 2 4 33 8 25 3 9 0 4 37 10 9 1 1 11 0 17 8 3 4 33 8 15 3 12 1 4 37 11 12 1 4 10 10 11 4 10 10 5 1 5 0 51 8 10 0 32 8 22 1 5 1 3 10 10 7 38 10 9 1 41 4 4 1 31 6 32 2 32 41 13 2 -1 3 9 0 13 37 10 9 1 33 10 32 0 2 13 31 25 38 2 0 0 1 14 0 35 14 2 9 12 37 2 1 0 1 3 0 16 4 2 3 33 4 10 3 5 1 3 37 6 5 0 3 7 0 3 38 6 7 0 41 3 3 1 31 2 1 8 0 35 8 2 6 13 44 2 1 32 45 2 2 32 45 3 1 32 38 2 0 1 38 3 0 2 1 4 0 32 2 8 1 4 1 32 3 10 1 4 2 38 4 0 0 1 5 0 35 5
+data RTLN = 2514
+data SEMOFF = 0 2 4 6 10 14 18 22 26 30 34 38 42 46 50 54 58 62 66 69 72 76 80 84 88 91 94 98 102 106 109 112 113 115 117 118 120 121 124 127 130 131 135 139 143 147 151 155 159 163 167 171 175 179 183 187
+data SEMDAT = 1 1 1 0 0 4 0 1 0 0 2 1 1 0 0 4 0 1 0 0 3 1 1 0 0 4 0 1 0 0 1 1 1 0 0 1 2 2 0 0 5 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 6 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 7 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 22 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 23 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 8 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 9 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 10 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 11 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 12 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 13 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 14 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 15 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 16 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 17 3 1 2 0 4 0 3 0 0 1 1 1 0 0 20 2 1 0 0 4 0 2 0 0 1 1 1 0 0 21 2 1 0 0 4 0 2 0 0 1 1 1 0 0 1 2 2 0 0 36 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 37 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 38 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 39 3 1 2 0 4 0 3 0 0 1 1 1 0 0 40 2 1 0 0 4 0 2 0 0 1 1 1 0 0 41 2 1 0 0 4 0 2 0 0 1 1 1 0 0 1 2 2 0 0 42 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 43 3 1 2 0 4 0 3 0 0 1 1 1 0 0 1 2 2 0 0 44 3 1 2 0 4 0 3 0 0 1 1 1 0 0 45 2 1 0 0 4 0 2 0 0 1 1 1 0 0 46 2 1 0 0 4 0 2 0 0 28 0 0 0 0 1 1 0 0 0 29 1 1 0 0 1 1 0 0 0 30 1 1 0 0 31 0 1 0 0 1 1 0 0 0 32 1 0 0 0 33 0 0 0 0 1 1 1 0 0 26 2 1 2 0 4 0 2 0 0 1 1 0 0 0 1 2 1 0 0 27 1 2 2 0 1 1 1 0 0 35 2 1 0 0 4 0 2 0 0 34 0 1 0 0 1 1 1 0 0 2 2 2 0 0 5 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 7 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 8 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 11 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 12 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 13 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 24 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 25 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 14 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 15 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 16 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 17 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 18 3 1 2 0 4 0 3 0 0 1 1 1 0 0 2 2 2 0 0 19 3 1 2 0 4 0 3 0 0
+data OPFLOW = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2 3 3 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+data OPTGT = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+data OPBACK = -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 70 71 72 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+data PBACK = -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 81 82 83 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+data PRCLS = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 2 2 2 2 2 2 3 1 0 0 0 0 0 0 0 0 0 0 0 0
+
+; G: 0 NT  1 imlec  2 KONUM  3 GECIS  4 bellek  5 giris  6 nsabit  7 sabit tabani  8 nveri  9 veri tabani  10 bss  11 nfonk  12 toplam komut
+;    20 a  21 b  22 c  23 fonksiyon taban komutu  24 gecerli fonksiyon
+;    30 EXIT0  31..35 tuzaklar(DIV0 OOB STACK DEPTH ALLOC)  36 PUTI  37 PUTC  38 MESAJLAR  39 SABITLER  40 VERI  41 DOSYA SONU (dosya konumlari)
+;    42 yazmac yigini adresi  43 bellek adresi (sanal)
+
+func fail() {
+    mov z, 0
+    div x, 1, z
+    ret 0
+}
+
+; ---------- girdi ----------
+func put(nt, ng, val) {
+    ge e, nt, 524288
+    jz e, p1
+    call x, fail
+p1: jz ng, p2
+    neg val, val
+p2: add a, nt, T
+    st val, a, 0
+    ret 0
+}
+
+func readall() {
+    mov nt, 0
+    mov inn, 0
+    mov ng, 0
+    mov val, 0
+loop:
+    host ch, getc
+    lt e, ch, 0
+    jnz e, eof
+    le w, ch, 32
+    jnz w, ws
+    jnz inn, started
+    mov inn, 1
+    mov ng, 0
+    mov val, 0
+started:
+    eq o, ch, 45
+    jz o, dig
+    mov ng, 1
+    jmp loop
+dig:
+    sub d, ch, 48
+    mul val, val, 10
+    add val, val, d
+    jmp loop
+ws:
+    jz inn, loop
+    call x, put, nt, ng, val
+    add nt, nt, 1
+    mov inn, 0
+    jmp loop
+eof:
+    jz inn, done
+    call x, put, nt, ng, val
+    add nt, nt, 1
+done:
+    st nt, G, 0
+    ret nt
+}
+
+func nx() {
+    ld c, G, 1
+    ld n, G, 0
+    ge e, c, n
+    jz e, n1
+    call x, fail
+n1: add a, c, T
+    ld v, a, 0
+    add c, c, 1
+    st c, G, 1
+    ret v
+}
+
+; secenekler (stdin on eki): -1 yakit | -2 n (kare kod)*n olaylar | -3 azami_kare | -4 ascii_K | -5 bayrak (1 rapor, 2 PPM)
+;   -6 k: k=1 sablonu olan komutlar da SEM (sayisal anlam) tanimindan, mikro-islem sablonlariyla uretilir (sablonsuz komutlar her zaman)
+func options() {
+    mov fu, 4000000000
+    st fu, G, 44
+op0: ld c, G, 1
+    ld n, G, 0
+    ge z, c, n
+    jnz z, opd
+    add t, c, T
+    ld tk, t, 0
+    gei z, tk, 0
+    jnz z, opd
+    call x, nx
+    eqi z, tk, -1
+    jz z, op2
+    call v, nx
+    st v, G, 44
+    jmp op0
+op2: eqi z, tk, -2
+    jz z, op3
+    call cnt, nx
+    gti z, cnt, 30000
+    jz z, op2a
+    call x, fail
+op2a: st cnt, G, 57
+    mov i, 0
+op2l: ge z, i, cnt
+    jnz z, op0
+    call k, nx
+    call cd, nx
+    shli t, i, 1
+    add a, t, EV
+    st k, a, 0
+    st cd, a, 1
+    addi i, i, 1
+    jmp op2l
+op3: eqi z, tk, -3
+    jz z, op4
+    call v, nx
+    st v, G, 54
+    jmp op0
+op4: eqi z, tk, -4
+    jz z, op5
+    call v, nx
+    st v, G, 55
+    jmp op0
+op5: eqi z, tk, -5
+    jz z, op6
+    call v, nx
+    st v, G, 56
+    jmp op0
+op6: eqi z, tk, -6
+    jz z, op7
+    call v, nx
+    st v, G, 58
+    jmp op0
+op7: call x, fail
+opd: ret 0
+}
+
+; [f0,f1) fonksiyonlarini oku (gi: ilk komut dizini); yeni gi dondurur
+func pfuncs(f0, f1, gi) {
+    mov f, f0
+pf: ge z, f, f1
+    jnz z, pfd
+    call np, nx
+    call nr, nx
+    call ncode, nx
+    add a, f, FBASE
+    st gi, a, 0
+    add a, f, FNP
+    st np, a, 0
+    add a, f, FNR
+    st nr, a, 0
+    mov pc, 0
+pi: ge z, pc, ncode
+    jnz z, pid
+    ge z, gi, 524288
+    jz z, q2
+    call x, fail
+q2: call op, nx
+    ge z, op, 55
+    jz z, q3
+    call x, fail
+q3: add a, gi, OPS
+    st op, a, 0
+    add a, op, NOPS
+    ld nops, a, 0
+    mov j, 0
+pj: ge z, j, nops
+    jnz z, pjd
+    call v, nx
+    jnz j, pj1
+    add a, gi, OA
+    st v, a, 0
+    jmp pj3
+pj1: eq z, j, 1
+    jz z, pj2
+    add a, gi, OB
+    st v, a, 0
+    jmp pj3
+pj2: add a, gi, OC
+    st v, a, 0
+pj3: add j, j, 1
+    jmp pj
+pjd:
+    add pc, pc, 1
+    add gi, gi, 1
+    jmp pi
+pid:
+    add f, f, 1
+    jmp pf
+pfd:
+    ret gi
+}
+
+; uygulamada putf (host 2) ya da present/poll/frame (host 4..6) var mi?
+; komutun SEM'inde host mikro-islemi varsa onun operand yuvasi (alan 0), yoksa -1
+func hostslot(op) {
+    add t, op, SEMOFF
+    ld lo, t, 0
+    ld hi, t, 1
+    mov i, lo
+hs: ge z, i, hi
+    jnz z, hsn
+    mul b, i, 5
+    add b, b, SEMDAT
+    ld pid, b, 0
+    eqi z, pid, 34
+    jz z, hs1
+    ld r, b, 1
+    ret r
+hs1: addi i, i, 1
+    jmp hs
+hsn: ret -1
+}
+
+func scanrt(n) {
+    mov i, 0
+sr: ge z, i, n
+    jnz z, srn
+    add a, i, OPS
+    ld op, a, 0
+    call hsl, hostslot, op
+    jnz hsl, sr1
+    lti z, hsl, 0
+    jnz z, sr1
+    add a, i, OA
+    ld h, a, 0
+    eqi z, h, 2
+    jnz z, srh
+    lti z, h, 4
+    jnz z, sr1
+    lei z, h, 6
+    jz z, sr1
+srh: ret 1
+sr1: addi i, i, 1
+    jmp sr
+srn: ret 0
+}
+
+; RTL (rt.pma listesi) ayricalikli fonksiyon olarak ekle: belirteclerini T'ye kopyala, imleci oraya al
+func loadrt(napp, gi) {
+    ld nt, G, 0
+    ld nr, RTLN, 0
+    add e, nt, nr
+    gt z, e, 524288
+    jz z, lr0
+    call x, fail
+lr0: mov i, 0
+lr: ge z, i, nr
+    jnz z, lrd
+    add a, i, RTL
+    ld v, a, 0
+    add b, nt, i
+    add b, b, T
+    st v, b, 0
+    addi i, i, 1
+    jmp lr
+lrd: st e, G, 0
+    addi c, nt, 6
+    st c, G, 1
+    call nrt, nx
+    add f1, napp, nrt
+    call gi2, pfuncs, napp, f1, gi
+    st f1, G, 11
+    ret gi2
+}
+
+func parse() {
+    ld nt0, G, 0
+    jnz nt0, pf0
+    call x, fail
+pf0: call x, options
+    call fl, nx
+    call mem, nx
+    st mem, G, 4
+    call en, nx
+    st en, G, 5
+    call nc, nx
+    st nc, G, 6
+    ld c, G, 1
+    st c, G, 7
+    add c, c, nc
+    st c, G, 1
+    call nd, nx
+    st nd, G, 8
+    ld c, G, 1
+    st c, G, 9
+    add c, c, nd
+    st c, G, 1
+    call bss, nx
+    st bss, G, 10
+    call nf, nx
+    gt z, nf, 65500
+    jz z, q1
+    call x, fail
+q1: st nf, G, 11
+    st nf, G, 45
+    mov z0, 0
+    call gi, pfuncs, z0, nf, z0
+    st gi, G, 12
+    jz fl, pend
+    mov f, 0
+pn: ge z, f, nf
+    jnz z, pend
+    call len, nx
+    ld c, G, 1
+    add c, c, len
+    st c, G, 1
+    add f, f, 1
+    jmp pn
+pend:
+    call u, scanrt, gi
+    ld fg, G, 56
+    jz fg, nfg
+    mov u, 1
+nfg:
+    st u, G, 47
+    jz u, pdone
+    mov rw, 65536
+    st rw, G, 48
+    ld m, G, 4
+    st m, G, 49
+    call gi2, loadrt, nf, gi
+    st gi2, G, 12
+pdone:
+    ret 0
+}
+
+; ---------- cikti ----------
+func eb(x) {
+    ld p, G, 2
+    add p, p, 1
+    st p, G, 2
+    ld ps, G, 3
+    eq z, ps, 2
+    jz z, e1
+    host putc, x
+e1: ret 0
+}
+
+func eb32(v) {
+    and t, v, 255
+    call x, eb, t
+    shr t, v, 8
+    and t, t, 255
+    call x, eb, t
+    shr t, v, 16
+    and t, t, 255
+    call x, eb, t
+    shr t, v, 24
+    and t, t, 255
+    call x, eb, t
+    ret 0
+}
+
+func eb64(v) {
+    call x, eb32, v
+    shr h, v, 32
+    call x, eb32, h
+    ret 0
+}
+
+; imm32 simgesi (k = simge-256) degeri
+func val32(k) {
+    ld a, G, 20
+    ld b, G, 21
+    ld c, G, 22
+    eq z, k, 0
+    jz z, v1
+    mul r, a, 8
+    ret r
+v1: eq z, k, 1
+    jz z, v2
+    mul r, b, 8
+    ret r
+v2: eq z, k, 2
+    jz z, v3
+    mul r, c, 8
+    ret r
+v3: eq z, k, 3
+    jz z, v4
+    ret a
+v4: eq z, k, 4
+    jz z, v5
+    ret b
+v5: eq z, k, 5
+    jz z, v6
+    ret c
+v6: eq z, k, 6
+    jz z, v7
+    ld t, G, 39
+    mul r, b, 8
+    add r, r, t
+    add r, r, 4194304
+    ret r
+v7: eq z, k, 7
+    jz z, v8
+    ld r, G, 4
+    ret r
+v8: eq z, k, 8
+    jz z, v9
+    ld r, G, 43
+    ret r
+v9: eq z, k, 9
+    jz z, v10
+    add t, a, FNR
+    ld r, t, 0
+    mul r, r, 8
+    ret r
+v10: eq z, k, 10
+    jz z, v11
+    add t, a, FNP
+    ld r, t, 0
+    mul r, r, 8
+    ret r
+v11: eq z, k, 11
+    jz z, v12
+    add t, a, FNR
+    ld r, t, 0
+    add t, a, FNP
+    ld s, t, 0
+    sub r, r, s
+    ret r
+v12: lt z, k, 12
+    jnz z, v17
+    gt z, k, 16
+    jnz z, v17
+    sub t, k, 12
+    add t, t, MSGOFF
+    ld r, t, 0
+    ld s, G, 38
+    add r, r, s
+    add r, r, 4194304
+    ret r
+v17: eq z, k, 17
+    jz z, v18
+    ld r, G, 42
+    ret r
+v18: eq z, k, 18
+    jz z, v19
+    ld r, G, 53
+    ret r
+v19: eq z, k, 19
+    jz z, v20
+    ld nd, G, 8
+    ld bs, G, 10
+    add r, nd, bs
+    add r, r, 1
+    ret r
+v20: eq z, k, 20
+    jz z, v21
+    ld r, G, 40
+    add r, r, 4194304
+    ret r
+v21: eq z, k, 21
+    jz z, v22
+    ld r, G, 8
+    ret r
+v22: eq z, k, 22
+    jz z, v23
+    ret 4194424
+v23: eq z, k, 23
+    jz z, v24
+    ld r, G, 41
+    ret r
+v24: eq z, k, 24
+    jz z, v25
+    ld r, G, 53
+    ld m, G, 4
+    ld fc, G, 49
+    add m, m, fc
+    mul m, m, 8
+    add r, r, m
+    sub r, r, 4194304
+    ret r
+v25: eq z, k, 25
+    jz z, v26
+    ld r, G, 44
+    ret r
+v26: eq z, k, 26
+    jz z, v27
+    ld r, G, 38
+    add r, r, 57
+    add r, r, 4194304
+    ret r
+v27: eq z, k, 27
+    jz z, v28
+    ld r, G, 48
+    ld m, G, 4
+    add r, r, m
+    ld fc, G, 49
+    add r, r, fc
+    ret r
+v28: eq z, k, 28
+    jz z, v29
+    ld r, G, 48
+    ret r
+v29: eq z, k, 29
+    jz z, v30
+    ld r, G, 48
+    mul r, r, -8
+    ret r
+v30: eq z, k, 30
+    jz z, v31
+    ld r, G, 43
+    sub r, r, 32768
+    ret r
+v31: eq z, k, 31
+    jz z, v32
+    add r, b, 1
+    mul r, r, 8
+    ret r
+v32: eq z, k, 32
+    jz z, v33
+    add r, b, 2
+    mul r, r, 8
+    ret r
+v33: eq z, k, 33
+    jz z, v34
+    ld r, G, 51
+    add r, r, 4194304
+    ret r
+v34: ld r, G, 57
+    shli r, r, 1
+    add r, r, 64
+    ret r
+}
+
+; bagil hedef simgesi (k = simge-300): dosya konumu
+func target(k) {
+    ld a, G, 20
+    ld b, G, 21
+    ld fb, G, 23
+    eq z, k, 12
+    jz z, tk1
+    ld r, G, 46
+    ret r
+tk1: eq z, k, 13
+    jz z, tk2
+    ld r, G, 50
+    ret r
+tk2: eq z, k, 14
+    jz z, tk0
+    ld nap, G, 45
+    addi nap, nap, 4
+    add t, nap, FBASE
+    ld t, t, 0
+    add t, t, OFF
+    ld r, t, 0
+    ret r
+tk0: lt z, k, 7
+    jz z, t7
+    add t, k, 31
+    add t, t, G
+    ld r, t, 0
+    ret r
+t7: eq z, k, 7
+    jz z, t8
+    add t, fb, a
+    add t, t, OFF
+    ld r, t, 0
+    ret r
+t8: eq z, k, 8
+    jz z, t9
+    add t, fb, b
+    add t, t, OFF
+    ld r, t, 0
+    ret r
+t9: eq z, k, 9
+    jz z, t10
+    add t, a, FBASE
+    ld t, t, 0
+    add t, t, OFF
+    ld r, t, 0
+    ret r
+t10: eq z, k, 10
+    jz z, t11
+    ld r, G, 30
+    ret r
+t11: ld e, G, 5
+    add t, e, FBASE
+    ld t, t, 0
+    add t, t, OFF
+    ld r, t, 0
+    ret r
+}
+
+; islev simgeleri (tur 6..10): alan fv'nin gosterdigi OPERAND DEGERI bir islev indeksidir (komutun call mikro-islemi); tur 6 FREL (girise bagil 32 bit), 7 FNR8 (yazmac sayisi*8),
+;   8 FNP8 (parametre sayisi*8), 9 FCNT (yerel yazmac sayisi = yazmac - parametre), 10 HOSTSP (host mikro-islemi: hostmap ile secilen ozel host sablonu ya da calisma zamani CALL'u)
+func etok_fn(ty, fv) {
+    gei z, fv, 3
+    jz z, f1
+    call x, fail
+f1: add t, fv, 20
+    add t, t, G
+    ld fn, t, 0
+    eqi z, ty, 6
+    jz z, f2
+    add t, fn, FBASE
+    ld t, t, 0
+    add t, t, OFF
+    ld r, t, 0
+    ld p, G, 2
+    sub r, r, p
+    sub r, r, 4
+    call x, eb32, r
+    ret 0
+f2: eqi z, ty, 7
+    jz z, f3
+    add t, fn, FNR
+    ld r, t, 0
+    mul r, r, 8
+    call x, eb32, r
+    ret 0
+f3: eqi z, ty, 8
+    jz z, f4
+    add t, fn, FNP
+    ld r, t, 0
+    mul r, r, 8
+    call x, eb32, r
+    ret 0
+f4: eqi z, ty, 9
+    jz z, f5
+    add t, fn, FNR
+    ld r, t, 0
+    add t, fn, FNP
+    ld q, t, 0
+    sub r, r, q
+    call x, eb32, r
+    ret 0
+f5: eqi z, ty, 10
+    jz z, f6
+    ; HOSTSP: host mikro-islemi -- alan 0 host kimligi operandi (yuva 0), alan 1 pencere tabani (yuva 1) olmali (ozel host sablonlari R_B kullanir)
+    jnz fv, f6
+    ld sl, G, 61
+    eqi z, sl, 1
+    jz z, f6
+    ld sa, G, 20
+    call op2, hostmap
+    call x, emitop, op2
+    st sa, G, 20
+    ret 0
+f6: call x, fail
+    ret 0
+}
+
+func etok(tok) {
+    lt z, tok, 256
+    jz z, k1
+    call x, eb, tok
+    ret 0
+k1: lt z, tok, 300
+    jz z, k2
+    sub k, tok, 256
+    call v, val32, k
+    call x, eb32, v
+    ret 0
+k2: lt z, tok, 320
+    jz z, k3
+    sub k, tok, 300
+    call t, target, k
+    ld p, G, 2
+    sub r, t, p
+    sub r, r, 4
+    call x, eb32, r
+    ret 0
+k3: lt z, tok, 400
+    jz z, k4
+    ld c, G, 22
+    and c, c, 63
+    call x, eb, c
+    ret 0
+    ; mikro-islem simgeleri (400+): tur = (tok-400)/4: 0 TMP bayti, 1 OPR (8*operand), 2 OPV (operand), 3 KAD (sabit adresi), 4 LIT (alan); k = alan sirasi
+k4: sub d, tok, 400
+    shri ty, d, 2
+    and k, d, 3
+    addi t, k, 60
+    add t, t, G
+    ld fv, t, 0
+    gei z, ty, 6
+    jz z, k4n
+    call x, etok_fn, ty, fv
+    ret 0
+k4n: eqi z, ty, 5
+    jz z, k4a
+    ; REL_TFk: alani fv olan operandin gosterdigi komuta bagil 32 bit hedef
+    gei z, fv, 3
+    jz z, k4b
+    call x, fail
+k4b: add t, fv, 20
+    add t, t, G
+    ld o, t, 0
+    ld fb, G, 23
+    add t, fb, o
+    add t, t, OFF
+    ld r2, t, 0
+    ld p, G, 2
+    sub r2, r2, p
+    sub r2, r2, 4
+    call x, eb32, r2
+    ret 0
+k4a: jnz ty, k5
+    mul r, fv, -8
+    and r, r, 255
+    call x, eb, r
+    ret 0
+k5: eqi z, ty, 4
+    jz z, k6
+    call x, eb32, fv
+    ret 0
+k6: gei z, fv, 3
+    jz z, k7
+    call x, fail
+k7: add t, fv, 20
+    add t, t, G
+    ld o, t, 0
+    eqi z, ty, 1
+    jz z, k8
+    mul r, o, 8
+    call x, eb32, r
+    ret 0
+k8: eqi z, ty, 2
+    jz z, k9
+    call x, eb32, o
+    ret 0
+k9: ld t, G, 39
+    mul r, o, 8
+    add r, r, t
+    add r, r, 4194304
+    call x, eb32, r
+    ret 0
+}
+
+; sablon idx'i yaz; yoksa (-1) desteklenmiyor
+func etpl(idx) {
+    add t, idx, TPLS
+    ld s, t, 0
+    ge z, s, 0
+    jnz z, e1
+    call x, fail
+e1: add t, s, TPL
+    ld tok, t, 0
+    eq z, tok, -1
+    jnz z, ed
+    call x, etok, tok
+    add s, s, 1
+    jmp e1
+ed: ret 0
+}
+
+; komutun SEM mikro-programi: her ornek [islem, f0..f3]; sablon yuvasi = TS_PRIM0 + islem
+func emit_micro(op) {
+    call bk, isbackop, op
+    add t, op, SEMOFF
+    ld lo, t, 0
+    ld hi, t, 1
+    mov i, lo
+em: ge z, i, hi
+    jnz z, emd
+    mul b, i, 5
+    add b, b, SEMDAT
+    ld pid, b, 0
+    ld v, b, 1
+    st v, G, 60
+    ld v, b, 2
+    st v, G, 61
+    ld v, b, 3
+    st v, G, 62
+    ld v, b, 4
+    st v, G, 63
+    addi s, pid, 84
+    jz bk, emp
+    add t, pid, PRCLS
+    ld cl, t, 0
+    eqi z, cl, 2
+    jz z, emp
+    add t, pid, PBACK
+    ld s, t, 0
+emp: call x, etpl, s
+    addi i, i, 1
+    jmp em
+emd: ret 0
+}
+
+; SEM'deki her mikro-islemin sablonu var mi (1/0); bos program (HALT gibi) icin 0
+func lowerable(op) {
+    add t, op, SEMOFF
+    ld lo, t, 0
+    ld hi, t, 1
+    ge z, lo, hi
+    jz z, lw0
+    ret 0
+lw0: mov i, lo
+lw: ge z, i, hi
+    jnz z, lwd
+    mul b, i, 5
+    add b, b, SEMDAT
+    ld pid, b, 0
+    addi s, pid, 84
+    add t, s, TPLS
+    ld v, t, 0
+    lti z, v, 0
+    jz z, lw1
+    ret 0
+lw1: add t, pid, PRCLS
+    ld cl, t, 0
+    eqi z, cl, 2
+    jz z, lw2
+    add t, pid, PBACK
+    ld sl, t, 0
+    lti z, sl, 0
+    jz z, lw2
+    ret 0
+lw2: addi i, i, 1
+    jmp lw
+lwd: ret 1
+}
+
+; komut geri atlama mi (yakit denetimi gerekir): ayricalikli (RT) olmayan islevde, atlama/kosullu atlama (OPFLOW 2/3) ve hedef <= gecerli komut
+func isbackop(op) {
+    ld pv, G, 52
+    jz pv, ib0
+    ret 0
+ib0: add t, op, OPFLOW
+    ld fw, t, 0
+    lti z, fw, 2
+    jz z, ib1
+    ret 0
+ib1: add t, op, OPTGT
+    ld ts, t, 0
+    add t, ts, 20
+    add t, t, G
+    ld tg, t, 0
+    ld gi, G, 59
+    ld fb, G, 23
+    sub pcl, gi, fb
+    le z, tg, pcl
+    jz z, ib2
+    ret 1
+ib2: ret 0
+}
+
+; komut sablonu: yerlesik x86 sablonu varsa o (-6 1 ise ve SEM sablonlanabiliyorsa mikro-islemlerden), yoksa SEM'den; geri atlamalarda yakit varyanti (OPBACK / PBACK)
+func emitop(op) {
+    ge z, op, 55
+    jnz z, ep
+    add t, op, TPLS
+    ld s, t, 0
+    lti z, s, 0
+    jnz z, em1
+    ld fo, G, 58
+    jz fo, bes
+    call ok, lowerable, op
+    jz ok, bes
+em1: call x, emit_micro, op
+    ret 0
+bes: call bk, isbackop, op
+    jz bk, ep
+    add t, op, OPBACK
+    ld sl, t, 0
+    lti z, sl, 0
+    jz z, bes2
+    call x, fail
+bes2: call x, etpl, sl
+    ret 0
+ep: call x, etpl, op
+    ret 0
+}
+
+func blob(base, n) {
+    mov i, 0
+bl: ge z, i, n
+    jnz z, bd
+    add t, base, i
+    ld v, t, 0
+    call x, eb, v
+    add i, i, 1
+    jmp bl
+bd: ret 0
+}
+
+func mark(slot) {
+    ld p, G, 2
+    add t, slot, G
+    st p, t, 0
+    ret 0
+}
+
+; host komutu (G[20] = host kimligi) -> uretilecek komut: ozel host sablonu, calisma zamani islevine CALL (G[20] islev indeksine cevrilir) ya da ayricalikli sistem yazisi
+func hostmap() {
+    ld h, G, 20
+    ld pv, G, 52
+    ld na, G, 45
+    eqi z, h, 2
+    jz z, hq
+    jnz pv, hn
+    addi t, na, 5
+    st t, G, 20
+    mov r, 34
+    ret r
+hq: lti z, h, 4
+    jnz z, hn
+    jnz pv, hpv
+    sub t, h, 4
+    add t, t, 1
+    add t, t, na
+    st t, G, 20
+    mov r, 34
+    ret r
+hpv: mov r, 77
+    ret r
+hn: add r, h, 55
+    ret r
+}
+
+func emit_all() {
+    mov z0, 0
+    st z0, G, 2
+    call x, etpl, 69
+    ld ur, G, 47
+    jz ur, plain
+    call x, etpl, 80
+    jmp plainx
+plain:
+    call x, etpl, 62
+plainx:
+    ld nf, G, 11
+    mov f, 0
+ef: ge z, f, nf
+    jnz z, efd
+    add a, f, FBASE
+    ld fb, a, 0
+    add a, f, 1
+    ; sonraki fonksiyonun tabani / toplam: komut sayisi
+    add a, f, 1
+    lt z, a, nf
+    jz z, lastf
+    add t, a, FBASE
+    ld nxt, t, 0
+    jmp gotn
+lastf:
+    ld nxt, G, 12
+gotn:
+    st fb, G, 23
+    st f, G, 24
+    ld na, G, 45
+    ld ur, G, 47
+    mov pv, 0
+    jz ur, pv0
+    ge pv, f, na
+pv0:
+    st pv, G, 52
+    mov gi, fb
+ei: ge z, gi, nxt
+    jnz z, eid
+    ld p, G, 2
+    add t, gi, OFF
+    st p, t, 0
+    add t, gi, OA
+    ld v, t, 0
+    st v, G, 20
+    add t, gi, OB
+    ld v, t, 0
+    st v, G, 21
+    add t, gi, OC
+    ld v, t, 0
+    st v, G, 22
+    add t, gi, OPS
+    ld op, t, 0
+    eq z, op, 40
+    jz z, noh
+    ld fo, G, 58
+    jz fo, hm
+    jnz pv, hm
+    jmp noh
+hm: call op, hostmap
+noh:
+    jz pv, nopv
+    eq z, op, 37
+    jz z, pv1
+    mov op, 74
+    jmp nb
+pv1: eq z, op, 38
+    jz z, pv2
+    mov op, 75
+    jmp nb
+pv2: eq z, op, 34
+    jz z, nb
+    ld t, G, 20
+    add t, t, na
+    st t, G, 20
+    mov op, 76
+    jmp nb
+nopv:
+nb:
+    st gi, G, 59
+    call x, emitop, op
+    add gi, gi, 1
+    jmp ei
+eid:
+    add f, f, 1
+    jmp ef
+efd:
+    mov s, 30
+    call x, mark, s
+    call x, etpl, 63
+    mov s, 31
+    call x, mark, s
+    call x, etpl, 64
+    mov s, 32
+    call x, mark, s
+    call x, etpl, 65
+    mov s, 33
+    call x, mark, s
+    call x, etpl, 66
+    mov s, 34
+    call x, mark, s
+    call x, etpl, 67
+    mov s, 35
+    call x, mark, s
+    call x, etpl, 68
+    mov s, 46
+    call x, mark, s
+    call x, etpl, 73
+    mov s, 50
+    call x, mark, s
+    ld ur, G, 47
+    jz ur, ex0
+    call x, etpl, 79
+    jmp ex1
+ex0: call x, etpl, 78
+ex1:
+    mov s, 36
+    call x, mark, s
+    call x, blob, PUTIB, 82
+    mov s, 37
+    call x, mark, s
+    call x, blob, PUTCB, 32
+    mov s, 38
+    call x, mark, s
+    call x, blob, MSGS, 68
+    mov s, 39
+    call x, mark, s
+    ld nc, G, 6
+    ld cb, G, 7
+    mov i, 0
+ec: ge z, i, nc
+    jnz z, ecd
+    add t, cb, i
+    add t, t, T
+    ld v, t, 0
+    call x, eb64, v
+    add i, i, 1
+    jmp ec
+ecd:
+    mov s, 40
+    call x, mark, s
+    ld nd, G, 8
+    ld db, G, 9
+    mov i, 0
+ev: ge z, i, nd
+    jnz z, evd
+    add t, db, i
+    add t, t, T
+    ld v, t, 0
+    call x, eb64, v
+    add i, i, 1
+    jmp ev
+evd:
+    ld ur, G, 47
+    jz ur, evz
+    mov s, 51
+    call x, mark, s
+    call x, rtimg
+evz:
+    mov s, 41
+    call x, mark, s
+    ret 0
+}
+
+; RT durum blogu goruntusu (bellegin altindaki RT bolgesinin ilk 64 + 2*olay sozcugu)
+func rtimg() {
+    ld v, G, 4
+    call x, eb64, v
+    mov z0, 0
+    call x, eb64, z0
+    mov v, -3750763034362895579
+    call x, eb64, v
+    call x, eb64, z0
+    call x, eb64, z0
+    call x, eb64, z0
+    call x, eb64, z0
+    call x, eb64, z0
+    ld v, G, 54
+    call x, eb64, v
+    ld v, G, 55
+    call x, eb64, v
+    ld v, G, 56
+    call x, eb64, v
+    ld nev, G, 57
+    call x, eb64, nev
+    mov v, 1099511628211
+    call x, eb64, v
+    mov v, -3750763034362895579
+    call x, eb64, v
+    mov i, 14
+ri: ge z, i, 64
+    jnz z, rid
+    call x, eb64, z0
+    addi i, i, 1
+    jmp ri
+rid: mov i, 0
+    shli nw, nev, 1
+re: ge z, i, nw
+    jnz z, red
+    add a, i, EV
+    ld v, a, 0
+    call x, eb64, v
+    addi i, i, 1
+    jmp re
+red: ret 0
+}
+
+func main() {
+    call nt, readall
+    call x, parse
+    mov one, 1
+    st one, G, 3
+    call x, emit_all
+    ld e, G, 41
+    add e, e, 7
+    and e, e, -8
+    add e, e, 4194304
+    st e, G, 42
+    add e, e, 8388608
+    st e, G, 43
+    ld rw, G, 48
+    mul rw, rw, 8
+    add e, e, rw
+    st e, G, 53
+    mov two, 2
+    st two, G, 3
+    call x, emit_all
+}

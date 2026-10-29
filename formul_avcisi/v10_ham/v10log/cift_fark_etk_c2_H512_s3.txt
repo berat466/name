@@ -1,0 +1,21 @@
+V10 mod=cift oz=fark_etk c=2 H=512 tohum=3 V=2001 K=256 egitim=39840 dogrulama=4980 test=4980 (4 cekirdek)
+  gamma=0.5 lambda=1 en_iyi_T=0.02 val_CE=6.4782
+  gamma=0.5 lambda=10 en_iyi_T=0.02 val_CE=6.4200
+  gamma=0.5 lambda=100 en_iyi_T=0.02 val_CE=6.3794
+  gamma=0.5 lambda=1000 en_iyi_T=0.02 val_CE=6.5247
+  gamma=1 lambda=1 en_iyi_T=0.03 val_CE=6.4814
+  gamma=1 lambda=10 en_iyi_T=0.02 val_CE=6.4714
+  gamma=1 lambda=100 en_iyi_T=0.02 val_CE=6.3869
+  gamma=1 lambda=1000 en_iyi_T=0.02 val_CE=6.4219
+  gamma=2 lambda=1 en_iyi_T=0.03 val_CE=6.4703
+  gamma=2 lambda=10 en_iyi_T=0.03 val_CE=6.4758
+  gamma=2 lambda=100 en_iyi_T=0.02 val_CE=6.4201
+  gamma=2 lambda=1000 en_iyi_T=0.02 val_CE=6.3742
+  gamma=4 lambda=1 en_iyi_T=0.02 val_CE=6.4838
+  gamma=4 lambda=10 en_iyi_T=0.02 val_CE=6.4777
+  gamma=4 lambda=100 en_iyi_T=0.02 val_CE=6.4377
+  gamma=4 lambda=1000 en_iyi_T=0.02 val_CE=6.3647
+SECILEN gamma=4 lambda=1000 T=0.02 val_CE=6.3647
+TEST mse_ham=0.000482 mse_olasilik=0.000501 CE=6.2788 PPL=533.13 top1=0.1488 top5=0.3386
+SURE W1_uretim=0.002s tek_model_egitim(W1+istatistik(egitim+dogrulama)+1 Cholesky/cozum)=0.66s ayar_aramasi_dahil_toplam=32.02s
+OZET|cift_fark_etk|c=2|H=512|tohum=3|gam=4|lam=1000|T=0.02|valCE=6.3647|mse_ham=0.000482|mse_olas=0.000501|CE=6.2788|PPL=533.13|top1=0.1488|top5=0.3386|egitim_sn=0.66|toplam_sn=32.02|RAM_MB=329

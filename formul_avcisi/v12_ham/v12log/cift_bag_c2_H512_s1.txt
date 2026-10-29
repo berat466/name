@@ -1,0 +1,57 @@
+V12 oz=bag c=2 H=512 tohum=1 formuller=ABC V=2001 K=192 egitim=39840 dogrulama=4980 test=4980 (4 cekirdek)
+B ornek agirligi: ort=0.995 min=0.250 maks=4.000
+  [A] gamma=0.5 lambda=1 en_iyi_T=0.03 val_CE=6.4613
+  [A] gamma=0.5 lambda=10 en_iyi_T=0.02 val_CE=6.3698
+  [A] gamma=0.5 lambda=100 en_iyi_T=0.02 val_CE=6.3383
+  [A] gamma=0.5 lambda=1000 en_iyi_T=0.02 val_CE=6.5283
+  [B] gamma=0.5 lambda=1 en_iyi_T=0.01 val_CE=6.5361
+  [B] gamma=0.5 lambda=10 en_iyi_T=0.01 val_CE=6.4022
+  [B] gamma=0.5 lambda=100 en_iyi_T=0.005 val_CE=6.2373
+  [B] gamma=0.5 lambda=1000 en_iyi_T=0.005 val_CE=6.2343
+  [C] gamma=0.5 lambda=1 en_iyi_T=0.03 val_CE=6.4579
+  [C] gamma=0.5 lambda=10 en_iyi_T=0.02 val_CE=6.3740
+  [C] gamma=0.5 lambda=100 en_iyi_T=0.02 val_CE=6.3310
+  [C] gamma=0.5 lambda=1000 en_iyi_T=0.02 val_CE=6.4990
+  [A] gamma=1 lambda=1 en_iyi_T=0.03 val_CE=6.4373
+  [A] gamma=1 lambda=10 en_iyi_T=0.03 val_CE=6.4597
+  [A] gamma=1 lambda=100 en_iyi_T=0.02 val_CE=6.3468
+  [A] gamma=1 lambda=1000 en_iyi_T=0.02 val_CE=6.4135
+  [B] gamma=1 lambda=1 en_iyi_T=0.01 val_CE=6.5996
+  [B] gamma=1 lambda=10 en_iyi_T=0.01 val_CE=6.4306
+  [B] gamma=1 lambda=100 en_iyi_T=0.01 val_CE=6.4228
+  [B] gamma=1 lambda=1000 en_iyi_T=0.005 val_CE=6.1437
+  [C] gamma=1 lambda=1 en_iyi_T=0.03 val_CE=6.4364
+  [C] gamma=1 lambda=10 en_iyi_T=0.03 val_CE=6.4565
+  [C] gamma=1 lambda=100 en_iyi_T=0.02 val_CE=6.3482
+  [C] gamma=1 lambda=1000 en_iyi_T=0.02 val_CE=6.3959
+  [A] gamma=2 lambda=1 en_iyi_T=0.03 val_CE=6.4371
+  [A] gamma=2 lambda=10 en_iyi_T=0.03 val_CE=6.4410
+  [A] gamma=2 lambda=100 en_iyi_T=0.02 val_CE=6.4020
+  [A] gamma=2 lambda=1000 en_iyi_T=0.02 val_CE=6.3667
+  [B] gamma=2 lambda=1 en_iyi_T=0.01 val_CE=6.5364
+  [B] gamma=2 lambda=10 en_iyi_T=0.01 val_CE=6.4831
+  [B] gamma=2 lambda=100 en_iyi_T=0.01 val_CE=6.3931
+  [B] gamma=2 lambda=1000 en_iyi_T=0.005 val_CE=6.2770
+  [C] gamma=2 lambda=1 en_iyi_T=0.03 val_CE=6.4370
+  [C] gamma=2 lambda=10 en_iyi_T=0.03 val_CE=6.4402
+  [C] gamma=2 lambda=100 en_iyi_T=0.02 val_CE=6.4059
+  [C] gamma=2 lambda=1000 en_iyi_T=0.02 val_CE=6.3609
+  [A] gamma=4 lambda=1 en_iyi_T=0.03 val_CE=6.4462
+  [A] gamma=4 lambda=10 en_iyi_T=0.03 val_CE=6.4475
+  [A] gamma=4 lambda=100 en_iyi_T=0.02 val_CE=6.4287
+  [A] gamma=4 lambda=1000 en_iyi_T=0.02 val_CE=6.3510
+  [B] gamma=4 lambda=1 en_iyi_T=0.01 val_CE=6.4644
+  [B] gamma=4 lambda=10 en_iyi_T=0.01 val_CE=6.4566
+  [B] gamma=4 lambda=100 en_iyi_T=0.01 val_CE=6.4127
+  [B] gamma=4 lambda=1000 en_iyi_T=0.01 val_CE=6.4250
+  [C] gamma=4 lambda=1 en_iyi_T=0.03 val_CE=6.4462
+  [C] gamma=4 lambda=10 en_iyi_T=0.03 val_CE=6.4471
+  [C] gamma=4 lambda=100 en_iyi_T=0.02 val_CE=6.4316
+  [C] gamma=4 lambda=1000 en_iyi_T=0.02 val_CE=6.3528
+SECILEN[A] gamma=0.5 lambda=100 T=0.02 val_CE=6.3383
+OZET|A|bag|c=2|H=512|tohum=1|gam=0.5|lam=100|T=0.02|valCE=6.3383|mse_ham=0.000482|mse_olas=0.000496|CE=6.2482|PPL=517.07|top1=0.1442|top5=0.3335|agirlik_uretim_sn=0.35
+SECILEN[B] gamma=1 lambda=1000 T=0.005 val_CE=6.1437
+OZET|B|bag|c=2|H=512|tohum=1|gam=1|lam=1000|T=0.005|valCE=6.1437|mse_ham=0.000492|mse_olas=0.000507|CE=6.0722|PPL=433.64|top1=0.1365|top5=0.3165|agirlik_uretim_sn=1.12
+SECILEN[C] gamma=0.5 lambda=100 T=0.02 val_CE=6.3310
+OZET|C|bag|c=2|H=512|tohum=1|gam=0.5|lam=100|T=0.02|valCE=6.3310|mse_ham=0.000482|mse_olas=0.000496|CE=6.2411|PPL=513.44|top1=0.1436|top5=0.3335|agirlik_uretim_sn=0.36
+TOPLAM sure=107.4s (arama dahil) tepe_RAM=403MB

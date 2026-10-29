@@ -1,0 +1,7 @@
+s2k_76: WALL 6.999 USER 19.713 SYS 1.759 MAXRSS_KB 1443460  hazir=5.299 V53H_SONUC|TEST CE=4.487430 PPL=88.893 VAL CE=4.503665
+s2k_77: WALL 6.063 USER 17.855 SYS 1.677 MAXRSS_KB 1419744  hazir=4.676 V53H_SONUC|TEST CE=4.487430 PPL=88.893 VAL CE=4.503665
+--- s2k: lin hari? her sey ---
+BIT-OZDES
+V77_SECIM|en iyi (alfa,eps) ile ikinci arasindaki CE boslugu=4.482e-04 (toplama sirasi farki ~1e-14 mertebesinde; bosluk >> 1e-9 ise secim ayni)
+V77_SPEK|blok=6 yeniden_hesaplanan_blok=0 (0/36852 ornek) (spekulasyon TAM basarili: ikinci logit gecisi YOK)|secilen okuma alpha=0.9 eps=1e-05
+V77_MADD|eval-gemm madd: val_asama1=3.7829e+10 val_yeniden=0.0000e+00 test=3.7829e+10 toplam=7.5658e+10

@@ -1,0 +1,24 @@
+; Veri isleme (grafik YOK): 2000 satirlik tablo; tutar = fiyat * adet, yuksek-tutar bayragi, toplam/sayi/en buyuk/en kucuk.
+; Ayni sablon/kural/topla dili; ekrana ya da oyuna ozgu hicbir sey yok.
+kare 1
+global genel_toplam = 0
+global yuksek_sayisi = 0
+global en_buyuk = 0
+global en_kucuk = 0
+
+sablon satir adet 2000
+  alan fiyat rastgele 5 500 11
+  alan adet rastgele 1 20 12
+  alan tutar sabit 0
+  alan yuksek sabit 0
+  kural tutar = fiyat * adet
+  kural yuksek = 0
+  kural yuksek = 1 eger tutar > 3000
+son
+
+topla genel_toplam toplam satir tutar
+topla yuksek_sayisi say satir eger yuksek == 1
+topla en_buyuk enbuyuk satir tutar
+topla en_kucuk enkucuk satir tutar
+
+yazdir genel_toplam, yuksek_sayisi, en_buyuk, en_kucuk, genel_toplam / 2000

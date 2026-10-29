@@ -1,0 +1,9 @@
+memory 500
+func main() {
+    mov v, 255
+    st v, v, 0
+    host r, present, 250, 4, 4
+    host puti, r
+    halt
+}
+entry main

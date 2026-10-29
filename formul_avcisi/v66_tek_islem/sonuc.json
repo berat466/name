@@ -1,0 +1,102 @@
+{
+ "A": {
+  "+": {
+   "secilen": "+",
+   "dogru_secim": true,
+   "korelasyonlar": [
+    1.0,
+    0.0531,
+    0.9454,
+    0.1331
+   ],
+   "egim": 0.9999999998321367,
+   "goreli_hata_gorulmeyen": 1.639404564492054e-10
+  },
+  "-": {
+   "secilen": "-",
+   "dogru_secim": true,
+   "korelasyonlar": [
+    0.0406,
+    1.0,
+    0.03,
+    0.7162
+   ],
+   "egim": 0.9999999998395526,
+   "goreli_hata_gorulmeyen": 1.9109754632157348e-10
+  },
+  "*": {
+   "secilen": "*",
+   "dogru_secim": true,
+   "korelasyonlar": [
+    0.9336,
+    0.0256,
+    1.0,
+    0.1842
+   ],
+   "egim": 0.9999999999984427,
+   "goreli_hata_gorulmeyen": 1.5565608373895105e-12
+  },
+  "/": {
+   "secilen": "/",
+   "dogru_secim": true,
+   "korelasyonlar": [
+    0.1575,
+    0.7709,
+    0.2306,
+    1.0
+   ],
+   "egim": 0.9999999967368929,
+   "goreli_hata_gorulmeyen": 3.882536753432097e-08
+  }
+ },
+ "B_C": {
+  "gamma": 1.0,
+  "val_dogruluk": 0.8579387186629527,
+  "egitim_dogr": 0.8821892393320965,
+  "test_dogr_gorulmeyen": 0.8777777777777778,
+  "etiket_karisik_test": 0.10833333333333334,
+  "cogunluk": 0.10277777777777777,
+  "artimli_agirlik_farki_maks": 7.216449660063518e-16,
+  "agirlik_uretim_suresi_s": 0.00518361700000014,
+  "tepe_RAM_MB": 8.897808,
+  "islem_madd_tek_islem": 6623232.0,
+  "uretilen_agirlik_sayisi": 5120,
+  "ridge_ayni_ozellik": {
+   "test_dogr": 0.9722222222222222,
+   "lam": 10,
+   "sure_s_4lam_taramasi": 0.07374988600000165,
+   "islem_madd_tek_lam": 334228221.0,
+   "cozucu": "Gram+Cholesky/solve"
+  }
+ },
+ "C": {
+  "gamma": 0.1,
+  "olcek_skaleri_s": 0.00699186203727022,
+  "test_gorulmeyen": {
+   "MAE": 43.240229622230906,
+   "RMSE": 53.21620426389938,
+   "R2": 0.3590812393820013
+  },
+  "etiket_karisik_test": {
+   "MAE": 63.79912304423647,
+   "RMSE": 76.27307684840531,
+   "R2": -0.3166117524724483
+  },
+  "ortalama_tahmin": {
+   "MAE": 56.03052787788849,
+   "RMSE": 66.67225646009646,
+   "R2": -0.00601742353257495
+  },
+  "agirlik_suresi_s": 0.0005748270000083266,
+  "ridge_ayni_ozellik": {
+   "test": {
+    "MAE": 42.970925771149126,
+    "RMSE": 55.408536779884805,
+    "R2": 0.30518600381591865
+   },
+   "lam": 0.1
+  },
+  "n_egitim": 265,
+  "uretilen_agirlik_sayisi": 512
+ }
+}

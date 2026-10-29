@@ -1,0 +1,18 @@
+(6) 14x2, 14x6, 14x8 (b_i degisken, m=4000000; carpanlar calisma-zamani; zincir gecerli=1)
+   dogrudan 3 carpma/b: 13.13 ms (3.282 ns/b)
+   ilerleyen: 1 carpma + 1 carpma(x3) + 1 toplama: 12.13 ms (3.031 ns/b)
+   ilerleyen: 1 carpma + 3 toplama: 13.09 ms (3.273 ns/b)
+   (kiyas) carpanlar DERLEME-ZAMANI sabit: 13.45 ms (3.363 ns/b)  -- derleyici kendisi kaydirma/lea ile 'iliskiyi' kullaniyor
+   gecikme zinciri (bagimli): imul 1.362 ns/adim | add 0.723 ns/adim
+(7) ardisik 1..N (int64) boyut taramasi, ns/eleman:
+   N=       256: dogrudan 0.174 | ilerleyen AVX512 0.137  (oran 0.78)
+   N=      2048: dogrudan 0.175 | ilerleyen AVX512 0.104  (oran 0.59)
+   N=     16384: dogrudan 0.237 | ilerleyen AVX512 0.202  (oran 0.85)
+   N=    131072: dogrudan 0.253 | ilerleyen AVX512 0.208  (oran 0.82)
+   N=   1048576: dogrudan 0.376 | ilerleyen AVX512 0.378  (oran 1.01)
+   N=  16777216: dogrudan 1.126 | ilerleyen AVX512 1.113  (oran 0.99)
+   N= 100000000: dogrudan 1.096 | ilerleyen AVX512 1.092  (oran 1.00)
+(8) double, b=0.1 vb: ilerleyen s+=b ile dogrudan b*k farki (ULP):
+   b=0.10000000000000001 N=100000: maks fark = 13491.0 ULP
+   b=14 N=100000: maks fark = 0.0 ULP
+   b=0.33333333333333331 N=100000: maks fark = 13107.0 ULP

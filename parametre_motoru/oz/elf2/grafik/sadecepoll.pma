@@ -1,0 +1,15 @@
+; yalniz poll(): present yok; olaylar kare 0'da hazir olanlar
+memory 100
+func main() {
+    mov n, 0
+lp: host e, poll
+    jz e, d
+    host puti, e
+    host putc, 32
+    addi n, n, 1
+    jmp lp
+d:  host putc, 10
+    host puti, n
+    ret 0
+}
+entry main

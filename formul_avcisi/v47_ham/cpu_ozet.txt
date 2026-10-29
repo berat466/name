@@ -1,0 +1,4 @@
+tekrar 1 F+havuz+Gram+RHS=2.02  C-blok sayim(ACC/ACF/RC)=2.62  C-blok Cholesky/Y0/X/Schur=1.82  lamF Schur cozum=0.51 | V44 toplam=6.97 | V46 sinyal=1.37 -> V46 toplam(V44+sinyal+bir ek Schur cozum)=8.84
+tekrar 2 F+havuz+Gram+RHS=0.87  C-blok sayim(ACC/ACF/RC)=0.24  C-blok Cholesky/Y0/X/Schur=0.46  lamF Schur cozum=0.11 | V44 toplam=1.68 | V46 sinyal=0.80 -> V46 toplam(V44+sinyal+bir ek Schur cozum)=2.59
+tekrar 3 F+havuz+Gram+RHS=0.93  C-blok sayim(ACC/ACF/RC)=0.32  C-blok Cholesky/Y0/X/Schur=0.36  lamF Schur cozum=0.12 | V44 toplam=1.73 | V46 sinyal=0.42 -> V46 toplam(V44+sinyal+bir ek Schur cozum)=2.27
+medyan V44 toplam=1.73  V46 toplam=2.59 ; min V46=2.27 maks=8.84

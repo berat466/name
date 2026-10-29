@@ -1,0 +1,141 @@
+func err
+func sc
+func isdig
+func isalp
+func isalnum_
+func is_ident
+func streq
+func opid
+func hostid
+func funcfind
+func datafind
+func addsym
+func mkint
+func esc_char
+func hexval
+func parse_int
+func strip_comment
+func tokenize
+func addtok
+func kw
+func findch
+func addstmt
+func data_line
+func pushdata
+func isfloat
+func ckw
+func parse_all
+func finish
+func regfind
+func addreg
+func labfind
+func konst
+func litidx
+func mnid
+func immof
+func fb_mul
+func fb_pow2
+func fb_pow10
+func fb_cmp
+func fb_sub
+func fb_copy
+func fb_shr1
+func fb_bitlen
+func fb_set
+func fbits
+func litbits
+func opr
+func setopr
+func swapopr
+func rewrite
+func pass1
+func src_opd
+func dst_opd
+func setio
+func pass2
+func emit
+func emitc
+func regof
+func isrd
+func iswr
+func isstop
+func countacc
+func refs
+func peephole
+func build
+func outb
+func uleb
+func zig
+func encode
+func copyz
+func init_names
+func main
+space SRC 0
+space TOKO 1200000
+space TOKL 1462144
+space STLN 1724288
+space STT0 1855360
+space STNT 1986432
+space FNNO 2117504
+space FNNL 2183040
+space FNLN 2248576
+space FNNP 2314112
+space FNPT 2379648
+space FNBS 2445184
+space FNBE 2510720
+space FNNR 2576256
+space FNCS 2641792
+space FNCN 2707328
+space PARO 2772864
+space PARL 2903936
+space SYO 3035008
+space SYL 3100544
+space SYK 3166080
+space SYV 3231616
+space CONSTV 3297152
+space DATAV 3362688
+space REGO 3624832
+space REGL 3690368
+space LABO 3755904
+space LABL 3821440
+space LABV 3886976
+space IRMN 3952512
+space IRS 4018048
+space IRN 4083584
+space IRLN 4149120
+space OPO 4214656
+space OPL 4476800
+space IIOP 4738944
+space IIHAS 4804480
+space IIDEST 4870016
+space IOT0 4935552
+space IOV0 5001088
+space IOT1 5066624
+space IOV1 5132160
+space IOT2 5197696
+space IOV2 5263232
+space IAS 5328768
+space IAN 5394304
+space ARGT 5459840
+space ARGV 5721984
+space LITV 5984128
+space COP 6049664
+space CA 6180736
+space CB 6311808
+space CC 6442880
+space PCOF 6573952
+space RD 6639488
+space WR 6705024
+space TGT 6770560
+space DEL 6901632
+space IDX 7032704
+space GOP 7163776
+space GA 7688064
+space GB 8212352
+space GC 8736640
+space OUTB 9260928
+space NMO 10309504
+space NML 10309760
+space G 10310016
+space FBN 10310144
+space FDG 10311168

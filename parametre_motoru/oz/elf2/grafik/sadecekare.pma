@@ -1,0 +1,9 @@
+; yalniz frame(): present yok -> 0 kare; RT yine de eklenmeli
+memory 100
+func main() {
+    host f, frame
+    host puti, f
+    host g, frame
+    ret g
+}
+entry main

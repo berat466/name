@@ -1,0 +1,70 @@
+# Okuma histogrami. Yazmaclar: r0=i r1=4000 r2=v r3=gecici r4=kutu r5=toplam r6=min r7=max r8=ucun-kati-pozitif-toplam r9=k r10=host penceresi
+80 77 66 49      # PMB1
+0                # bayrak
+16               # bellek 16 sozcuk
+0                # giris fonksiyonu 0
+0                # sabit yok
+0                # veri yok
+8                # bss 8 sozcuk (adres 1..8 = kutu sayaclari)
+1                # 1 fonksiyon
+0 11 57          # param=0 yazmac=11 komut=57
+# --- baslangic ---
+1 0 z0           # 0: ldi r0,0
+1 1 z4000        # 1: ldi r1,4000
+1 5 z0           # 2: ldi r5,0
+1 6 z100000      # 3: ldi r6,100000 (min)
+1 7 z-100000     # 4: ldi r7,-100000 (max)
+1 8 z0           # 5: ldi r8,0
+# --- dongu govdesi (komut 6) ---
+5 2 0 0          # 6: mul r2,r0,r0
+42 2 2 z7        # 7: muli r2,r2,7
+42 3 0 z13       # 8: muli r3,r0,13
+3 2 2 3          # 9: add r2,r2,r3
+48 2 2 z1009     # 10: modi r2,r2,1009
+41 2 2 z-500     # 11: addi r2,r2,-500   (v)
+41 4 2 z500      # 12: addi r4,r2,500
+47 4 4 z127      # 13: divi r4,r4,127    (kutu)
+37 3 4 z1        # 14: ld r3,[r4+1]
+41 3 3 z1        # 15: addi r3,r3,1
+38 3 4 z1        # 16: st r3,[r4+1]
+3 5 5 2          # 17: add r5,r5,r2
+16 3 2 6         # 18: lt r3,r2,r6
+32 3 z2          # 19: jz r3 -> 21
+0 6 2            # 20: mov r6,r2
+16 3 7 2         # 21: lt r3,r7,r2
+32 3 z2          # 22: jz r3 -> 24
+0 7 2            # 23: mov r7,r2
+48 3 0 z3        # 24: modi r3,r0,3
+33 3 z4          # 25: jnz r3 -> 29
+52 3 2 z0        # 26: lei r3,r2,0
+33 3 z2          # 27: jnz r3 -> 29
+3 8 8 2          # 28: add r8,r8,r2
+41 0 0 z1        # 29: addi r0,r0,1
+16 3 0 1         # 30: lt r3,r0,r1
+33 3 z-25        # 31: jnz r3 -> 6
+# --- yazdirma ---
+1 9 z0           # 32: ldi r9,0
+37 10 9 z1       # 33: ld r10,[r9+1]
+40 1 10          # 34: puti
+1 10 z32         # 35: ldi r10,32
+40 0 10          # 36: putc
+41 9 9 z1        # 37: addi r9,r9,1
+51 3 9 z8        # 38: lti r3,r9,8
+33 3 z-6         # 39: jnz r3 -> 33
+0 10 5           # 40: mov r10,r5
+40 1 10          # 41: puti
+1 10 z32         # 42
+40 0 10          # 43: putc
+0 10 6           # 44: mov r10,r6
+40 1 10          # 45: puti
+1 10 z32         # 46
+40 0 10          # 47
+0 10 7           # 48: mov r10,r7
+40 1 10          # 49: puti
+1 10 z32         # 50
+40 0 10          # 51
+0 10 8           # 52: mov r10,r8
+40 1 10          # 53: puti
+1 10 z10         # 54: ldi r10,10
+40 0 10          # 55: putc
+36               # 56: halt

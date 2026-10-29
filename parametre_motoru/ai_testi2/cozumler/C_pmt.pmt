@@ -1,0 +1,35 @@
+; Collatz taramasi: her ornek bir n (1..3000); her kare bir Collatz adimi.
+kare 400
+global s27 = 0
+global enuzun = 0
+global enkn = 0
+global genel = 0
+global yuzustu = 0
+global aktif = 1
+
+sablon sayi adet 3000
+  alan n dogrusal 1 1
+  alan x dogrusal 1 1
+  alan st sabit 0
+  alan p sabit 0
+  alan t sabit 0
+  alan h sabit 0
+  kural p = x % 2
+  kural t = x * 3
+  kural t = t + 1
+  kural h = x / 2
+  kural st = st + 1 eger x != 1
+  kural x = h eger x != 1 ve p == 0
+  kural x = t eger x != 1 ve p == 1
+son
+
+topla s27 toplam sayi st eger n == 27
+topla enuzun enbuyuk sayi st
+topla enkn enkucuk sayi n eger st == enuzun
+topla genel toplam sayi st
+topla yuzustu say sayi eger st > 100
+topla aktif say sayi eger x != 1
+
+bitis eger aktif == 0
+
+yazdir s27, enkn, enuzun, genel, yuzustu

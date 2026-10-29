@@ -1,0 +1,64 @@
+; tamsayi kenar durumlari
+func main() {
+    div a, -7, 2
+    mod b, -7, 3
+    mod c, 7, -3
+    div d, -9223372036854775808, -1
+    mod e, -9223372036854775808, -1
+    host puti, a
+    host putc, 32
+    host puti, b
+    host putc, 32
+    host puti, c
+    host putc, 32
+    host puti, d
+    host putc, 32
+    host puti, e
+    host putc, 10
+    shl s1, 1, 63
+    shr s2, -1, 63
+    sar s3, -8, 1
+    shl s4, 1, 64
+    host puti, s1
+    host putc, 32
+    host puti, s2
+    host putc, 32
+    host puti, s3
+    host putc, 32
+    host puti, s4
+    host putc, 10
+    and x1, 12, 10
+    or  x2, 12, 10
+    xor x3, 12, 10
+    not x4, 0
+    neg x5, 5
+    host puti, x1
+    host putc, 32
+    host puti, x2
+    host putc, 32
+    host puti, x3
+    host putc, 32
+    host puti, x4
+    host putc, 32
+    host puti, x5
+    host putc, 10
+    lt  l1, -1, 1
+    gt  g1, 3, 2
+    ge  g2, 2, 2
+    eq  q1, 5, 5
+    ne  q2, 5, 5
+    add o, 9223372036854775807, 1
+    host puti, l1
+    host puti, g1
+    host puti, g2
+    host puti, q1
+    host puti, q2
+    host putc, 32
+    host puti, o
+    host putc, 10
+    mov h, 0x7f
+    host puti, h
+    host putc, 32
+    host puti, 'A'
+    host putc, 10
+}

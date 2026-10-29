@@ -1,0 +1,155 @@
+; Conway'in Yasam Oyunu: 32x24 simit (kenarlar bitisik), 4x olcekli 128x96 kare, 60 nesil.
+; Baslangic kalibi VERI TABLOSUNDA (glider + R-pentomino); motor ve ayristirici baska hicbir sey bilmez.
+memory 40000
+data seed = 1,0, 2,1, 0,2, 1,2, 2,2,  17,10, 18,10, 16,11, 17,11, 17,12
+space cells 768
+space nxt 768
+space fb 12288
+
+func draw() {
+    mov cy, 0
+ly: lt  c, cy, 24
+    jz  c, done
+    mov cx, 0
+lx: lt  c, cx, 32
+    jz  c, nexty
+    mul i0, cy, 32
+    add i0, i0, cx
+    add p, cells, i0
+    ld  v, p, 0
+    mov col, 0x101018
+    jz  v, paint
+    mov col, 0x00FF88
+paint:
+    mov j, 0
+lj: lt  c, j, 4
+    jz  c, nextx
+    mul py, cy, 4
+    add py, py, j
+    mul py, py, 128
+    mul px, cx, 4
+    add py, py, px
+    add q, fb, py
+    st  col, q, 0
+    st  col, q, 1
+    st  col, q, 2
+    st  col, q, 3
+    add j, j, 1
+    jmp lj
+nextx:
+    add cx, cx, 1
+    jmp lx
+nexty:
+    add cy, cy, 1
+    jmp ly
+done:
+    ret 0
+}
+
+func step() {
+    mov y, 0
+sy: lt  c, y, 24
+    jz  c, copy
+    mov x, 0
+sx: lt  c, x, 32
+    jz  c, nexty
+    mov n, 0
+    mov dy, -1
+dyl: gt  c, dy, 1
+    jnz c, rule
+    mov dx, -1
+dxl: gt  c, dx, 1
+    jnz c, nextdy
+    or  z, dx, dy
+    jz  z, skip
+    add nx, x, dx
+    add nx, nx, 32
+    mod nx, nx, 32
+    add ny, y, dy
+    add ny, ny, 24
+    mod ny, ny, 24
+    mul k, ny, 32
+    add k, k, nx
+    add p, cells, k
+    ld  v, p, 0
+    add n, n, v
+skip:
+    add dx, dx, 1
+    jmp dxl
+nextdy:
+    add dy, dy, 1
+    jmp dyl
+rule:
+    mul k, y, 32
+    add k, k, x
+    add p, cells, k
+    ld  a, p, 0
+    mov r, 0
+    eq  t, n, 3
+    jnz t, live
+    eq  t, n, 2
+    jz  t, store
+    jz  a, store
+live:
+    mov r, 1
+store:
+    add q, nxt, k
+    st  r, q, 0
+    add x, x, 1
+    jmp sx
+nexty:
+    add y, y, 1
+    jmp sy
+copy:
+    mov i, 0
+cl: lt  c, i, 768
+    jz  c, fin
+    add p, nxt, i
+    ld  v, p, 0
+    add q, cells, i
+    st  v, q, 0
+    add i, i, 1
+    jmp cl
+fin:
+    ret 0
+}
+
+func main() {
+    mov i, 0
+sl: lt  c, i, 10
+    jz  c, sd
+    mul s2, i, 2
+    add s3, seed, s2
+    ld  x, s3, 0
+    ld  y, s3, 1
+    mul k, y, 32
+    add k, k, x
+    add q, cells, k
+    st  1, q, 0
+    add i, i, 1
+    jmp sl
+sd: mov g, 0
+gl: lt  c, g, 60
+    jz  c, fin
+    call z, draw
+    host r, present, fb, 128, 96
+    jnz r, fin
+    call z, step
+    add g, g, 1
+    jmp gl
+fin:
+    mov i, 0
+    mov pop, 0
+pl: lt  c, i, 768
+    jz  c, pd
+    add p, cells, i
+    ld  v, p, 0
+    add pop, pop, v
+    add i, i, 1
+    jmp pl
+pd: host puti, g
+    host putc, 32
+    host puti, pop
+    host putc, 10
+    ret 0
+}

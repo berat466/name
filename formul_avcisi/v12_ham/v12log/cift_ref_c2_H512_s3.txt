@@ -1,0 +1,39 @@
+V12 oz=ref c=2 H=512 tohum=3 formuller=AB V=2001 K=192 egitim=39840 dogrulama=4980 test=4980 (4 cekirdek)
+B ornek agirligi: ort=0.995 min=0.250 maks=4.000
+  [A] gamma=0.5 lambda=1 en_iyi_T=0.02 val_CE=6.4784
+  [A] gamma=0.5 lambda=10 en_iyi_T=0.02 val_CE=6.4224
+  [A] gamma=0.5 lambda=100 en_iyi_T=0.02 val_CE=6.3801
+  [A] gamma=0.5 lambda=1000 en_iyi_T=0.02 val_CE=6.5260
+  [B] gamma=0.5 lambda=1 en_iyi_T=0.01 val_CE=6.4303
+  [B] gamma=0.5 lambda=10 en_iyi_T=0.005 val_CE=6.4595
+  [B] gamma=0.5 lambda=100 en_iyi_T=0.005 val_CE=6.1363
+  [B] gamma=0.5 lambda=1000 en_iyi_T=0.003 val_CE=6.2126
+  [A] gamma=1 lambda=1 en_iyi_T=0.03 val_CE=6.4829
+  [A] gamma=1 lambda=10 en_iyi_T=0.02 val_CE=6.4740
+  [A] gamma=1 lambda=100 en_iyi_T=0.02 val_CE=6.3885
+  [A] gamma=1 lambda=1000 en_iyi_T=0.02 val_CE=6.4228
+  [B] gamma=1 lambda=1 en_iyi_T=0.01 val_CE=6.4688
+  [B] gamma=1 lambda=10 en_iyi_T=0.01 val_CE=6.4059
+  [B] gamma=1 lambda=100 en_iyi_T=0.005 val_CE=6.3321
+  [B] gamma=1 lambda=1000 en_iyi_T=0.005 val_CE=6.1179
+  [A] gamma=2 lambda=1 en_iyi_T=0.03 val_CE=6.4719
+  [A] gamma=2 lambda=10 en_iyi_T=0.03 val_CE=6.4770
+  [A] gamma=2 lambda=100 en_iyi_T=0.02 val_CE=6.4219
+  [A] gamma=2 lambda=1000 en_iyi_T=0.02 val_CE=6.3749
+  [B] gamma=2 lambda=1 en_iyi_T=0.01 val_CE=6.4911
+  [B] gamma=2 lambda=10 en_iyi_T=0.01 val_CE=6.4509
+  [B] gamma=2 lambda=100 en_iyi_T=0.01 val_CE=6.3962
+  [B] gamma=2 lambda=1000 en_iyi_T=0.005 val_CE=6.1852
+  [A] gamma=4 lambda=1 en_iyi_T=0.02 val_CE=6.4868
+  [A] gamma=4 lambda=10 en_iyi_T=0.02 val_CE=6.4805
+  [A] gamma=4 lambda=100 en_iyi_T=0.02 val_CE=6.4400
+  [A] gamma=4 lambda=1000 en_iyi_T=0.02 val_CE=6.3657
+  [B] gamma=4 lambda=1 en_iyi_T=0.01 val_CE=6.4563
+  [B] gamma=4 lambda=10 en_iyi_T=0.01 val_CE=6.4512
+  [B] gamma=4 lambda=100 en_iyi_T=0.01 val_CE=6.4222
+  [B] gamma=4 lambda=1000 en_iyi_T=0.01 val_CE=6.4397
+SECILEN[A] gamma=4 lambda=1000 T=0.02 val_CE=6.3657
+OZET|A|ref|c=2|H=512|tohum=3|gam=4|lam=1000|T=0.02|valCE=6.3657|mse_ham=0.000482|mse_olas=0.000501|CE=6.2789|PPL=533.22|top1=0.1490|top5=0.3392|agirlik_uretim_sn=0.29
+SECILEN[B] gamma=1 lambda=1000 T=0.005 val_CE=6.1179
+OZET|B|ref|c=2|H=512|tohum=3|gam=1|lam=1000|T=0.005|valCE=6.1179|mse_ham=0.000493|mse_olas=0.000496|CE=6.0351|PPL=417.85|top1=0.1351|top5=0.3112|agirlik_uretim_sn=0.81
+TOPLAM sure=70.5s (arama dahil) tepe_RAM=361MB

@@ -1,0 +1,23 @@
+lam0=60 alpha=-0.25 kappa=100 | okuma 4.6608 | son 4.6312
+lam0=60 alpha=-0.10 kappa=100 | okuma 4.6675 | son 4.6319
+lam0=60 alpha=0.00 kappa=100 | okuma 4.6718 | son 4.6325
+lam0=60 alpha=0.05 kappa=100 | okuma 4.6736 | son 4.6367
+lam0=60 alpha=0.10 kappa=100 | okuma 4.6751 | son 4.6369
+lam0=85 alpha=-0.25 kappa=100 | okuma 4.6546 | son 4.6320
+lam0=85 alpha=-0.10 kappa=100 | okuma 4.6606 | son 4.6333
+lam0=85 alpha=0.00 kappa=100 | okuma 4.6644 | son 4.6333
+lam0=85 alpha=0.05 kappa=100 | okuma 4.6663 | son 4.6334
+lam0=85 alpha=0.10 kappa=100 | okuma 4.6682 | son 4.6336
+lam0=120 alpha=-0.25 kappa=100 | okuma 4.6534 | son 4.6374
+lam0=120 alpha=-0.10 kappa=100 | okuma 4.6579 | son 4.6365
+lam0=120 alpha=0.00 kappa=100 | okuma 4.6616 | son 4.6360
+lam0=120 alpha=0.05 kappa=100 | okuma 4.6636 | son 4.6358
+lam0=120 alpha=0.10 kappa=100 | okuma 4.6652 | son 4.6374
+lam0=170 alpha=-0.25 kappa=100 | okuma 4.6575 | son 4.6456
+lam0=170 alpha=-0.10 kappa=100 | okuma 4.6602 | son 4.6436
+lam0=170 alpha=0.00 kappa=100 | okuma 4.6625 | son 4.6433
+lam0=170 alpha=0.05 kappa=100 | okuma 4.6639 | son 4.6427
+lam0=170 alpha=0.10 kappa=100 | okuma 4.6653 | son 4.6422
+EN IYI [(np.float64(4.631238368810512), 60, -0.25, 100, np.float64(4.660813001150886)), (np.float64(4.631872557654456), 60, -0.1, 100, np.float64(4.667453780037151)), (np.float64(4.632021013685827), 85, -0.25, 100, np.float64(4.65461820432238))]
+df sabit (np.float64(371.3886869884867), np.float64(367.873589946255), np.float64(0.997317388788546))
+df alpha=.25 (np.float64(390.14002995347107), np.float64(384.0335094569699), np.float64(0.9994885328606927))
