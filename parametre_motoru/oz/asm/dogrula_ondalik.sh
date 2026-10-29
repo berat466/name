@@ -8,5 +8,6 @@ for sd in $(seq 1 $NF); do
   (ulimit -v 900000; timeout 120 $PM run $AS < $T/f.pma > $T/m.pmb 2> /dev/null); rm_=$?
   if [ $rr = 0 ] && [ $rm_ = 0 ] && cmp -s $T/r.pmb $T/m.pmb; then ok=$((ok+1)); elif [ $rr != 0 ] && [ $rm_ != 0 ]; then ok=$((ok+1)); rej=$((rej+1)); else bad=$((bad+1)); echo "HATA: ondalik-$sd (ref rc=$rr, parametre rc=$rm_)"; fi
 done
+[ $rej -lt $NF ] || { bad=$((bad+1)); echo "HATA: hicbir program kabul edilmedi (iki taraf da hep reddediyor: bos gecis)"; }
 echo "ondalik sabit: $ok gecti, $bad basarisiz (ikisi de reddeden: $rej)"
 rm -rf $T; [ $bad = 0 ]
