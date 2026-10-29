@@ -55,3 +55,4 @@ Kronolojik kayıt: **ne yapıldı, hangi commit, hangi testle doğrulandı.** Ye
 | 7e737bb, fcd5233 | — | Yol haritası; Windows sonra, macOS kapsam dışı; kaynak dili yok | |
 | 66066ab | ✅ `ret`, ✅ `halt` mikro şablonu | `tpl prim ret/halt` | `dogrula_cagri.sh` (STOP/RETX yalnız SEM ile): ELF = svm = C++ pm; şablon silme + 3 bozuk şablon yakalandı |
 | 1ad2e19 | ✅ `call` mikro şablonu | `tpl prim call` + 16 işlev simgesi `FREL/FNR8/FNP8/FCNT_Fk`, gen2 `etok_fn` | `dogrula_cagri.sh` 64 (CALLX: fib, yakıt 1..5000, DEPTH/STACK, yığın eşiği ve +1); 6 bozuk şablon yakalandı |
+| (sıradaki) | ✅ `host` mikro şablonu | `tpl prim host` + `HOSTSP_Fk`, gen2 `hostmap/hostslot` (scanrt SEM'den) | `dogrula_cagri.sh` 91; `sabotaj_cagri.sh` 22/22 |

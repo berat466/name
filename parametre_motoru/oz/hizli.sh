@@ -48,6 +48,7 @@ pmy2elf|oz/bag|dogrula_pmy2elf.sh|30||300|pmy -> ELF zinciri
 yenile|oz/bag|dogrula_yenile.sh|||600|kendini yeniden uretme zinciri
 "
 SABOTAJ="
+cagri|oz/elf2|sabotaj_cagri.sh
 gorunum|oz/nesne|sabotaj_gorunum.sh
 valid|oz/dogr|sabotaj_valid.sh
 kural|oz/asm|sabotaj_kural.sh

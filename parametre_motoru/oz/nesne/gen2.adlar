@@ -4,6 +4,7 @@ func readall
 func nx
 func options
 func pfuncs
+func hostslot
 func scanrt
 func loadrt
 func parse
@@ -21,6 +22,7 @@ func isbackop
 func emitop
 func blob
 func mark
+func hostmap
 func emit_all
 func rtimg
 func main

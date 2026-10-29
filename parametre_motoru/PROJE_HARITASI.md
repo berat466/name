@@ -65,7 +65,7 @@ Hızlı çalıştırma: `oz/hizli.sh` (ilgili paketler + kritik denetimler), tam
 | arac | `oz/arac/dogrula_arac.sh` | araçların ve ikililerin tazeliği |
 | bag, pmy2elf, yenile | `oz/bag/dogrula_*.sh` | pm'siz zincir, PMY1→ELF, kendini yeniden üretme |
 | hizli | `oz/dogrula_hizli.sh` | hızlı sistemin kendisi |
-Sabotaj (testlerin gerçekten yakaladığı): `oz/*/sabotaj_*.sh` (mutant üretir, testin başarısız olmasını bekler).
+Sabotaj (testlerin gerçekten yakaladığı): `oz/*/sabotaj_*.sh` (çağrı şablonları: `oz/elf2/sabotaj_cagri.sh`) (mutant üretir, testin başarısız olmasını bekler).
 
 ## 6. Kurallar (çalışma biçimi)
 1. ✅ yapılanları yeniden yapma; mevcut testlerle koru. 2. İlk ❌ maddeden başla. 3. Bağımsız referans + hedefli test + regresyonla doğrula. 4. Başarılıysa yol haritasında ✅ yap, kanıtı belgeye yaz, **`YAPILANLAR.md`'ye ekle**, commit/push. 5. Kanıtsız ✅ yok. 6. Yeni kaynak dili/ayrı motor/mimari değişikliği yok.
