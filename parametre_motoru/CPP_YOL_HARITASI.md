@@ -10,7 +10,8 @@ Gösterim: ✅ tamam (kanıtıyla), ❌ eksik. Her madde: bağımsız referans (
 - ✅ `halt` mikro-işlem şablonu (`tpl prim halt`) — kanıt: aynı betik (`STOP`, çağrılan işlevde erken halt dahil); bozuk şablon (`REL_EXITC`) yakalandı
 - ✅ `call` mikro-işlem şablonu (`tpl prim call` + 16 alana bağlı işlev simgesi `FREL_Fk/FNR8_Fk/FNP8_Fk/FCNT_Fk`, gen2'de `etok_fn`) — kanıt: `oz/elf2/dogrula_cagri.sh` (yalnızca SEM ile tanımlı `CALLX F,b`: fib özyineleme, yakıt 1..5000, DEPTH/STACK tuzakları, yığın eşiği ve eşik+1 (yerel yazmaç sıfırlama yığın sonunu aşmıyor: guard sözcükleri korunur), zorlanmış `-6 1` yolu); 6 bozuk şablon mutantı yakalandı (yanlış alan, yanlış işlev simgesi, yakıt denetimi eksik, yanlış sayaç, fazla sıfırlama)
 - ✅ `host` mikro-işlem şablonu (`tpl prim host : HOSTSP_F0`, simge `HOSTSP_Fk` 440+; gen2'de `hostmap` (host kimliğine göre özel host şablonu ya da çalışma zamanı CALL'u), `hostslot` ile `scanrt` SEM'de host mikro-işlemi olan her komutu tanır) — kanıt: `oz/elf2/dogrula_cagri.sh` 91 denetim (yalnızca SEM ile tanımlı `HOSTX h,b`: getc (stdin, NUL/yüksek bayt, EOF), putf (çalışma zamanı çağrısı), putc/puti, grafik present/poll/frame (sahne, hayat), yakıt; zorlanmış `-6 1` ile tüm grafik denetimi 257/0); `sabotaj_cagri.sh` 22 mutant (ret/halt/call/host şablonları ve gen2 kodu) 22/22 yakalandı
-- ❌ Mikro-işlemlerin en alt uygulamalarının sayısallaşması (kalan elle kod)
+- ❌ Şablon simgelerinin anlamı tabloda (reçete): gen2'nin `val32/target/etok/etok_fn` elle kodu genel bir değerlendiriciye iner; yeni simge = yalnızca tablo kaydı. Kanıt ölçütü: eski ve yeni gen2 ELF'leri tüm korpusta bayt-bayt aynı
+- ⛔ Yürütücülerin (svm, C++ `pm`) mikro-işlem uygulamaları elle kalır: bağımsız referans olmaları tasarım gereği (kapsam dışı, bilinçli)
 
 ## Aşama 1 — çalışma zamanı ve sistem (Linux)
 - Bellek geri verme (`free`) ve genel amaçlı ayırıcı (`new/delete`)
