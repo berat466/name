@@ -244,6 +244,26 @@ Komutun *kimliği, adı, operand sayısı/türleri, tel sınıfı, host listesi*
 - Test düzeneği hâlâ awk/sed/g++ (oracle) kullanır.
 
 
+## 3k. Yedinci aşama (5/5, ilk kısım): yeniden yazma kuralları ve doğrulayıcı kuralları sayıya taşındı
+
+**Karar (kullanıcı):** sıra: komut anlamları → yeniden yazma kuralları → doğrulayıcı kuralları → x86 şablonları → araç kaynakları → tam bağımsızlık testi. Bu bölüm 2. ve 3. adımları kapsar.
+
+### Yapılan [Kesin]
+- **PMK1 bölüm 6 PSEUDO ve 7 REWRITE** (biçim: `oz/komut/KOMUT_TABLOSU.md`). `asm.pma.in` içindeki ~33 sabit komut numaralı `rewrite` ve `gt/ge/fgt/fge` için ayrı anahtar sözcük tabloları kaldırıldı; yerine kural tablosunu yorumlayan genel `rewrite` ve tablodan gelen takma komut adları kondu. 19 kural (anlık biçimler, ayna takasları, takma komutlar, bölme sınırları).
+- **Doğrulayıcı kuralları SEM'den türetilir:** `komut @@tab` her komutun mikro-programından `OPFLOW/OPTGT/OPCALL/OPCS0/OPCS1/OPDIVSL` ve KIND bayraklarından `KFLAGS` üretir; `valid.pma.in` artık hiçbir komut numarası içermez (`31/35/36`, `DIVI/MODI`, `CALL`, `HOST`… yok). Host sayısı literal `7` yerine `@HOSTCOUNT@`.
+- **Genişletme kanıtı:** yalnızca tablo kayıtlarıyla `XORI` + `xor→xori` kuralı (assembler iki `xori` üretti, doğrulayıcı kabul etti, ELF ve svm doğru sonuç verdi) ve `GOTO` (SEM `br a`; assembler, doğrulayıcı, svm).
+
+### Doğrulama [Kesin; sayılar bu aşamanın koşularından]
+- `dogrula_asm` 2251/0 (C++ ile ayni üretim 793), `dogrula_kural` (yeni: 24 komut × 4 operand deseni × sınır değerleri) 352/0; `dogrula_valid` 5662/0 (C++ referansıyla); `dogrula_komut` 121/0 (PSEUDO/REWRITE olumsuz örnekleri hata koduyla birlikte, bölüm 9 genişletme).
+- **Sabotaj:** kural sayıları 19/19, komut aracı yeni kod (vpseudo/vrw/emit/semflow/kflags) 14/14, doğrulayıcı 13/13. Sabotaj betiğinin taban koşusunun eksikliği sonradan bulundu: ilk turda tüm mutantlar "25 hata" ile yakalanmış göründü (kopyada eksik dosyalar yüzünden taban bile başarısızdı); taban koşusu eklenip yeniden koşuldu, mutantlar tek bir hatayla, doğru nedenle yakalandı.
+
+### Dürüst sınırlar [Kesin]
+- Kural/takma komut bölümlerinin okunabilir görünümü ham sayı (kayıpsız, ama okunaklı değil; sembolik görünüm yapılmadı).
+- Denetim akışı komutları için x86 mikro-işlem şablonu yok: yeni atlama komutu svm'de çalışır, ELF üreticide çalışmaz (bir sonraki adım olan x86 şablonlarının sayısallaştırılması bunu kapsayacak).
+- Doğrulayıcının akış analizi `br/brz/brnz/ret/halt/call/host` sözcük dağarcığını tanır (mikro-işlem vokabüleri); yeni denetim akışı mikro-işlemi araç koduna da eklenmelidir.
+- Hâlâ metin: `sablon.txt`, sablonc'ın simge sözlüğü, `fmt.txt` mnemonikleri, tüm araç `.pma` kaynakları; C++ `pm` kendi kurallarıyla bağımsız referanstır.
+
+
 ## 4. Açık sorular ve riskler
 - **Çekirdek sınırı:** hangi parçalar C++'ta kalmalı? Öneri: çözücü+doğrulayıcı+yorumlayıcı+host (yaklaşık 800 satır) en küçük gerçekçi çekirdek; native üretici ve özelleştiriciler parametreye taşınır; `exec` yeni ilkeldir.
 - **Performans:** VM üstünde çalışan araçlar (özelleştirici, birleştirici) yavaşlar; ama bunlar bir kez çalışan yükleme-zamanı araçları ve makine koduna çevrilince (`--native`) kabul edilebilir olmalı. Ölçülecek.
