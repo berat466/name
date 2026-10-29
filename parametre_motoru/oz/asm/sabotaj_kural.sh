@@ -6,7 +6,7 @@ yakalandi=0; kacti=0
 mod() { { echo "@@$1"; cat; } | (ulimit -v 900000; timeout 60 $PM run $R/oz/arac/komut.pmb); }
 mut() {   # etiket sed_ifadesi (okunabilir gorunumdeki 'section 7' satiri uzerinde)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
-  rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $T/w/oz/; rm -f $T/w/oz/asm/asm.pmb
+  rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/asm $T/w/oz/; rm -f $T/w/oz/asm/asm.pmb
   mod gor < $R/oz/komut/komutlar.pmk > $T/g.txt; sed -E "$2" $T/g.txt > $T/g2.txt
   cmp -s $T/g.txt $T/g2.txt && { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
   mod yaz < $T/g2.txt > $T/w/oz/komut/komutlar.pmk

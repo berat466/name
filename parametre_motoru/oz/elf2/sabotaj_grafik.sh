@@ -9,9 +9,9 @@ mutview() {   # tabloyu (okunabilir gorunum uzerinden) kopya agacta degistirir: 
 }
 mut() {   # etiket dosya ifade   (SADECE: yalniz bu desenle eslesen etiketler)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
-  rm -rf $T/w; mkdir -p $T/w/src $T/w/oz; cp -r $R/oz/komut $T/w/oz/; cp -r $R/oz/arac $R/oz/elf2 $T/w/oz/
+  rm -rf $T/w; mkdir -p $T/w/src $T/w/oz; cp -r $R/oz/nesne $R/oz/komut $T/w/oz/; cp -r $R/oz/arac $R/oz/elf2 $T/w/oz/
   { if [ "$2" = sablon.txt ]; then mutview "$3"; else (cd $T/w/oz/elf2 && perl -0pi -e "$3" $2 && ! cmp -s $2 $D/$2); fi; } || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
-  (cd $T/w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: uretici derlenemedi (yakalandi)"; yakalandi=$((yakalandi+1)); return; }
+  { case "$2" in gen2.pma.in) (cd $T/w/oz/nesne && TOOLS=gen2 GORUNUM=0 ./metinden.sh $PM > /dev/null 2>&1);; rt.pma) (cd $T/w/oz/elf2 && $PM asm rt.pma -o rt.pmb --strip > /dev/null 2>&1 && ./uret.sh $PM > /dev/null 2>&1);; *) (cd $T/w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1);; esac; } || { echo "mutant $1: uretici derlenemedi (yakalandi)"; yakalandi=$((yakalandi+1)); return; }
   if GEN2=$T/w/oz/elf2/gen2.pmb $D/dogrula_grafik.sh $PM > $T/log 2>&1; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
 }
 mut ppm_esik rt.pma 's/gti z, w, 4096/gti z, w, 4097/'

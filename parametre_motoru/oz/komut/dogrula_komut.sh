@@ -32,7 +32,7 @@ mod opsh < gecis/komutlar_v1.pmk | norm > $T/x.new; norm < gecis/ops.h.txt > $T/
 [ -s $T/x.old ] && cmp -s $T/x.new $T/x.old && pass || fail "ops_gen.h komut satirlari eski ops.h ile farkli"
 cmp -s $TAB gecis/komutlar_v1.pmk && echo "bilgi: komutlar.pmk == komutlar_v1.pmk (tablo genisletilmedi)" || echo "bilgi: komutlar.pmk komutlar_v1.pmk'den farkli (kasitli genisletme)"
 # ---- 3) tablodan yeniden uretim (ops.h OKUNMADAN): bayt-bayt ayni
-rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $T/w/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w/oz/
+rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $T/w/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w/oz/
 rm -f $T/w/oz/asm/asm.pmb $T/w/oz/dogr/valid.pmb $T/w/oz/elf2/gen2.pmb
 (cd $T/w/oz/arac && ./uret.sh $PM > /dev/null 2>&1) && for t in asm dogr elf2; do (cd $T/w/oz/$t && ./uret.sh $PM > /dev/null 2>&1) || fail "$t: tablodan uretilemedi"; done
 cmp -s $T/w/oz/asm/asm.pmb $R/oz/asm/asm.pmb && pass || fail "tablodan uretilen asm.pmb depodakiyle farkli"
@@ -101,7 +101,7 @@ kab "bolum sirasi degisti" $T/perm
 mod tab < $T/perm | cmp -s - <(mod tab < $TAB) && pass || fail "bolum sirasi sozluk ciktisini etkiledi"
 mod gor < $T/perm | mod yaz | cmp -s - <(mod kanon < $T/perm) && pass || fail "bolum sirasi degismis tablo gidis-donusta bozuldu"
 # ---- 6) davranis yansimasi: add -> topla (yalnizca sayisal tablo degisti)
-rm -rf $T/w2; mkdir -p $T/w2/oz; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $T/w2/oz/; rm -f $T/w2/oz/asm/asm.pmb $T/w2/oz/elf2/gen2.pmb
+rm -rf $T/w2; mkdir -p $T/w2/oz; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $T/w2/oz/; rm -f $T/w2/oz/asm/asm.pmb $T/w2/oz/elf2/gen2.pmb
 cp $T/ed.pmk $T/w2/oz/komut/komutlar.pmk
 (cd $T/w2/oz/asm && ./uret.sh $PM > /dev/null 2>&1) && (cd $T/w2/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || fail "adi degisen tablodan arac uretilemedi"
 printf 'func main() {\n ldi a, 40\n ldi c, 2\n toplam b, a, c\n host puti, b\n host putc, 10\n halt\n}\n' > $T/p_new.pma
@@ -117,7 +117,7 @@ $PM liste $T/p_new.pmb > $T/p.l; (ulimit -v 900000; $PM run $T/w2/oz/elf2/gen2.p
 # ---- 7) genisletme: yeni komut FMIN (d,f,f) = yalniz sayisal tablo: OP kaydi + SEM (anlam) kaydi. x86 sablonu YOK, C++ anlam kodu YOK.
 #   anlam: fmin a,b,c = (b < c) ? b : c  (mikro-islemler: rd rd flt sel wr). Yurutme: svm (tabloyu calisma aninda okur) ve ELF (mikro-islem sablonlarindan).
 #   Bagimsiz oracle: elle yazilmis C++ (b < c ? b : c) -- NaN, +-sonsuz, +-0, alt normal dahil tum cift desenleri bit duzeyinde.
-rm -rf $T/w3; mkdir -p $T/w3/oz $T/w3/src; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $R/oz/sayisal $T/w3/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w3/oz/; cp -r $R/src $R/Makefile $T/w3/; rm -f $T/w3/oz/asm/asm.pmb $T/w3/oz/dogr/valid.pmb $T/w3/oz/elf2/gen2.pmb
+rm -rf $T/w3; mkdir -p $T/w3/oz $T/w3/src; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $R/oz/sayisal $T/w3/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w3/oz/; cp -r $R/src $R/Makefile $T/w3/; rm -f $T/w3/oz/asm/asm.pmb $T/w3/oz/dogr/valid.pmb $T/w3/oz/elf2/gen2.pmb
 mod gor < $TAB | awk '{print} /^op 54 GEI/{print "op 55 FMIN fmin d,f,f"} /^sem GEI /{print "sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4"}' | mod yaz > $T/w3/oz/komut/komutlar.pmk
 [ "$(mod dogrula < $T/w3/oz/komut/komutlar.pmk)" = "1" ] && pass || fail "genisletilmis tablo gecersiz"
 mod opsh < $T/w3/oz/komut/komutlar.pmk > $T/w3/src/ops_gen.h
@@ -247,7 +247,7 @@ mod gor < $TAB | awk '{print} /^prim 47 /{print "prim 48 xyz to,ti,ti ext 1=0"} 
 mod gor < $T/xyz.pmk | mod yaz | cmp -s - <(mod kanon < $T/xyz.pmk) && pass || fail "yeni islemli tablo gidis-donusta bozuldu"
 mod tab < $T/xyz.pmk | grep -q '^PR_XYZ 48$' && pass || fail "yeni islem sozlukte yok (PR_XYZ)"
 printf 'func main() {\n ldi a, 6\n ldi b, 7\n xyz c, a, b\n host puti, c\n halt\n}\n' > $T/xyz.pma
-rm -rf $T/w4; mkdir -p $T/w4/oz; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/elf2 $R/oz/sayisal $T/w4/oz/; rm -f $T/w4/oz/asm/asm.pmb $T/w4/oz/elf2/gen2.pmb; cp $T/xyz.pmk $T/w4/oz/komut/komutlar.pmk
+rm -rf $T/w4; mkdir -p $T/w4/oz; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/elf2 $R/oz/sayisal $T/w4/oz/; rm -f $T/w4/oz/asm/asm.pmb $T/w4/oz/elf2/gen2.pmb; cp $T/xyz.pmk $T/w4/oz/komut/komutlar.pmk
 (cd $T/w4/oz/asm && ./uret.sh $PM > /dev/null 2>&1) && (cd $T/w4/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || fail "yeni islemli tablodan arac uretilemedi"
 (ulimit -v 900000; $PM run $T/w4/oz/asm/asm.pmb < $T/xyz.pma > $T/xyz.pmb 2>/dev/null)
 $PM run $R/oz/asm/asm.pmb < $T/xyz.pma > /dev/null 2>&1 && fail "eski assembler xyz'yi kabul etti" || pass
@@ -260,7 +260,7 @@ if [ -s $T/xyz.pmb ]; then
 else fail "xyz programi derlenemedi"; fi
 # ---- 9) ILISKILER sayidir: yeni komut XORI (anlik XOR) + yeniden yazma kurali (XOR -> XORI), yeni atlama komutu GOTO (yalniz SEM: br). Kod degisikligi yok.
 #   asm kuralı REWRITE bolumunden okur; dogrulayici sonlandirici/atlama/akis ozelligini SEM'den turetir; svm SEM'den calistirir; ELF XORI'yi mikro-islemlerden uretir.
-rm -rf $T/w5; mkdir -p $T/w5/oz; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $R/oz/sayisal $T/w5/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w5/oz/; rm -f $T/w5/oz/asm/asm.pmb $T/w5/oz/dogr/valid.pmb $T/w5/oz/elf2/gen2.pmb
+rm -rf $T/w5; mkdir -p $T/w5/oz; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $R/oz/sayisal $T/w5/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w5/oz/; rm -f $T/w5/oz/asm/asm.pmb $T/w5/oz/dogr/valid.pmb $T/w5/oz/elf2/gen2.pmb
 # XOR (kimlik 10) icin vakalar: c anlik -> XORI(55); b anlik -> takas + XORI (kayit uzunlugu 18, kaynak_turu 0)
 mod gor < $TAB | awk '/^section 7 /{$5=$5+1; print $0 " 18 0 10 2 1 -2147483648 2147483647 1 1 55 2 -2147483648 2147483647 2 2 0 1 55 0"; next} {print} /^op 54 GEI/{print "op 55 XORI xori d,r,i"; print "op 56 GOTO goto l"} /^sem GEI /{print "sem XORI rd t1 b ; im t2 c ; alu_xor t3 t1 t2 ; wr a t3"; print "sem GOTO br a"}' | mod yaz > $T/w5/oz/komut/komutlar.pmk
 [ "$(mod dogrula < $T/w5/oz/komut/komutlar.pmk)" = "1" ] && pass || fail "XORI/GOTO tablosu gecersiz: $(mod dogrula < $T/w5/oz/komut/komutlar.pmk)"

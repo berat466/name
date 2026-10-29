@@ -6,7 +6,7 @@ pass() { ok=$((ok+1)); }; fail() { bad=$((bad+1)); echo "HATA: $1"; }
 . ./arac.sh
 nrm() { tr -s ' \n' ' ' < "$1" | sed 's/ $//'; }
 # ---- 0) guncellik: oz/arac/*.pmb kaynaklariyla ayni mi
-for t in doldur opstab fmtc komut; do $PM asm $t.pma -o $T/$t.pmb --strip > /dev/null 2>&1 && cmp -s $T/$t.pmb $t.pmb && pass || fail "$t.pmb guncel degil"; done
+for t in doldur opstab fmtc komut baglayici; do $PM asm $t.pma -o $T/$t.pmb --strip > /dev/null 2>&1 && cmp -s $T/$t.pmb $t.pmb && pass || fail "$t.pmb guncel degil"; done
 # ---- 1) opstab: gercek ops.h ve rastgele ops.h varyantlari
 cmp_ops() { ./ref/ops_ref.sh "$2" > $T/ro.txt; arac opstab < "$2" > $T/mo.txt 2>/dev/null; [ "$(nrm $T/ro.txt)" = "$(nrm $T/mo.txt)" ] && pass || fail "opstab farkli: $1"; }
 cmp_ops "ops.h (donmus gecis kopyasi: komut/gecis/ops.h.txt)" $R/oz/komut/gecis/ops.h.txt

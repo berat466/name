@@ -89,7 +89,7 @@ for s in $(seq 1 $NR); do
 done
 # ---- 5) genisletilmis tablo (yalniz OP+SEM kayitlari): FMIN (sel), AIMM (im; gecici kimligi != operand yuvasi), LDK2 (lk; ayni).
 #   Program listesinde standart komutlar yeni komut numarasina cevrilir (add->FMIN, addi->AIMM, ldk->LDK2); oracle: C++ (FMIN) ve pm'in standart komutla sonucu (AIMM, LDK2).
-ELF2DIR=${ELF2DIR:-$D}; X=$T/x; mkdir -p $X/oz; cp -r $ELF2DIR $X/oz/elf2; cp -r $ELF2DIR/../arac $ELF2DIR/../komut $X/oz/; rm -f $X/oz/elf2/gen2.pmb
+ELF2DIR=${ELF2DIR:-$D}; X=$T/x; mkdir -p $X/oz; cp -r $ELF2DIR $X/oz/elf2; cp -r $ELF2DIR/../arac $ELF2DIR/../komut $ELF2DIR/../nesne $X/oz/; rm -f $X/oz/elf2/gen2.pmb
 KM() { { echo "@@$1"; cat; } | (ulimit -v 900000; timeout 60 $PM run $X/oz/arac/komut.pmb); }
 KM gor < $X/oz/komut/komutlar.pmk | awk '{print} /^op 54 GEI/{print "op 55 FMIN fmin d,f,f"; print "op 56 AIMM aimm d,r,i"; print "op 57 LDK2 ldk2 d,k"; print "op 58 JZX jzx r,l"} /^sem GEI /{print "sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4"; print "sem AIMM rd t3 b ; im t5 c ; alu_add t2 t3 t5 ; wr a t2"; print "sem LDK2 lk t7 b ; wr a t7"; print "sem JZX rd t5 a ; brz t5 b"}' | KM yaz > $X/ext.pmk
 if [ "$(KM dogrula < $X/ext.pmk)" = "1" ] && (cd $X/oz/elf2 && OPT=$X/ext.pmk ./uret.sh $PM > /dev/null 2>&1); then pass; else fail "genisletilmis tablodan gen2 uretilemedi"; fi

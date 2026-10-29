@@ -1,6 +1,6 @@
 #!/bin/bash
-# asm.pma.in + kanonik komut tablosu (komut @@tab) -> asm.pma (doldur) -> asm.pmb. awk/sed/od yok: yalniz oz/arac araclari. ARAC (ELF) ya da PM (onyukleme) gerekir.
+# asm.pmb = SAYISAL NESNE (oz/nesne/asm.pmo) + komut tablosundan sozluk (komut @@tab) -> baglayici -> liste -> PMB1.  METIN (asm.pma.in) KULLANILMAZ; awk/sed/doldur/assembler yok.
+# ARAC (ELF) ya da PM (onyukleme) gerekir.  Metinden yeniden uretim (istege bagli on yuz): oz/nesne/metinden.sh
 cd "$(dirname "$0")"; PM=${1:-${PM:-../../pm}}; . ../arac/arac.sh
-OPT=${OPT:-../komut/komutlar.pmk}   # KANONIK sayisal komut tablosu (src/ops.h degil)
-{ { echo "@@tab"; cat $OPT; } | arac komut; echo "@@SABLON"; cat asm.pma.in; } | arac doldur > asm.pma || exit 1
-arac_asm asm.pma asm.pmb
+OPT=${OPT:-../komut/komutlar.pmk}   # KANONIK sayisal komut tablosu
+{ { echo "@@tab"; cat $OPT; } | arac komut; echo "@@NESNE"; cat ../nesne/asm.pmo; } | arac baglayici | arac_pmb asm.pmb

@@ -5,9 +5,9 @@
 PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); yakalandi=0; kacti=0
 mut() {   # etiket ifade
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
-  rm -rf $T/w; mkdir -p $T/w/src $T/w/oz; cp -r $R/oz/komut $T/w/oz/; cp -r $R/oz/arac $R/oz/asm $T/w/oz/
+  rm -rf $T/w; mkdir -p $T/w/src $T/w/oz; cp -r $R/oz/nesne $R/oz/komut $T/w/oz/; cp -r $R/oz/arac $R/oz/asm $T/w/oz/
   (cd $T/w/oz/asm && perl -0pi -e "$2" asm.pma.in && ! cmp -s asm.pma.in $D/asm.pma.in) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
-  (cd $T/w/oz/asm && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: derlenemedi"; kacti=$((kacti+1)); return; }
+  (cd $T/w/oz/nesne && TOOLS=asm GORUNUM=0 ./metinden.sh $PM > /dev/null 2>&1) || { echo "mutant $1: derlenemedi"; kacti=$((kacti+1)); return; }
   if ASMPMB=$T/w/oz/asm/asm.pmb $D/dogrula_ondalik.sh $PM ${NF:-40} > $T/log 2>&1; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
 }
 mut tie_cift       's/andi t, m, 1\n    jz t, nrd/andi t, m, 1\n    jz zr, nrd/'
