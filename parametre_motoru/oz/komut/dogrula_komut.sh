@@ -227,6 +227,36 @@ if [ -s $T/xyz.pmb ]; then
   { cat $T/xyz.pmk; echo "@@PROGRAM"; cat $T/xyz.l; echo "@@GIRDI"; } > $T/xyz.in
   (ulimit -v 900000; $PM run $T/w4/oz/sayisal/svm.pmb < $T/xyz.in > $T/xyz.o 2>/dev/null); [ "$(cat $T/xyz.o)" = "42" ] && fail "svm bilmedigi islemi uydurma yurutdu" || pass
 else fail "xyz programi derlenemedi"; fi
+# ---- 9) ILISKILER sayidir: yeni komut XORI (anlik XOR) + yeniden yazma kurali (XOR -> XORI), yeni atlama komutu GOTO (yalniz SEM: br). Kod degisikligi yok.
+#   asm kuralı REWRITE bolumunden okur; dogrulayici sonlandirici/atlama/akis ozelligini SEM'den turetir; svm SEM'den calistirir; ELF XORI'yi mikro-islemlerden uretir.
+rm -rf $T/w5; mkdir -p $T/w5/oz; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $R/oz/sayisal $T/w5/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w5/oz/; rm -f $T/w5/oz/asm/asm.pmb $T/w5/oz/dogr/valid.pmb $T/w5/oz/elf2/gen2.pmb
+# XOR (kimlik 10) icin vakalar: c anlik -> XORI(55); b anlik -> takas + XORI (kayit uzunlugu 18, kaynak_turu 0)
+mod gor < $TAB | awk '/^section 7 /{$5=$5+1; print $0 " 18 0 10 2 1 -2147483648 2147483647 1 1 55 2 -2147483648 2147483647 2 2 0 1 55 0"; next} {print} /^op 54 GEI/{print "op 55 XORI xori d,r,i"; print "op 56 GOTO goto l"} /^sem GEI /{print "sem XORI rd t1 b ; im t2 c ; alu_xor t3 t1 t2 ; wr a t3"; print "sem GOTO br a"}' | mod yaz > $T/w5/oz/komut/komutlar.pmk
+[ "$(mod dogrula < $T/w5/oz/komut/komutlar.pmk)" = "1" ] && pass || fail "XORI/GOTO tablosu gecersiz: $(mod dogrula < $T/w5/oz/komut/komutlar.pmk)"
+for t in asm dogr elf2; do (cd $T/w5/oz/$t && ./uret.sh $PM > /dev/null 2>&1) || fail "XORI/GOTO tablosundan $t uretilemedi"; done
+(cd $T/w5/oz && ./uret_ikili.sh $PM $T/w5/oz > /dev/null 2>&1) || fail "XORI/GOTO tablosundan coz/yaz uretilemedi"
+printf 'func main() {\n ldi a, 1000\n xor b, a, 5\n host puti, b\n host putc, 32\n xor c, 7, a\n host puti, c\n host putc, 32\n ldi d, 6\n xor e, a, d\n host puti, e\n host putc, 10\n halt\n}\n' > $T/xr.pma
+(ulimit -v 900000; $PM run $T/w5/oz/asm/asm.pmb < $T/xr.pma > $T/xr.pmb 2>/dev/null) && pass || fail "genisletilmis asm xor programini derlemedi"
+(ulimit -v 900000; $PM run $T/w5/oz/coz.pmy < $T/xr.pmb > $T/xr.l 2>/dev/null)
+n_new=$(grep -c '^55 ' $T/xr.l); [ "$n_new" = "2" ] && pass || fail "yeniden yazma kurali: 2 XORI beklenirdi, bulunan $n_new"
+$PM asm $T/xr.pma -o $T/xr_old.pmb --strip > /dev/null 2>&1; $PM liste $T/xr_old.pmb > $T/xr_old.l; grep -q '^55 ' $T/xr_old.l && fail "eski asm XORI uretti" || pass
+v=$( (ulimit -v 900000; $PM run $T/w5/oz/dogr/valid.pmb < $T/xr.l 2>/dev/null) | head -c 1 ); [ "$v" = "1" ] && pass || fail "dogrulayici XORI'li programi reddetti ($v)"
+exp="$((1000 ^ 5)) $((7 ^ 1000)) $((1000 ^ 6))"
+(ulimit -v 900000; $PM run $T/w5/oz/elf2/gen2.pmb < $T/xr.l > $T/xr.elf 2>/dev/null) && chmod +x $T/xr.elf && [ "$($T/xr.elf)" = "$exp" ] && pass || fail "XORI ELF cikti: $($T/xr.elf 2>&1 | head -c 60) beklenen $exp"
+{ cat $T/w5/oz/komut/komutlar.pmk; echo "@@PROGRAM"; cat $T/xr.l; echo "@@GIRDI"; } > $T/xr.in
+[ "$( (ulimit -v 900000; $PM run $T/w5/oz/sayisal/svm.pmb < $T/xr.in 2>/dev/null) )" = "$exp" ] && pass || fail "svm XORI cikti beklenenden farkli"
+# GOTO: kosulsuz atlama (yalniz SEM'de 'br'); asm kabul eder, dogrulayici sonlandirici/akis ozelligini SEM'den turetir, svm calistirir
+printf 'func main() {\n ldi a, 1\n goto L1\n ldi a, 2\nL1: host puti, a\n host putc, 10\n halt\n}\n' > $T/gt.pma
+(ulimit -v 900000; $PM run $T/w5/oz/asm/asm.pmb < $T/gt.pma > $T/gt.pmb 2>/dev/null) && pass || fail "genisletilmis asm goto'yu kabul etmedi"
+$PM run $R/oz/asm/asm.pmb < $T/gt.pma > /dev/null 2>&1 && fail "eski asm goto'yu kabul etti" || pass
+(ulimit -v 900000; $PM run $T/w5/oz/coz.pmy < $T/gt.pmb > $T/gt.l 2>/dev/null)
+v=$( (ulimit -v 900000; $PM run $T/w5/oz/dogr/valid.pmb < $T/gt.l 2>/dev/null) | head -c 1 ); [ "$v" = "1" ] && pass || fail "dogrulayici goto'lu programi reddetti ($v)"
+{ cat $T/w5/oz/komut/komutlar.pmk; echo "@@PROGRAM"; cat $T/gt.l; echo "@@GIRDI"; } > $T/gt.in
+[ "$( (ulimit -v 900000; $PM run $T/w5/oz/sayisal/svm.pmb < $T/gt.in 2>/dev/null) )" = "1" ] && pass || fail "svm goto'yu yurutemedi"
+# goto'dan sonra sonlandirici yok -> dogrulayici reddetmeli (OPFLOW=2 sonlandirici sayilir; JZ gibi kosullu olsaydi reddedilirdi): hedefi gecersiz yap
+printf 'func main() {\n ldi a, 1\n goto L1\nL1: host puti, a\n goto L1\n}\n' > $T/gt2.pma
+(ulimit -v 900000; $PM run $T/w5/oz/asm/asm.pmb < $T/gt2.pma > $T/gt2.pmb 2>/dev/null) && (ulimit -v 900000; $PM run $T/w5/oz/coz.pmy < $T/gt2.pmb > $T/gt2.l 2>/dev/null)
+v=$( (ulimit -v 900000; $PM run $T/w5/oz/dogr/valid.pmb < $T/gt2.l 2>/dev/null) | head -c 1 ); [ "$v" = "1" ] && pass || fail "dogrulayici goto ile biten fonksiyonu reddetti ($v)"
 echo "komut tablosu: $ok gecti, $bad basarisiz"
 rm -rf $T
 [ $bad = 0 ]

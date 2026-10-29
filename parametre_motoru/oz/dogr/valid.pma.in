@@ -22,6 +22,15 @@ space G 64
 data NOPS = @NOPS@
 data KIND = @KIND@
 data ARITY = @ARITY@
+data KFLAGS = @KFLAGS@
+data OPFLOW = @OPFLOW@
+data OPTGT = @OPTGT@
+data OPCALL = @OPCALL@
+data OPCS0 = @OPCS0@
+data OPCS1 = @OPCS1@
+data OPDIVSL = @OPDIVSL@
+; komut ozellikleri komut tablosunun SEM bolumunden turetilir: OPFLOW 0 siradan 1 durdurur (ret/halt) 2 kosulsuz atlama 3 kosullu atlama; OPTGT hedef operand yuvasi;
+;   OPCALL 0 yok 1 islev cagrisi 2 host cagrisi (OPCS0 islev/host kimligi yuvasi, OPCS1 pencere tabani yuvasi); OPDIVSL bolen anlik operand yuvasi (-1 yok); KFLAGS tur bayraklari (KIND bolumu)
 
 ; G: 0 NT  1 bayrak  2 bellek  3 giris  4 nsabit  5 nveri  6 bss  7 nfonk  8 imlec  9 toplam komut
 ;    12 W  13 M  14 base  15 nparam  16 nregs
@@ -317,11 +326,11 @@ v4: add a, f, FNB
     ld p, a, 0
     add a, p, TOK
     ld op, a, 0
-    eq z, op, @OP_JMP@
+    add a, op, OPFLOW
+    ld fw, a, 0
+    eqi z, fw, 1
     jnz z, lastok
-    eq z, op, @OP_RET@
-    jnz z, lastok
-    eq z, op, @OP_HALT@
+    eqi z, fw, 2
     jnz z, lastok
     call x, rej, 15
 lastok:
@@ -346,16 +355,18 @@ vj: ge z, j, nops
     add a, a, j
     add a, a, TOK
     ld v, a, 0
-    eq z, kind, 5
-    jnz z, vnext
-    eq z, kind, 7
-    jnz z, klab
-    eq z, kind, 8
-    jnz z, kfun
-    eq z, kind, 6
-    jnz z, kcon
-    eq z, kind, 10
-    jnz z, khost
+    add a, kind, KFLAGS
+    ld kf, a, 0
+    andi t, kf, 4
+    jnz t, vnext
+    andi t, kf, 8
+    jnz t, klab
+    andi t, kf, 16
+    jnz t, kfun
+    andi t, kf, 32
+    jnz t, kcon
+    andi t, kf, 128
+    jnz t, khost
     lt z, v, 0
     jnz z, vbad
     ge z, v, nr
@@ -382,7 +393,7 @@ kcon:
 khost:
     lt z, v, 0
     jnz z, vbad
-    ge z, v, 7
+    ge z, v, @HOSTCOUNT@
     jnz z, vbad
 vnext:
     add j, j, 1
@@ -390,12 +401,12 @@ vnext:
 vbad:
     call x, rej, 16
 vjdone:
-    eq z, op, @OP_DIVI@
-    jnz z, dm
-    eq z, op, @OP_MODI@
-    jnz z, dm
-    jmp vcall
-dm: add a, p, 3
+    add a, op, OPDIVSL
+    ld ds, a, 0
+    lti z, ds, 0
+    jnz z, vcall
+    add a, p, 1
+    add a, a, ds
     add a, a, TOK
     ld c3, a, 0
     jz c3, dmbad
@@ -404,40 +415,39 @@ dm: add a, p, 3
 dmbad:
     call x, rej, 17
 vcall:
-    eq z, op, @OP_CALL@
-    jz z, vhost
+    add a, op, OPCALL
+    ld cc, a, 0
+    jz cc, vend
+    add a, op, OPCS0
+    ld s0, a, 0
+    add a, op, OPCS1
+    ld s1, a, 0
     add a, p, 1
+    add a, a, s0
     add a, a, TOK
     ld fa, a, 0
-    add a, p, 2
+    add a, p, 1
+    add a, a, s1
     add a, a, TOK
     ld fb, a, 0
+    eqi z, cc, 1
+    jz z, vhq
     add a, fa, FNP
-    ld np2, a, 0
-    mov need, np2
+    ld need, a, 0
+    jmp vneed
+vhq:
+    add a, fa, ARITY
+    ld need, a, 0
+vneed:
     jnz need, wc
     mov need, 1
 wc: add t, fb, need
     gt z, t, nr
     jz z, vend
+    eqi z, cc, 1
+    jz z, whx
     call x, rej, 18
-vhost:
-    eq z, op, @OP_HOST@
-    jz z, vend
-    add a, p, 1
-    add a, a, TOK
-    ld ha, a, 0
-    add a, p, 2
-    add a, a, TOK
-    ld hb, a, 0
-    add a, ha, ARITY
-    ld ar, a, 0
-    mov need, ar
-    jnz need, wh
-    mov need, 1
-wh: add t, hb, need
-    gt z, t, nr
-    jz z, vend
+whx:
     call x, rej, 19
 vend:
     add pc, pc, 1
@@ -557,10 +567,9 @@ fret:
 func step(pc, p, op) {
     ld nrg, G, 16
     ld m, G, 13
-    eq z, op, @OP_CALL@
-    jnz z, scall
-    eq z, op, @OP_HOST@
-    jnz z, shost
+    add a, op, OPCALL
+    ld cc, a, 0
+    jnz cc, swc
     ; genel: okumalar sonra yazmalar
     add a, op, NOPS
     ld nops, a, 0
@@ -575,12 +584,10 @@ s1: ge z, j, nops
     add a, a, j
     add a, a, TOK
     ld v, a, 0
-    eq z, kind, 2
-    jnz z, srd
-    eq z, kind, 3
-    jnz z, srd
-    eq z, kind, 4
-    jnz z, srd
+    add a, kind, KFLAGS
+    ld kf, a, 0
+    andi t, kf, 1
+    jnz t, srd
     jmp s1n
 srd:
     call g, getbit, v
@@ -597,8 +604,10 @@ s2: ge z, j, nops
     add k, k, j
     add a, k, KIND
     ld kind, a, 0
-    eq z, kind, 1
-    jz z, s2n
+    add a, kind, KFLAGS
+    ld kf, a, 0
+    andi t, kf, 2
+    jz t, s2n
     add a, p, 1
     add a, a, j
     add a, a, TOK
@@ -609,24 +618,26 @@ s2n:
     jmp s2
 s2d:
     jmp sflow
-scall:
+swc:
+    add a, op, OPCS0
+    ld s0, a, 0
+    add a, op, OPCS1
+    ld s1, a, 0
     add a, p, 1
+    add a, a, s0
     add a, a, TOK
     ld fa, a, 0
-    add a, p, 2
+    add a, p, 1
+    add a, a, s1
     add a, a, TOK
     ld fb, a, 0
+    eqi z, cc, 1
+    jz z, shq
     add a, fa, FNP
     ld cnt, a, 0
     jmp swin
-shost:
-    add a, p, 1
-    add a, a, TOK
-    ld ha, a, 0
-    add a, p, 2
-    add a, a, TOK
-    ld fb, a, 0
-    add a, ha, ARITY
+shq:
+    add a, fa, ARITY
     ld cnt, a, 0
 swin:
     mov j, 0
@@ -640,27 +651,29 @@ s3n:
     add j, j, 1
     jmp s3
 s3d:
-    eq z, op, @OP_CALL@
+    eqi z, cc, 1
     jz z, s4
     call x, clrfrom, fb
 s4: call x, setbit, fb
 sflow:
-    eq z, op, @OP_RET@
+    add a, op, OPFLOW
+    ld fw, a, 0
+    eqi z, fw, 1
     jnz z, sok
-    eq z, op, @OP_HALT@
-    jnz z, sok
-    eq z, op, @OP_JMP@
+    add a, op, OPTGT
+    ld tgs, a, 0
+    eqi z, fw, 2
     jz z, s5
     add a, p, 1
+    add a, a, tgs
     add a, a, TOK
     ld tg, a, 0
     call x, flow, tg
     ret 1
-s5: eq z, op, @OP_JZ@
-    jnz z, s6
-    eq z, op, @OP_JNZ@
+s5: eqi z, fw, 3
     jz z, s7
-s6: add a, p, 2
+    add a, p, 1
+    add a, a, tgs
     add a, a, TOK
     ld tg, a, 0
     call x, flow, tg
