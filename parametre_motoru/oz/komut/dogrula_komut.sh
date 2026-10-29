@@ -92,8 +92,8 @@ sat 'NR==14{$4=$4+5} NR==16{n=NF; $1=$1+5; $n=1; $(n+1)=9; $(n+2)=99; $(n+3)=5; 
 kab "kayit uzantisi + kuyruk" $T/ext1
 mod tab < $T/ext1 | cmp -s - <(mod tab < $TAB) && pass || fail "kayit uzantisi sozluk ciktisini etkiledi"
 mod gor < $T/ext1 | mod yaz | cmp -s - <(mod kanon < $T/ext1) && pass || fail "kayit uzantisi/kuyruk gidis-donusta kayboldu"
-# profil: seyrek kimlik (komut 54 -> 60) format olarak gecerli, profil icin gecersiz
-mod gor < $TAB | sed 's/^op 54 GEI /op 60 GEI /' | mod yaz > $T/sp; mod kanon < $T/sp | head -1 | grep -q '^1347242801' && pass || fail "seyrek kimlik bicim olarak reddedildi"
+# profil: seyrek kimlik (komut 18 -> 60; kural/anlam kayitlari sembolle degil kimlikle bagli olabilir: NEG hicbir kuralin hedefi degil) format olarak gecerli, profil icin gecersiz
+mod gor < $TAB | sed 's/^op 18 NEG /op 60 NEG /' | mod yaz > $T/sp; mod kanon < $T/sp | head -1 | grep -q '^1347242801' && pass || fail "seyrek kimlik bicim olarak reddedildi"
 out=$(mod dogrula < $T/sp); [ "${out:0:1}" = "0" ] && pass || fail "seyrek kimlik profil denetimini gecti ($out)"
 mod tab < $T/sp 2>&1 | head -1 | grep -q '^HATA' && pass || fail "seyrek kimlikli tablo sozluk uretti"
 # bolum sirasi degisimi: HOST, KIND, OP sirasi -> ayni sozluk
@@ -210,6 +210,22 @@ sred "bilinmeyen komut" 's/^sem MOV rd t1 b ; wr a t1$/sem NOSUCH rd t1 b ; wr a
 sred "alan sayisi eksik" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t1 ; wr a t1/'
 sred "yinelenen anlam" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t1 b ; wr a t1\nsem MOV rd t1 b ; wr a t1/'
 sred "gecici sinir disi" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t9 b ; wr a t9/'
+# ---- 8b) PSEUDO (6) ve REWRITE (7) bolumleri: olumsuz ornekler (sayisal alanlarda bozma) ve gidis-donus
+rwred() { y=$(mod gor < $TAB | awk "$3" | mod yaz 2>/dev/null | head -1); [ "$y" = "HATA: $2" ] && pass || fail "kural olumsuz ornek: $1 (beklenen kod $2, bulunan '$y')"; }
+rwred "kural kaynagi bilinmeyen komut" 80 '/^section 7 /{$8=99} {print}'
+rwred "kural kaynak turu gecersiz" 81 '/^section 7 /{$7=5} {print}'
+rwred "kural hedef komutu yok" 84 '/^section 7 /{$15=99} {print}'
+rwred "vaka kosulu gecersiz" 87 '/^section 7 /{$10=9} {print}'
+rwred "vaka alt > ust" 87 '/^section 7 /{t=$11; $11=$12; $12=t-1} {print}'
+rwred "yinelenen kural" 83 '/^section 7 /{rec=""; for(i=7;i<=24;i++) rec=rec " " $i; $5=$5+1; print $0 " 18" rec; next} {print}'
+rwred "eylem bilinmeyen" 86 '/^section 7 /{$14=7} {print}'
+rwred "takma komut kimligi yinelenen" 90 '/^section 6 /{$17=0} {print}'
+rwred "takma komut adi bir komutla cakisiyor (or)" 91 '/^section 6 /{$12=111; $13=114} {print}'
+rwred "takma komut kimligi 256" 93 '/^section 6 /{$7=256} {print}'
+rwred "iki takma komut ayni ad" 92 '/^section 6 /{$23=116} {print}'
+rwred "kural kaynagi 3 operandli degil (MOV)" 82 '/^section 7 /{$8=0} {print}'
+rwred "kural hedefinin operand sayisi farkli (JMP)" 85 '/^section 7 /{$15=31} {print}'
+mod gor < $TAB | mod yaz | cmp -s - <(mod kanon < $TAB) && pass || fail "PSEUDO/REWRITE gidis-donusta bozuldu"
 # genisletme noktasi: yeni islem (prim) tanimi + onu kullanan komut. Yurutuculer bilmedigi islemi SESSIZCE yok saymaz: reddeder.
 mod gor < $TAB | awk '{print} /^prim 47 /{print "prim 48 xyz to,ti,ti ext 1=0"} /^op 54 GEI/{print "op 55 XYZ xyz d,r,r"} /^sem GEI /{print "sem XYZ rd t1 b ; rd t2 c ; xyz t3 t1 t2 ; wr a t3"}' | mod yaz > $T/xyz.pmk
 [ "$(mod dogrula < $T/xyz.pmk)" = "1" ] && pass || fail "yeni islemli tablo gecersiz"
