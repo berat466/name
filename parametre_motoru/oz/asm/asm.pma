@@ -75,10 +75,14 @@ space G 128
 space FBN 1024
 space FDG 1024
 data OPNAMES = 109 111 118 0 108 100 105 0 108 100 107 0 97 100 100 0 115 117 98 0 109 117 108 0 100 105 118 0 109 111 100 0 97 110 100 0 111 114 0 120 111 114 0 115 104 108 0 115 104 114 0 115 97 114 0 101 113 0 110 101 0 108 116 0 108 101 0 110 101 103 0 110 111 116 0 102 97 100 100 0 102 115 117 98 0 102 109 117 108 0 102 100 105 118 0 102 110 101 103 0 102 115 113 114 116 0 102 101 113 0 102 108 116 0 102 108 101 0 105 50 102 0 102 50 105 0 106 109 112 0 106 122 0 106 110 122 0 99 97 108 108 0 114 101 116 0 104 97 108 116 0 108 100 0 115 116 0 97 108 108 111 99 0 104 111 115 116 0 97 100 100 105 0 109 117 108 105 0 97 110 100 105 0 115 104 108 105 0 115 104 114 105 0 115 97 114 105 0 100 105 118 105 0 109 111 100 105 0 101 113 105 0 110 101 105 0 108 116 105 0 108 101 105 0 103 116 105 0 103 101 105 0 112 117 116 99 0 112 117 116 105 0 112 117 116 102 0 103 101 116 99 0 112 114 101 115 101 110 116 0 112 111 108 108 0 102 114 97 109 101 0
+data PSNAMES = 103 116 0 103 101 0 102 103 116 0 102 103 101 0
+data PSNOPS = 3 3 3 3
+data RWOFF = -1 -1 -1 0 15 24 39 52 65 -1 -1 80 87 94 101 116 131 146 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 161 184 207 216
+data RWDAT = 2 1 -2147483648 2147483647 1 1 41 2 -2147483648 2147483647 2 2 0 1 41 1 1 -2147483647 2147483647 2 3 0 1 41 2 1 -2147483648 2147483647 1 1 42 2 -2147483648 2147483647 2 2 0 1 42 2 1 1 2147483647 1 1 47 1 -2147483648 -2 1 1 47 2 1 1 2147483647 1 1 48 1 -2147483648 -2 1 1 48 2 1 -2147483648 2147483647 1 1 43 2 -2147483648 2147483647 2 2 0 1 43 1 1 -2147483648 2147483647 1 1 44 1 1 -2147483648 2147483647 1 1 45 1 1 -2147483648 2147483647 1 1 46 2 1 -2147483648 2147483647 1 1 49 2 -2147483648 2147483647 2 2 0 1 49 2 1 -2147483648 2147483647 1 1 50 2 -2147483648 2147483647 2 2 0 1 50 2 1 -2147483648 2147483647 1 1 51 2 -2147483648 2147483647 2 2 0 1 53 2 1 -2147483648 2147483647 1 1 52 2 -2147483648 2147483647 2 2 0 1 54 3 1 -2147483648 2147483647 1 1 53 2 -2147483648 2147483647 2 2 0 1 51 3 0 0 2 2 0 1 16 3 1 -2147483648 2147483647 1 1 54 2 -2147483648 2147483647 2 2 0 1 52 3 0 0 2 2 0 1 17 1 3 0 0 2 2 0 1 27 1 3 0 0 2 2 0 1 28
 data NOPS = 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 2 2 3 3 3 3 2 2 3 3 3 2 2 1 2 2 2 1 0 3 3 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3
 data KIND = 1 4 0 1 5 0 1 6 0 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 2 1 2 0 1 2 0 1 3 3 1 3 3 1 3 3 1 3 3 1 3 0 1 3 0 1 3 3 1 3 3 1 3 3 1 2 0 1 3 0 7 0 0 2 7 0 2 7 0 8 9 0 4 0 0 0 0 0 1 2 5 4 2 5 1 2 0 10 9 0 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5 1 2 5
 data ARITY = 1 1 1 0 3 0 0
-data KWS = "memory\0entry\0data\0space\0func\0gt\0ge\0fgt\0fge\0main\0"
+data KWS = "memory\0entry\0data\0space\0func\0main\0"
 
 ; G: 0 NSRC(kullanilan) 1 SATIR 2 NTOK 3 NST 4 NFN 5 NSY 6 NCONST 7 NDATA 8 BSS 9 BELLEK 10 giris-ad-ofset 11 giris-ad-uzunluk 12 giris-satiri
 ;    13 PV(parse_int degeri) 14 NGC(genel komut sayisi) 15 NOUT 16 gecerli fonksiyon 17 ORJ_UZUNLUK(kaynak) 20 NREG 21 NLAB 22 NIR 23 NOPR 24 NLIT 25 MAXWIN
@@ -1308,7 +1312,7 @@ k4: add a, n, LITV
 }
 
 ; ---------- jeton yardimcilari (yerel IR operandlari) ----------
-func mnid(o, l) {      ; komut indeksi (0..54), sahte komutlar gt=100 ge=101 fgt=102 fge=103, yoksa -1
+func mnid(o, l) {      ; komut indeksi (0..OPCOUNT-1); takma komutlar (PSEUDO bolumu) OPCOUNT+sira; yoksa -1
     call r, opid, o, l
     gei z, r, 0
     jz z, m1
@@ -1316,17 +1320,14 @@ func mnid(o, l) {      ; komut indeksi (0..54), sahte komutlar gt=100 ge=101 fgt
 m1: mov k, 0
 m2: gei z, k, 4
     jnz z, no
-    mov j, k
-    mul j, j, 2
-    add j, j, 50
-    add a, j, G
+    addi j, k, 62
+    add a, j, NMO
     ld po, a, 0
-    add a, j, 1
-    add a, a, G
+    add a, j, NML
     ld pl, a, 0
     call r, streq, o, l, po, pl
     jz r, m3
-    add r, k, 100
+    addi r, k, 55
     ret r
 m3: add k, k, 1
     jmp m2
@@ -1832,19 +1833,30 @@ func swapopr(i) {      ; operand 1 ve 2'yi degistir
     ret 0
 }
 
-; rewriteImm: IR i icin (C++ ile ayni kurallar)
+; yeniden yazma: IR i icin kurallar KOMUT TABLOSUNDAN (REWRITE bolumu: RWOFF/RWDAT; takma komutlar PSEUDO bolumu: PSNOPS).
+;   vaka = kosul alt ust neylem (eylem arg)*: kosul 1 c dogrudan sayi ve alt<=deger<=ust | 2 c sayi degil, b dogrudan sayi ve alt<=deger<=ust | 3 her zaman
+;   eylem 1 komut:=arg | 2 b,c takas | 3 c dogrudan sayisini eksi yap. Ilk eslesen vaka uygulanir (C++ ile ayni sonuc).
 func rewrite(i) {
     add a, i, IRMN
     ld m, a, 0
     add a, i, IRN
     ld na, a, 0
-    ; gt ge fgt fge 3 operand ister
-    lti z, m, 100
-    jnz z, w1
-    eq z, na, 3
-    jnz z, w1
+    add a, m, RWOFF
+    ld off, a, 0
+    lti z, off, 0
+    jz z, w0
+    ret 0
+w0: gei z, m, 55
+    jz z, w1
+    sub k, m, 55
+    add a, k, PSNOPS
+    ld nop, a, 0
+    ne z, na, nop
+    jz z, w2
     call x, err, 55
-w1: eq z, na, 3
+w1: add a, m, NOPS
+    ld nop, a, 0
+    eq z, na, nop
     jnz z, w2
     ret 0
 w2: call o2, opr, i, 2
@@ -1858,142 +1870,62 @@ w2: call o2, opr, i, 2
     ld l1, G, 64
     call i1, immof, o1, l1
     ld v1, G, 60
-w3: ; add mul and eq ne
-    eq z, m, 3
-    jnz z, g1
-    eq z, m, 5
-    jnz z, g1
-    eq z, m, 8
-    jnz z, g1
-    eq z, m, 14
-    jnz z, g1
-    eq z, m, 15
-    jnz z, g1
-    jmp w4
-g1: ; im
-    mov im, 41
-    eq z, m, 5
-    jz z, g2
-    mov im, 42
-g2: eq z, m, 8
-    jz z, g3
-    mov im, 43
-g3: eq z, m, 14
-    jz z, g4
-    mov im, 49
-g4: eq z, m, 15
-    jz z, g5
-    mov im, 50
-g5: jz i2, g6
+w3: add a, off, RWDAT
+    ld nc, a, 0
+    addi p, off, 1
+    mov c, 0
+cl: ge z, c, nc
+    jnz z, done
+    add a, p, RWDAT
+    ld kd, a, 0
+    ld lo, a, 1
+    ld hi, a, 2
+    ld nact, a, 3
+    eqi z, kd, 3
+    jnz z, mt
+    eqi z, kd, 1
+    jz z, k2
+    jz i2, nxt
+    lt z, v, lo
+    jnz z, nxt
+    gt z, v, hi
+    jnz z, nxt
+    jmp mt
+k2: jnz i2, nxt
+    jz i1, nxt
+    lt z, v1, lo
+    jnz z, nxt
+    gt z, v1, hi
+    jnz z, nxt
+mt: addi pa, p, 4
+    mov e, 0
+ac: ge z, e, nact
+    jnz z, done
+    add a, pa, RWDAT
+    ld act, a, 0
+    ld arg, a, 1
+    eqi z, act, 1
+    jz z, ac2
     add a, i, IRMN
-    st im, a, 0
-    ret 0
-g6: jz i1, g7
+    st arg, a, 0
+    jmp acn
+ac2: eqi z, act, 2
+    jz z, ac3
     call x, swapopr, i
-    add a, i, IRMN
-    st im, a, 0
-g7: ret 0
-w4: eq z, m, 4
-    jz z, w5
-    jz i2, w4r
-    eq z, v, -2147483648
-    jnz z, w4r
-    mov c41, 41
-    add a, i, IRMN
-    st c41, a, 0
-    neg nv, v
+    jmp acn
+ac3: neg nv, v
     call o, mkint, nv
     ld l, G, 30
     call x, setopr, i, 2, o, l
-w4r: ret 0
-w5: eq z, m, 16
-    jnz z, c1
-    eq z, m, 17
-    jnz z, c1
-    eq z, m, 100
-    jnz z, c1
-    eq z, m, 101
-    jnz z, c1
-    jmp w6
-c1: ; lt le gt ge
-    jz i2, c3
-    mov nm, 54
-    eq z, m, 16
-    jz z, c2
-    mov nm, 51
-c2: eq z, m, 17
-    jz z, c2b
-    mov nm, 52
-c2b: eq z, m, 100
-    jz z, c2c
-    mov nm, 53
-c2c: add a, i, IRMN
-    st nm, a, 0
-    ret 0
-c3: jz i1, c5
-    call x, swapopr, i
-    mov nm, 52
-    eq z, m, 16
-    jz z, c4
-    mov nm, 53
-c4: eq z, m, 17
-    jz z, c4b
-    mov nm, 54
-c4b: eq z, m, 100
-    jz z, c4c
-    mov nm, 51
-c4c: add a, i, IRMN
-    st nm, a, 0
-    ret 0
-c5: eq z, m, 100
-    jnz z, c6
-    eq z, m, 101
-    jnz z, c6
-    ret 0
-c6: call x, swapopr, i
-    mov nm, 17
-    eq z, m, 100
-    jz z, c7
-    mov nm, 16
-c7: add a, i, IRMN
-    st nm, a, 0
-    ret 0
-w6: lti z, m, 11
-    jnz z, w7
-    gti z, m, 13
-    jnz z, w7
-    jz i2, w6r
-    add nm, m, 33
-    add a, i, IRMN
-    st nm, a, 0
-w6r: ret 0
-w7: eq z, m, 6
-    jnz z, d1
-    eq z, m, 7
-    jnz z, d1
-    jmp w8
-d1: jz i2, d9
-    eq z, v, 0
-    jnz z, d9
-    eq z, v, -1
-    jnz z, d9
-    add nm, m, 41
-    add a, i, IRMN
-    st nm, a, 0
-d9: ret 0
-w8: eq z, m, 102
-    jnz z, f1
-    eq z, m, 103
-    jnz z, f1
-    ret 0
-f1: call x, swapopr, i
-    mov nm, 28
-    eq z, m, 102
-    jz z, f2
-    mov nm, 27
-f2: add a, i, IRMN
-    st nm, a, 0
-    ret 0
+acn: addi pa, pa, 2
+    addi e, e, 1
+    jmp ac
+nxt: shli t, nact, 1
+    addi t, t, 4
+    add p, p, t
+    addi c, c, 1
+    jmp cl
+done: ret 0
 }
 
 ; ---------- gecis 1: etiketler, dogrudan operand donusumu, hedef yazmaclar ----------
@@ -3464,28 +3396,35 @@ n1: gei z, i, 62
     st l, a, 0
     add i, i, 1
     jmp n1
-n2: ; anahtar sozcukler: memory entry data space func -> G[40..49]; gt ge fgt fge -> G[50..57]; main -> G[10],G[11]
+n2: ; takma komut adlari (PSEUDO bolumu) -> NMO/NML[NAMECOUNT + sira]
     mov i, 0
-k1: gei z, i, 9
+p1: gei z, i, 4
+    jnz z, n3
+    call o, copyz, PSNAMES, i
+    ld l, G, 30
+    addi j, i, 62
+    add a, j, NMO
+    st o, a, 0
+    add a, j, NML
+    st l, a, 0
+    add i, i, 1
+    jmp p1
+n3: ; anahtar sozcukler: memory entry data space func -> G[40..49]; main -> G[10],G[11]
+    mov i, 0
+k1: gei z, i, 5
     jnz z, k9
     call o, copyz, KWS, i
     ld l, G, 30
-    lti z, i, 5
-    jz z, k2
     mul j, i, 2
     add j, j, 40
-    jmp k3
-k2: sub j, i, 5
-    mul j, j, 2
-    add j, j, 50
-k3: add a, j, G
+    add a, j, G
     st o, a, 0
     add a, j, 1
     add a, a, G
     st l, a, 0
     add i, i, 1
     jmp k1
-k9: call o, copyz, KWS, 9
+k9: call o, copyz, KWS, 5
     ld l, G, 30
     st o, G, 10
     st l, G, 11

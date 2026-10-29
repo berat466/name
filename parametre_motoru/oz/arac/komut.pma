@@ -21,6 +21,9 @@ space HA 512
 space SA 64
 space PA 1024
 space SMA 8192
+space PSA 256
+space RWA 8192
+space RWB 256
 space G 64
 
 func fail(code) {
@@ -269,7 +272,23 @@ c9: gei z, i, 8192
     st zr, a, 0
     addi i, i, 1
     jmp c9
-c10: ret 0
+c10: mov i, 0
+c11: gei z, i, 8192
+    jnz z, c12
+    add a, i, RWA
+    st zr, a, 0
+    addi i, i, 1
+    jmp c11
+c12: mov i, 0
+c13: gei z, i, 256
+    jnz z, c14
+    add a, i, PSA
+    st zr, a, 0
+    add a, i, RWB
+    st zr, a, 0
+    addi i, i, 1
+    jmp c13
+c14: ret 0
 }
 
 ; bolum yukunun [s, e) sinirlari icinde n kayit: her kaydin uzunlugu sinira sigar mi? sonuc: 0 ya da hata
@@ -894,7 +913,7 @@ v3b: add e, p, ln
     ret 4
 v3c: lti z, id, 1
     jnz z, v5
-    gti z, id, 5
+    gti z, id, 7
     jnz z, v5
     eqi z, vs, 1
     jz z, v5
@@ -953,7 +972,21 @@ v13: ld sm5, SA, 5
     call x, vsem, s, e
     jz x, v14
     ret x
-v14: ret 0
+v14: ld s6, SA, 6
+    jz s6, v15
+    addi s, s6, -1
+    ld e, SA, 22
+    call x, vpseudo, s, e
+    jz x, v15
+    ret x
+v15: ld s7, SA, 7
+    jz s7, v16
+    addi s, s7, -1
+    ld e, SA, 23
+    call x, vrw, s, e
+    jz x, v16
+    ret x
+v16: ret 0
 }
 
 ; PROFIL (araclarin kullandigi kosullar): uc bolum da var, komut kimlikleri 0..n-1 YOGUN, en cok 3 operand, host kimlikleri yogun. Sonuc 0 ya da kod
@@ -1061,6 +1094,590 @@ func opfields(r) {
     ret 0
 }
 
+
+
+; yuk s'deki ilk cnt kaydin sembol/adlari (sp,sl)/(np,nl) ile cakisiyor mu (1/0); kayit: reclen kimlik symlen sym.. adlen ad..
+func dupscan(s, cnt, sp, sl, np, nl) {
+    addi pm, s, 1
+    mov k, 0
+d1: ge z, k, cnt
+    jnz z, d9
+    add b, pm, T
+    ld prl, b, 0
+    ld psl, b, 2
+    addi psp, pm, 3
+    call same, teq, sp, sl, psp, psl
+    jz same, d2
+    ret 1
+d2: add b, psp, psl
+    add b, b, T
+    ld pnl, b, 0
+    add pnp, psp, psl
+    addi pnp, pnp, 1
+    call same, teq, np, nl, pnp, pnl
+    jz same, d3
+    ret 1
+d3: add pm, pm, prl
+    addi pm, pm, 1
+    addi k, k, 1
+    jmp d1
+d9: ret 0
+}
+
+; PSEUDO bolumu (takma komutlar: dogrudan kodlanmayan, yeniden yazma kurallariyla gercek komuta donusen mnemonikler).
+; kayit: reclen kimlik(0..255) symlen sym.. adlen ad.. operand_sayisi ne (anahtar,deger)*ne tail...
+func vpseudo(s, e) {
+    call x, walkrec, s, e, 6
+    jz x, p0
+    ret x
+p0: add a, s, T
+    ld n, a, 0
+    addi r, s, 1
+    mov j, 0
+p1: ge z, j, n
+    jnz z, pok
+    add a, r, T
+    ld rl, a, 0
+    add end, r, rl
+    addi end, end, 1
+    ld pid, a, 1
+    ld sl, a, 2
+    lti z, pid, 0
+    jnz z, pbad
+    gei z, pid, 256
+    jnz z, pbad
+    addi sp, r, 3
+    call okn, vname, sp, sl, 1
+    jz okn, pbad
+    add q, sp, sl
+    gt z, q, end
+    jnz z, pbad
+    add b, q, T
+    ld nl, b, 0
+    addi np, q, 1
+    call okn, vname, np, nl, 2
+    jz okn, pbad
+    add q, np, nl
+    addi t, q, 1
+    ge z, t, end
+    jnz z, pbad
+    add b, q, T
+    ld nop, b, 0
+    lti z, nop, 0
+    jnz z, pbad
+    gti z, nop, 255
+    jnz z, pbad
+    addi q, q, 1
+    add b, q, T
+    ld ne2, b, 0
+    lti z, ne2, 0
+    jnz z, pbad
+    shli t, ne2, 1
+    add t, t, q
+    addi t, t, 1
+    gt z, t, end
+    jnz z, pbad
+    add b, pid, PSA
+    ld o, b, 0
+    jz o, p2
+    ret 90
+p2: addi t, r, 1
+    st t, b, 0
+    ; sembol/ad: komutlarla ve onceki takmalarla tekil
+    ld so, SA, 2
+    jz so, p3
+    addi s2, so, -1
+    add b, s2, T
+    ld cnt, b, 0
+    call same, dupscan, s2, cnt, sp, sl, np, nl
+    jz same, p3
+    ret 91
+p3: call same, dupscan, s, j, sp, sl, np, nl
+    jz same, p4
+    ret 92
+p4: addi j, j, 1
+    mov r, end
+    jmp p1
+pbad: ret 93
+pok: ret 0
+}
+
+; REWRITE bolumu (yeniden yazma kurallari). kayit: reclen kaynak_turu(0 komut, 1 takma) kaynak_kimligi nvaka vaka... ne (anahtar,deger)*ne tail...
+;   vaka: kosul alt ust neylem (eylem arg)*neylem
+;   kosul 1: c operandi 32 bit dogrudan sayi ve alt<=deger<=ust ; 2: c dogrudan sayi degil, b dogrudan sayi ve alt<=deger<=ust ; 3: her zaman
+;   eylem 1: komutu arg olarak degistir (gercek komut) ; 2: b ve c operandlarini takas et ; 3: c dogrudan sayisini eksi yap
+;   Vakalar sirayla denenir, ilk eslesen uygulanir. Kaynak en az 3 operandli olmali.
+func vrw(s, e) {
+    call x, walkrec, s, e, 7
+    jz x, r0
+    ret x
+r0: add a, s, T
+    ld n, a, 0
+    addi r, s, 1
+    mov j, 0
+r1: ge z, j, n
+    jnz z, rok
+    add a, r, T
+    ld rl, a, 0
+    add end, r, rl
+    addi end, end, 1
+    ld sk, a, 1
+    ld src, a, 2
+    ld nc, a, 3
+    lti z, src, 0
+    jnz z, rbad
+    gei z, src, 8192
+    jnz z, rbad
+    eqi z, sk, 0
+    jz z, r1a
+    add b, src, OA
+    ld o, b, 0
+    jnz o, r1b
+    ret 80
+r1a: eqi z, sk, 1
+    jnz z, r1c
+    ret 81
+r1c: gei z, src, 256
+    jnz z, rbad
+    add b, src, PSA
+    ld o, b, 0
+    jnz o, r1b
+    ret 80
+r1b: addi orec, o, -1
+    call x, opfields, orec
+    ld nk, G, 24
+    lti z, nk, 3
+    jz z, r2
+    ret 82
+r2: eqi z, sk, 0
+    jz z, r2a
+    add b, src, RWA
+    jmp r2b
+r2a: add b, src, RWB
+r2b: ld o2, b, 0
+    jz o2, r2c
+    ret 83
+r2c: addi t, r, 1
+    st t, b, 0
+    lti z, nc, 1
+    jnz z, rbad
+    gti z, nc, 64
+    jnz z, rbad
+    addi q, r, 4
+    mov c, 0
+c1: ge z, c, nc
+    jnz z, c9
+    addi t, q, 4
+    ge z, t, end
+    jnz z, rbad
+    add b, q, T
+    ld kd, b, 0
+    ld lo, b, 1
+    ld hi, b, 2
+    ld na, b, 3
+    lti z, kd, 1
+    jnz z, rbad
+    gti z, kd, 3
+    jnz z, rbad
+    gt z, lo, hi
+    jnz z, rbad
+    lti z, na, 0
+    jnz z, rbad
+    gti z, na, 8
+    jnz z, rbad
+    addi q, q, 4
+    shli t, na, 1
+    add t, t, q
+    addi t, t, 1
+    gt z, t, end
+    jnz z, rbad
+    mov m, 0
+a1: ge z, m, na
+    jnz z, a9
+    add b, q, T
+    ld act, b, 0
+    ld arg, b, 1
+    eqi z, act, 1
+    jz z, a2
+    lti z, arg, 0
+    jnz z, rbad
+    gei z, arg, 8192
+    jnz z, rbad
+    add b, arg, OA
+    ld o3, b, 0
+    jnz o3, a1a
+    ret 84
+a1a: addi orec3, o3, -1
+    call x, opfields, orec3
+    ld nk3, G, 24
+    ne z, nk3, nk
+    jz z, a1b
+    ret 85
+a1b: jmp a4
+a2: eqi z, act, 2
+    jnz z, a4
+    eqi z, act, 3
+    jnz z, a4
+    ret 86
+a4: addi q, q, 2
+    addi m, m, 1
+    jmp a1
+a9: addi c, c, 1
+    jmp c1
+c9: addi t, q, 1
+    gt z, t, end
+    jnz z, rbad
+    add b, q, T
+    ld ne2, b, 0
+    lti z, ne2, 0
+    jnz z, rbad
+    shli t, ne2, 1
+    add t, t, q
+    addi t, t, 1
+    gt z, t, end
+    jnz z, rbad
+    addi j, j, 1
+    mov r, end
+    jmp r1
+rbad: ret 87
+rok: ret 0
+}
+
+data STR_NPSEUDO = "NPSEUDO \0"
+data STR_PSNAMES = "PSNAMES\0"
+data STR_PSNOPS = "PSNOPS\0"
+data STR_RWOFF = "RWOFF\0"
+data STR_RWDAT = "RWDAT\0"
+
+func npseudo() {
+    ld s6, SA, 6
+    jnz s6, q1
+    ret 0
+q1: addi t, s6, -1
+    add a, t, T
+    ld n, a, 0
+    ret n
+}
+; k. takma komut kaydi (reclen konumu), bolumdeki sira ile
+func pseudorec(k) {
+    ld r, SA, 6
+    mov i, 0
+l1: ge z, i, k
+    jnz z, l2
+    add a, r, T
+    ld rl, a, 0
+    add r, r, rl
+    addi r, r, 1
+    addi i, i, 1
+    jmp l1
+l2: ret r
+}
+; kural kaydi r'nin yuk jeton sayisi (nvaka dahil)
+func rwlen(r) {
+    add a, r, T
+    ld nc, a, 3
+    addi q, r, 4
+    mov len, 1
+    mov c, 0
+w1: ge z, c, nc
+    jnz z, w9
+    add b, q, T
+    ld na, b, 3
+    shli t, na, 1
+    addi t, t, 4
+    add len, len, t
+    add q, q, t
+    addi c, c, 1
+    jmp w1
+w9: ret len
+}
+; kural kaydi r'nin yuku: " nvaka" ve ham vaka jetonlari
+func rwprint(r) {
+    call len, rwlen, r
+    add a, r, T
+    ld nc, a, 3
+    host putc, 32
+    host puti, nc
+    addi p, r, 4
+    addi n, len, -1
+    call x, pcodes, p, n
+    ret 0
+}
+; takma komut ordinal k'nin kural kaydi (reclen konumu + 1) ya da 0
+func pseudorule(k) {
+    call r, pseudorec, k
+    add a, r, T
+    ld pid, a, 1
+    add b, pid, RWB
+    ld o, b, 0
+    ret o
+}
+
+func emit_rw() {
+    call n, nops
+    call np, npseudo
+    call x, pdat, STR_NPSEUDO
+    host puti, np
+    host putc, 10
+    call x, pdat, STR_PSNAMES
+    jnz np, m0
+    host putc, 32
+    host puti, 0
+    jmp m1
+m0: mov i, 0
+m0a: ge z, i, np
+    jnz z, m1
+    call r, pseudorec, i
+    call x, opfields, r
+    ld pp, G, 22
+    ld nl, G, 23
+    call x, pcodes, pp, nl
+    host putc, 32
+    host puti, 0
+    addi i, i, 1
+    jmp m0a
+m1: host putc, 10
+    call x, pdat, STR_PSNOPS
+    jnz np, m2
+    host putc, 32
+    host puti, 0
+    jmp m3
+m2: mov i, 0
+m2a: ge z, i, np
+    jnz z, m3
+    call r, pseudorec, i
+    call x, opfields, r
+    ld nk, G, 24
+    host putc, 32
+    host puti, nk
+    addi i, i, 1
+    jmp m2a
+m3: host putc, 10
+    ; RWOFF: komutlar 0..n-1 sonra takmalar; -1 = kural yok
+    call x, pdat, STR_RWOFF
+    mov tot, 0
+    mov i, 0
+o1: ge z, i, n
+    jnz z, o2
+    add a, i, RWA
+    ld o, a, 0
+    host putc, 32
+    jnz o, o1a
+    host puti, -1
+    jmp o1b
+o1a: host puti, tot
+    addi r, o, -1
+    call len, rwlen, r
+    add tot, tot, len
+o1b: addi i, i, 1
+    jmp o1
+o2: mov i, 0
+o3: ge z, i, np
+    jnz z, o4
+    call o, pseudorule, i
+    host putc, 32
+    jnz o, o3a
+    host puti, -1
+    jmp o3b
+o3a: host puti, tot
+    addi r, o, -1
+    call len, rwlen, r
+    add tot, tot, len
+o3b: addi i, i, 1
+    jmp o3
+o4: host putc, 10
+    call x, pdat, STR_RWDAT
+    jnz tot, d1
+    host putc, 32
+    host puti, 0
+    jmp d9
+d1: mov i, 0
+d2: ge z, i, n
+    jnz z, d3
+    add a, i, RWA
+    ld o, a, 0
+    jz o, d2a
+    addi r, o, -1
+    call x, rwprint, r
+d2a: addi i, i, 1
+    jmp d2
+d3: mov i, 0
+d4: ge z, i, np
+    jnz z, d9
+    call o, pseudorule, i
+    jz o, d4a
+    addi r, o, -1
+    call x, rwprint, r
+d4a: addi i, i, 1
+    jmp d4
+d9: host putc, 10
+    ret 0
+}
+
+
+; ---------- SEM'DEN TUREYEN komut ozellikleri (denetim akisi, cagri, bolen) ----------
+data STR_P_BR = "br\0"
+data STR_P_BRZ = "brz\0"
+data STR_P_BRNZ = "brnz\0"
+data STR_P_CALL = "call\0"
+data STR_P_RET = "ret\0"
+data STR_P_HALT = "halt\0"
+data STR_P_HOST = "host\0"
+data STR_P_DIVN = "divn\0"
+data STR_P_MODN = "modn\0"
+data STR_P_IM = "im\0"
+data STR_OPFLOW = "OPFLOW\0"
+data STR_OPTGT = "OPTGT\0"
+data STR_OPCALL = "OPCALL\0"
+data STR_OPCS0 = "OPCS0\0"
+data STR_OPCS1 = "OPCS1\0"
+data STR_OPDIVSL = "OPDIVSL\0"
+
+; islem pid'in adi data dizesi str (NUL sonlu) ile esit mi
+func pis(pid, str) {
+    add a, pid, PA
+    ld o, a, 0
+    jz o, no
+    addi r, o, -1
+    add b, r, T
+    ld nl, b, 2
+    addi np, r, 3
+    mov i, 0
+l1: ge z, i, nl
+    jnz z, l2
+    add a, np, i
+    add a, a, T
+    ld c1, a, 0
+    add a, str, i
+    ld c2, a, 0
+    ne z, c1, c2
+    jnz z, no
+    addi i, i, 1
+    jmp l1
+l2: add a, str, nl
+    ld c2, a, 0
+    jnz c2, no
+    ret 1
+no: ret 0
+}
+
+; komut i'nin SEM mikro-programindan: G[50] akis (0 siradan 1 durdurur(ret,halt) 2 kosulsuz atlama 3 kosullu atlama), G[51] hedef operand yuvasi,
+;   G[52] cagri sinifi (0 yok 1 call 2 host), G[53] ve G[54] cagri operand yuvalari (islev/host kimligi, pencere tabani), G[55] bolen anlik operand yuvasi (-1 yok)
+func semflow(i) {
+    mov zr, 0
+    st zr, G, 50
+    st zr, G, 51
+    st zr, G, 52
+    st zr, G, 53
+    st zr, G, 54
+    mov mone, -1
+    st mone, G, 55
+    add a, i, SMA
+    ld o, a, 0
+    jz o, sfd
+    addi r, o, -1
+    add b, r, T
+    ld nm, b, 2
+    mov j, 0
+sf1: ge z, j, nm
+    jnz z, sfd
+    muli t, j, 5
+    add t, t, r
+    addi t, t, 3
+    add b, t, T
+    ld pid, b, 0
+    ld f0, b, 1
+    ld f1, b, 2
+    ld f2, b, 3
+    call x, pis, pid, STR_P_BR
+    jz x, sf2
+    mov v, 2
+    st v, G, 50
+    st f0, G, 51
+    jmp sfn
+sf2: call x, pis, pid, STR_P_BRZ
+    jnz x, sf3a
+    call x, pis, pid, STR_P_BRNZ
+    jz x, sf4
+sf3a: mov v, 3
+    st v, G, 50
+    st f1, G, 51
+    jmp sfn
+sf4: call x, pis, pid, STR_P_RET
+    jnz x, sf5a
+    call x, pis, pid, STR_P_HALT
+    jz x, sf6
+sf5a: mov v, 1
+    st v, G, 50
+    jmp sfn
+sf6: call x, pis, pid, STR_P_CALL
+    jz x, sf7
+    mov v, 1
+    st v, G, 52
+    st f0, G, 53
+    st f1, G, 54
+    jmp sfn
+sf7: call x, pis, pid, STR_P_HOST
+    jz x, sf8
+    mov v, 2
+    st v, G, 52
+    st f0, G, 53
+    st f1, G, 54
+    jmp sfn
+sf8: call x, pis, pid, STR_P_DIVN
+    jnz x, sf9a
+    call x, pis, pid, STR_P_MODN
+    jz x, sfn
+sf9a: ; bolen = gecici f2; onu tanimlayan 'im' islemi (onceki ornekler) -> operand yuvasi
+    mov k, 0
+sg1: ge z, k, j
+    jnz z, sfn
+    muli t, k, 5
+    add t, t, r
+    addi t, t, 3
+    add b, t, T
+    ld p2, b, 0
+    ld g0, b, 1
+    ld g1, b, 2
+    call x, pis, p2, STR_P_IM
+    jz x, sg2
+    ne z, g0, f2
+    jnz z, sg2
+    st g1, G, 55
+sg2: addi k, k, 1
+    jmp sg1
+sfn: addi j, j, 1
+    jmp sf1
+sfd: ret 0
+}
+
+; bir turetilmis dizi: ad + komut basina G[slot] degeri
+func emit_flowarr(name, slot) {
+    call x, pdat, name
+    call n, nops
+    mov i, 0
+fa1: ge z, i, n
+    jnz z, fa2
+    call x, semflow, i
+    add a, slot, G
+    ld v, a, 0
+    host putc, 32
+    host puti, v
+    addi i, i, 1
+    jmp fa1
+fa2: host putc, 10
+    ret 0
+}
+
+func emit_flow() {
+    call x, emit_flowarr, STR_OPFLOW, 50
+    call x, emit_flowarr, STR_OPTGT, 51
+    call x, emit_flowarr, STR_OPCALL, 52
+    call x, emit_flowarr, STR_OPCS0, 53
+    call x, emit_flowarr, STR_OPCS1, 54
+    call x, emit_flowarr, STR_OPDIVSL, 55
+    ret 0
+}
 
 ; ---------- yazim yardimcilari (veri dizeleri) ----------
 data STR_OPCOUNT = "OPCOUNT \0"
@@ -1433,6 +2050,8 @@ te: ge z, i, nh
     addi i, i, 1
     jmp te
 tf: call x, emit_sem
+    call x, emit_rw
+    call x, emit_flow
     ret 0
 }
 
