@@ -1,4 +1,4 @@
-# Araclari (doldur, opstab, fmtc, sablonc, asm...) calistirmak icin ortak yardimci. `. arac.sh` ile kullanilir.
+# Araclari (doldur, opstab, fmtc, komut, asm...) calistirmak icin ortak yardimci. `. arac.sh` ile kullanilir.
 #   ARAC tanimliysa: $ARAC/AD.elf (bagimsiz ELF araclar; pm yok)   degilse: "$PM run oz/arac/AD.pmb" (onyukleme; PM = pm yolu)
 # arac AD  : stdin -> stdout calistirir
 ARACDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)

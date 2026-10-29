@@ -22,6 +22,10 @@ space SA 64
 space PA 1024
 space SMA 8192
 space PSA 256
+space TOA 8192
+space TSA 256
+space TPA 1024
+space TKA 1024
 space RWA 8192
 space RWB 256
 space G 64
@@ -288,7 +292,30 @@ c13: gei z, i, 256
     st zr, a, 0
     addi i, i, 1
     jmp c13
-c14: ret 0
+c14: mov i, 0
+c15: gei z, i, 1024
+    jnz z, c16
+    add a, i, TPA
+    st zr, a, 0
+    add a, i, TKA
+    st zr, a, 0
+    addi i, i, 1
+    jmp c15
+c16: mov i, 0
+c17: gei z, i, 8192
+    jnz z, c18
+    add a, i, TOA
+    st zr, a, 0
+    addi i, i, 1
+    jmp c17
+c18: mov i, 0
+c19: gei z, i, 256
+    jnz z, c20
+    add a, i, TSA
+    st zr, a, 0
+    addi i, i, 1
+    jmp c19
+c20: ret 0
 }
 
 ; bolum yukunun [s, e) sinirlari icinde n kayit: her kaydin uzunlugu sinira sigar mi? sonuc: 0 ya da hata
@@ -913,7 +940,7 @@ v3b: add e, p, ln
     ret 4
 v3c: lti z, id, 1
     jnz z, v5
-    gti z, id, 7
+    gti z, id, 9
     jnz z, v5
     eqi z, vs, 1
     jz z, v5
@@ -986,7 +1013,21 @@ v15: ld s7, SA, 7
     call x, vrw, s, e
     jz x, v16
     ret x
-v16: ret 0
+v16: ld s8, SA, 8
+    jz s8, v17
+    addi s, s8, -1
+    ld e, SA, 24
+    call x, vtoken, s, e
+    jz x, v17
+    ret x
+v17: ld s9, SA, 9
+    jz s9, v18
+    addi s, s9, -1
+    ld e, SA, 25
+    call x, vtpl, s, e
+    jz x, v18
+    ret x
+v18: ret 0
 }
 
 ; PROFIL (araclarin kullandigi kosullar): uc bolum da var, komut kimlikleri 0..n-1 YOGUN, en cok 3 operand, host kimlikleri yogun. Sonuc 0 ya da kod
@@ -1708,6 +1749,497 @@ func emit_flow() {
     call x, emit_flowarr, STR_OPCS0, 53
     call x, emit_flowarr, STR_OPCS1, 54
     call x, emit_flowarr, STR_OPDIVSL, 55
+    call x, emit_back
+    ret 0
+}
+
+
+; ---------- TOKEN (8) ve TEMPLATE (9) bolumleri: x86 sablonlari ----------
+; TOKEN kaydi: reclen kod(256..1023) adlen ad.. sinif ne (anahtar,deger)*ne tail...   sinif: 1 imm32, 2 rel32, 3 imm8, 4 mikro-islem alan simgesi (bilgi amacli)
+func vtoken(s, e) {
+    call x, walkrec, s, e, 8
+    jz x, t0
+    ret x
+t0: add a, s, T
+    ld n, a, 0
+    addi r, s, 1
+    mov j, 0
+t1: ge z, j, n
+    jnz z, tok
+    add a, r, T
+    ld rl, a, 0
+    add end, r, rl
+    addi end, end, 1
+    ld code, a, 1
+    ld nl, a, 2
+    lti z, code, 256
+    jnz z, tbad
+    gei z, code, 1024
+    jnz z, tbad
+    addi np, r, 3
+    call okn, vname, np, nl, 1
+    jz okn, tbad
+    ; iki onaltilik rakamdan olusan ad bayt ile karisir
+    eqi z, nl, 2
+    jz z, tnh
+    add b, np, T
+    ld c0, b, 0
+    ld c1, b, 1
+    call h0, hexv, c0
+    call h1, hexv, c1
+    lti z, h0, 0
+    jnz z, tnh
+    lti z, h1, 0
+    jnz z, tnh
+    ret 103
+tnh: add q, np, nl
+    addi t, q, 1
+    ge z, t, end
+    jnz z, tbad
+    add b, q, T
+    ld cls, b, 0
+    lti z, cls, 0
+    jnz z, tbad
+    gti z, cls, 9
+    jnz z, tbad
+    addi q, q, 1
+    add b, q, T
+    ld ne2, b, 0
+    lti z, ne2, 0
+    jnz z, tbad
+    shli t, ne2, 1
+    add t, t, q
+    addi t, t, 1
+    gt z, t, end
+    jnz z, tbad
+    add b, code, TKA
+    ld o, b, 0
+    jz o, t2
+    ret 100
+t2: addi t, r, 1
+    st t, b, 0
+    ; ad tekilligi
+    addi pm, s, 1
+    mov kk, 0
+t3: ge z, kk, j
+    jnz z, t5
+    add b, pm, T
+    ld prl, b, 0
+    ld pnl, b, 2
+    addi pnp, pm, 3
+    call same, teq, np, nl, pnp, pnl
+    jz same, t4
+    ret 101
+t4: add pm, pm, prl
+    addi pm, pm, 1
+    addi kk, kk, 1
+    jmp t3
+t5: addi j, j, 1
+    mov r, end
+    jmp t1
+tbad: ret 102
+tok: ret 0
+}
+
+; TEMPLATE kaydi: reclen tur(0 komut,1 ozel,2 islem) basvuru adlen ad.. ntok(-1: tanimsiz) simge*max(ntok,0) ne (anahtar,deger)*ne tail...
+;   komut: basvuru = komut kimligi (ad yok) ; ozel: basvuru = sira (0..), ad = kucuk harfli ad ; islem: basvuru = PRIM kimligi (ad yok). Simge: 0..255 bayt ya da TOKEN kodu.
+func vtpl(s, e) {
+    call x, walkrec, s, e, 9
+    jz x, u0
+    ret x
+u0: add a, s, T
+    ld n, a, 0
+    addi r, s, 1
+    mov j, 0
+    mov nsp, 0
+u1: ge z, j, n
+    jnz z, u9
+    add a, r, T
+    ld rl, a, 0
+    add end, r, rl
+    addi end, end, 1
+    ld sk, a, 1
+    ld sr, a, 2
+    ld nl, a, 3
+    lti z, sr, 0
+    jnz z, ubad
+    addi np, r, 4
+    add q, np, nl
+    lti z, nl, 0
+    jnz z, ubad
+    ge z, q, end
+    jnz z, ubad
+    eqi z, sk, 0
+    jz z, u2
+    jnz nl, ubad
+    gei z, sr, 8192
+    jnz z, ubad
+    add b, sr, OA
+    ld o, b, 0
+    jnz o, u5a
+    ret 110
+u5a: add b, sr, TOA
+    jmp u5
+u2: eqi z, sk, 1
+    jz z, u3
+    gei z, sr, 256
+    jnz z, ubad
+    call okn, vname, np, nl, 2
+    jz okn, ubad
+    addi nsp, nsp, 1
+    add b, sr, TSA
+    jmp u5
+u3: eqi z, sk, 2
+    jnz z, u4
+    ret 111
+u4: jnz nl, ubad
+    gei z, sr, 1024
+    jnz z, ubad
+    add b, sr, PA
+    ld o, b, 0
+    jnz o, u4a
+    ret 112
+u4a: add b, sr, TPA
+u5: ld o2, b, 0
+    jz o2, u6
+    ret 113
+u6: addi t, r, 1
+    st t, b, 0
+    ; simgeler
+    add b, q, T
+    ld nt, b, 0
+    lti z, nt, -1
+    jnz z, ubad
+    gti z, nt, 16384
+    jnz z, ubad
+    addi tp, q, 1
+    mov nt2, nt
+    gti z, nt2, 0
+    jnz z, u6a
+    mov nt2, 0
+u6a: add t, tp, nt2
+    ge z, t, end
+    jnz z, ubad
+    mov m, 0
+u7: ge z, m, nt2
+    jnz z, u8
+    add b, tp, m
+    add b, b, T
+    ld tk, b, 0
+    lti z, tk, 0
+    jnz z, ubad
+    gei z, tk, 256
+    jz z, u7a
+    gei z, tk, 1024
+    jnz z, ubad
+    add b, tk, TKA
+    ld o, b, 0
+    jnz o, u7a
+    ret 114
+u7a: addi m, m, 1
+    jmp u7
+u8: add q2, tp, nt2
+    add b, q2, T
+    ld ne2, b, 0
+    lti z, ne2, 0
+    jnz z, ubad
+    shli t, ne2, 1
+    add t, t, q2
+    addi t, t, 1
+    gt z, t, end
+    jnz z, ubad
+    ; ozel ad tekilligi (onceki ozel kayitlarla)
+    eqi z, sk, 1
+    jz z, u8z
+    addi pm, s, 1
+    mov kk, 0
+u8a: ge z, kk, j
+    jnz z, u8z
+    add b, pm, T
+    ld prl, b, 0
+    ld psk, b, 1
+    ld pnl, b, 3
+    eqi z, psk, 1
+    jz z, u8b
+    addi pnp, pm, 4
+    call same, teq, np, nl, pnp, pnl
+    jz same, u8b
+    ret 115
+u8b: add pm, pm, prl
+    addi pm, pm, 1
+    addi kk, kk, 1
+    jmp u8a
+u8z: addi j, j, 1
+    mov r, end
+    jmp u1
+u9: ; ozel kimlikler 0..nsp-1 yogun
+    mov i, 0
+u9a: ge z, i, nsp
+    jnz z, uok
+    add b, i, TSA
+    ld o, b, 0
+    jnz o, u9b
+    ret 116
+u9b: addi i, i, 1
+    jmp u9a
+ubad: ret 117
+uok: ret 0
+}
+
+; yuva s'nin sablon kaydi (reclen konumu + 1) ya da 0.  yuva: komut kimligi | n+sira (ozel) | n+ns+islem kimligi
+func tplslot(s, n, ns) {
+    lt z, s, n
+    jz z, ts1
+    add a, s, TOA
+    ld o, a, 0
+    ret o
+ts1: add t, n, ns
+    lt z, s, t
+    jz z, ts2
+    sub u, s, n
+    add a, u, TSA
+    ld o, a, 0
+    ret o
+ts2: sub u, s, t
+    add a, u, TPA
+    ld o, a, 0
+    ret o
+}
+
+data STR_TPLS = "TPLS\0"
+data STR_TPL = "TPL\0"
+data STR_TSP = "TS_\0"
+data STR_TSP0 = "TS_PRIM0 \0"
+
+; sablon sozlugu: eski sablonc ciktisiyla ayni (TPLS baslangiclar, TPL simge akisi, TS_<AD> yuvalar, TS_PRIM0)
+func emit_tpl() {
+    ld s9, SA, 9
+    jnz s9, e0
+    ret 0
+e0: call n, nops
+    ; ozel sayisi
+    mov ns, 0
+e0a: add a, ns, TSA
+    ld o, a, 0
+    jz o, e0b
+    addi ns, ns, 1
+    jmp e0a
+e0b: ; en buyuk islem kimligi
+    mov pm, 0
+    mov i, 1
+e0c: gei z, i, 1024
+    jnz z, e0d
+    add a, i, PA
+    ld o, a, 0
+    jz o, e0e
+    mov pm, i
+e0e: addi i, i, 1
+    jmp e0c
+e0d: add tot, n, ns
+    add tot, tot, pm
+    addi tot, tot, 1
+    call x, pdat, STR_TPLS
+    mov pos, 0
+    mov i, 0
+e1: ge z, i, tot
+    jnz z, e2
+    host putc, 32
+    call o, tplslot, i, n, ns
+    jnz o, e1a
+    host puti, -1
+    jmp e1c
+e1a: addi r, o, -1
+    call nt, tpllen, r
+    lti z, nt, 0
+    jz z, e1b
+    host puti, -1
+    jmp e1c
+e1b: host puti, pos
+    add pos, pos, nt
+    addi pos, pos, 1
+e1c: addi i, i, 1
+    jmp e1
+e2: host putc, 10
+    call x, pdat, STR_TPL
+    mov i, 0
+e3: ge z, i, tot
+    jnz z, e4
+    call o, tplslot, i, n, ns
+    jz o, e3a
+    addi r, o, -1
+    call nt, tpllen, r
+    lti z, nt, 0
+    jnz z, e3a
+    call x, tplprint, r, nt
+e3a: addi i, i, 1
+    jmp e3
+e4: host putc, 10
+    mov k, 0
+e5: ge z, k, ns
+    jnz z, e6
+    add a, k, TSA
+    ld o, a, 0
+    addi r, o, -1
+    add b, r, T
+    ld nl, b, 3
+    call x, pdat, STR_TSP
+    addi np, r, 4
+    call x, pstru, np, nl
+    host putc, 32
+    add t, n, k
+    host puti, t
+    host putc, 10
+    addi k, k, 1
+    jmp e5
+e6: call x, pdat, STR_TSP0
+    add t, n, ns
+    host puti, t
+    host putc, 10
+    ret 0
+}
+; sablon kaydi r'nin simge sayisi (tanimsiz: -1)
+func tpllen(r) {
+    add a, r, T
+    ld nl, a, 3
+    addi q, r, 4
+    add q, q, nl
+    add b, q, T
+    ld nt, b, 0
+    ret nt
+}
+; sablon kaydi r'nin simgeleri " simge ... -1"
+func tplprint(r, nt) {
+    add a, r, T
+    ld nl, a, 3
+    addi q, r, 5
+    add q, q, nl
+    mov m, 0
+p1: ge z, m, nt
+    jnz z, p2
+    add b, q, m
+    add b, b, T
+    ld v, b, 0
+    host putc, 32
+    host puti, v
+    addi m, m, 1
+    jmp p1
+p2: host putc, 32
+    host puti, -1
+    ret 0
+}
+
+
+data STR_OPBACK = "OPBACK\0"
+data STR_PBACK = "PBACK\0"
+
+; T'deki ad (p,l; buyuk/kucuk harf fark etmez) + "_back" = ozel sablon k'nin adi mi
+func isback(p, l, rec) {
+    add a, rec, T
+    ld nl2, a, 3
+    addi t, l, 5
+    ne z, nl2, t
+    jnz z, no
+    addi np2, rec, 4
+    mov i, 0
+b1: ge z, i, l
+    jnz z, b2
+    add a, p, i
+    add a, a, T
+    ld c1, a, 0
+    gei z, c1, 65
+    jz z, b1a
+    lei z, c1, 90
+    jz z, b1a
+    addi c1, c1, 32
+b1a: add a, np2, i
+    add a, a, T
+    ld c2, a, 0
+    ne z, c1, c2
+    jnz z, no
+    addi i, i, 1
+    jmp b1
+b2: add a, np2, l
+    add a, a, T
+    ld c1, a, 0
+    eqi z, c1, 95
+    jz z, no
+    ld c1, a, 1
+    eqi z, c1, 98
+    jz z, no
+    ld c1, a, 2
+    eqi z, c1, 97
+    jz z, no
+    ld c1, a, 3
+    eqi z, c1, 99
+    jz z, no
+    ld c1, a, 4
+    eqi z, c1, 107
+    jz z, no
+    ret 1
+no: ret 0
+}
+; kaynak adina (p,l) karsilik gelen "<ad>_back" ozel sablon yuvasi (n + sira) ya da -1
+func backslot(p, l, n) {
+    ld s9, SA, 9
+    jz s9, no
+    mov k, 0
+k1: add a, k, TSA
+    ld o, a, 0
+    jz o, no
+    addi r, o, -1
+    call m, isback, p, l, r
+    jz m, k2
+    add t, n, k
+    ret t
+k2: addi k, k, 1
+    jmp k1
+no: ret -1
+}
+; OPBACK (komut basina), PBACK (islem kimligi basina): geri atlama (yakit) varyanti ozel sablon yuvasi
+func emit_back() {
+    call n, nops
+    call x, pdat, STR_OPBACK
+    mov i, 0
+q1: ge z, i, n
+    jnz z, q2
+    call r, oprec, i
+    call x, opfields, r
+    ld sp, G, 20
+    ld sl, G, 21
+    call v, backslot, sp, sl, n
+    host putc, 32
+    host puti, v
+    addi i, i, 1
+    jmp q1
+q2: host putc, 10
+    mov pm, 0
+    mov i, 1
+q3: gei z, i, 1024
+    jnz z, q4
+    add a, i, PA
+    ld o, a, 0
+    jz o, q3a
+    mov pm, i
+q3a: addi i, i, 1
+    jmp q3
+q4: call x, pdat, STR_PBACK
+    mov i, 0
+q5: gt z, i, pm
+    jnz z, q9
+    add a, i, PA
+    ld o, a, 0
+    mov v, -1
+    jz o, q6
+    addi r, o, -1
+    add b, r, T
+    ld nl, b, 2
+    addi np, r, 3
+    call v, backslot, np, nl, n
+q6: host putc, 32
+    host puti, v
+    addi i, i, 1
+    jmp q5
+q9: host putc, 10
     ret 0
 }
 
@@ -2084,6 +2616,7 @@ te: ge z, i, nh
 tf: call x, emit_sem
     call x, emit_rw
     call x, emit_flow
+    call x, emit_tpl
     ret 0
 }
 
@@ -2325,6 +2858,12 @@ data W_SEMS = "sems\0"
 data W_PRIM = "prim\0"
 data W_SEM = "sem\0"
 data W_SEMI = ";\0"
+data W_TOKENS = "tokens\0"
+data W_TPLS = "tpls\0"
+data W_TOKEN = "token\0"
+data W_TPL = "tpl\0"
+data W_SPK = "sp\0"
+data W_COLON = ":\0"
 data W_TI = "ti\0"
 data W_TO = "to\0"
 data W_OP2 = "op\0"
@@ -2375,6 +2914,50 @@ f2: host puti, v
     ret 0
 }
 
+func hexd(d) {
+    lti z, d, 10
+    jz z, h1
+    addi c, d, 48
+    host putc, c
+    ret 0
+h1: addi c, d, 55
+    host putc, c
+    ret 0
+}
+func phex(v) {
+    shri h, v, 4
+    call x, hexd, h
+    andi l, v, 15
+    call x, hexd, l
+    ret 0
+}
+; TOKEN kodunun adi
+func ptokn(code) {
+    add a, code, TKA
+    ld o, a, 0
+    addi r, o, -1
+    add b, r, T
+    ld nl, b, 2
+    addi np, r, 3
+    call x, pstr, np, nl
+    ret 0
+}
+func hexv(c) {
+    lti z, c, 48
+    jnz z, no
+    lei z, c, 57
+    jz z, h1
+    addi r, c, -48
+    ret r
+h1: lti z, c, 65
+    jnz z, no
+    lei z, c, 70
+    jz z, no
+    addi r, c, -55
+    ret r
+no: ret -1
+}
+
 func emit_gor() {
     call x, pdat, GH
     call x, pdat, W_PMK_S
@@ -2399,8 +2982,13 @@ g1: ge z, i, ns
     lti z, id, 1
     jnz z, gop
     gti z, id, 5
-    jnz z, gop
-    eqi z, vs, 1
+    jz z, gok
+    eqi z, id, 8
+    jnz z, gok
+    eqi z, id, 9
+    jnz z, gok
+    jmp gop
+gok: eqi z, vs, 1
     jz z, gop
     ; yapisal bolum
     eqi z, id, 1
@@ -2419,7 +3007,15 @@ g2b: eqi z, id, 4
     jz z, g2c
     call x, pdat, W_PRIMS
     jmp g3
-g2c: call x, pdat, W_SEMS
+g2c: eqi z, id, 5
+    jz z, g2d
+    call x, pdat, W_SEMS
+    jmp g3
+g2d: eqi z, id, 8
+    jz z, g2e
+    call x, pdat, W_TOKENS
+    jmp g3
+g2e: call x, pdat, W_TPLS
 g3: host putc, 32
     host puti, fl
     host putc, 32
@@ -2488,6 +3084,10 @@ g6: eqi z, id, 3
     jnz z, g6h
     eqi z, id, 4
     jnz z, g6p
+    eqi z, id, 8
+    jnz z, g6t
+    eqi z, id, 9
+    jnz z, g6u
     jmp g6s
 g6h: call x, pdat, W_HOST
     host putc, 32
@@ -2532,6 +3132,81 @@ g6p3: add b, q, k
 g6p9: add q, q, nf
     addi q, q, 1
     call x, pext, q, f
+    jmp g7
+g6t: call x, pdat, W_TOKEN
+    host putc, 32
+    ld v, a, 1
+    host puti, v
+    host putc, 32
+    ld nl, a, 2
+    addi np, r, 3
+    call x, pstr, np, nl
+    host putc, 32
+    add q, np, nl
+    add b, q, T
+    ld v, b, 0
+    host puti, v
+    addi q, q, 1
+    call x, pext, q, f
+    jmp g7
+g6u: call x, pdat, W_TPL
+    host putc, 32
+    ld sk, a, 1
+    ld sr, a, 2
+    ld nl, a, 3
+    addi np, r, 4
+    eqi z, sk, 0
+    jz z, g6u1
+    call x, pdat, W_OP
+    host putc, 32
+    add b, sr, OA
+    ld o, b, 0
+    addi orec, o, -1
+    call x, opfields, orec
+    ld sp, G, 20
+    ld sl, G, 21
+    call x, pstr, sp, sl
+    jmp g6u3
+g6u1: eqi z, sk, 1
+    jz z, g6u2
+    call x, pdat, W_SPK
+    host putc, 32
+    host puti, sr
+    host putc, 32
+    call x, pstr, np, nl
+    jmp g6u3
+g6u2: call x, pdat, W_PRIM
+    host putc, 32
+    call x, prname, sr
+g6u3: add q, np, nl
+    add b, q, T
+    ld nt, b, 0
+    host putc, 32
+    host putc, 58
+    addi q, q, 1
+    lti z, nt, 0
+    jz z, g6u4
+    host putc, 32
+    host putc, 45
+    jmp g6u9
+g6u4: mov m, 0
+g6u5: ge z, m, nt
+    jnz z, g6u9
+    host putc, 32
+    add b, q, m
+    add b, b, T
+    ld tk, b, 0
+    gei z, tk, 256
+    jz z, g6u6
+    call x, ptokn, tk
+    jmp g6u7
+g6u6: call x, phex, tk
+g6u7: addi m, m, 1
+    jmp g6u5
+g6u9: lti z, nt, 0
+    jnz z, g6u10
+    add q, q, nt
+g6u10: call x, pext, q, f
     jmp g7
 g6s: call x, pdat, W_SEM
     host putc, 32
@@ -2618,6 +3293,9 @@ space OSO 1024
 space OSL 1024
 space OSC 1024
 space PS 16
+space TNO 1100
+space TNL 1100
+space TNC 1100
 
 func ot(v) {
     ld n, G, 9
@@ -3001,6 +3679,7 @@ func do_yaz(st0, n) {
     st z0, G, 14
     st z0, G, 40
     st z0, G, 41
+    st z0, G, 42
     mov i, 0
     mov zr, 0
 y0: gei z, i, 256
@@ -3089,7 +3768,7 @@ ppp3: addi pcn, pcn, 1
     st pcn, G, 40
     jmp pp0
 ppo: call r, streq, ws, wl, W_OP
-    jz r, pp0
+    jz r, ppt
     call q, nextw, q, e
     ld l2, G, 31
     ld w2, G, 30
@@ -3109,6 +3788,28 @@ ppo1: add a, on, OSO
     st opcv, a, 0
     addi on, on, 1
     st on, G, 41
+    jmp pp0
+ppt: call r, streq, ws, wl, W_TOKEN
+    jz r, pp0
+    call q, nextw, q, e
+    ld l2, G, 31
+    ld w2, G, 30
+    call tcv, wnum, w2, l2
+    call q, nextw, q, e
+    ld l2, G, 31
+    ld w2, G, 30
+    ld tn, G, 42
+    gei z, tn, 1000
+    jz z, ppt1
+    call x, fail, 120
+ppt1: add a, tn, TNO
+    st w2, a, 0
+    add a, tn, TNL
+    st l2, a, 0
+    add a, tn, TNC
+    st tcv, a, 0
+    addi tn, tn, 1
+    st tn, G, 42
     jmp pp0
 pp9: mov p, st0
 y2: ge z, p, n
@@ -3160,8 +3861,16 @@ yb3: call r, streq, ws, wl, W_PRIMS
     mov sid, 4
     jmp yc
 yb4: call r, streq, ws, wl, W_SEMS
-    jz r, yd
+    jz r, yb5
     mov sid, 5
+    jmp yc
+yb5: call r, streq, ws, wl, W_TOKENS
+    jz r, yb6
+    mov sid, 8
+    jmp yc
+yb6: call r, streq, ws, wl, W_TPLS
+    jz r, yd
+    mov sid, 9
 yc: call q, nextw, q, e
     ld l2, G, 31
     ld w2, G, 30
@@ -3357,7 +4066,7 @@ yh3: call x, tailparse, q, e
     call x, recend, rb
     jmp y2
 yi: call r, streq, ws, wl, W_SEM
-    jz r, yz
+    jz r, yj
     eqi z, cs, 5
     jnz z, yi0
     call x, fail, 69
@@ -3410,6 +4119,161 @@ yi6: addi nm, nm, 1
     jmp yi1
 yi8: mov q, q0
 yi9: call x, otat, nmpos, nm
+    call x, tailparse, q, e
+    call x, recend, rb
+    jmp y2
+yj: call r, streq, ws, wl, W_TOKEN
+    jz r, yk
+    eqi z, cs, 8
+    jnz z, yj1
+    call x, fail, 69
+yj1: call rb, recbegin
+    call q, nextw, q, e
+    ld l2, G, 31
+    ld w2, G, 30
+    call v, wnum, w2, l2
+    call x, ot, v
+    call q, nextw, q, e
+    ld l2, G, 31
+    ld w2, G, 30
+    call x, ot, l2
+    call x, putword, w2, l2
+    call q, nextw, q, e
+    ld l2, G, 31
+    ld w2, G, 30
+    call v, wnum, w2, l2
+    call x, ot, v
+    call x, tailparse, q, e
+    call x, recend, rb
+    jmp y2
+yk: call r, streq, ws, wl, W_TPL
+    jz r, yz
+    eqi z, cs, 9
+    jnz z, yk1
+    call x, fail, 69
+yk1: call rb, recbegin
+    call q, nextw, q, e
+    ld l2, G, 31
+    ld w2, G, 30
+    call r, streq, w2, l2, W_OP
+    jz r, yk2
+    call q, nextw, q, e
+    ld l2, G, 31
+    ld w2, G, 30
+    call opc, symlook, w2, l2
+    mov z0, 0
+    call x, ot, z0
+    call x, ot, opc
+    call x, ot, z0
+    jmp yk5
+yk2: call r, streq, w2, l2, W_SPK
+    jz r, yk3
+    call q, nextw, q, e
+    ld l2, G, 31
+    ld w2, G, 30
+    call ord, wnum, w2, l2
+    call q, nextw, q, e
+    ld nl2, G, 31
+    ld nw2, G, 30
+    mov one, 1
+    call x, ot, one
+    call x, ot, ord
+    call x, ot, nl2
+    call x, putword, nw2, nl2
+    jmp yk5
+yk3: call r, streq, w2, l2, W_PRIM
+    jnz r, yk4
+    call x, fail, 121
+yk4: call q, nextw, q, e
+    ld l2, G, 31
+    ld w2, G, 30
+    call pi, primlook, w2, l2
+    add a, pi, PID
+    ld pidv, a, 0
+    mov two, 2
+    mov z0, 0
+    call x, ot, two
+    call x, ot, pidv
+    call x, ot, z0
+yk5: call q, nextw, q, e
+    ld l2, G, 31
+    ld w2, G, 30
+    call r, streq, w2, l2, W_COLON
+    jnz r, yk6
+    call x, fail, 122
+yk6: ld ntpos, G, 9
+    mov z0, 0
+    call x, ot, z0
+    mov nt, 0
+yk7: mov q0, q
+    call q, nextw, q, e
+    ld wl, G, 31
+    jz wl, yk9
+    ld ws, G, 30
+    call r, streq, ws, wl, W_EXT
+    jnz r, yk8
+    call r, streq, ws, wl, W_TAIL
+    jnz r, yk8
+    eqi z, wl, 1
+    jz z, yk10
+    add a, ws, IB
+    ld c, a, 0
+    eqi z, c, 45
+    jz z, yk10
+    mov nt, -1
+    jmp yk7
+yk10: eqi z, wl, 2
+    jz z, yk12
+    add a, ws, IB
+    ld c0, a, 0
+    call h0, hexv, c0
+    lti z, h0, 0
+    jnz z, yk12
+    add a, ws, 1
+    add a, a, IB
+    ld c1, a, 0
+    call h1, hexv, c1
+    lti z, h1, 0
+    jnz z, yk12
+    muli v, h0, 16
+    add v, v, h1
+    jmp yk11
+yk12: ; simge adi
+    ld tn, G, 42
+    mov k, 0
+yk13: ge z, k, tn
+    jnz z, yk14
+    add a, k, TNL
+    ld tl, a, 0
+    ne z, tl, wl
+    jnz z, yk15
+    mov j, 0
+yk13a: ge z, j, wl
+    jnz z, yk16
+    add a, k, TNO
+    ld to, a, 0
+    add a, to, j
+    add a, a, IB
+    ld c1, a, 0
+    add a, ws, j
+    add a, a, IB
+    ld c2, a, 0
+    ne z, c1, c2
+    jnz z, yk15
+    addi j, j, 1
+    jmp yk13a
+yk15: addi k, k, 1
+    jmp yk13
+yk16: add a, k, TNC
+    ld v, a, 0
+    jmp yk11
+yk14: call x, fail, 123
+yk11: call x, ot, v
+    addi nt, nt, 1
+    jmp yk7
+yk8: mov q, q0
+yk9: ; nt = -1 ise '-' (tanimsiz) ve simge yok
+    call x, otat, ntpos, nt
     call x, tailparse, q, e
     call x, recend, rb
     jmp y2

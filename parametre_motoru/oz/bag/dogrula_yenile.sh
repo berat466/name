@@ -13,10 +13,13 @@ PF() { env -i PATH=$T/bin BAG="$BAG" bash "$@"; }       # pm/g++/awk/sed erisile
 ./kur.sh $PM $T/E2 > /dev/null || { echo "kur.sh basarisiz"; exit 1; }
 # v1 kaynak agaci: mevcut agac, yalniz uretici kaynaklari v1
 R1=$T/R1; mkdir -p $R1/oz; cp -r $R/oz/komut $R1/oz/; cp -r $R/oz/arac $R/oz/asm $R/oz/elf2 $R/oz/dogr $R/oz/yap $R/oz/elf $R1/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $R1/oz/
-cp nesil_v1/sablon.txt $R1/oz/elf2/sablon.txt; cp nesil_v1/gen2.pma.in $R1/oz/elf2/gen2.pma.in
+# v1 sablonlari: mevcut tablonun "tokens" bolumunden onceki kismi + v1 sablon bolumleri (nesil_v1/sablonlar.txt: okunabilir gorunum)
+{ echo "@@gor"; cat $R/oz/komut/komutlar.pmk; } | $PM run $R/oz/arac/komut.pmb | awk '/^tokens /{exit} {print}' > $T/v1.txt; cat nesil_v1/sablonlar.txt >> $T/v1.txt
+{ echo "@@yaz"; cat $T/v1.txt; } | $PM run $R/oz/arac/komut.pmb > $R1/oz/komut/komutlar.pmk || { echo "v1 tablosu uretilemedi"; exit 1; }
+cp nesil_v1/gen2.pma.in $R1/oz/elf2/gen2.pma.in
 PF ./yenile.sh $T/E2 $T/E1 $R1 > $T/y1.out 2>&1 && pass || { fail "yenile (E2 -> E1) basarisiz: $(tail -2 $T/y1.out)"; }
 PF ./yenile.sh $T/E1 $T/E2b $R > $T/y2.out 2>&1 && pass || { fail "yenile (E1 -> E2b) basarisiz: $(tail -2 $T/y2.out)"; }
-for b in gen2 asm valid yap doldur opstab fmtc sablonc komut paketle coz yaz; do cmp -s $T/E2/$b.elf $T/E2b/$b.elf && pass || fail "tur: $b.elf E2 ile E2b farkli"; done
+for b in gen2 asm valid yap doldur opstab fmtc komut paketle coz yaz; do cmp -s $T/E2/$b.elf $T/E2b/$b.elf && pass || fail "tur: $b.elf E2 ile E2b farkli"; done
 # E1.gen2.elf, v1 kaynaklarindan pm ile kurulanla ayni mi?
 (cd $R1/oz/elf2 && PM=$PM ./uret.sh $PM > /dev/null 2>&1) && $PM liste $R1/oz/elf2/gen2.pmb > $T/g1.l && $PM run $R1/oz/elf2/gen2.pmb < $T/g1.l > $T/g1.elf && cmp -s $T/g1.elf $T/E1/gen2.elf && pass || fail "E1.gen2.elf v1 kaynaklarindan pm ile kurulanla ayni degil"
 cmp -s $T/E1/gen2.elf $T/E2/gen2.elf && fail "E1 ve E2 uretici ayni (kaynak degisikligi etkisiz)" || pass

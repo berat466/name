@@ -38,7 +38,6 @@ rm -f $T/w/oz/asm/asm.pmb $T/w/oz/dogr/valid.pmb $T/w/oz/elf2/gen2.pmb
 cmp -s $T/w/oz/asm/asm.pmb $R/oz/asm/asm.pmb && pass || fail "tablodan uretilen asm.pmb depodakiyle farkli"
 cmp -s $T/w/oz/dogr/valid.pmb $R/oz/dogr/valid.pmb && pass || fail "tablodan uretilen valid.pmb depodakiyle farkli"
 cmp -s $T/w/oz/elf2/gen2.pmb $R/oz/elf2/gen2.pmb && pass || fail "tablodan uretilen gen2.pmb depodakiyle farkli"
-cmp -s $T/w/oz/arac/sablonc.pmb $R/oz/arac/sablonc.pmb && pass || fail "sablonc.pmb farkli"
 # PMB1 cozucu/kodlayici tablolari (NOPS dizisi + komut siniri) komut tablosundan uretilir
 (cd $T/w/oz && ./uret_ikili.sh $PM $T/w/oz > /dev/null 2>&1) || fail "coz/yaz tablosu uretilemedi"
 cmp -s $T/w/oz/coz.pmy $R/oz/coz.pmy && pass || fail "tablodan uretilen coz.pmy depodakiyle farkli"
@@ -191,8 +190,9 @@ g++ -O0 -o $T/fmin_oracle $T/fmin_oracle.cpp 2>/dev/null && $T/fmin_oracle $HEX 
 (ulimit -v 900000; timeout 120 $PM run $T/w3/oz/sayisal/svm.pmb < $T/fmall.svm.in > $T/fm.o_svm 2>/dev/null); cmp -s $T/fm.o_svm $T/fm.exp && pass || fail "svm fmin cikti oracle'dan farkli: $(cmp $T/fm.o_svm $T/fm.exp 2>&1 | head -c 80)"
 (ulimit -v 900000; $PM run $T/w3/oz/elf2/gen2.pmb < $T/fmall.l > $T/fmall.elf 2>/dev/null) && chmod +x $T/fmall.elf && $T/fmall.elf > $T/fm.o_elf; cmp -s $T/fm.o_elf $T/fm.exp && pass || fail "ELF (yalniz SEM) fmin cikti oracle'dan farkli: $(cmp $T/fm.o_elf $T/fm.exp 2>&1 | head -c 80)"
 # elle yazilmis x86 sablonu (minsd) eklenirse SEM yolu ile ayni sonucu vermeli (iki farkli yerel uretim = ayni davranis)
-cp -r $T/w3/oz/elf2 $T/w3/oz/elf2b; echo 'fmin: F2 0F 10 83 R_B F2 0F 5D 83 R_C F2 0F 11 83 R_A' >> $T/w3/oz/elf2b/sablon.txt; rm -f $T/w3/oz/elf2b/gen2.pmb
-(cd $T/w3/oz/elf2b && ./uret.sh $PM > /dev/null 2>&1) || fail "sablonlu gen2 uretilemedi"
+cp -r $T/w3/oz/elf2 $T/w3/oz/elf2b; rm -f $T/w3/oz/elf2b/gen2.pmb
+mod gor < $T/w3/oz/komut/komutlar.pmk | awk '/^tpls /{print; print "tpl op FMIN : F2 0F 10 83 R_B F2 0F 5D 83 R_C F2 0F 11 83 R_A"; next} {print}' | mod yaz > $T/w3/fmin_minsd.pmk
+(cd $T/w3/oz/elf2b && OPT=$T/w3/fmin_minsd.pmk ./uret.sh $PM > /dev/null 2>&1) || fail "sablonlu gen2 uretilemedi"
 (ulimit -v 900000; $PM run $T/w3/oz/elf2b/gen2.pmb < $T/fmall.l > $T/fmall_b.elf 2>/dev/null) && chmod +x $T/fmall_b.elf && $T/fmall_b.elf > $T/fm.o_b; cmp -s $T/fm.o_b $T/fm.exp && pass || fail "ELF (minsd sablonu) fmin cikti oracle'dan farkli"
 cmp -s $T/fmall.elf $T/fmall_b.elf && fail "sablonlu ve SEM'li ELF ayni bayt (SEM yolu kullanilmadi?)" || pass
 (ulimit -v 900000; { echo "-6 1"; cat $T/fmall.l; } | $PM run $T/w3/oz/elf2b/gen2.pmb > $T/fmall_z.elf 2>/dev/null) && chmod +x $T/fmall_z.elf && $T/fmall_z.elf > $T/fm.o_z; cmp -s $T/fm.o_z $T/fm.exp && pass || fail "ELF (-6 1: sablonlu komut da SEM'den) fmin cikti oracle'dan farkli"
@@ -226,6 +226,21 @@ rwred "iki takma komut ayni ad" 92 '/^section 6 /{$23=116} {print}'
 rwred "kural kaynagi 3 operandli degil (MOV)" 82 '/^section 7 /{$8=0} {print}'
 rwred "kural hedefinin operand sayisi farkli (JMP)" 85 '/^section 7 /{$15=31} {print}'
 mod gor < $TAB | mod yaz | cmp -s - <(mod kanon < $TAB) && pass || fail "PSEUDO/REWRITE gidis-donusta bozuldu"
+# ---- 8c) TOKEN (8) ve TEMPLATE (9) bolumleri: x86 sablonlari sayidir; olumsuz ornekler (hata koduyla) ve sozluk esitligi
+tplred() { y=$(mod gor < $TAB | sed -E "$3" | mod yaz 2>/dev/null | head -1); [ "$y" = "HATA: $2" ] && pass || fail "sablon olumsuz ornek: $1 (beklenen kod $2, bulunan '$y')"; }
+tplred "simge kodu yinelenen" 100 's/^token 257 R_B 1$/token 256 R_B 1/'
+tplred "simge adi yinelenen" 101 's/^(token 266 NP8 1)$/\1\ntoken 999 R_A 1/'
+tplred "simge kodu aralik disi" 102 's/^token 266 NP8 1$/token 5000 NP8 1/'
+tplred "simge adi iki onaltilik rakam (bayt ile karisir)" 103 's/^(token 266 NP8 1)$/\1\ntoken 999 AB 1/'
+tplred "sablonda bilinmeyen simge adi" 123 's/^(tpl op MOV : 48 8B 83 )R_B/\1R_Z/'
+tplred "sablonda bilinmeyen komut" 84 's/^tpl op MOV :/tpl op NOSUCH :/'
+tplred "yinelenen komut sablonu" 113 's/^tpl op LDI :/tpl op MOV :/'
+tplred "ozel sablon adi yinelenen" 115 's/^tpl sp 1 host_puti :/tpl sp 1 host_putc :/'
+tplred "sablonda iki nokta ust uste yok" 122 's/^tpl op MOV : /tpl op MOV 48 /'
+tplred "bilinmeyen islem sablonu" 85 's/^tpl prim rd :/tpl prim zzz :/'
+tplred "ozel sablon sirasi yogun degil" 116 's/^tpl sp 25 prologue_rt :/tpl sp 40 prologue_rt :/'
+# sozluk: tablodan uretilen TPLS/TPL, her yuvada token akisi okunabilir gorunumle ayni (yuvaya gore: ilk jetondan -1'e)
+mod tab < $TAB | grep -q '^TS_PRIM0 81$' && mod tab < $TAB | grep -q '^TS_HOST_SYSW 77$' && pass || fail "sablon sozlugu TS_* yuvalari beklenenden farkli"
 # genisletme noktasi: yeni islem (prim) tanimi + onu kullanan komut. Yurutuculer bilmedigi islemi SESSIZCE yok saymaz: reddeder.
 mod gor < $TAB | awk '{print} /^prim 47 /{print "prim 48 xyz to,ti,ti ext 1=0"} /^op 54 GEI/{print "op 55 XYZ xyz d,r,r"} /^sem GEI /{print "sem XYZ rd t1 b ; rd t2 c ; xyz t3 t1 t2 ; wr a t3"}' | mod yaz > $T/xyz.pmk
 [ "$(mod dogrula < $T/xyz.pmk)" = "1" ] && pass || fail "yeni islemli tablo gecersiz"
