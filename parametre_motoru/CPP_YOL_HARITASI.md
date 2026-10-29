@@ -19,13 +19,15 @@
 - `<cmath>` işlevleri (sin, cos, exp, log, pow): sayısal kitaplık, doğruluk testi bağımsız C++ `libm` ile
 - Büyük sayı (keyfî hassasiyet), karmaşık sayı
 
-## Aşama 3 — dil katmanı (PMY1 genişletmesi) **[ön karar gerekli]**
-- İfade ayrıştırıcı (`a + b * c`, `?:`, kısa devre), `switch`
-- Dolaylı çağrı (fonksiyon işaretçisi; yeni `CALLI` komutu), lambda (kapanış)
-- `struct`/`union`/`enum`/bit alanı, tür takma adı, tipli işaretçi ve referans, statik tür denetimi, `auto`
-- İstisnalar (`try/catch/throw`: açılım tablosu)
-- Sınıf, kalıtım, sanal fonksiyon (sanal tablo), operatör aşırı yükleme, kurucu/yıkıcı (RAII), akıllı işaretçiler
-- Şablonlar/generic, `constexpr`, `namespace`/modül
+## Aşama 3 — dil özelliklerinin motor karşılıkları (kaynak dili YOK)
+Karar (kullanıcı): kod zaten doğrudan sayısal parametreye dönüşüyor (insan ya da AI sayısal tablo üretir); yeni bir kaynak dili ya da PMY1 genişletmesi gerekmez. C++ özellikleri *sözdizimi* olarak değil, motor yeteneği olarak karşılanır:
+- Fonksiyon işaretçisi / lambda → dolaylı çağrı komutu (`CALLI`) + kapanış verisi: tabloya komut kaydı (OP + SEM + şablon)
+- `switch` → atlama tablosu komutu
+- `struct`/`union`/`enum`/bit alanı → bellek yerleşim kuralı (alan ofsetleri) ve erişim komutları; tip denetimi doğrulayıcıya sayısal kural olarak
+- İstisna → tuzak yakalama / geri sarma mekanizması (açılım tablosu)
+- Sanal fonksiyon / kalıtım / sınıf → sanal tablo yerleşimi + dolaylı çağrı; kurucu/yıkıcı = çağrı kuralı
+- Şablon / generic / `constexpr` → sayısal program üretimi (tablodan tablo)
+- Kısa devre, `?:`, ifade ağacı → mevcut PMY1/PMB1 ile zaten ifade edilir; ek dil yok
 
 ## Aşama 4 — kitaplık
 - `string`, `vector`, `array`, `list`, `deque`, `map/set`, `unordered_*`
