@@ -65,7 +65,7 @@ kab() { out=$(mod dogrula < "$2"); [ "$out" = "1" ] && pass || fail "$1: gecerli
 sat 'NR==1{$1=1347242800} {print}' > $T/n1; red "magic yanlis" $T/n1
 sat 'NR==1{$2=2} {print}' > $T/n1; red "buyuk surum 2" $T/n1
 sat 'NR==1{$3=7} {print}' > $T/n1; kab "kucuk surum 7 kabul" $T/n1
-sat 'NR==1{$4=4} {print}' > $T/n1; red "bolum sayisi fazla" $T/n1
+sat 'NR==1{$4=$4+1} {print}' > $T/n1; red "bolum sayisi fazla" $T/n1
 sat 'NR<70' > $T/n1; red "kesik tablo" $T/n1
 sat 'NR==16{$2=1} {print}' > $T/n1; red "opcode yinelenen (0 yerine 1)" $T/n1
 sat 'NR==17{$2=0} {print}' > $T/n1; red "opcode yinelenen (1 yerine 0)" $T/n1
@@ -83,8 +83,8 @@ sat 'NR==2{$2=1} NR==71{$2=1} {print}' > $T/n1; kab "bolum bayragi zorunlu-bilin
 sat 'NR==2{$3=2; $2=1} {print}' > $T/n1; red "bilinen bolum surum 2 + zorunlu" $T/n1
 sat 'NR==71{$2=0; $3=2} {print}' > $T/n1; mod kanon < $T/n1 | head -1 | grep -q '^1347242801' && mod gor < $T/n1 | grep -q '^section 3 0 2' && pass || fail "bilinen bolum surum 2 istege bagli: opak korunmadi"
 # yeni bilinmeyen bolum eklemek: baslikta bolum sayisi +1, sona bolum
-sat 'NR==1{$4=4} {print} END{print "77 0 1 3 10 20 30"}' > $T/opt; kab "bilinmeyen istege bagli bolum" $T/opt
-sat 'NR==1{$4=4} {print} END{print "77 1 1 3 10 20 30"}' > $T/req; red "bilinmeyen ZORUNLU bolum" $T/req
+sat 'NR==1{$4=$4+1} {print} END{print "77 0 1 3 10 20 30"}' > $T/opt; kab "bilinmeyen istege bagli bolum" $T/opt
+sat 'NR==1{$4=$4+1} {print} END{print "77 1 1 3 10 20 30"}' > $T/req; red "bilinmeyen ZORUNLU bolum" $T/req
 mod tab < $T/opt | cmp -s - <(mod tab < $TAB) && pass || fail "bilinmeyen bolum sozluk ciktisini etkiledi"
 mod gor < $T/opt | mod yaz | cmp -s - <(mod kanon < $T/opt) && pass || fail "bilinmeyen bolum gidis-donusta kayboldu"
 # kayit uzantilari: bir komuta ext (anahtar 9=99) + kuyruk (5 6 7) ekle: reclen +4, ext sayisi 0->1
@@ -93,7 +93,7 @@ kab "kayit uzantisi + kuyruk" $T/ext1
 mod tab < $T/ext1 | cmp -s - <(mod tab < $TAB) && pass || fail "kayit uzantisi sozluk ciktisini etkiledi"
 mod gor < $T/ext1 | mod yaz | cmp -s - <(mod kanon < $T/ext1) && pass || fail "kayit uzantisi/kuyruk gidis-donusta kayboldu"
 # profil: seyrek kimlik (komut 54 -> 60) format olarak gecerli, profil icin gecersiz
-sat 'NR==70{$2=60} {print}' > $T/sp; mod kanon < $T/sp | head -1 | grep -q '^1347242801' && pass || fail "seyrek kimlik bicim olarak reddedildi"
+mod gor < $TAB | sed 's/^op 54 GEI /op 60 GEI /' | mod yaz > $T/sp; mod kanon < $T/sp | head -1 | grep -q '^1347242801' && pass || fail "seyrek kimlik bicim olarak reddedildi"
 out=$(mod dogrula < $T/sp); [ "${out:0:1}" = "0" ] && pass || fail "seyrek kimlik profil denetimini gecti ($out)"
 mod tab < $T/sp 2>&1 | head -1 | grep -q '^HATA' && pass || fail "seyrek kimlikli tablo sozluk uretti"
 # bolum sirasi degisimi: HOST, KIND, OP sirasi -> ayni sozluk
@@ -185,7 +185,7 @@ int main(int argc, char** argv) {
 EOT
 HEX=$(sed -n 's/^OZEL="\(.*\)"$/\1/p' $R/oz/elf2/ondalik_prog.sh | head -1 | tr ' ' '\n' | head -$NP | tr '\n' ' ')
 g++ -O0 -o $T/fmin_oracle $T/fmin_oracle.cpp 2>/dev/null && $T/fmin_oracle $HEX > $T/fm.exp || fail "fmin oracle derlenemedi"
-$PM liste $T/fmall.pmb > $T/fmall.l
+(ulimit -v 900000; $PM run $T/w3/oz/coz.pmy < $T/fmall.pmb > $T/fmall.l 2>/dev/null)
 [ -s $T/fm.exp ] && [ "$(wc -l < $T/fm.exp)" = "$NP" ] && pass || fail "oracle ciktisi beklenmedik"
 { cat $T/w3/oz/komut/komutlar.pmk; echo "@@PROGRAM"; cat $T/fmall.l; echo "@@GIRDI"; } > $T/fmall.svm.in
 (ulimit -v 900000; timeout 120 $PM run $T/w3/oz/sayisal/svm.pmb < $T/fmall.svm.in > $T/fm.o_svm 2>/dev/null); cmp -s $T/fm.o_svm $T/fm.exp && pass || fail "svm fmin cikti oracle'dan farkli: $(cmp $T/fm.o_svm $T/fm.exp 2>&1 | head -c 80)"
@@ -196,7 +196,37 @@ cp -r $T/w3/oz/elf2 $T/w3/oz/elf2b; echo 'fmin: F2 0F 10 83 R_B F2 0F 5D 83 R_C 
 (ulimit -v 900000; $PM run $T/w3/oz/elf2b/gen2.pmb < $T/fmall.l > $T/fmall_b.elf 2>/dev/null) && chmod +x $T/fmall_b.elf && $T/fmall_b.elf > $T/fm.o_b; cmp -s $T/fm.o_b $T/fm.exp && pass || fail "ELF (minsd sablonu) fmin cikti oracle'dan farkli"
 cmp -s $T/fmall.elf $T/fmall_b.elf && fail "sablonlu ve SEM'li ELF ayni bayt (SEM yolu kullanilmadi?)" || pass
 (ulimit -v 900000; { echo "-6 1"; cat $T/fmall.l; } | $PM run $T/w3/oz/elf2b/gen2.pmb > $T/fmall_z.elf 2>/dev/null) && chmod +x $T/fmall_z.elf && $T/fmall_z.elf > $T/fm.o_z; cmp -s $T/fm.o_z $T/fm.exp && pass || fail "ELF (-6 1: sablonlu komut da SEM'den) fmin cikti oracle'dan farkli"
-cmp -s $T/fmall_z.elf $T/fmall.elf && pass || fail "-6 1 ELF'i yalniz-SEM ELF'inden farkli (ayni mikro-islem yolu beklenirdi)"
+(ulimit -v 900000; { echo "-6 1"; cat $T/fmall.l; } | $PM run $T/w3/oz/elf2/gen2.pmb > $T/fmall_z2.elf 2>/dev/null); cmp -s $T/fmall_z.elf $T/fmall_z2.elf && pass || fail "-6 1 ELF'i sablonlu/sablonsuz gen2 ile ayni degil (mikro yolu ayni olmali)"
+# ---- 8) ANLAM (PRIM + SEM) bolumleri: C++ referansiyla esitlik, olumsuz ornekler, genisletme noktasi
+g++ -std=c++17 -I $R/src -o $T/anlam_dump gecis/anlam_dump.cpp 2>/dev/null && $T/anlam_dump | sort > $T/sem_cpp.txt || fail "anlam_dump derlenemedi"
+mod gor < $TAB | grep '^sem ' | grep -v '^sem FMIN ' | sort > $T/sem_tab.txt
+cmp -s $T/sem_cpp.txt $T/sem_tab.txt && pass || fail "tablodaki SEM tanimlari src/anlam.h (C++ referansi) ile ayni degil: $(diff $T/sem_cpp.txt $T/sem_tab.txt | head -3 | tr '\n' '|')"
+mod gor < $TAB | grep -q '^prim 47 sel to,ti,ti,ti ext 1=0$' && pass || fail "prim satiri beklenen bicimde degil"
+sred() { y=$(mod gor < $TAB | sed "$2" | mod yaz 2>/dev/null); if [ "${y:0:4}" = "HATA" ]; then pass; else out=$(printf '%s\n' "$y" | mod dogrula 2>/dev/null); [ "${out:0:1}" = "0" ] && pass || fail "SEM olumsuz ornek kabul edildi: $1 ($out)"; fi; }
+sred "bilinmeyen islem" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV zzz t1 b ; wr a t1/'
+sred "gecici once-tanimsiz" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t1 b ; wr a t2/'
+sred "operand yuvasi komutta yok (MOV'da c)" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t1 c ; wr a t1/'
+sred "bilinmeyen komut" 's/^sem MOV rd t1 b ; wr a t1$/sem NOSUCH rd t1 b ; wr a t1/'
+sred "alan sayisi eksik" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t1 ; wr a t1/'
+sred "yinelenen anlam" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t1 b ; wr a t1\nsem MOV rd t1 b ; wr a t1/'
+sred "gecici sinir disi" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t9 b ; wr a t9/'
+# genisletme noktasi: yeni islem (prim) tanimi + onu kullanan komut. Yurutuculer bilmedigi islemi SESSIZCE yok saymaz: reddeder.
+mod gor < $TAB | awk '{print} /^prim 47 /{print "prim 48 xyz to,ti,ti ext 1=0"} /^op 54 GEI/{print "op 55 XYZ xyz d,r,r"} /^sem GEI /{print "sem XYZ rd t1 b ; rd t2 c ; xyz t3 t1 t2 ; wr a t3"}' | mod yaz > $T/xyz.pmk
+[ "$(mod dogrula < $T/xyz.pmk)" = "1" ] && pass || fail "yeni islemli tablo gecersiz"
+mod gor < $T/xyz.pmk | mod yaz | cmp -s - <(mod kanon < $T/xyz.pmk) && pass || fail "yeni islemli tablo gidis-donusta bozuldu"
+mod tab < $T/xyz.pmk | grep -q '^PR_XYZ 48$' && pass || fail "yeni islem sozlukte yok (PR_XYZ)"
+printf 'func main() {\n ldi a, 6\n ldi b, 7\n xyz c, a, b\n host puti, c\n halt\n}\n' > $T/xyz.pma
+rm -rf $T/w4; mkdir -p $T/w4/oz; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/elf2 $R/oz/sayisal $T/w4/oz/; rm -f $T/w4/oz/asm/asm.pmb $T/w4/oz/elf2/gen2.pmb; cp $T/xyz.pmk $T/w4/oz/komut/komutlar.pmk
+(cd $T/w4/oz/asm && ./uret.sh $PM > /dev/null 2>&1) && (cd $T/w4/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || fail "yeni islemli tablodan arac uretilemedi"
+(ulimit -v 900000; $PM run $T/w4/oz/asm/asm.pmb < $T/xyz.pma > $T/xyz.pmb 2>/dev/null)
+$PM run $R/oz/asm/asm.pmb < $T/xyz.pma > /dev/null 2>&1 && fail "eski assembler xyz'yi kabul etti" || pass
+if [ -s $T/xyz.pmb ]; then
+  cp $R/oz/uret_ikili.sh $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/paketle.pmy $T/w4/oz/; (cd $T/w4/oz && ./uret_ikili.sh $PM $T/w4/oz > /dev/null 2>&1) || fail "xyz tablosundan coz/yaz uretilemedi"
+  (ulimit -v 900000; $PM run $T/w4/oz/coz.pmy < $T/xyz.pmb > $T/xyz.l 2>/dev/null)
+  (ulimit -v 900000; $PM run $T/w4/oz/elf2/gen2.pmb < $T/xyz.l > $T/xyz.elf 2>/dev/null) && fail "gen2 sablonu olmayan islemli komutu reddetmedi" || { [ ! -s $T/xyz.elf ] && pass || fail "gen2 reddetti ama cikti verdi"; }
+  { cat $T/xyz.pmk; echo "@@PROGRAM"; cat $T/xyz.l; echo "@@GIRDI"; } > $T/xyz.in
+  (ulimit -v 900000; $PM run $T/w4/oz/sayisal/svm.pmb < $T/xyz.in > $T/xyz.o 2>/dev/null); [ "$(cat $T/xyz.o)" = "42" ] && fail "svm bilmedigi islemi uydurma yurutdu" || pass
+else fail "xyz programi derlenemedi"; fi
 echo "komut tablosu: $ok gecti, $bad basarisiz"
 rm -rf $T
 [ $bad = 0 ]

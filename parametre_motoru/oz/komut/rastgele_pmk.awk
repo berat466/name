@@ -31,7 +31,7 @@ BEGIN {
   ns++; SID[ns] = 2; SFL[ns] = rd(2); SVR[ns] = 1; SCN[ns] = nop; SBD[ns] = ot
   ns++; SID[ns] = 3; SFL[ns] = rd(2); SVR[ns] = 1; SCN[ns] = nh; SBD[ns] = ht
   nu = dense ? rd(2) : rd(4)
-  for (u = 0; u < nu; u++) { ns++; SID[ns] = 4 + rd(190); SFL[ns] = rd(2) * 2; SVR[ns] = 1 + rd(3); SCN[ns] = -1; m = rd(15); p = ""; for (q = 0; q < m; q++) p = p " " (rd(1000) - 200); SBD[ns] = p }
+  for (u = 0; u < nu; u++) { ns++; SID[ns] = 6 + rd(190); SFL[ns] = rd(2) * 2; SVR[ns] = 1 + rd(3); SCN[ns] = -1; m = rd(15); p = ""; for (q = 0; q < m; q++) p = p " " (rd(1000) - 200); SBD[ns] = p }
   if (!dense && rd(3) == 0) { ns++; SID[ns] = 2; SFL[ns] = 0; SVR[ns] = 2; SCN[ns] = -1; m = rd(8); p = ""; for (q = 0; q < m; q++) p = p " " rd(50); SBD[ns] = p }
   for (i = ns; i > 1; i--) { j = 1 + rd(i); t = SID[i]; SID[i] = SID[j]; SID[j] = t; t = SFL[i]; SFL[i] = SFL[j]; SFL[j] = t; t = SVR[i]; SVR[i] = SVR[j]; SVR[j] = t; t = SCN[i]; SCN[i] = SCN[j]; SCN[j] = t; t = SBD[i]; SBD[i] = SBD[j]; SBD[j] = t }
   printf "%d %d %d %d\n", 1347242801, 1, rd(4), ns

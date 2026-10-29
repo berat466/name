@@ -337,10 +337,12 @@ for s in $(seq 1 $NV); do awk -v seed=$s -f rastgele2.awk > $T/r.pma; $PM asm $T
 echo "valid.elf karsilastirmasi: $nvl girdi"
 # ---- 4) sabit nokta: gen2.elf (pm'siz) kendi ELF'ini uretir
 $PM liste $G2 > $T/g.l; lim $GEN < $T/g.l > $T/g1.elf; chmod +x $T/g1.elf
-lim $T/g1.elf < $T/g.l > $T/g2.elf; chmod +x $T/g2.elf; lim $T/g2.elf < $T/g.l > $T/g3.elf
+# GENPRE: uretici secenekleri (ornegin "-6 1": mikro-islem yolu zorlanir; sabit nokta o secenekle de saglanmali)
+withpre() { { [ -n "$GENPRE" ] && echo "$GENPRE"; cat "$1"; }; }
+withpre $T/g.l | lim $T/g1.elf > $T/g2.elf; chmod +x $T/g2.elf; withpre $T/g.l | lim $T/g2.elf > $T/g3.elf
 cmp -s $T/g1.elf $T/g2.elf && pass || fail "sabit nokta: 2. nesil farkli"
 cmp -s $T/g2.elf $T/g3.elf && pass || fail "sabit nokta: 3. nesil farkli"
-lim $T/g2.elf < $T/c.l | cmp -s - $T/c.elf && pass || fail "gen2.elf ile uretilen collatz ELF'i farkli"
+withpre $T/c.l | lim $T/g2.elf | cmp -s - $T/c.elf && pass || fail "gen2.elf ile uretilen collatz ELF'i farkli"
 echo "sabit nokta: gen2 ELF boyutu $(stat -c %s $T/g1.elf) bayt"
 ELFGEN=$G2 ../elf/dogrula_oob.sh $PM > $T/oob.out 2>&1 && pass || { fail "gen2 OOB denetimi: $(tail -3 $T/oob.out | tr "\n" " ")"; }; ok=$((ok+$(grep -o "gecen [0-9]*" $T/oob.out | grep -o "[0-9]*"))); echo "gen2 OOB: $(tail -1 $T/oob.out)"
 rm -rf $T
