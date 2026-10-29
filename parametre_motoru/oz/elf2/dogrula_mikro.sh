@@ -29,20 +29,9 @@ cmpone() {   # etiket pmb
 printf 'abc\n\200\377\000xyz 123\n' > $T/in
 [ -s $T/int.pmb ] && cmpone "tamsayi ozel degerler" $T/int.pmb
 [ $(stat -c %s $T/o1) -gt 50000 ] && pass || fail "tamsayi programi beklenen kadar cikti uretmedi ($(stat -c %s $T/o1) bayt)"
-# ---- 2b) bellek siniri ve alloc: ld/st dizin sinirlari (0, son, son+1, negatif, cok buyuk; anlik kaydirmalar), alloc sinirlari (kalan-1, kalan, kalan+1, 0, negatif)
-for kind in ld st; do for ad in 0 4095 4096 4097 -1 9223372036854775807 -9223372036854775808 2147483648 4294967296; do for off in 0 1 -1 100; do
-  { echo "memory 4096"; echo "data tab = $ad 77"
-    echo "func main() {"; echo " mov z, 0"; echo " add p, z, tab"; echo " ld x, p, 0"; echo " ld w, p, 1"
-    if [ $kind = ld ]; then echo " ld v, x, $off"; echo " host puti, v"; else echo " st w, x, $off"; echo " ld v, x, $off"; echo " host puti, v"; fi
-    echo " halt"; echo "}"; echo "entry main"; } > $T/mem.pma
-  $PM asm $T/mem.pma -o $T/mem.pmb --strip > /dev/null 2>&1 && cmpone "bellek $kind addr=$ad off=$off" $T/mem.pmb
-done; done; done
-printf 'memory 4096\nfunc main() {\n alloc r, 0\n host puti, r\n halt\n}\nentry main\n' > $T/al.pma
-$PM asm $T/al.pma -o $T/al.pmb --strip > /dev/null 2>&1; HEAP0=$($PM run $T/al.pmb 2>/dev/null | tr -d '\n ' ); ROOM=$((4096 - ${HEAP0:-0}))
-for k in 0 1 2 8 $((ROOM-1)) $ROOM $((ROOM+1)) $((ROOM-2)) -1 -9223372036854775808 9223372036854775807; do
-  printf 'memory 4096\ndata tab = %s\nfunc main() {\n mov z, 0\n add p, z, tab\n ld n, p, 0\n alloc r, n\n host puti, r\n host putc, 32\n alloc q, 1\n host puti, q\n st n, r, 0\n halt\n}\nentry main\n' $k > $T/al.pma
-  $PM asm $T/al.pma -o $T/al.pmb --strip > /dev/null 2>&1 && cmpone "alloc n=$k (kalan $ROOM)" $T/al.pmb
-done
+# ---- 2b) bellek siniri ve alloc (bellek_prog.sh): ld/st dizin sinirlari, alloc sinirlari (kalan-1, kalan, kalan+1, negatif ...)
+./bellek_prog.sh $T/bl $PM > /dev/null
+for f in $T/bl/bellek_*.pma $T/bl/alloc_*.pma; do $PM asm $f -o $T/mem.pmb --strip > /dev/null 2>&1 && cmpone "$(basename $f .pma)" $T/mem.pmb; done
 # bolme/mod tuzaklari: sifira bolme (yazmac) ayri program
 for k in 1 2; do
   cp $T/dz$k.pma $T/dz.pma
