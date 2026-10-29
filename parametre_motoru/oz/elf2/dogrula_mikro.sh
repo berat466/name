@@ -32,6 +32,52 @@ printf 'abc\n\200\377\000xyz 123\n' > $T/in
 # ---- 2b) bellek siniri ve alloc (bellek_prog.sh): ld/st dizin sinirlari, alloc sinirlari (kalan-1, kalan, kalan+1, negatif ...)
 ./bellek_prog.sh $T/bl $PM > /dev/null
 for f in $T/bl/bellek_*.pma $T/bl/alloc_*.pma; do $PM asm $f -o $T/mem.pmb --strip > /dev/null 2>&1 && cmpone "$(basename $f .pma)" $T/mem.pmb; done
+# ---- 2c) denetim akisi mikro-islemleri (br/brz/brnz) ve geri atlama yakit varyantlari: dongular, ileri/geri atlama, yakit sinirinda tuzak noktasi
+cat > $T/akis.pma <<'EOT'
+func main() {
+    ldi n, 0
+    ldi s, 0
+L1: addi n, n, 1
+    add s, s, n
+    lti c, n, 7
+    jnz c, L1
+    ldi k, 3
+L2: addi k, k, -1
+    jz k, E2
+    jmp L2
+E2: eqi c, s, 28
+    jz c, E3
+    host puti, s
+    host putc, 10
+    jmp E3
+    host puti, n
+    host putc, 10
+E3: ldi m, 0
+L4: addi m, m, 2
+    gti c, m, 9
+    jz c, L4
+    host puti, m
+    host putc, 10
+    ldi q, 0
+L6: addi q, q, 1
+    gei r, q, 4
+    jz r, L6
+    host puti, q
+    host putc, 10
+    halt
+}
+EOT
+$PM asm $T/akis.pma -o $T/akis.pmb --strip > /dev/null 2>&1 || fail "akis programi derlenemedi"
+cmpf() {   # etiket pmb yakit
+  $PM liste $2 > $T/p.l 2>/dev/null || { fail "$1: liste"; return; }
+  { echo "-1 $3"; cat $T/p.l; } | lim $PM run $G2 > $T/p.elf 2>/dev/null || { fail "$1: ELF yok"; return; }
+  { echo "-6 1"; echo "-1 $3"; cat $T/p.l; } | lim $PM run $G2 > $T/pz.elf 2>/dev/null || { fail "$1: zorlanmis ELF yok"; return; }
+  chmod +x $T/p.elf $T/pz.elf
+  lim $PM run $2 --fuel $3 < /dev/null > $T/o1 2> $T/e1; r1=$?
+  lim $T/pz.elf < /dev/null > $T/o2 2> $T/e2; r2=$?
+  if [ $r1 = $r2 ] && cmp -s $T/o1 $T/o2 && [ "$(head -c 11 $T/e1 | cut -d' ' -f1-2)" = "$(head -c 11 $T/e2 | cut -d' ' -f1-2)" ]; then pass; else fail "$1 yakit=$3: pm rc=$r1 zorlanmis ELF rc=$r2"; fi
+}
+for fu in 1 2 3 5 8 12 20 30 100000; do cmpf "akis" $T/akis.pmb $fu; done
 # bolme/mod tuzaklari: sifira bolme (yazmac) ayri program
 for k in 1 2; do
   cp $T/dz$k.pma $T/dz.pma
@@ -45,7 +91,7 @@ done
 #   Program listesinde standart komutlar yeni komut numarasina cevrilir (add->FMIN, addi->AIMM, ldk->LDK2); oracle: C++ (FMIN) ve pm'in standart komutla sonucu (AIMM, LDK2).
 ELF2DIR=${ELF2DIR:-$D}; X=$T/x; mkdir -p $X/oz; cp -r $ELF2DIR $X/oz/elf2; cp -r $ELF2DIR/../arac $ELF2DIR/../komut $X/oz/; rm -f $X/oz/elf2/gen2.pmb
 KM() { { echo "@@$1"; cat; } | (ulimit -v 900000; timeout 60 $PM run $X/oz/arac/komut.pmb); }
-KM gor < $X/oz/komut/komutlar.pmk | awk '{print} /^op 54 GEI/{print "op 55 FMIN fmin d,f,f"; print "op 56 AIMM aimm d,r,i"; print "op 57 LDK2 ldk2 d,k"} /^sem GEI /{print "sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4"; print "sem AIMM rd t3 b ; im t5 c ; alu_add t2 t3 t5 ; wr a t2"; print "sem LDK2 lk t7 b ; wr a t7"}' | KM yaz > $X/ext.pmk
+KM gor < $X/oz/komut/komutlar.pmk | awk '{print} /^op 54 GEI/{print "op 55 FMIN fmin d,f,f"; print "op 56 AIMM aimm d,r,i"; print "op 57 LDK2 ldk2 d,k"; print "op 58 JZX jzx r,l"} /^sem GEI /{print "sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4"; print "sem AIMM rd t3 b ; im t5 c ; alu_add t2 t3 t5 ; wr a t2"; print "sem LDK2 lk t7 b ; wr a t7"; print "sem JZX rd t5 a ; brz t5 b"}' | KM yaz > $X/ext.pmk
 if [ "$(KM dogrula < $X/ext.pmk)" = "1" ] && (cd $X/oz/elf2 && OPT=$X/ext.pmk ./uret.sh $PM > /dev/null 2>&1); then pass; else fail "genisletilmis tablodan gen2 uretilemedi"; fi
 yama() {   # from to nf : program listesinde (on bolumden sonra) NF==nf ve ilk jeton from olan satirlari to yap
   awk -v from=$1 -v to=$2 -v nf=$3 'BEGIN{pre=1;lone=0} pre{print; if(NF==1){lone++; if(lone==2)pre=0} next} NF==nf && $1==from {$1=to} {print}'
@@ -113,6 +159,9 @@ $PM asm $T/aimm.pma -o $T/aimm.pmb --strip > /dev/null 2>&1 && xcmp "AIMM" $T/ai
 # LDK2 = LDK (sabit havuzu): buyuk sabitli program
 printf 'func main() {\n mov a, 1.5\n host puti, a\n host putc, 32\n mov b, 0x7ff8000000000001\n host puti, b\n host putc, 32\n mov c, -123456789012345\n host puti, c\n host putc, 10\n halt\n}\n' > $T/ldk2.pma
 $PM asm $T/ldk2.pma -o $T/ldk2.pmb --strip > /dev/null 2>&1 && xcmp "LDK2" $T/ldk2.pmb 2 57 3 || fail "ldk2 programi derlenemedi"
+# JZX = JZ (kosullu atlama; mikro-islem brz, gecici kimligi != operand yuvasi): dongu + ileri/geri atlama
+printf 'func main() {\n ldi n, 0\n ldi s, 0\nL: addi n, n, 1\n add s, s, n\n subk c, n, 6\n jz c, E\n jmp L\nE: host puti, s\n host putc, 10\n halt\n}\n' | sed 's/subk c, n, 6/addi c, n, -6/' > $T/jzx.pma
+$PM asm $T/jzx.pma -o $T/jzx.pmb --strip > /dev/null 2>&1 && xcmp "JZX" $T/jzx.pmb 32 58 3 || fail "jzx programi derlenemedi"
 # ---- 4) mikro yolu gercekten kullanildi
 $PM liste $T/int.pmb > $T/p.l; lim $PM run $G2 < $T/p.l > $T/n.elf 2>/dev/null; lim $T/zorla.sh < $T/p.l > $T/z.elf 2>/dev/null
 if cmp -s $T/n.elf $T/z.elf; then fail "zorlanmis ELF sablonlu ELF ile ayni bayt (mikro yolu kullanilmadi)"; else pass; fi

@@ -240,7 +240,7 @@ tplred "sablonda iki nokta ust uste yok" 122 's/^tpl op MOV : /tpl op MOV 48 /'
 tplred "bilinmeyen islem sablonu" 85 's/^tpl prim rd :/tpl prim zzz :/'
 tplred "ozel sablon sirasi yogun degil" 116 's/^tpl sp 25 prologue_rt :/tpl sp 40 prologue_rt :/'
 # sozluk: tablodan uretilen TPLS/TPL, her yuvada token akisi okunabilir gorunumle ayni (yuvaya gore: ilk jetondan -1'e)
-mod tab < $TAB | grep -q '^TS_PRIM0 81$' && mod tab < $TAB | grep -q '^TS_HOST_SYSW 77$' && pass || fail "sablon sozlugu TS_* yuvalari beklenenden farkli"
+mod tab < $TAB | grep -q '^TS_PRIM0 84$' && mod tab < $TAB | grep -q '^TS_HOST_SYSW 77$' && mod tab < $TAB | grep -q '^TS_BR_BACK 81$' && pass || fail "sablon sozlugu TS_* yuvalari beklenenden farkli"
 # genisletme noktasi: yeni islem (prim) tanimi + onu kullanan komut. Yurutuculer bilmedigi islemi SESSIZCE yok saymaz: reddeder.
 mod gor < $TAB | awk '{print} /^prim 47 /{print "prim 48 xyz to,ti,ti ext 1=0"} /^op 54 GEI/{print "op 55 XYZ xyz d,r,r"} /^sem GEI /{print "sem XYZ rd t1 b ; rd t2 c ; xyz t3 t1 t2 ; wr a t3"}' | mod yaz > $T/xyz.pmk
 [ "$(mod dogrula < $T/xyz.pmk)" = "1" ] && pass || fail "yeni islemli tablo gecersiz"

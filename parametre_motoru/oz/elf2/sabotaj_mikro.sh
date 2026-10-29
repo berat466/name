@@ -54,6 +54,14 @@ mut fle_cc 's/(tpl prim fle :.*?) 0F 93 C0/$1 0F 97 C0/'
 mut f2i_nan 's/(tpl prim f2i :.*?) EB 02 31 C0/$1 EB 02 90 90/'
 mut f2i_isaret 's/(tpl prim f2i :.*?) 78 0A 48 89 C8/$1 79 0A 48 89 C8/'
 mut i2f_op 's/tpl prim i2f : F2 48 0F 2A/tpl prim i2f : F2 90 0F 2A/'
+mut br_hedef 's/tpl prim br : E9 REL_TF0/tpl prim br : E9 REL_TF1/'
+mut brz_kosul 's/(tpl prim brz : [^\n]*) 0F 84 REL_TF1/$1 0F 85 REL_TF1/'
+mut brnz_kosul 's/(tpl prim brnz : [^\n]*) 0F 85 REL_TF1/$1 0F 84 REL_TF1/'
+mut brz_deger 's/(tpl prim brz : 48 8B 44 24) TMP_F0/$1 TMP_F1/'
+mut br_geri_yakit 's/tpl sp 26 br_back : 4D 85 F6 0F 84 REL_FUEL 49 FF CE E9 REL_TF0/tpl sp 26 br_back : E9 REL_TF0 90 90 90 90 90 90 90 90 90 90 90 90/'
+mut brz_geri_atla 's/(tpl sp 27 brz_back : [^\n]*) 0F 85 11 00 00 00/$1 0F 84 11 00 00 00/'
+mut brnz_geri_atla 's/(tpl sp 28 brnz_back : [^\n]*) 0F 84 11 00 00 00/$1 0F 85 11 00 00 00/'
+mut brz_geri_hedef 's/(tpl sp 27 brz_back : [^\n]*) E9 REL_TF1/$1 E9 REL_TF0/'
 echo "sabotaj(mikro-islem sablonlari): $yakalandi yakalandi, $kacti kacti"
 rm -rf $T
 [ $kacti = 0 ]
