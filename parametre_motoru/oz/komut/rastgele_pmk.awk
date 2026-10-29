@@ -1,12 +1,14 @@
 # Test uretecinin parcasi: rastgele GECERLI (bicim) PMK1 sayisal tablosu uretir. awk -v seed=N [-v dense=1] -f rastgele_pmk.awk
 # dense=1: komut/host kimlikleri 0..n-1 yogun, komut basina en cok 3 operand (arac profili); dense=0: seyrek kimlikler, 5 operand, bilinmeyen bolumler.
-function rd(n) { return int(rand() * n) }
+function sd(s) { RNG_X = (s * 7919 + 17) % 4294967296 }
+function rnd() { RNG_X = (RNG_X * 1664525 + 1013904223) % 4294967296; return RNG_X / 4294967296 }   # TEKRARLANABILIR (mawk srand/rand tohumla ayni diziyi vermiyor)
+function rd(n) { return int(rnd() * n) }
 function nm(lo, hi, up,   s, l, i, al) { al = up ? "ABCDEFGHIJKLMNOPQRSTUVWXYZ" : "abcdefghijklmnopqrstuvwxyz"; l = lo + rd(hi - lo + 1); s = substr(al, 1 + rd(26), 1); for (i = 1; i < l; i++) s = s substr(al "0123456789_", 1 + rd(37), 1); return s }
 function chars(s,   i, r) { r = ""; for (i = 1; i <= length(s); i++) r = r " " ord[substr(s, i, 1)]; return r }
 function ext(   n, i, r) { n = rd(3); r = n; for (i = 0; i < n; i++) r = r " " (rd(20) - 5) " " (rd(2000) - 500); n = rd(3); if (rd(3) == 0) for (i = 0; i < n; i++) r = r " " (rd(300) - 50); return r }
 function rec(body,   a, n) { n = split(body, a, " "); return n " " body }
 BEGIN {
-  srand(seed + 0); for (i = 0; i < 256; i++) ord[sprintf("%c", i)] = i
+  sd(seed + 0); for (i = 0; i < 256; i++) ord[sprintf("%c", i)] = i
   # KIND
   nkind = 2 + rd(10); CH = "dr fsiklFbhxyzABC"; kt = ""
   perm = ""
@@ -31,7 +33,7 @@ BEGIN {
   ns++; SID[ns] = 2; SFL[ns] = rd(2); SVR[ns] = 1; SCN[ns] = nop; SBD[ns] = ot
   ns++; SID[ns] = 3; SFL[ns] = rd(2); SVR[ns] = 1; SCN[ns] = nh; SBD[ns] = ht
   nu = dense ? rd(2) : rd(4)
-  for (u = 0; u < nu; u++) { ns++; SID[ns] = 8 + rd(190); SFL[ns] = rd(2) * 2; SVR[ns] = 1 + rd(3); SCN[ns] = -1; m = rd(15); p = ""; for (q = 0; q < m; q++) p = p " " (rd(1000) - 200); SBD[ns] = p }
+  for (u = 0; u < nu; u++) { ns++; SID[ns] = 10 + rd(190); SFL[ns] = rd(2) * 2; SVR[ns] = 1 + rd(3); SCN[ns] = -1; m = rd(15); p = ""; for (q = 0; q < m; q++) p = p " " (rd(1000) - 200); SBD[ns] = p }
   if (!dense && rd(3) == 0) { ns++; SID[ns] = 2; SFL[ns] = 0; SVR[ns] = 2; SCN[ns] = -1; m = rd(8); p = ""; for (q = 0; q < m; q++) p = p " " rd(50); SBD[ns] = p }
   for (i = ns; i > 1; i--) { j = 1 + rd(i); t = SID[i]; SID[i] = SID[j]; SID[j] = t; t = SFL[i]; SFL[i] = SFL[j]; SFL[j] = t; t = SVR[i]; SVR[i] = SVR[j]; SVR[j] = t; t = SCN[i]; SCN[i] = SCN[j]; SCN[j] = t; t = SBD[i]; SBD[i] = SBD[j]; SBD[j] = t }
   printf "%d %d %d %d\n", 1347242801, 1, rd(4), ns
