@@ -288,6 +288,28 @@ Komutun *kimliği, adı, operand sayısı/türleri, tel sınıfı, host listesi*
 - Şablonlar bellek geçicili mikro-işlem yolu yerleşik şablonlardan uzun/yavaş; eniyileme yok.
 
 
+## 3m. Yedinci aşama (5/5, üçüncü kısım): araçlar sayısal nesne (PMO1); metinsiz üretim ve yalnızca sayılarla genişletme
+
+**Karar (kullanıcı):** sıra son adımlar: araç kaynakları sayısal asıl kaynak, `.pma/.pma.in` isteğe bağlı görünüm; ardından tam bağımsızlık ve genişletilebilirlik testi.
+
+### Yapılan [Kesin]
+- **PMO1 nesne biçimi + bağlayıcı** (`oz/nesne/`, `oz/arac/baglayici.pma`): tablo-bağımlı üç araç (`asm`, `valid`, `gen2`) sayısal nesnedir; çıktı metin yolundan **bayt-bayt aynı** (ayrıntı: `oz/komut/KOMUT_TABLOSU.md`). Kapasite sınırı yok; yerleşim bağıl kayıtlarla ayarlanır.
+- `uret.sh` betikleri (asm, dogr, elf2) artık nesneyi bağlar; `elf2/rt.pmb` de sayısal kaynak (rt.pma yalnızca metin ön yüzü). `oz/nesne/metinden.sh` ve `ice_aktar.sh` metinden yeniden üretir (isteğe bağlı).
+- `yenile.sh` yalnızca sayısal dosyaları çalışma ağacına koyar. `dogrula_yenile`: A→B→A turu 59 geçti, 0 kalan; çalışma ağaçlarında **0 metin kaynağı**.
+- **Yalnızca sayılarla genişletme (nihai test):** tabloya `XORI` + `xor→xori` kuralı, `GOTO` (SEM `br a`) ve `FMIN` (SEM) eklenir; **ESKİ ELF takımı** bunlardan YENİ takımı üretir (assembler, doğrulayıcı, ELF üretici, çözücü/kodlayıcı, bağlayıcı …); yeni takımın ELF araçları pm/awk/sed olmadan yeni komutlu programı derler, doğrular, ELF'e çevirir ve program doğru çalışır (çıktı `1005 -1.5 4 …` beklenenle aynı); eski takım aynı programı reddeder.
+
+### Doğrulama [Kesin]
+- `dogrula_nesne` 37/0 (uyumluluk kapısı, nesneden üretim = depodaki, 4 değiştirilmiş tabloda bayt-bayt, iki dizili küçük örnek, 6 bozuk girdi hata koduyla reddedilir, belirlenimcilik).
+- Bağlayıcı sabotajı: 14 mutant + 3 nesne-bozma = 17/17 yakalandı; 4 mutant bilerek yok (yerleşim etkisi olmayan skaler yol ve geçersiz nesnelerde ulaşılamayan koşullar, `sabotaj_nesne.sh` başında açıklandı). Test düzeneğinde iki hata bulundu ve düzeltildi: boru hattı alt kabuğunda sayılmayan olumsuz örnekler (sayaç ana kabuğa dönmüyordu) ve `sabotaj_grafik`'in eskimiş iki deseni (`tarama_frame/poll`, yer tutucuya geçince uygulanamaz hâle gelmişti).
+- Güncellenen sabotaj betikleri (asm ondalık, doğrulayıcı, float, grafik) yeni nesne yoluyla duman testinden geçti.
+
+### Dürüst sınırlar [Kesin]
+- **Metin hâlâ depoda:** `.pma.in`/`.pma` kaynakları (yorumlar ve adlarla) duruyor; ayrıca `ice_aktar` onlardan nesne üretir ve kapı testi ikisinin eşitliğini sınar. Yani **iki kopya** var, tek doğruluk kaynağı **nesne**; metin kopyası insan düzenleme kolaylığı için. Bir araç yalnızca sayılarla düzenlenirse metin kopyası eskir (kapı testi bunu yakalar).
+- Nesneyi doğrudan sayılarla düzenlemek: tablo tanımlarıyla (komut/anlam/kural/şablon) mümkün ve test edildi; **program mantığını** (asm'nin kendi algoritması) sayılarla düzenlemek kâğıt üzerinde mümkün ama kullanışlı değil (yorumsuz, adsız); görünüm olarak dökücü (disassembler) yapılmadı.
+- `coz/yaz`: sayısal sablonlardan (.sayi.in) PMY1 üretilir; PMB1'e dönüşümde yap + assembler ara metni (üretilmiş, insan metni değil) kullanılır. `yap.pmb` ve `komut/doldur/opstab/fmtc/baglayici.pmb` depodaki sayısal ikililerdir; `fmt.txt` mnemonikleri hâlâ metin.
+- svm ve C++ `pm` hâlâ elle yazılmış anlam kodu içerir (bağımsız referans olarak kalır); mikro-işlem ve şablon-simge uygulamaları elle; `call/ret/halt/host` mikro-işlem şablonu yok; güvenlik katmanları (imza, yetki, izolasyon) yok.
+
+
 ## 4. Açık sorular ve riskler
 - **Çekirdek sınırı:** hangi parçalar C++'ta kalmalı? Öneri: çözücü+doğrulayıcı+yorumlayıcı+host (yaklaşık 800 satır) en küçük gerçekçi çekirdek; native üretici ve özelleştiriciler parametreye taşınır; `exec` yeni ilkeldir.
 - **Performans:** VM üstünde çalışan araçlar (özelleştirici, birleştirici) yavaşlar; ama bunlar bir kez çalışan yükleme-zamanı araçları ve makine koduna çevrilince (`--native`) kabul edilebilir olmalı. Ölçülecek.
