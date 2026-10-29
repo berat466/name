@@ -232,14 +232,9 @@ for kk in 1:0 12:0 14:0 30:0 60:0 13:13; do k=${kk%%:*}; ml=${kk##*:}
   while [ $((hi - lo)) -gt 1 ]; do mid=$(((lo + hi) / 2)); mk $mid; (ulimit -v 700000; timeout 20 $PM run $T/st.pmb > /dev/null 2>&1) && lo=$mid || hi=$mid; done
   for d in $((lo - 1)) $lo $hi $((hi + 1)); do mk $d; cmpone "esik:k=$k:derinlik=$d" $T/st.pmb $T/bos; done
 done
-# ---- 1d) desteklenmeyen girdiler: uretici reddeder ve stdout BOS kalir (kismi ELF yok)
-for t in "fadd x, a, b" "host putf, a"; do
-  case "$t" in host\ putf*) body="ldi a, 1
-  host putf, a";; host\ x*) body="$t";; *) body="ldi a, 1
-  ldi b, 2
-  $t";; esac
-  printf 'memory 16\nfunc main() {\n  %s\n}\n' "$body" > $T/u.pma; $PM asm $T/u.pma -o $T/u.pmb --strip > /dev/null 2>&1 || { fail "desteklenmeyen ornek derlenmedi: $t"; continue; }
-  $PM liste $T/u.pmb > $T/u.l; lim $GEN < $T/u.l > $T/u.elf 2>/dev/null; rc=$?; [ $rc != 0 ] && [ ! -s $T/u.elf ] && pass || fail "desteklenmeyen '$t': rc=$rc cikti=$(stat -c %s $T/u.elf)"
+# ---- 1d) reddedilen girdiler: tablo disi komut kimligi / kesik liste -> uretici reddeder ve stdout BOS kalir (kismi ELF yok). (Tum komutlar artik destekli: present/poll/frame/putf ve ondalik ayri denetlenir)
+for t in "0 16 0\n0\n0\n0\n1\n0 1 2\n99 0\n35 0\n" "0 16 0\n0\n0\n0\n1\n0 1 5\n1 0 0\n" "0 16 0\n0\n0\n0\n1\n0 1 2\n1000000 0\n35 0\n"; do
+  printf "$t" > $T/u.l; lim $GEN < $T/u.l > $T/u.elf 2>/dev/null; rc=$?; [ $rc != 0 ] && [ ! -s $T/u.elf ] && pass || fail "gecersiz liste reddedilmedi: rc=$rc cikti=$(stat -c %s $T/u.elf)"
 done
 # ---- 1f) YAKIT (FUEL): ELF'e "-1 N" oneki ile yakit verilir; `pm run --fuel N` ile ayni stdout / cikis kodu / tuzak adi (tuzak noktasi dahil)
 fcount=0

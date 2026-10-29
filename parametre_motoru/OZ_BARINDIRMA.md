@@ -169,7 +169,62 @@ Bu bölüm kullanıcı kararının dört maddesini kapatır: (1) `pm yapisal` pa
 - Zincir testleri (yeni `gen2` ile): `dogrula_pmy2elf.sh` 211 geçti, kalan 0 (67'si grafik seçenekli karşılaştırma; 19 model `pm run` zaman aşımı/abort nedeniyle atlandı); `dogrula_yenile.sh` 51 geçti, kalan 0 (A→B→A turu, pm'siz yeniden üretim); `dogrula_bag.sh` 1244 geçti, kalan 0 (ilk koşuda 134 hata: `zincir.sh`e eklediğim `cat` testin 3 komutluk PATH'inde yoktu; düzeltildi). `dogrula_asm/yap/valid.sh` bu değişiklikten sonra yeniden koşulmadı.
 - **Ret sınıflandırması (`oz/bag/siniflandir_ret.sh`) [Kesin]:** 332 PMY1 girdisinden önce 85'i ELF üretiyordu; şimdi 292'si üretiyor. Kalan 40'ı C++ `pm yapisal` zincirinde de geçersiz (18 yapı/bağlam, 22 assembler reddi). Yani eski 247 retten 207'si yalnızca üretici eksiğiydi ve kapandı.
 
-**Bilinen sınırlar / ölçülmemiş [Kesin]:** (1) Yakıt muhasebesi `pm` ile birebir değil (ELF yakıtı yalnızca çağrı/geri atlama/host'ta düşer), bu yüzden FUEL tuzağında kare sayısı iki yolda farklı olabilir; grafik testleri FUEL tuzağını karşılaştırmaz. (2) Çalışma zamanı performansı (PPM yazımı bayt bayt `wb` çağrısıdır) ölçülmedi. (3) `putf` ve kayan nokta hâlâ yok (sıradaki aşama). (4) Gerçek pencere/girdi yok.
+**Bilinen sınırlar / ölçülmemiş [Kesin]:** (1) _[Düzeltme]_ İlk yazımda "yakıt muhasebesi pm ile birebir değil" demiştim; bu **ölçülmemiş bir iddiaydı**. Yakıt kuralı `anlam.h`'de zaten tek ve aynı (CALL, alınan geri atlama, HOST = 1 yakıt); `dogrula_grafik.sh` bölüm 3 şimdi 7 programda 9 yakıt değerinde (63 durum) tuzak noktasındaki kare sayısını ve çıktıyı `pm` ile karşılaştırır: hepsi aynı. (2) Çalışma zamanı performansı (PPM yazımı bayt bayt `wb` çağrısıdır) ölçülmedi. (3) Gerçek pencere/girdi yok. (4) Seçenekler üretim anında gömülür, ELF çalışma anında argüman/olay dosyası okumaz.
+
+## 3h. Yedinci aşama (2/5): ondalık işlemler (SSE2), `putf`, assembler'da ondalık sabit
+
+**ELF'te ondalık komutlar [Kesin]:** `fadd fsub fmul fdiv fneg fsqrt feq flt fle i2f f2i` için SSE2 şablonları (`sablon.txt`). `f2i` C++ ile aynı kuralı uygular (NaN → 0, taşma → INT64_MAX/MIN). `oz/elf2/dogrula_float.sh` **bit düzeyinde** karşılaştırır (yazmaç değeri tamsayı olarak basılır, `putf`'e bağlı değildir): 41 özel değer (±0, ±∞, farklı yüklü NaN'lar, alt normaller, 2^63 sınırı…) × 7 ikili işlem × tekli işlemler + 5 tohumlu 30000 rastgele desen. Sonuç: hepsi `pm run` ile aynı (NaN yükü dahil).
+**`putf` (`%.15g`) [Kesin]:** `rt.pma` içinde, tam sayılarla ve büyük sayı (N/D) aritmetiğiyle yazıldı: değer `mant·2^e` olarak ölçeklenir, 15 basamak çıkarılır, kalan yarım-eşitlikte çifte yuvarlanır; `%g` biçimi (üstel/sabit eşiği, `e+05`, sondaki sıfırların atılması, `-0`, `inf`, `nan`/`-nan`) yeniden uygulanır. Doğrulama: özel değerler, 10^k ve 2^k kuvvetleri (±330/±1100), 4 tohumlu 12000 rastgele değer (ham desen, ondalık, tam yarım-eşitlik `n+0.5`, ikili kesir) `pm` (`snprintf`) ile aynı. `tests/float.pma` ve `float2.pma` beklenen çıktıyı birebir verir.
+**Assembler'da ondalık sabit [Kesin]:** `asm.pma.in` içindeki `fbits` (büyük sayı, en yakın-çifte yuvarlama = `strtod`). Önceki "bilinen fark" kapandı: `dogrula_ondalik.sh` ve `dogrula_asm.sh` rastgele + sınır sabitlerde (alt normal/taşma sınırları, 2^53±1 yarım-eşitlik, 800+ basamaklı yapışkan kuyruk, 800+ tam sayı basamağı) PMB1'i C++ `pm asm` ile **bayt-bayt** karşılaştırır.
+**Sabotaj:** ELF ondalık şablonları 12/12 yakalandı. `putf` mutantlarında eşdeğer olan iki mutant (`sifir_kirp`, `tahmin`) çıkarıldı; assembler ondalık sabotajında eşdeğer olan `drop_sinir` ve (ilk biçimiyle) `tasima_m` düzeltildi/çıkarıldı. Düzeltilmiş `tasima_m` ve diğerleri için tam tur sonucu: aşağıdaki §3i raporunda.
+
+## 3i. Yedinci aşama (3/5): kanonik sayısal komut tablosu (`oz/komut/`) — komut tanımlarında `ops.h` artık otorite değil
+
+**Karar (kullanıcı):** sayısal parametreler tek doğruluk kaynağı; okunabilir metin isteğe bağlı görünüm; güvenlik katmanları ayrı ve sonradan eklenebilir; yetenek sınırlanmayacak; AI doğrudan sayı üretebilecek. Ayrıntılı biçim ve uyumluluk: `oz/komut/KOMUT_TABLOSU.md`.
+
+### Envanter: komut bilgisinin tek doğruluk kaynakları (başlangıç durumu) [Kesin]
+| Bilgi | Önce nerede tanımlıydı | Şimdi |
+|---|---|---|
+| komut kimliği, mnemonik, operand sayısı/türleri | `src/ops.h` (X-makro) | **`oz/komut/komutlar.pmk`** (sayılar) |
+| host listesi (ad, kimlik, argüman sayısı) | `ops.h` enum + `ikili.cpp` + `asm.pma.in` (`ARITY`) + `valid.pma.in` | tablo (HOST bölümü); hepsi üretilir |
+| araç sözlükleri (`OPNAMES`, `NOPS`, `KIND`) | `opstab` ← `ops.h` metni | `komut @@tab` ← sayısal tablo |
+| şablon anahtarı | mnemonik metni | komut **sembolü** (mnemonik değişse şablon etkilenmez) |
+| komut sayısı/kimlikleri araç kaynaklarında | 55, 34, 40, 62, 81 … literal sayılar | `@OPCOUNT@`, `@OP_CALL@`, `@NAMECOUNT@`, `@HOSTCOUNT@`, `@TS_*@` (şablon yuvaları `sablonc`'tan), `@H_*@` |
+| PMB1 çözücü/kodlayıcı: komut başına operand sayısı ve operand tel sınıfı | `coz.sayi`/`yaz.sayi` içinde elle yazılmış 55'lik dizi ve `kind(op,j)` işlevi (op numaralarıyla) | tablodan: `NOPSZ`, `KINDW` (KIND ext anahtar 2); `oz/uret_ikili.sh` |
+
+### Yapılan değişiklikler [Kesin]
+- **PMK1 biçimi:** sürümlü, bölümlü (KIND/OP/HOST), kayıt uzunluklu, `ext` (anahtar,değer) ve bilinmeyen-kuyruk jetonlarını koruyan sayısal biçim; bilinmeyen isteğe bağlı bölüm korunur, zorunlu olanı reddedilir; major farkı reddedilir, minor kabul. Ayrılmış bölüm aralıkları: yürütme anlamı/şablon/kurallar, arka uçlar, **güvenlik (64–127)**, uygulama, özel.
+- **Araç `oz/arac/komut.pma`** (9–10 KB PMB1; ELF): `@@tab @@opsh @@gor @@yaz @@kanon @@dogrula`. Okunabilir görünüm düzenlenip `@@yaz` ile sayısal tabloya **kayıpsız** işlenir.
+- **C++ tarafı:** `src/ops.h` komut tanımı içermez; `src/ops_gen.h` tablodan üretilir (`PM_OPS`, `PM_HOSTS`); `kHostInfo` da oradan. `pm` yeniden derlendi: `tests/run_tests.sh` 203 geçti, 0 kalan; 33 kaynakta `pm asm` çıktısı eski `pm` ile bayt-bayt aynı.
+- **Araç zinciri:** `opstab` yerine `komut @@tab`; `sablonc` tabloyu okur; `uret.sh` (asm/valid/gen2), `kur.sh`, `yenile.sh` tabloyu kullanır; `paketle.elf` (PMY1 paketleyici) araç takımına eklendi.
+- **Eşdeğerlik:** tablodan üretilen `asm.pmb`, `valid.pmb` (ve önceki sürümde `gen2.pmb`) depodakiyle **bayt-bayt** aynı; `sablonc` çıktısı eski `ops.h`+awk oracle'ı ile aynı; sözlük eski `opstab` ile aynı; tablodan üretilen `coz.pmy/yaz.pmy` işlevsel olarak eşdeğer (`dogrula_ikili.sh` 3757 denetim, 0 kalan).
+
+### Doğrulama (kullanıcının 6 maddesi) [Kesin; sayılar son koşudan]
+1. **Metinsiz üretim:** `ops.h` okunmadan tablodan asm/valid/gen2/coz/yaz yeniden üretilir ve depodakilerle aynıdır (`dogrula_komut.sh` bölüm 3).
+2. **Sayı değişikliği davranışa yansır:** tabloda `add` → `toplam` yapılınca üretilen assembler `toplam`'ı kabul eder, `add`'i reddeder, **aynı** PMB1 ve aynı ELF davranışı çıkar (bölüm 6).
+3. **Okunabilir metin ↔ sayı kayıpsız:** gerçek tablo, v1 tablosu ve 200 rastgele tablo (seyrek/yoğun kimlik, bilinmeyen bölümler, ext/kuyruk, karışık bölüm sırası) için sayı → metin → sayı özdeş (bölüm 4).
+4. **Genişletilebilirlik:** tabloya yeni komut `FMIN d,f,f` + tek şablon satırı eklenince assembler, çözücü, doğrulayıcı ve ELF üretici **kaynak kodu değiştirilmeden** yeni komutu işler (`fmin` 1.5 ve −3 doğru basıldı); yeniden üretilen C++ başlığıyla `pm` de derlenir (bölüm 7).
+5. **Önceki doğruluk ve öz-yeniden üretim:** `dogrula_elf2` (2784 geçti), `float`, `grafik` (257), `valid` (5662), `ikili` (3757), `bag` (1256), `pmy2elf` (205), `yenile` (A→B→A turu, 12 ELF) — bkz. aşağıdaki son koşu tablosu.
+6. **Sürümleme/uyumluluk:** major/minor, bölüm sürümü + zorunlu bayrağı, `ext`/kuyruk, bölüm sırası bağımsızlığı testle sınanır (bölüm 5).
+
+### Sabotaj (testlerin gerçekten yakaladığı) [Kesin]
+`sabotaj_komut.sh`: `komut.pma` içinde 20 mutant (sihirli sayı, sürüm, zorunlu bölüm, yinelenen kimlik/sembol, tür başvurusu, `gor` ext kaybı, `yaz` kuyruk kaybı, `tab`/`opsh` biçimi, profil koşulları, karakter denetimleri, bölüm sonu…) → **20/20 yakalandı**. Test yazarken görülen boşluk: "okunabilir görünüm bilinen satırları içeriyor mu" testi sonradan eklendi (`opaque_gor` mutantı ilk taslakta kaçardı).
+
+### Hâlâ metne / elle yazılmış kurala bağlı olanlar (dürüst liste) [Kesin]
+Komutun *kimliği, adı, operand sayısı/türleri, tel sınıfı, host listesi* artık sayıdır. Aşağıdakiler **henüz değil**:
+1. **Komut anlamı (yürütme):** C++ `anlam.h` (55 `SEM_*` makrosu, mikro-işlem listeleri), `vm.cpp` (ondalık işlemler elle), `native_x64.cpp`, `host.h` (host anlamı). Yeni komutun `pm run` ile çalışması için bunlar elle yazılır (`FMIN` testinde `pm` yalnızca liste/asm için kullanıldı, yürütmeyi ELF yaptı).
+2. **Assembler yeniden yazma kuralları:** `asm.pma.in` `rewrite` işlevi: anlık-biçim eşlemeleri (`add→addi` …), karşılaştırma takasları, takma komutlar (`gt ge fgt fge`) **komut numaralarıyla ve aralarındaki aritmetik ilişkilerle** (`m+33`, `m+41`…) kodlanmış (~33 literal). Yeni komutun anlık biçimi/yer değiştirme kuralı tabloda tanımlanamıyor.
+3. **Doğrulayıcı kuralları:** `valid.pma.in` komut başına özel durumlar (`call ret halt jmp jz jnz divi modi …`) sembolik ama komut-özel; genel bir "kural bölümü" yok.
+4. **ELF üretici:** komutların x86-64 şablonları **metin** (`sablon.txt`, 83 satır, baytlar onaltılık); şablon dili simgeleri (`R_A`, `REL_*`…) `sablonc.pma` kodunda sabit; `gen2` özel işlemleri (host→RT çağrısı, `ld/st` ayrıcalık, geri-atlama yakıtı) komut sembollerine göre elle yazılmış; RT işlev sırası (`RTF_*`) `statik.sozluk`'ta elle.
+5. **PMY1 → .pma dönüştürücü:** `yap/fmt.txt` içinde ~157 yerde mnemonik **metni** (komut adı değişirse çıktı bozulur).
+6. **Tüm `.pma` kaynakları** (uygulamalar, testler, `rt.pma`, araçlar) mnemonik adlarıyla yazılmış; adı değiştirilen komutun eski adıyla yazılmış kaynakları yeni assembler reddeder (yalnızca sayısal PMB1/liste biçimleri etkilenmez).
+7. **Araçların kendi tanımı hâlâ metin:** `*.pma`/`*.pma.in` ve `sablon.txt` **elle yazılan kaynaktır**, `.pmb` ondan üretilir. İlkenin ("sayısal parametreler kanonik kaynak") araç kaynaklarına uygulanması — yani PMB1/liste kanonik, `.pma` görünüm — **yapılmadı**; bu bir sonraki büyük adımdır.
+8. **Güvenlik katmanları:** imza, yetki politikası, izolasyon, kullanıcıya özel çeşitlendirme **yok**. Yapılan yalnızca zemin: ayrılmış bölüm kimlikleri, host yetenek etiketi (ext 1, uygulanmıyor), zorunlu doğrulayıcının atlanamaması (`zincir.sh`).
+9. **Test düzeneği** hâlâ awk/sed/od içerir (referans oracle'lar bilerek).
+
+### Önerilen sıra (sonraki adımlar, ana sırayı bozmadan)
+(a) Yeniden yazma kuralları ve doğrulayıcı kurallarını tabloya (ayrılmış bölüm 4–15) taşı → bir komutun anlık biçimi/takası/doğrulama kuralı sayıyla tanımlanır; (b) x86 şablonlarını sayısal bölüme taşı (şablon dili kendi sayısal tablosu); (c) `fmt.txt`'te mnemonikleri sembolle yaz (`@M_ADD@`); (d) komut *anlamını* (mikro-işlem listeleri) sayısal bölüme taşı ve C++ `anlam.h`'yi ondan üret; (e) araç kaynaklarının kanonik biçimini PMB1/liste yap, `.pma` görünümü `dump`+ad yan tablosundan üret.
+
 
 ## 4. Açık sorular ve riskler
 - **Çekirdek sınırı:** hangi parçalar C++'ta kalmalı? Öneri: çözücü+doğrulayıcı+yorumlayıcı+host (yaklaşık 800 satır) en küçük gerçekçi çekirdek; native üretici ve özelleştiriciler parametreye taşınır; `exec` yeni ilkeldir.

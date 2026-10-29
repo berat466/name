@@ -1,6 +1,7 @@
 #!/bin/bash
 # dogrula_float.sh'in yakaladigini kanitlar: sablon.txt'te ondalik sablonlarini tek tek bozar, gen2.pmb'yi yeniden uretir, denetimin BASARISIZ olmasini bekler.
 # Kullanim: sabotaj_float.sh [pm]   (SADECE: etiket deseni)
+# Not: `putf_sifir_kirp` (k=16 baslangici: okunan 16. basamak sozcugu hep 0) ve `putf_tahmin` (10 tabanli us tahmini 1233 -> 1200: ayarlama dongusu duzeltir) bilerek yok: gozlenebilir davranis ayni (esdeger mutantlar).
 PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
 yakalandi=0; kacti=0
 mut() {   # etiket dosya ifade (dosya: sablon.txt | rt.pma | gen2.pma.in)
@@ -29,12 +30,10 @@ mut putf_ust_esik rt.pma 's/gei z, x0, 15\n    jnz z, expf/gei z, x0, 16\n    jn
 mut putf_alt_esik rt.pma 's/lti z, x0, -4\n    jnz z, expf/lti z, x0, -5\n    jnz z, expf/'
 mut putf_us_isaret rt.pma 's/e2p: call x, wb, 43/e2p: call x, wb, 32/'
 mut putf_us_iki_hane rt.pma 's/e3: lti z, ax, 10/e3: lti z, ax, 1/'
-mut putf_sifir_kirp rt.pma 's/mov k, 15\nz1:/mov k, 16\nz1:/'
 mut putf_nan_isaret rt.pma 's/jz sg, pos\n    call x, wb, 45/jz sg, pos\n    jz sg, pos/'
 mut putf_sifir_pad rt.pma 's/f1w: addi c, dg, 48/f1w: addi c, dg, 49/'
 mut putf_alt_normal rt.pma 's/addi e2, ex, -1075/addi e2, ex, -1074/'
 mut putf_borc rt.pma 's/mov br, 1\n    add x, x, big/mov br, 0\n    add x, x, big/'
-mut putf_tahmin rt.pma 's/muli t, t, 1233/muli t, t, 1200/'
 mut putf_kare gen2.pma.in 's/    eqi z, h, 2\n    jnz z, srh\n/    eqi z, h, 99\n    jnz z, srh\n/'
 echo "sabotaj(ondalik): $yakalandi yakalandi, $kacti kacti"
 rm -rf $T
