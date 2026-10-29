@@ -598,6 +598,53 @@ t11: ld e, G, 5
     ret r
 }
 
+; islev simgeleri (tur 6..9): alan fv'nin gosterdigi OPERAND DEGERI bir islev indeksidir (komutun call mikro-islemi); tur 6 FREL (girise bagil 32 bit), 7 FNR8 (yazmac sayisi*8),
+;   8 FNP8 (parametre sayisi*8), 9 FCNT (yerel yazmac sayisi = yazmac - parametre)
+func etok_fn(ty, fv) {
+    gei z, fv, 3
+    jz z, f1
+    call x, fail
+f1: add t, fv, 20
+    add t, t, G
+    ld fn, t, 0
+    eqi z, ty, 6
+    jz z, f2
+    add t, fn, FBASE
+    ld t, t, 0
+    add t, t, OFF
+    ld r, t, 0
+    ld p, G, 2
+    sub r, r, p
+    sub r, r, 4
+    call x, eb32, r
+    ret 0
+f2: eqi z, ty, 7
+    jz z, f3
+    add t, fn, FNR
+    ld r, t, 0
+    mul r, r, 8
+    call x, eb32, r
+    ret 0
+f3: eqi z, ty, 8
+    jz z, f4
+    add t, fn, FNP
+    ld r, t, 0
+    mul r, r, 8
+    call x, eb32, r
+    ret 0
+f4: eqi z, ty, 9
+    jz z, f5
+    add t, fn, FNR
+    ld r, t, 0
+    add t, fn, FNP
+    ld q, t, 0
+    sub r, r, q
+    call x, eb32, r
+    ret 0
+f5: call x, fail
+    ret 0
+}
+
 func etok(tok) {
     lt z, tok, 256
     jz z, k1
@@ -631,7 +678,11 @@ k4: sub d, tok, 400
     addi t, k, 60
     add t, t, G
     ld fv, t, 0
-    eqi z, ty, 5
+    gei z, ty, 6
+    jz z, k4n
+    call x, etok_fn, ty, fv
+    ret 0
+k4n: eqi z, ty, 5
     jz z, k4a
     ; REL_TFk: alani fv olan operandin gosterdigi komuta bagil 32 bit hedef
     gei z, fv, 3

@@ -8,7 +8,7 @@
 Gösterim: ✅ tamam (kanıtıyla), ❌ eksik. Her madde: bağımsız referans (C++ `pm run`) + hedefli test + regresyon, kanıt satırı ve commit.
 - ✅ `ret` mikro-işlem şablonu (`tpl prim ret`) — kanıt: `oz/elf2/dogrula_cagri.sh` (yalnızca SEM ile tanımlı `RETX s`; fib/özyineleme, yığın taşması, derinlik sınırı, yakıt sayacı, bölme-sıfır tuzağı: ELF = svm = C++ `pm`); sabotaj: şablon silinince ve 3 bozuk şablonda test başarısız
 - ✅ `halt` mikro-işlem şablonu (`tpl prim halt`) — kanıt: aynı betik (`STOP`, çağrılan işlevde erken halt dahil); bozuk şablon (`REL_EXITC`) yakalandı
-- ❌ `call` mikro-işlem şablonu
+- ✅ `call` mikro-işlem şablonu (`tpl prim call` + 16 alana bağlı işlev simgesi `FREL_Fk/FNR8_Fk/FNP8_Fk/FCNT_Fk`, gen2'de `etok_fn`) — kanıt: `oz/elf2/dogrula_cagri.sh` (yalnızca SEM ile tanımlı `CALLX F,b`: fib özyineleme, yakıt 1..5000, DEPTH/STACK tuzakları, yığın eşiği ve eşik+1 (yerel yazmaç sıfırlama yığın sonunu aşmıyor: guard sözcükleri korunur), zorlanmış `-6 1` yolu); 6 bozuk şablon mutantı yakalandı (yanlış alan, yanlış işlev simgesi, yakıt denetimi eksik, yanlış sayaç, fazla sıfırlama)
 - ❌ `host` mikro-işlem şablonu
 - ❌ Mikro-işlemlerin en alt uygulamalarının sayısallaşması (kalan elle kod)
 

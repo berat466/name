@@ -12,6 +12,7 @@ func eb32
 func eb64
 func val32
 func target
+func etok_fn
 func etok
 func etpl
 func emit_micro
