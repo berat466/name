@@ -6,7 +6,7 @@ for kind in ld st; do for ad in 0 4095 4096 4097 -1 9223372036854775807 -9223372
   n=$((n+1))
   { echo "memory 4096"; echo "data tab = $ad 77"
     echo "func main() {"; echo " mov z, 0"; echo " add p, z, tab"; echo " ld x, p, 0"; echo " ld w, p, 1"
-    if [ $kind = ld ]; then echo " ld v, x, $off"; echo " host puti, v"; else echo " st w, x, $off"; echo " ld v, x, $off"; echo " host puti, v"; fi
+    if [ $kind = ld ]; then echo " ld v, x, $off"; echo " host puti, v"; else echo " st w, x, $off"; echo " host puti, w"; fi
     echo " halt"; echo "}"; echo "entry main"; } > $T/bellek_${kind}_$n.pma
 done; done; done
 printf 'memory 4096\nfunc main() {\n alloc r, 0\n host puti, r\n halt\n}\nentry main\n' > $T/al0.pma
