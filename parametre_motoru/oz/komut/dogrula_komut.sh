@@ -88,6 +88,22 @@ sat "NR==$L3{\$2=0; \$3=2} {print}" > $T/n1; mod kanon < $T/n1 | head -1 | grep 
 sat 'NR==1{$4=$4+1} {print} END{print "77 0 1 3 10 20 30"}' > $T/opt; kab "bilinmeyen istege bagli bolum" $T/opt
 sat 'NR==1{$4=$4+1} {print} END{print "77 1 1 3 10 20 30"}' > $T/req; red "bilinmeyen ZORUNLU bolum" $T/req
 mod tab < $T/opt | cmp -s - <(mod tab < $TAB) && pass || fail "bilinmeyen bolum sozluk ciktisini etkiledi"
+# ---- 5b) TEK NEDENLI olumsuz ornekler: her biri yalniz kendi denetimine carpar (kanonlastirmada KESIN hata kodu beklenir); baska bir denetim de reddetse bile mutantin yakalanmasi icin kod sarttir
+mod kanon < $TAB > $T/k.num
+kc() { out=$(mod kanon < "$2" | head -1); [ "$out" = "HATA: $3" ] && pass || fail "$1: beklenen 'HATA: $3', bulunan '$out'"; }
+LK=$(awk '/^2 1 1 /{print NR; exit}' $T/k.num)   # OP bolumu baslik satiri; ilk komut kaydi LK+2
+awk 'NR==1{$4=$4+1} {print} END{print "9 1 1 1"; print "0"}' $T/k.num > $T/e1; kc "bilinen bolum yinelenen (bos TEMPLATE)" $T/e1 5
+awk 'NR==1{$4=$4+1} {print} END{print "5 1 1 1"; print "0"}' $T/k.num > $T/e1; kc "bilinen bolum yinelenen (bos SEM)" $T/e1 5
+awk '{print} END{print "5"}' $T/k.num > $T/e1; kc "bolum sonrasi artik veri" $T/e1 7
+awk 'NR==4{$2=2} {print}' $T/k.num > $T/e1; kc "kind kimligi yinelenen (kod)" $T/e1 21
+awk -v l=$((LK+2)) 'NR==l{$2=1} {print}' $T/k.num > $T/e1; kc "opcode yinelenen (kod)" $T/e1 31
+awk -v l=$((LK+3)) 'NR==l{$4=77;$5=79;$6=86} {print}' $T/k.num > $T/e1; kc "komut sembolu yinelenen" $T/e1 32
+awk -v l=$((LK+2)) 'NR==l{$13=200} {print}' $T/k.num > $T/e1; kc "komut operand turu tanimsiz kind" $T/e1 34
+awk -v l=$((LK+3)) 'NR==l{$1=3} {print}' $T/k.num > $T/e1; kc "kayit uzunlugu 4'ten kucuk" $T/e1 13
+awk -v l=$((L3+3)) 'NR==l{$2=0} {print}' $T/k.num > $T/e1; kc "host kimligi yinelenen (kod)" $T/e1 41
+awk '{ if ($0 ~ / 266 3 78 80 56 1 0 /) sub(/ 266 3 78 80 56 1 0 /," 999 3 78 80 56 1 0 "); print }' $T/k.num > $T/e1; kc "sablon tanimsiz simge kodu kullaniyor" $T/e1 114
+# profil: bir komutun operand turu sayisi 4 (profil en cok 3'e izin verir) -> "0 54"
+awk -v l=$((LK+2)) -v h=$LK 'NR==h{$4=$4+2} NR==l{print "15 0 3 77 79 86 3 109 111 118 4 1 4 4 4 0"; next} {print}' $T/k.num > $T/e1; out=$(mod dogrula < $T/e1); [ "$out" = "0 54" ] && pass || fail "profil: 4 operand turlu komut: beklenen '0 54', bulunan '$out'"
 mod gor < $T/opt | mod yaz | cmp -s - <(mod kanon < $T/opt) && pass || fail "bilinmeyen bolum gidis-donusta kayboldu"
 # kayit uzantilari: bir komuta ext (anahtar 9=99) + kuyruk (5 6 7) ekle: reclen +4, ext sayisi 0->1
 sat 'NR==14{$4=$4+5} NR==16{n=NF; $1=$1+5; $n=1; $(n+1)=9; $(n+2)=99; $(n+3)=5; $(n+4)=6; $(n+5)=7} {print}' > $T/ext1
