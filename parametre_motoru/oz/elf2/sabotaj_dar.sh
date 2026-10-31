@@ -18,24 +18,23 @@ if not done: sys.exit(5)
 " "$2" "$3" "$4" | KM yaz > $w/oz/komut/komutlar.pmk || { echo "SABOTAJ HATASI: $1 uygulanamadi"; exit 3; }
     cmp -s $w/oz/komut/komutlar.pmk $R/oz/komut/komutlar.pmk && { echo "SABOTAJ HATASI: $1 degisiklik yok"; exit 3; }
     (cd $w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: gen2 uretilemedi"; exit 4; }
-    if (cd $w/oz/elf2 && LIMS=200 timeout 900 ./dogrula_dar.sh $PM 60 12 > $T/log_$1 2>&1); then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
+    if (cd $w/oz/elf2 && LIMS=200 timeout 900 ./dogrula_dar.sh $PM 0 12 > $T/log_$1 2>&1); then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
     rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
+# DENK (davranisi degistirmeyen) mutantlar bilincle YOK: cmp_lt->cmp_le (ef == EMIN esitliginde ayni secim), abs>=T -> abs>T (r>=T ayni durumu kapsar),
+# C = 1.25*2^k (x >= 0 icin 1.5 sart degil), esik 53 -> 52 (2^52..2^53 araliginda yapiskanli yol da dogru sonuc verir).
 bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; "$@" & }
 bg mut_sem rnd_kaydir RND_F32 'lit t6 29' 'lit t6 28'
 bg mut_sem rnd_kaydir16 RND_F16 'lit t6 42' 'lit t6 41'
 bg mut_sem rnd_sessiz RND_F32 'lit t2 51 ; alu_shl t6 t6 t2 ; alu_or t7 t7 t6' 'lit t2 50 ; alu_shl t6 t6 t2 ; alu_or t7 t7 t6'
 bg mut_sem rnd_nan_kosul RND_F32 'cmp_gt t2 t5 t1' 'cmp_ge t2 t5 t1'
 bg mut_sem rnd_altnormal RND_F32 'lit t8 897' 'lit t8 896'
-bg mut_sem rnd_altnormal_secim RND_F32 'cmp_lt t3 t6 t8' 'cmp_le t3 t6 t8'
 bg mut_sem rnd_altnormal16 RND_F16 'lit t8 1009' 'lit t8 1008'
 bg mut_sem rnd_tasma RND_F32 'lit t8 1151' 'lit t8 1152'
 bg mut_sem rnd_tasma16 RND_F16 'lit t8 1039' 'lit t8 1040'
 bg mut_sem rnd_tasma_yuvarlanmis RND_F32 'cmp_ge t5 t3 t8' 'cmp_gt t5 t3 t8'
-bg mut_sem rnd_tasma_girdi RND_F32 'cmp_ge t6 t5 t8' 'cmp_gt t6 t5 t8'
 bg mut_sem rnd_isaret RND_F32 'alu_or t3 t3 t4' 'alu_or t3 t3 t3'
 bg mut_sem rnd_sihirli RND_F32 'fsub t3 t3 t6' 'fadd t3 t3 t6'
-bg mut_sem rnd_C_yari RND_F32 'lit t3 1 ; lit t8 51 ; alu_shl t3 t3 t8' 'lit t3 1 ; lit t8 50 ; alu_shl t3 t3 t8'
 bg mut_sem rnd_bf16 RND_BF16 'lit t8 897' 'lit t8 898'
 bg mut_sem rnd_bf16_mant RND_BF16 'lit t6 45' 'lit t6 44'
 bg mut_sem add_islem ADD_F32 'fadd t1 t1 t2' 'fsub t1 t1 t2'
@@ -46,7 +45,7 @@ bg mut_sem sqrt_islem SQRT_F16 'fsqrt t1 t1' 'fneg t1 t1'
 bg mut_sem i2f_yapiskan I2F_F32 'alu_or t5 t5 t6' 'alu_xor t5 t5 t6'
 bg mut_sem i2f_kaydir I2F_F32 'lit t2 11 ; alu_shr t5 t4 t2' 'lit t2 10 ; alu_shr t5 t4 t2'
 bg mut_sem i2f_olcek I2F_F32 'lit t6 2048' 'lit t6 1024'
-bg mut_sem i2f_esik I2F_F32 'lit t2 53 ; alu_shl t7 t7 t2' 'lit t2 52 ; alu_shl t7 t7 t2'
+bg mut_sem i2f_esik I2F_F32 'lit t2 53 ; alu_shl t7 t7 t2' 'lit t2 30 ; alu_shl t7 t7 t2'
 bg mut_sem i2f_isaretsiz_karsilastirma I2F_F32 'cmp_ltu t7 t4 t7' 'cmp_lt t7 t4 t7'
 bg mut_sem i2f_mutlak I2F_F32 'alu_sub t4 t4 t3' 'alu_add t4 t4 t3'
 bg mut_sem i2f_isaret I2F_F16 'sel t1 t7 t5 t6' 'sel t1 t7 t6 t6'

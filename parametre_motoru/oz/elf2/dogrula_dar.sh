@@ -2,8 +2,8 @@
 # PLAN BOLUM 01 -- DAR KAYAN NOKTA TURLERI float32 / float16 / bfloat16: yuvarlama (rnd_*), + - * / sqrt (add_* .. sqrt_*), tamsayidan (i2f_*, u2f_*) komutlari; hepsi komut tablosunda YALNIZCA OP+SEM'dir (x86 sablonu yok).
 # Beklenen degerler BAGIMSIZ REFERANSTAN gelir: ref_dar.py (tam rasyonel aritmetik; hicbir motor ya da derleyici parcasi yok). Karsilastirma: ELF (gen2) = svm (tablo calisma aninda) = C++ pm (yorumlayici; tamsayi algoritmasi) = referans.
 # f32 icin ek olarak DONANIM ucuncu referans: C++ (float) donusumu/islemleri (donanim_dar.cpp). NaN yuku kisaltma + sessizlestirme kurali donanimla (f32) dogrulanir.
-# Kullanim: dogrula_dar.sh [pm] [elf_deger_sayisi] [svm_deger_sayisi]
-PM=${1:-../../pm}; NE=${2:-60}; NS=${3:-12}; D=$(cd "$(dirname "$0")" && pwd); cd "$D"; PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); ok=0; bad=0
+# Kullanim: dogrula_dar.sh [pm] [elf_deger_sayisi (0 = hepsi)] [svm_deger_sayisi]
+PM=${1:-../../pm}; NE=${2:-0}; NS=${3:-12}; D=$(cd "$(dirname "$0")" && pwd); cd "$D"; PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); ok=0; bad=0
 pass() { ok=$((ok+1)); }; fail() { bad=$((bad+1)); echo "HATA: $1"; }
 lim() { (ulimit -v 2000000; timeout ${LIMS:-180} "$@"); }
 TAB=$R/oz/komut/komutlar.pmk; ASM=$R/oz/asm/asm.pmb; GEN=$R/oz/elf2/gen2.pmb
@@ -72,7 +72,7 @@ for F in f32 f16 bf16; do
     python3 ref_dar.py veri int 0 > $T/v.txt; python3 ref_dar.py bekle $F $K 0 > $T/e.txt; python3 ref_dar.py veri int $NS > $T/vs.txt; python3 ref_dar.py bekle $F $K $NS > $T/es.txt
     run1 "${K}_$F" ${K}_$F 1 "$(cat $T/v.txt)" $T/e.txt "$(cat $T/vs.txt)" $T/es.txt; done
   # aritmetik: bicim degerleri uzerinde tum ciftler (NE=60 -> 3600 satir; svm: NS)
-  NA=$(( NE > 40 ? 40 : NE )); NSA=$(( NS > 8 ? 8 : NS ))
+  NA=40; NSA=$(( NS > 8 ? 8 : NS ))
   for K in add sub mul div; do
     python3 ref_dar.py veri fmt$F $NA > $T/v.txt; python3 ref_dar.py bekle $F $K $NA > $T/e.txt; python3 ref_dar.py veri fmt$F $NSA > $T/vs.txt; python3 ref_dar.py bekle $F $K $NSA > $T/es.txt
     run1 "${K}_$F" ${K}_$F 2 "$(cat $T/v.txt)" $T/e.txt "$(cat $T/vs.txt)" $T/es.txt; done
