@@ -29,6 +29,7 @@ oob|oz/elf|dogrula_oob.sh|||41|eski ELF ureticisi ld/st sinir denetimi
 yap|oz/yap|dogrula_yap.sh|30 100||39|yapisal dil -> pma
 ikili|oz|dogrula_ikili.sh|30||32|PMB1 kodlayici/cozucu
 komut|oz/komut|dogrula_komut.sh|10||34|komut tablosu (PMK1)
+turler|oz/komut|dogrula_turler.sh|||20|TYPES bolumu: tur ozellikleri, limitler, ABI veri modeli, bayt sirasi (C++ derleyici gercekleriyle)
 valid|oz/dogr|dogrula_valid.sh|8 8||31|PMB1 dogrulayici (guvenlik kapisi)
 asm|oz/asm|dogrula_asm.sh|20 100 20||30|assembler
 kural|oz/asm|dogrula_kural.sh|||27|yeniden yazma kurallari
@@ -63,17 +64,18 @@ svm|oz/sayisal|sabotaj_svm.sh
 nesne|oz/nesne|sabotaj_nesne.sh
 "
 KRITIK="testler valid mikro arac"
-TUMALAN="elf2 oob yap ikili komut valid asm kural grafik svm nesne gorunum elf mikro cagri tur arac testler ondalik float"
+TUMALAN="elf2 oob yap ikili komut turler valid asm kural grafik svm nesne gorunum elf mikro cagri tur arac testler ondalik float"
 
 # ---- degisen dosya -> alanlar
 alan_dosya() {
   case "$1" in
     *.md|*.txt|*.gitignore|LICENSE*|docs/*) ;;                                  # belge: test gerekmez
     src/*|Makefile|tests/*) echo "testler ikili elf elf2 oob mikro asm kural valid yap svm komut nesne arac ondalik float grafik tur" ;;   # C++ cekirdek = bagimsiz referans: her sey ona karsi karsilastirilir
-    oz/komut/komutlar.pmk) echo "komut nesne gorunum kural mikro cagri tur svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
+    oz/komut/dogrula_turler.sh|oz/komut/turler_oracle.cpp) echo "turler" ;;
+    oz/komut/komutlar.pmk) echo "komut turler nesne gorunum kural mikro cagri tur svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
     oz/komut/*) echo "komut" ;;                                                  # tablo disi: test/belge/gecis dosyalari
     oz/arac/*.sh|oz/arac/ref/*) echo "arac" ;;
-    oz/arac/komut.*) echo "arac komut nesne gorunum asm valid elf2" ;;         # komut.pmb tum sozlukleri uretir
+    oz/arac/komut.*) echo "arac komut turler nesne gorunum asm valid elf2" ;;         # komut.pmb tum sozlukleri uretir
     oz/arac/gorunum.*) echo "arac gorunum" ;;
     oz/arac/*) echo "arac nesne gorunum komut" ;;
     oz/asm/dogrula_kural.sh|oz/asm/sabotaj_kural.sh) echo "kural" ;;

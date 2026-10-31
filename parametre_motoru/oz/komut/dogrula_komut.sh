@@ -102,6 +102,57 @@ awk -v l=$((LK+2)) 'NR==l{$13=200} {print}' $T/k.num > $T/e1; kc "komut operand 
 awk -v l=$((LK+3)) 'NR==l{$1=3} {print}' $T/k.num > $T/e1; kc "kayit uzunlugu 4'ten kucuk" $T/e1 13
 awk -v l=$((L3+3)) 'NR==l{$2=0} {print}' $T/k.num > $T/e1; kc "host kimligi yinelenen (kod)" $T/e1 41
 awk '{ if ($0 ~ / 266 3 78 80 56 1 0 /) sub(/ 266 3 78 80 56 1 0 /," 999 3 78 80 56 1 0 "); print }' $T/k.num > $T/e1; kc "sablon tanimsiz simge kodu kullaniyor" $T/e1 114
+# ---- 5c) TYPES bolumu (id 10) olumsuz ornekleri: her biri kendi kodunu verir. Yuk kanonik cikti icinde TEK satirdir: sayac, sonra kayitlar (uzunluk, etiket, ...)
+HT=$(awk 'NF==4 && $1==10 && $2==0 && $3==1 {print NR; exit}' $T/k.num)
+# rmod K OFS DEGER : K. kaydin (0 tabanli) OFS. sozcugunu (kayit uzunlugu sozcugu = 0) DEGER yap
+rmod() { awk -v h=$HT -v k=$1 -v o=$2 -v v=$3 'NR==h+1 { p=2; for(i=0;i<k;i++) p+=$p+1; $(p+o)=v } {print}' $T/k.num > $T/e1; }
+# cv KELIME_LISTESI SOZCUK_SAYISI : yuke kayit ekle (baslik uzunlugu ve sayac guncellenir)
+cv() { awk -v h=$HT -v add="$1" -v k=$2 'NR==h{$4=$4+k} NR==h+1{$1=$1+1; $0=$0 " " add} {print}' $T/k.num > $T/e1; }
+# NOT: alan konumu ad uzunlugu ile kayar (ad n harf: her alan +n-2). tur sirasi: i8 0 i16 1 i32 2 i64 3 i128 4 u8 5 ... f32 22 ; ilk abi kaydi 29. i8: ad 2 harf -> sinif o6 bit o7 isaret o8 boyut o9 hiza o10 nsoz o11 endian o12 usbit o13 mantbit o14 min o15,16 max o17,18
+rmod 0 17 126; kc "tur i8: max 126 (turetilen 127 degil)" $T/e1 147
+rmod 0 15 -127; kc "tur i8: min -127" $T/e1 147
+rmod 0 7 7; kc "tur i8: bit 7 ile limitler uyumsuz" $T/e1 147
+rmod 0 2 2; kc "tur kimligi yinelenen" $T/e1 143     # i8'in kimligi 2 olur, i16 ile cakisir (i16 sonra gelir)
+rmod 5 4 105; kc "tur adi yinelenen" $T/e1 145        # u8'in ilk harfi 'i' -> adi 'i8'
+rmod 22 15 22; kc "f32: bit != 1+usbit+mantbit" $T/e1 148      # f32: ad 3 harf -> mantbit o15
+rmod 0 6 9; kc "tur sinifi 9" $T/e1 146
+rmod 0 10 3; kc "tur hizasi 2'nin kuvveti degil" $T/e1 146
+rmod 0 11 0; kc "tur bellek sozcugu 0" $T/e1 146
+rmod 0 1 4; kc "TYPES kayit etiketi bilinmiyor" $T/e1 141
+rmod 0 7 0; kc "tur bit 0" $T/e1 146
+rmod 0 7 257; kc "tur bit 257" $T/e1 146
+rmod 0 8 2; kc "tur isareti 2" $T/e1 146
+rmod 0 9 0; kc "tur boyutu 0" $T/e1 146
+rmod 0 9 65; kc "tur boyutu 65" $T/e1 146
+rmod 0 10 0; kc "tur hizasi 0" $T/e1 146
+rmod 0 10 128; kc "tur hizasi 128" $T/e1 146
+rmod 0 11 5; kc "tur bellek sozcugu 5" $T/e1 146
+rmod 0 12 2; kc "tur endian 2" $T/e1 146
+rmod 0 6 0; kc "tur sinifi 0" $T/e1 146
+rmod 0 4 65; kc "tur adi gecersiz (buyuk harf)" $T/e1 140
+rmod 4 17 1; kc "i128: min_lo != 0" $T/e1 147
+rmod 4 18 0; kc "i128: min_hi != INT64_MIN" $T/e1 147
+rmod 4 19 0; kc "i128: max_lo != -1" $T/e1 147
+rmod 4 20 -1; kc "i128: max_hi != INT64_MAX" $T/e1 147
+rmod 9 18 5; kc "u128: min_hi != 0" $T/e1 147
+rmod 9 20 5; kc "u128: max_hi != -1" $T/e1 147
+rmod 3 17 0; kc "i64: min_hi != -1 (isaretli)" $T/e1 147
+rmod 3 16 5; kc "i64: min_lo yanlis" $T/e1 147
+rmod 3 18 5; kc "i64: max_lo yanlis" $T/e1 147
+rmod 3 19 1; kc "i64: max_hi != 0" $T/e1 147
+rmod 8 18 5; kc "u64: max_lo yanlis" $T/e1 147
+rmod 8 17 1; kc "u64: min_hi != 0" $T/e1 147
+rmod 5 15 1; kc "u8: min_lo != 0" $T/e1 147
+rmod 5 17 254; kc "u8: max 254" $T/e1 147
+cv "6 2 1 2 -1 0 0" 7; [ "$(mod dogrula < $T/e1)" = "1" ] && pass || fail "gecerli donusum kaydi reddedildi ($(mod dogrula < $T/e1))"
+cv "6 2 99 2 -1 0 0" 7; kc "donusum: bilinmeyen kaynak tur" $T/e1 149
+cv "6 2 1 99 -1 0 0" 7; kc "donusum: bilinmeyen hedef tur" $T/e1 149
+cv "6 2 1 2 9999 0 0" 7; kc "donusum: komut kimligi aralik disi" $T/e1 150
+cv "7 3 1 2 120 120 5 0" 8; [ "$(mod dogrula < $T/e1)" = "1" ] && pass || fail "gecerli abi kaydi reddedildi ($(mod dogrula < $T/e1))"
+cv "7 3 1 2 120 120 99 0" 8; kc "abi: bilinmeyen tur" $T/e1 151
+ABIW=$(awk -v h=$HT 'NR==h+1 { p=2; for(i=0;i<29;i++) p+=$p+1; n=$p+1; s=""; for(i=0;i<n;i++) s=s " " $(p+i); print n "|" substr(s,2) }' $T/k.num); cv "${ABIW#*|}" "${ABIW%%|*}"; kc "abi: ayni C turu adi yinelenen" $T/e1 152
+# TYPES gor/yaz gidis-donus (opak yuk korunur)
+mod gor < $TAB | mod yaz | cmp -s - <(mod kanon < $TAB) && pass || fail "TYPES gor/yaz gidis-donusu bozuldu"
 # profil: bir komutun operand turu sayisi 4 (profil en cok 3'e izin verir) -> "0 54"
 awk -v l=$((LK+2)) -v h=$LK 'NR==h{$4=$4+2} NR==l{print "15 0 3 77 79 86 3 109 111 118 4 1 4 4 4 0"; next} {print}' $T/k.num > $T/e1; out=$(mod dogrula < $T/e1); [ "$out" = "0 54" ] && pass || fail "profil: 4 operand turlu komut: beklenen '0 54', bulunan '$out'"
 mod gor < $T/opt | mod yaz | cmp -s - <(mod kanon < $T/opt) && pass || fail "bilinmeyen bolum gidis-donusta kayboldu"
