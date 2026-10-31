@@ -14,7 +14,8 @@ PF() { env -i PATH=$T/bin BAG="$BAG" bash "$@"; }       # pm/g++/awk/sed erisile
 # v1 kaynak agaci: mevcut agac, yalniz uretici kaynaklari v1
 R1=$T/R1; mkdir -p $R1/oz; cp -r $R/oz/komut $R1/oz/; cp -r $R/oz/arac $R/oz/asm $R/oz/elf2 $R/oz/dogr $R/oz/yap $R/oz/elf $R/oz/nesne $R1/oz/; cp $R/oz/paketle.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $R1/oz/
 # v1 sablonlari: mevcut tablonun "tokens" bolumunden onceki kismi + v1 sablon bolumleri (nesil_v1/sablonlar.txt: okunabilir gorunum)
-{ echo "@@gor"; cat $R/oz/komut/komutlar.pmk; } | $PM run $R/oz/arac/komut.pmb | awk '/^tokens /{exit} {print}' > $T/v1.txt; cat nesil_v1/sablonlar.txt >> $T/v1.txt
+# v1 ureticisi sablon yuvalarini (62..69) 55 komutluk tabloya gore SABIT tasir: v1 tablosu dondurulmus 55 komutluk anlam tablosudur (nesil_v1/komutlar.pmk); mevcut (genisleyen) tablo yalniz E1 -> E2b adiminda kullanilir
+{ echo "@@gor"; cat nesil_v1/komutlar.pmk; } | $PM run $R/oz/arac/komut.pmb | awk '/^tokens /{exit} {print}' > $T/v1.txt; cat nesil_v1/sablonlar.txt >> $T/v1.txt
 { echo "@@yaz"; cat $T/v1.txt; } | $PM run $R/oz/arac/komut.pmb > $R1/oz/komut/komutlar.pmk || { echo "v1 tablosu uretilemedi"; exit 1; }
 cp nesil_v1/gen2.pma.in $R1/oz/elf2/gen2.pma.in; cp nesil_v1/gen2.pmo $R1/oz/nesne/gen2.pmo    # v1 ureticisi: sayisal nesne (metni de saklanir)
 PF ./yenile.sh $T/E2 $T/E1 $R1 > $T/y1.out 2>&1 && pass || { fail "yenile (E2 -> E1) basarisiz: $(tail -2 $T/y1.out)"; }
