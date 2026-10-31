@@ -218,6 +218,9 @@ lj: gei z, j, $n
     host putc, 32
     bxor r, x, y
     host puti, r
+    host putc, 32
+    nullb r, x
+    host puti, r
     host putc, 10
     addi j, j, 1
     jmp lj
@@ -230,7 +233,7 @@ EOT
   } > $2
 }
 boolpma $NE $T/b.pma; $T/oracle bool $NE > $T/b.exp; boolpma $NS $T/bs.pma; $T/oracle bool $NS > $T/bs.exp
-karsilastir "bool (tobool bnot band bor bxor)" $T/b.pma $T/b.exp $T/bs.pma $T/bs.exp
+karsilastir "bool + nullptr_t (tobool bnot band bor bxor nullb)" $T/b.pma $T/b.exp $T/bs.pma $T/bs.exp
 # ---- bayt sirasi: bswap16 bswap32 bswap64 (endianness / temsil)
 bswpma() {   # N cikti
   local n=$(( $($T/oracle veri $1 | tr ',' '\n' | wc -l) ))

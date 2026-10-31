@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
   if (m == "veri") { auto v = degerler(argc > 2 ? atoi(argv[2]) : 0); for (size_t i = 0; i < v.size(); i++) printf("%s%lld", i ? ", " : "", (long long)v[i]); printf("\n"); return 0; }
   if (m == "bool") {   // bool: tobool bnot band bor bxor (C++ bool: (bool)x, !x, x&&y, x||y, x!=y)
     auto v = degerler(argc > 2 ? atoi(argv[2]) : 0);
-    for (auto x : v) for (auto y : v) { bool a = (bool)x, b = (bool)y; printf("%d %d %d %d %d\n", (int)a, (int)!x, (int)(a && b), (int)(a || b), (int)(a != b)); }
+    for (auto x : v) for (auto y : v) { bool a = (bool)x, b = (bool)y; bool nb(nullptr); printf("%d %d %d %d %d %d\n", (int)a, (int)!x, (int)(a && b), (int)(a || b), (int)(a != b), (int)nb); }
     return 0; }
   if (m == "bswap") {   // bayt sirasi: bswap16/32/64 (isaretsiz, sifir genisletilmis)
     auto v = degerler(argc > 2 ? atoi(argv[2]) : 0);
