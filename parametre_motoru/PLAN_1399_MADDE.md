@@ -22,7 +22,7 @@ DURUM İŞARETLERİ
 🔵 Daha yeni rapora göre tamamlandı; depoda doğrula.
 ❌ Yapılmadı veya tam işlevi kanıtlanmadı.
 
-SAYIM: 41 bölüm / 1399 kontrol / 79 🟢 / 44 🔵 / 1276 ❌ (30 Ekim 2026 belge durumudur).
+SAYIM: 41 bölüm / 1399 kontrol / 91 🟢 / 44 🔵 / 1264 ❌ (31 Ekim 2026; Bölüm 01 AÇIK: 01.020, 024, 025, 026, 029-033 eksik/kısmi — bkz. YAPILANLAR.md).
 
 =======================================================================
 TAM BÖLÜM TABLOSU — EKSİKSİZ
@@ -89,22 +89,22 @@ TÜM KONTROL MADDELERİ
 01.010  🟢  Tamsayı ↔ double dönüşümü
 01.011  🔵  NaN, sonsuzluk, negatif sıfır, alt-normal bit davranışı için hedefli çapraz testler
 01.012  🔵  Sayı olarak ondalık sabitleri ayrıştırma ve yazma
-01.013  ❌  Ayrı int8 türü ve taşma kuralları
-01.014  ❌  Ayrı int16 türü ve taşma kuralları
-01.015  ❌  Ayrı int32 türü ve taşma kuralları
-01.016  ❌  İşaretsiz uint8 türü
-01.017  ❌  İşaretsiz uint16 türü
-01.018  ❌  İşaretsiz uint32 türü
-01.019  ❌  Genel unsigned uint64 türü (sabit havuzu yeterli değil)
+01.013  🟢  Ayrı int8 türü ve taşma kuralları
+01.014  🟢  Ayrı int16 türü ve taşma kuralları
+01.015  🟢  Ayrı int32 türü ve taşma kuralları
+01.016  🟢  İşaretsiz uint8 türü
+01.017  🟢  İşaretsiz uint16 türü
+01.018  🟢  İşaretsiz uint32 türü
+01.019  🟢  Genel unsigned uint64 türü (sabit havuzu yeterli değil)
 01.020  ❌  bool türü ve tür denetimi
-01.021  ❌  char/signed char/unsigned char türü
-01.022  ❌  wchar_t, char8_t, char16_t, char32_t türleri
-01.023  ❌  float32 hesabı ve türü
+01.021  🟢  char/signed char/unsigned char türü
+01.022  🟢  wchar_t, char8_t, char16_t, char32_t türleri
+01.023  🟢  float32 hesabı ve türü
 01.024  ❌  long double türü
 01.025  ❌  Standart sabit genişlikli kayan nokta türleri (float16, float128 vb.)
 01.026  ❌  128-bit tam sayı / derleyici genişletmeleri
-01.027  ❌  std::byte türü
-01.028  ❌  nullptr_t ve tür düzeyinde boş gösterici
+01.027  🟢  std::byte türü
+01.028  🟢  nullptr_t ve tür düzeyinde boş gösterici
 01.029  ❌  Karmaşık sayı türü
 01.030  ❌  Sayısal türler arasında genel dönüşüm kuralları
 01.031  ❌  Tür bazında sayısal limitler ve taşma davranışı

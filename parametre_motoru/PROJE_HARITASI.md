@@ -71,6 +71,8 @@ Hızlı çalıştırma: `oz/hizli.sh` (ilgili paketler + kritik denetimler), tam
 | float, grafik, mikro, cagri | `oz/elf2/dogrula_*.sh` | SSE2 ondalık, ekran/girdi, SEM'den yerel üretim (zorlanmış), `call/ret/halt/host` mikro şablonları |
 | svm | `oz/sayisal/dogrula_svm.sh` | SEM yürütücüsü = `pm` |
 | komut | `oz/komut/dogrula_komut.sh` | PMK1 biçimi, kayıpsız çevirim, genişletme (yeni komutlar yalnız sayılarla) |
+| turler | `oz/komut/dogrula_turler.sh` | TYPES bölümü: tür özellikleri, limitler, LP64 ABI eşlemesi (C++ derleyici gerçekleriyle) |
+| tur, dar, donusum | `oz/elf2/dogrula_{tur,dar,donusum}.sh` | tamsayı/bool/bswap aileleri, f32/f16/bf16, dönüşüm matrisi: ELF = svm = C++ pm = bağımsız referans (C++ oracle / tam rasyonel Python) |
 | nesne, gorunum | `oz/nesne/dogrula_{nesne,gorunum}.sh` | bağlayıcı = metin yolu; PMV gor↔yaz kimliği, uçtan uca düzenleme; bağımsız Python referansı |
 | arac | `oz/arac/dogrula_arac.sh` | araçların ve ikililerin tazeliği |
 | bag, pmy2elf, yenile | `oz/bag/dogrula_*.sh` | pm'siz zincir, PMY1→ELF, kendini yeniden üretme |

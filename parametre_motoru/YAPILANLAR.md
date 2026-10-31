@@ -59,3 +59,15 @@ Kronolojik kayıt: **ne yapıldı, hangi commit, hangi testle doğrulandı.** Ye
 
 ## Plan: 1.399 madde / 41 bölüm (2026-10-31)
 Mimari düzeltme: ana ürün sayısal motor, dış diller uyumluluk katmanı (`PROJE_HARITASI.md` §1); plan `PLAN_1399_MADDE.md`. Bölümler sırayla işlenir.
+
+## Bölüm 01 — temel sayı ve değer türleri (31 Ekim 2026; **AÇIK**)
+| Konu | Ne eklendi | Kanıt |
+|---|---|---|
+| Tamsayı aileleri (01.013–019, 021, 022, 027) | PRIM 48–58 + 51 OP (sext/zext, add/sub/mul/div/mod/neg/shl/not _i8.._u32, divu modu ltu leu, u2f f2u, takma gtu geu); yalnızca OP+SEM, x86 şablonu yok | `oz/elf2/dogrula_tur.sh` 56/0 (ELF = svm = C++ pm = bağımsız C++ oracle), `sabotaj_tur.sh` 22/22 |
+| TYPES bölümü (PMK1 bölüm 10) | 29 tür (i8..u128, bool, char/wchar/char8/16/32, byte, nullptr, f16/bf16/f32/f64/f80/f128, c64/c128/c160): sınıf, bit, işaret, boyut, hiza, bellek sözcüğü, bayt sırası, limitler (analitik hesap), 36 C tür adı için LP64 ABI eşlemesi, 443 dönüşüm kaydı; `komut @@tur` dökümü | `oz/komut/dogrula_turler.sh` 105/0 (derleyici gerçekleriyle: sizeof/alignof/numeric_limits/`<float.h>`), `dogrula_komut.sh` TYPES olumsuz örnekleri, `sabotaj_komut.sh` 48+24 mutant |
+| bool / nullptr_t (01.028) | tobool bnot band bor bxor nullb | `dogrula_tur.sh` (C++ bool/&&/\|\|/nullptr oracle) |
+| float32 / float16 / bfloat16 (01.023, 01.025 yarısı) | rnd_/add_/sub_/mul_/div_/sqrt_/i2f_/u2f_ × {f32,f16,bf16}, f2i_*, ftobool; değer double olarak tam saklanır, her sonuç bicim izgarasına yuvarlanır ((\|x\|+C)-C mikro programı) | `oz/elf2/dogrula_dar.sh` 82/0 (ELF = svm = C++ pm tamsayı algoritması = `ref_dar.py` tam rasyonel + derleyici/donanım), `sabotaj_dar.sh` 27/27 (denk mutantlar gerekçeyle çıkarıldı) |
+| Dönüşüm matrisi (01.030 kısmi) | tamsayı/bool/char/byte ↔ f16/bf16/f32/f64 ve kayan ↔ kayan | `dogrula_donusum.sh` 797/0, `sabotaj_donusum.sh` 22 mutant |
+| Bayt sırası (01.033 kısmi) | bswap16/32/64 | `dogrula_tur.sh`, `sabotaj_tur.sh` bswap 3/3 |
+| Altyapı | `oz/komut/yenile_tablo.sh` (tablodan üretilenleri yeniden üretir), NaN yayılımı pm'de tanımlı, v1 üretici için dondurulmuş 55 komutluk tablo (`oz/bag/nesil_v1/komutlar.pmk`), sabotaj_komut'un önceden kaçırdığı 11 mutant için tek nedenli olumsuz örnekler | `oz/hizli.sh --tam --bag --sabotaj` (40 paket); son düzeltmeden sonra ilgili paketler yeşil |
+**Açık kalan (bölümü kapatmayan) maddeler:** 01.024 long double (f80), 01.025 float128, 01.026 128-bit tamsayı, 01.029 karmaşık sayı (çift yazmaç operand altyapısı yok), 01.020 program düzeyinde tür denetimi (yazmaçlar türsüz; karar gerekir), 01.030–033 f80/f128/128-bit/karmaşık için dönüşüm-limit-davranış ve Windows ABI.
