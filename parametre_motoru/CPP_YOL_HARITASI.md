@@ -1,8 +1,10 @@
-# C++ (Linux) yetenek eşdeğerliği yol haritası
+# Yol haritası — sayısal parametre motorunun yetenekleri (C++/Linux yetenekleri dahil)
 
-**Karar (kullanıcı):** önce C++'ın Linux karşılığı biter; sonra Windows (x86-64, PE). macOS kapsam dışı (kapalı model, geliştiriciye sınırlı; ayrıca ARM64 arka ucu gerektirir). Önceki sıra korunur: `call/ret/halt/host` mikro-işlem şablonları → güvenlik katmanları; bu harita onların etrafına dizilir.
+> **Ana plan artık `PLAN_1399_MADDE.md`'dir** (41 bölüm, 1.399 madde, numaralar sabit). Bu belge aşamaların kısa özeti ve Aşama 0 kanıt kaydıdır. Ana hedef ve öncelikler: `PROJE_HARITASI.md` §1.
 
-**Çerçeve [Tasarım ilkesi]:** hedef C++ *sözdizimini* derlemek değil, C++'ın *yeteneklerini* sayısal tablolarla sağlamak. Her yetenek: (1) yeni komut/anlam/şablon kaydı ya da (2) motorun kendi dilinde (PMY1 genişletmesi) yazılmış sayısal kitaplık. C++ kaynak dilinin tamamını ayrıştırmak ve `#include/#define` önişlemcisi bilerek kapsam dışıdır (metin tabanlı; sayısal-önce ilkesiyle çelişir).
+**Karar (kullanıcı):** önce Linux x86-64 yetenekleri biter; sonra Windows (x86-64, PE). macOS kapsam dışı (kapalı model, geliştiriciye sınırlı; ayrıca ARM64 arka ucu gerektirir). Bu yetenekler **sayısal motorumuzun** yetenekleridir; C++'ı ana motor yapmak anlamına gelmez.
+
+**Çerçeve [Tasarım ilkesi]:** hedef yeni bir metin dili değil, yeteneklerin sayısal tablolarla sağlanması. Her yetenek: (1) yeni komut/anlam/şablon kaydı ya da (2) sayısal kitaplık (motorun kendi sayısal programları). **Dış diller (C/C++, Python, Rust, Java, C#, JavaScript) yalnızca uyumluluk/aktarım katmanıdır** (plan Bölüm 07, 22, 41: kaynak tanıma ve dönüştürme); kanonik kaynak sayısal parametrelerdir ve bu katmanlar motorun yerine geçmez. Dış dil ön yüzleri ikinci önceliktir; sayısal motorun yetenekleri önce gelir.
 
 ## Aşama 0 — çekirdek tamamlama
 Gösterim: ✅ tamam (kanıtıyla), ❌ eksik. Her madde: bağımsız referans (C++ `pm run`) + hedefli test + regresyon, kanıt satırı ve commit.
@@ -53,5 +55,7 @@ Karar (kullanıcı): kod zaten doğrudan sayısal parametreye dönüşüyor (ins
 ## Sonra — Windows x86-64 (PE)
 - PE kapsayıcısı + içe aktarma tablosu, Windows host şablonları (`WriteFile` vb.), test için Wine ya da gerçek Windows
 
-## Bilinçli kapsam dışı
-C++ kaynak dilinin tamamı, önişlemci, satır içi assembly, `.so`/`dlopen` (ELF'imiz bilerek DLL'siz), 3D/GPU/ses/masaüstü pencere sistemi, macOS.
+## Kapsam notları
+- **Yeni zorunlu metinsel dil yok.** Dış dil ön yüzleri (C/C++ vb. kaynak okuma ve sayısal programa dönüştürme) *uyumluluk katmanıdır* ve plan Bölüm 07/22/41'de ele alınır; sırası gelince tam kapsamıyla yapılır.
+- Satır içi assembly, macOS, çekirdek/sürücü, GPU/3D ve ses/video işleri de plan bölümlerinde (30, 32, 37) yer alır; sıraları gelene kadar yapılmaz.
+- `.so`/`dlopen`: ELF'imiz şu an bilerek DLL'siz; plan Bölüm 07 (07.019–07.020) bunu kapsar.

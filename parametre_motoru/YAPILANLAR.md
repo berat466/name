@@ -56,3 +56,6 @@ Kronolojik kayıt: **ne yapıldı, hangi commit, hangi testle doğrulandı.** Ye
 | 66066ab | ✅ `ret`, ✅ `halt` mikro şablonu | `tpl prim ret/halt` | `dogrula_cagri.sh` (STOP/RETX yalnız SEM ile): ELF = svm = C++ pm; şablon silme + 3 bozuk şablon yakalandı |
 | 1ad2e19 | ✅ `call` mikro şablonu | `tpl prim call` + 16 işlev simgesi `FREL/FNR8/FNP8/FCNT_Fk`, gen2 `etok_fn` | `dogrula_cagri.sh` 64 (CALLX: fib, yakıt 1..5000, DEPTH/STACK, yığın eşiği ve +1); 6 bozuk şablon yakalandı |
 | ba126b7 | ✅ `host` mikro şablonu | `tpl prim host` + `HOSTSP_Fk`, gen2 `hostmap/hostslot` (scanrt SEM'den) | `dogrula_cagri.sh` 91; `sabotaj_cagri.sh` 22/22 |
+
+## Plan: 1.399 madde / 41 bölüm (2026-10-31)
+Mimari düzeltme: ana ürün sayısal motor, dış diller uyumluluk katmanı (`PROJE_HARITASI.md` §1); plan `PLAN_1399_MADDE.md`. Bölümler sırayla işlenir.

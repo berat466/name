@@ -2,8 +2,18 @@
 
 Bu belge **neyin nerede olduğunu** anlatır (kalıcı harita). **Ne zaman ne yapıldığı** için `YAPILANLAR.md` (günlük); yol haritası için `CPP_YOL_HARITASI.md`; ayrıntılı tasarım ve sonuçlar için `OZ_BARINDIRMA.md`.
 
-## 1. Bir cümleyle
-Uygulamaların, makine kodu üretiminin ve geliştirme araçlarının **sayısal parametre tabloları** olduğu bir motor. Asıl kaynak sayılardır; okunabilir metin (`.pma`, `.pma.in`, görünüm `.pmv`) isteğe bağlıdır ve kayıpsız çevrilir. Eski C++ `pm` **bağımsız doğrulama referansı** olarak kalır.
+## 1. Ana hedef (kesin tanım — mimari düzeltmesi)
+**Bizim asıl ürünümüz kendi bağımsız Sayısal Parametre Motorumuzdur (PMB1 / PMY1 / PMK1 / PMO1).**
+- Programların **kanonik kaynağı sayısal parametrelerdir.** Komutlar, fonksiyonlar, veri yapıları, bağlantılar, işlem anlamları ve dönüşüm kuralları bu mimaride temsil edilir. Okunabilir metin (`.pma`, `.pma.in`, görünüm `.pmv`) isteğe bağlı, kayıpsız bir görünümdür.
+- Motor kendi sayısal programlarını oluşturabilir, düzenleyebilir, doğrulayabilir, derleyebilir ve çalıştırabilir; başka bir programlama diline kalıcı olarak bağımlı olmayacak şekilde geliştirilir.
+- **Yeni, zorunlu bir metinsel programlama dili oluşturulmaz.** Biz C++, Python veya Rust'ın yerini alan yeni bir metinsel dil geliştirmiyoruz.
+- **Diğer diller (C++, Python, Rust, Java, C#, JavaScript…) motorun yerine geçmez;** yalnızca desteklenen *dış programlama dilleridir*. Rolleri uyumluluk ve aktarım katmanıdır: mevcut dillerle yazılmış uygulamaları ve kütüphaneleri sayısal parametre mimarisine aktarmak, farklı dillerin işlevlerini tek sayısal uygulama bütününde birleştirmek, dilin davranışını ve programın doğruluğunu korumak, kullanıcının ister doğrudan sayısal motorla ister mevcut dillerle çalışabilmesini sağlamak. **Kanonik kaynak her zaman sayısal parametre mimarimizdir.**
+- C++/Linux özelliklerinin desteklenmesi C++'ı ana motorumuz yapmak anlamına gelmez: bunlar sayısal motorun kazandığı yeteneklerdir.
+- Eski C++ `pm` **bağımsız doğrulama referansı** olarak kalır.
+
+**Geliştirme önceliği:** (1) kendi sayısal motorumuzun bütün yeteneklerini tamamlamak, (2) mevcut dillerle ve kütüphanelerle uyumluluğu genişletmek, (3) farklı donanımlara uyarlama, eniyileme ve gelişmiş hesaplama. Bu sıralama gerekli uyumluluk çalışmalarını engellemez; yalnızca projenin merkezinin değişmemesini sağlar.
+
+**Plan:** `PLAN_1399_MADDE.md` — 41 bölüm, 1.399 kontrol maddesi (numaralar değişmez). Bölümler numara sırasıyla işlenir; her bölüm tam bitirilip bütünleşik doğrulandıktan sonra durulur. Maddeler sayısal motorun kazanacağı yetenekler olarak değerlendirilir.
 
 ## 2. Sayısal biçimler (hepsi sayı listesi)
 | Biçim | Ne | Nerede |
@@ -68,7 +78,7 @@ Hızlı çalıştırma: `oz/hizli.sh` (ilgili paketler + kritik denetimler), tam
 Sabotaj (testlerin gerçekten yakaladığı): `oz/*/sabotaj_*.sh` (çağrı şablonları: `oz/elf2/sabotaj_cagri.sh`) (mutant üretir, testin başarısız olmasını bekler).
 
 ## 6. Kurallar (çalışma biçimi)
-1. ✅ yapılanları yeniden yapma; mevcut testlerle koru. 2. İlk ❌ maddeden başla. 3. Bağımsız referans + hedefli test + regresyonla doğrula. 4. Başarılıysa yol haritasında ✅ yap, kanıtı belgeye yaz, **`YAPILANLAR.md`'ye ekle**, commit/push. 5. Kanıtsız ✅ yok. 6. Yeni kaynak dili/ayrı motor/mimari değişikliği yok.
+1. `PLAN_1399_MADDE.md` bölümleri numara sırasıyla; yalnızca sıradaki tamamlanmamış bölüm; bölüm bitince kapanış raporu ve DUR. 2. Tamamlananı yeniden yazma; mevcut testlerle koru; eski 🟢/🔵 işaretleri kanıt sayılmaz, depoda doğrula. 3. Bağımsız referans + hedefli test + regresyonla doğrula. 4. Kanıt varsa işaret ver, `YAPILANLAR.md`'ye ekle, commit/push; belgeyi koddan önce değiştirme. 5. Tek madde/demo/PoC ile bölüm tamamlandı sayılmaz; eksik varsa bölüm AÇIK kalır ve engel yazılır. 6. Yeni zorunlu metin dili, ayrı motor ya da mimari değişikliği yok.
 Tasarım ilkeleri: sayısal asıl kaynak; güvenlik ayrı, sürümlü katmanlar (henüz yok); genişletilebilirlik (yeni komut = tablo kaydı); doğrulayıcı kapısı kapatılamaz.
 
 ## 7. Belge indeksi
@@ -80,5 +90,6 @@ Tasarım ilkeleri: sayısal asıl kaynak; güvenlik ayrı, sürümlü katmanlar 
 | `OZ_BARINDIRMA.md` | öz-barındırma: bölüm 3–3n (PMB1 → ELF → kendini üretme → PMK1 → PMO1 → görünüm) ve dürüst sınırlar |
 | `oz/komut/KOMUT_TABLOSU.md` | PMK1 ayrıntısı |
 | `oz/nesne/GORUNUM.md` | PMV biçimi ve hata kodları |
-| `CPP_YOL_HARITASI.md` | C++ (Linux) yetenek eşdeğerliği — madde madde ✅/❌ |
+| `PLAN_1399_MADDE.md` | **ana plan:** 41 bölüm / 1.399 kontrol maddesi ve durumları |
+| `CPP_YOL_HARITASI.md` | yol haritası (aşamalar); `PLAN_1399_MADDE.md` ile birlikte okunur |
 | `YAPILANLAR.md` | günlük: ne, ne zaman, hangi commit, hangi test |

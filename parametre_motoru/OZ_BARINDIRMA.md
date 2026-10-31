@@ -341,6 +341,9 @@ Komutun *kimliği, adı, operand sayısı/türleri, tel sınıfı, host listesi*
 - **Sıradaki:** `call/ret/halt/host` mikro-işlem şablonları (şu an yalnızca sabit şablonlar), sonra güvenlik katmanları (imza, yetki, izolasyon — ayrı, sürümlü katmanlar; bu aşamada yok).
 
 
+## 3o. Ana hedef düzeltmesi ve 1.399 maddelik plan (2026-10-31)
+**Karar (kullanıcı):** projenin ana ürünü kendi bağımsız Sayısal Parametre Motorumuzdur (PMB1/PMY1/PMK1/PMO1); kanonik kaynak sayısal parametrelerdir. C++/Python/Rust/Java/C#/JavaScript motorun yerine geçmez, yalnızca desteklenen **dış diller** olarak uyumluluk ve aktarım katmanıdır (mevcut uygulamaları ve kütüphaneleri sayısal mimariye aktarmak, farklı dillerin işlevlerini tek sayısal bütünde birleştirmek, davranışı korumak). Yeni zorunlu metinsel dil yok. Öncelik: (1) sayısal motorun yetenekleri, (2) dış dillerle/kütüphanelerle uyumluluk, (3) donanım uyarlaması ve gelişmiş hesaplama. Plan: `PLAN_1399_MADDE.md` (41 bölüm, 1.399 madde), bölümler sırayla, her bölüm tam bitince durulur. Önceki "C++ kaynak dili kapsam dışı" ifadesi bu kararla düzeltildi: dış dil ön yüzleri kapsam içidir ama ikinci öncelikli uyumluluk katmanıdır.
+
 ## 4. Açık sorular ve riskler
 - **Çekirdek sınırı:** hangi parçalar C++'ta kalmalı? Öneri: çözücü+doğrulayıcı+yorumlayıcı+host (yaklaşık 800 satır) en küçük gerçekçi çekirdek; native üretici ve özelleştiriciler parametreye taşınır; `exec` yeni ilkeldir.
 - **Performans:** VM üstünde çalışan araçlar (özelleştirici, birleştirici) yavaşlar; ama bunlar bir kez çalışan yükleme-zamanı araçları ve makine koduna çevrilince (`--native`) kabul edilebilir olmalı. Ölçülecek.
