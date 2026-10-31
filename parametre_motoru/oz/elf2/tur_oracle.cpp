@@ -3,6 +3,7 @@
 //   tur_oracle dm W s              : W bit, s=1 isaretli / 0 isaretsiz kucuk tur ailesi: tum (x,y) ciftleri icin add sub mul [div mod] neg shl (not) sonuclari + donusumler
 //   tur_oracle u64 N               : uint64 islemleri (divu modu ltu leu gtu geu) tum ciftler
 //   tur_oracle u2f N / f2u         : uint64 <-> double (bit deseni olarak)
+//   tur_oracle bool N              : tobool bnot band bor bxor tum ciftler
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
@@ -35,6 +36,10 @@ int main(int argc, char** argv) {
   if (argc < 2) return 2;
   string m = argv[1];
   if (m == "veri") { auto v = degerler(argc > 2 ? atoi(argv[2]) : 0); for (size_t i = 0; i < v.size(); i++) printf("%s%lld", i ? ", " : "", (long long)v[i]); printf("\n"); return 0; }
+  if (m == "bool") {   // bool: tobool bnot band bor bxor (C++ bool: (bool)x, !x, x&&y, x||y, x!=y)
+    auto v = degerler(argc > 2 ? atoi(argv[2]) : 0);
+    for (auto x : v) for (auto y : v) { bool a = (bool)x, b = (bool)y; printf("%d %d %d %d %d\n", (int)a, (int)!x, (int)(a && b), (int)(a || b), (int)(a != b)); }
+    return 0; }
   if (m == "dm") {
     int W = atoi(argv[2]); bool sg = atoi(argv[3]); auto v = degerler(argc > 4 ? atoi(argv[4]) : 0);
     // 1) donusumler: sextW / zextW

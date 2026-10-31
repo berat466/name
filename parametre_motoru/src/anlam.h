@@ -140,13 +140,21 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define SEM_LEU(M) M##_RD(1,b) M##_RD(2,c) M##_CMP(LEU,3,1,2) M##_WR(a,3)
 #define SEM_U2F(M) M##_RD(1,b) M##_U2F(2,1) M##_WR(a,2)
 #define SEM_F2U(M) M##_RD(1,b) M##_F2U(2,1) M##_WR(a,2)
+// Plan Bolum 01: bool / nullptr_t (mantiksal komutlar; yeni mikro-islem yok, yalniz LIT sabiti)
+#define SEM_TOBOOL(M) M##_RD(1,b) M##_LIT(2,0) M##_CMP(NE,3,1,2) M##_WR(a,3)
+#define SEM_BNOT(M) M##_RD(1,b) M##_LIT(2,0) M##_CMP(EQ,3,1,2) M##_WR(a,3)
+#define SEM_BAND(M) M##_RD(1,b) M##_RD(2,c) M##_LIT(3,0) M##_CMP(NE,4,1,3) M##_CMP(NE,3,2,3) M##_ALU(AND,4,4,3) M##_WR(a,4)
+#define SEM_BOR(M) M##_RD(1,b) M##_RD(2,c) M##_LIT(3,0) M##_CMP(NE,4,1,3) M##_CMP(NE,3,2,3) M##_ALU(OR,4,4,3) M##_WR(a,4)
+#define SEM_BXOR(M) M##_RD(1,b) M##_RD(2,c) M##_LIT(3,0) M##_CMP(NE,4,1,3) M##_CMP(NE,3,2,3) M##_ALU(XOR,4,4,3) M##_WR(a,4)
+#define SEM_NULLB(M) M##_RD(1,b) M##_LIT(2,0) M##_WR(a,2)
 
 #define PM_SEM_OPS(X) \
   X(MOV) X(LDI) X(LDK) X(ADD) X(SUB) X(MUL) X(AND) X(OR) X(XOR) X(SHL) X(SHR) X(SAR) X(EQ) X(NE) X(LT) X(LE) \
   X(NEG) X(NOT) X(DIV) X(MOD) X(ADDI) X(MULI) X(ANDI) X(SHLI) X(SHRI) X(SARI) X(DIVI) X(MODI) \
   X(EQI) X(NEI) X(LTI) X(LEI) X(GTI) X(GEI) X(JMP) X(JZ) X(JNZ) X(CALL) X(RET) X(HALT) X(LD) X(ST) X(ALLOC) X(HOST) \
   X(FADD) X(FSUB) X(FMUL) X(FDIV) X(FNEG) X(FSQRT) X(FEQ) X(FLT) X(FLE) X(I2F) X(F2I) \
-  X(SEXT8) X(SEXT16) X(SEXT32) X(ZEXT8) X(ZEXT16) X(ZEXT32) X(ADD_I8) X(SUB_I8) X(MUL_I8) X(SHL_I8) X(DIV_I8) X(MOD_I8) X(NEG_I8) X(ADD_I16) X(SUB_I16) X(MUL_I16) X(SHL_I16) X(DIV_I16) X(MOD_I16) X(NEG_I16) X(ADD_I32) X(SUB_I32) X(MUL_I32) X(SHL_I32) X(DIV_I32) X(MOD_I32) X(NEG_I32) X(ADD_U8) X(SUB_U8) X(MUL_U8) X(SHL_U8) X(NEG_U8) X(NOT_U8) X(ADD_U16) X(SUB_U16) X(MUL_U16) X(SHL_U16) X(NEG_U16) X(NOT_U16) X(ADD_U32) X(SUB_U32) X(MUL_U32) X(SHL_U32) X(NEG_U32) X(NOT_U32) X(DIVU) X(MODU) X(LTU) X(LEU) X(U2F) X(F2U)
+  X(SEXT8) X(SEXT16) X(SEXT32) X(ZEXT8) X(ZEXT16) X(ZEXT32) X(ADD_I8) X(SUB_I8) X(MUL_I8) X(SHL_I8) X(DIV_I8) X(MOD_I8) X(NEG_I8) X(ADD_I16) X(SUB_I16) X(MUL_I16) X(SHL_I16) X(DIV_I16) X(MOD_I16) X(NEG_I16) X(ADD_I32) X(SUB_I32) X(MUL_I32) X(SHL_I32) X(DIV_I32) X(MOD_I32) X(NEG_I32) X(ADD_U8) X(SUB_U8) X(MUL_U8) X(SHL_U8) X(NEG_U8) X(NOT_U8) X(ADD_U16) X(SUB_U16) X(MUL_U16) X(SHL_U16) X(NEG_U16) X(NOT_U16) X(ADD_U32) X(SUB_U32) X(MUL_U32) X(SHL_U32) X(NEG_U32) X(NOT_U32) X(DIVU) X(MODU) X(LTU) X(LEU) X(U2F) X(F2U) \
+  X(TOBOOL) X(BNOT) X(BAND) X(BOR) X(BXOR) X(NULLB)
 
 // ---------------- DATA genisletmesi: makine kodu uretecinin okudugu tablo ----------------
 #define DATA_RD(t,x) {MK_RD, t, OPD_##x, 0, 0},
@@ -182,6 +190,7 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define DATA_MODU(t,t1,t2) {MK_MODU, t, t1, t2, 0},
 #define DATA_U2F(t,t1) {MK_U2F, t, t1, 0, 0},
 #define DATA_F2U(t,t1) {MK_F2U, t, t1, 0, 0},
+#define DATA_LIT(t,v) {MK_LIT, t, v, 0, 0},
 #ifdef PM_SEM_TABLES
 #define X(N) static const MicroOp sem_##N[] = { SEM_##N(DATA) {MK_END, 0, 0, 0, 0} };
 PM_SEM_OPS(X)
@@ -268,4 +277,5 @@ inline const MicroOp* sem_of(int op) {
 #define INTERP_MODU(t,t1,t2) { if (T##t2 == 0) TRAP(T_DIV0); T##t = T##t1 % T##t2; }
 #define INTERP_U2F(t,t1) T##t = fromF(double(uint64_t(T##t1)));
 #define INTERP_F2U(t,t1) T##t = f2u(asF(T##t1));
+#define INTERP_LIT(t,v) T##t = uint64_t(int64_t(v));
 #endif

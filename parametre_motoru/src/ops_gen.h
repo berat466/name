@@ -107,7 +107,13 @@
   X(LTU, "ltu", 3, "drr") \
   X(LEU, "leu", 3, "drr") \
   X(U2F, "u2f", 2, "dr") \
-  X(F2U, "f2u", 2, "dr")
+  X(F2U, "f2u", 2, "dr") \
+  X(TOBOOL, "tobool", 2, "dr") \
+  X(BNOT, "bnot", 2, "dr") \
+  X(BAND, "band", 3, "drr") \
+  X(BOR, "bor", 3, "drr") \
+  X(BXOR, "bxor", 3, "drr") \
+  X(NULLB, "nullb", 2, "dr")
 
 // X(ENUM, "ad", arguman_sayisi)  host islevleri
 #define PM_HOSTS(X) \

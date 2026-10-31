@@ -189,6 +189,48 @@ cvtpma u2f "$($T/oracle veri $NE)" $T/c.pma; $T/oracle u2f $NE > $T/c.exp; cvtpm
 karsilastir "uint64 -> double (u2f)" $T/c.pma $T/c.exp $T/cs.pma $T/cs.exp
 cvtpma f2u "$($T/oracle fveri)" $T/f.pma; $T/oracle f2u > $T/f.exp
 karsilastir "double -> uint64 (f2u)" $T/f.pma $T/f.exp $T/f.pma $T/f.exp
+# ---- bool: tobool bnot band bor bxor (mantiksal komutlar; yalniz OP+SEM)
+boolpma() {   # N cikti
+  local n=$(( $($T/oracle veri $1 | tr ',' '\n' | wc -l) ))
+  { echo "memory 4096"; echo "data tab = $($T/oracle veri $1)"; cat <<EOT
+func main() {
+    mov i, 0
+lp: gei z, i, $n
+    jnz z, done
+    add a, i, tab
+    ld x, a, 0
+    mov j, 0
+lj: gei z, j, $n
+    jnz z, nj
+    add a, j, tab
+    ld y, a, 0
+    tobool r, x
+    host puti, r
+    host putc, 32
+    bnot r, x
+    host puti, r
+    host putc, 32
+    band r, x, y
+    host puti, r
+    host putc, 32
+    bor r, x, y
+    host puti, r
+    host putc, 32
+    bxor r, x, y
+    host puti, r
+    host putc, 10
+    addi j, j, 1
+    jmp lj
+nj: addi i, i, 1
+    jmp lp
+done: halt
+}
+entry main
+EOT
+  } > $2
+}
+boolpma $NE $T/b.pma; $T/oracle bool $NE > $T/b.exp; boolpma $NS $T/bs.pma; $T/oracle bool $NS > $T/bs.exp
+karsilastir "bool (tobool bnot band bor bxor)" $T/b.pma $T/b.exp $T/bs.pma $T/bs.exp
 # ---- tablo: yeni komutlar yalniz OP+SEM (x86 sablonu yok); takma komutlar gtu/geu
 KM() { { echo "@@$1"; cat; } | (ulimit -v 900000; timeout 60 $PM run $R/oz/arac/komut.pmb); }
 KM gor < $TAB > $T/tab.txt

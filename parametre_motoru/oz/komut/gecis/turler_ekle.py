@@ -72,18 +72,39 @@ ids = {ad: i for (i, ad, *_r) in T}
 for cn, tn in abi.items():
     body = [3, 1] + name_words(cn) + [ids[tn], 0]
     rec.append([len(body)] + body)
-extra = open(sys.argv[4]).read().split() if len(sys.argv) > 4 else []   # DONUSUM kayitlari (ayri dosya, sayilar)
-payload = [len(rec) + (len(extra) and 0)]
-words = [len(rec)]
-for r in rec: words += r
+# ---- DONUSUM matrisi (tamsayi benzeri siniflar: tamsayi, bool, karakter, bayt; 128 bit ve kayan nokta sonraki adimlarda): her (kaynak,hedef) cifti icin komut ya da -1 (ozdes)
+opid = {}
+for l in gor:
+    t = l.split()
+    if len(t) >= 3 and t[0] == 'op': opid[t[2].lower()] = int(t[1])
+byname = {t[1]: t for t in T}
+def lims(t):
+    _, ad, cls, bits, sg = t[:5]
+    if cls == 2: return 0, 1
+    return (-(1 << (bits - 1)), (1 << (bits - 1)) - 1) if sg else (0, (1 << bits) - 1)
+def conv_op(f, t):
+    if t[2] == 2: return -1 if f[2] == 2 else opid['tobool']
+    if f[2] == 2: return -1
+    tb, ts, fb, fs = t[3], t[4], f[3], f[4]
+    if tb == 64: return -1
+    if (fs == ts and fb <= tb) or (fs == 0 and ts == 1 and fb < tb): return -1
+    return opid[('sext%d' if ts else 'zext%d') % tb]
 conv = []
-if extra:
-    nums = [int(x) for x in extra]; k = 0
-    while k < len(nums):
-        body = [2] + nums[k:k + 5] + [0]; k += 5
+INTLIKE = (1, 2, 3, 4)
+for f in T:
+    for t in T:
+        if f[2] not in INTLIKE or t[2] not in INTLIKE or f[3] > 64 or t[3] > 64: continue
+        fm, fx = lims(f); tm, tx = lims(t)
+        flags = 1 if (tm <= fm and fx <= tx) else 2
+        body = [2, f[0], t[0], conv_op(f, t), flags, 0]
         conv.append([len(body)] + body)
-    words[0] += len(conv)
-    for r in conv: words += r
+# nullptr_t: bool'a (her zaman false) ve isaretsiz 64 bit gostericiye (ozdes)
+nl = byname['nullptr']
+for t in (byname['bool'], byname['u64']):
+    body = [2, nl[0], t[0], opid['nullb'] if t[2] == 2 else -1, 1 if t[2] != 2 else 2, 0]
+    conv.append([len(body)] + body)
+words = [len(rec) + len(conv)]
+for r in rec + conv: words += r
 line = 'section 10 0 1 ' + ' '.join(str(w) for w in words)
 out = [l for l in gor if not l.startswith('section 10 ')] + [line]
 print('\n'.join(out))
