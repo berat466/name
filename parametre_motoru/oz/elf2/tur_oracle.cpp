@@ -40,6 +40,10 @@ int main(int argc, char** argv) {
     auto v = degerler(argc > 2 ? atoi(argv[2]) : 0);
     for (auto x : v) for (auto y : v) { bool a = (bool)x, b = (bool)y; printf("%d %d %d %d %d\n", (int)a, (int)!x, (int)(a && b), (int)(a || b), (int)(a != b)); }
     return 0; }
+  if (m == "bswap") {   // bayt sirasi: bswap16/32/64 (isaretsiz, sifir genisletilmis)
+    auto v = degerler(argc > 2 ? atoi(argv[2]) : 0);
+    for (auto x : v) printf("%lld %lld %lld\n", (long long)__builtin_bswap16((uint16_t)x), (long long)__builtin_bswap32((uint32_t)x), (long long)__builtin_bswap64((uint64_t)x));
+    return 0; }
   if (m == "dm") {
     int W = atoi(argv[2]); bool sg = atoi(argv[3]); auto v = degerler(argc > 4 ? atoi(argv[4]) : 0);
     // 1) donusumler: sextW / zextW

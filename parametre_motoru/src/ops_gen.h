@@ -144,7 +144,10 @@
   X(F2I_U16, "f2i_u16", 2, "df") \
   X(F2I_I32, "f2i_i32", 2, "df") \
   X(F2I_U32, "f2i_u32", 2, "df") \
-  X(FTOBOOL, "ftobool", 2, "df")
+  X(FTOBOOL, "ftobool", 2, "df") \
+  X(BSWAP16, "bswap16", 2, "dr") \
+  X(BSWAP32, "bswap32", 2, "dr") \
+  X(BSWAP64, "bswap64", 2, "dr")
 
 // X(ENUM, "ad", arguman_sayisi)  host islevleri
 #define PM_HOSTS(X) \

@@ -36,6 +36,9 @@ bg mut_tablo bool_bnot_ne 's/^\(sem BNOT rd t1 b ; lit t2 0 ; \)cmp_eq t3/\1cmp_
 bg mut_tablo bool_band_or 's/^\(sem BAND .*\)alu_and t4 t4 t3/\1alu_or t4 t4 t3/'
 bg mut_tablo bool_bxor_and 's/^\(sem BXOR .*\)alu_xor t4 t4 t3/\1alu_and t4 t4 t3/'
 bg mut_tablo bool_bor_normalize 's/^\(sem BOR rd t1 b ; rd t2 c ; lit t3 0 ; cmp_ne t4 t1 t3 ; \)cmp_ne t3 t2 t3/\1alu_add t3 t2 t3/'
+bg mut_tablo bswap16_sira 's/^\(sem BSWAP16 rd t1 b ; lit t4 0 ; lit t2 0 ; alu_shr t3 t1 t2 ; lit t2 255 ; alu_and t3 t3 t2 ; lit t2 \)8/\10/'
+bg mut_tablo bswap32_maske 's/^\(sem BSWAP32 rd t1 b ; lit t4 0 ; lit t2 0 ; alu_shr t3 t1 t2 ; lit t2 \)255/\1254/'
+bg mut_tablo bswap64_bayt 's/^\(sem BSWAP64 .*lit t2 56 ; alu_shr t3 t1 t2 ; lit t2 255 ; alu_and t3 t3 t2 ; lit t2 \)0/\11/'
 bg mut_svm svm_udiv_kaydir 's/shri h, x, 1$/shri h, x, 2/'
 bg mut_svm svm_udiv_duzeltme 's/^\(func udiv(x, y) {\)$/\1\n    lti z, y, 0\n    jz z, uq\n    ret 7\nuq:/'
 wait

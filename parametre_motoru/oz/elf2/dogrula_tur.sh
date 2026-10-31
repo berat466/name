@@ -231,6 +231,35 @@ EOT
 }
 boolpma $NE $T/b.pma; $T/oracle bool $NE > $T/b.exp; boolpma $NS $T/bs.pma; $T/oracle bool $NS > $T/bs.exp
 karsilastir "bool (tobool bnot band bor bxor)" $T/b.pma $T/b.exp $T/bs.pma $T/bs.exp
+# ---- bayt sirasi: bswap16 bswap32 bswap64 (endianness / temsil)
+bswpma() {   # N cikti
+  local n=$(( $($T/oracle veri $1 | tr ',' '\n' | wc -l) ))
+  { echo "memory 4096"; echo "data tab = $($T/oracle veri $1)"; cat <<EOT
+func main() {
+    mov i, 0
+lp: gei z, i, $n
+    jnz z, done
+    add a, i, tab
+    ld x, a, 0
+    bswap16 r, x
+    host puti, r
+    host putc, 32
+    bswap32 r, x
+    host puti, r
+    host putc, 32
+    bswap64 r, x
+    host puti, r
+    host putc, 10
+    addi i, i, 1
+    jmp lp
+done: halt
+}
+entry main
+EOT
+  } > $2
+}
+bswpma $NE $T/w.pma; $T/oracle bswap $NE > $T/w.exp; bswpma $NS $T/ws.pma; $T/oracle bswap $NS > $T/ws.exp
+karsilastir "bswap16/32/64" $T/w.pma $T/w.exp $T/ws.pma $T/ws.exp
 # ---- tablo: yeni komutlar yalniz OP+SEM (x86 sablonu yok); takma komutlar gtu/geu
 KM() { { echo "@@$1"; cat; } | (ulimit -v 900000; timeout 60 $PM run $R/oz/arac/komut.pmb); }
 KM gor < $TAB > $T/tab.txt
