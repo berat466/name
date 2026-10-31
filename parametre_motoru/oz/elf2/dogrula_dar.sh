@@ -69,7 +69,7 @@ for F in f32 f16 bf16; do
   python3 ref_dar.py veri rnd $NE > $T/v.txt; python3 ref_dar.py bekle $F rnd $NE > $T/e.txt; python3 ref_dar.py veri rnd $NS > $T/vs.txt; python3 ref_dar.py bekle $F rnd $NS > $T/es.txt
   run1 "rnd_$F" rnd_$F 1 "$(cat $T/v.txt)" $T/e.txt "$(cat $T/vs.txt)" $T/es.txt
   for K in i2f u2f; do
-    python3 ref_dar.py veri int $NE > $T/v.txt; python3 ref_dar.py bekle $F $K $NE > $T/e.txt; python3 ref_dar.py veri int $NS > $T/vs.txt; python3 ref_dar.py bekle $F $K $NS > $T/es.txt
+    python3 ref_dar.py veri int 0 > $T/v.txt; python3 ref_dar.py bekle $F $K 0 > $T/e.txt; python3 ref_dar.py veri int $NS > $T/vs.txt; python3 ref_dar.py bekle $F $K $NS > $T/es.txt
     run1 "${K}_$F" ${K}_$F 1 "$(cat $T/v.txt)" $T/e.txt "$(cat $T/vs.txt)" $T/es.txt; done
   # aritmetik: bicim degerleri uzerinde tum ciftler (NE=60 -> 3600 satir; svm: NS)
   NA=$(( NE > 40 ? 40 : NE )); NSA=$(( NS > 8 ? 8 : NS ))

@@ -18,7 +18,7 @@ if not done: sys.exit(5)
 " "$2" "$3" "$4" | KM yaz > $w/oz/komut/komutlar.pmk || { echo "SABOTAJ HATASI: $1 uygulanamadi"; exit 3; }
     cmp -s $w/oz/komut/komutlar.pmk $R/oz/komut/komutlar.pmk && { echo "SABOTAJ HATASI: $1 degisiklik yok"; exit 3; }
     (cd $w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: gen2 uretilemedi"; exit 4; }
-    if (cd $w/oz/elf2 && LIMS=200 timeout 900 ./dogrula_dar.sh $PM 40 10 > $T/log_$1 2>&1); then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
+    if (cd $w/oz/elf2 && LIMS=200 timeout 900 ./dogrula_dar.sh $PM 60 12 > $T/log_$1 2>&1); then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
     rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
 bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; "$@" & }
