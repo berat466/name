@@ -34,8 +34,10 @@ dolasma() {   # etiket tablo : asm/valid/gen2 icin baglayici ciktisi ile doldur+
 }
 dolasma "mevcut tablo" $TAB
 mod gor < $TAB | sed 's/^op 3 ADD add /op 3 ADD toplam /' | mod yaz > $T/t1.pmk; dolasma "ad degisikligi (add->toplam)" $T/t1.pmk
-mod gor < $TAB | awk '/^section 7 /{$5=$5+1; print $0 " 18 0 10 2 1 -2147483648 2147483647 1 1 55 2 -2147483648 2147483647 2 2 0 1 55 0"; next} {print} /^op 54 GEI/{print "op 55 XORI xori d,r,i"; print "op 56 GOTO goto l"; print "op 57 FMIN fmin d,f,f"} /^sem GEI /{print "sem XORI rd t1 b ; im t2 c ; alu_xor t3 t1 t2 ; wr a t3"; print "sem GOTO br a"; print "sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4"}' | mod yaz > $T/t2.pmk; dolasma "yeni komutlar + kural" $T/t2.pmk
-mod gor < $TAB | awk '/^section 6 /{ $5=$5+1; print $0 " 9 4 2 90 87 2 117 108 3 0"; next} {print}' | mod yaz > $T/t3.pmk; [ "$(mod dogrula < $T/t3.pmk)" = "1" ] && dolasma "yeni takma komut (ul = lt)" $T/t3.pmk || pass
+NX=$(mod tab < $TAB | awk '$1=="OPCOUNT"{print $2}')   # yeni komut kimlikleri tablonun sonuna eklenir
+mod gor < $TAB | awk -v nx=$NX '/^section 7 /{$5=$5+1; print $0 " 18 0 10 2 1 -2147483648 2147483647 1 1 " nx " 2 -2147483648 2147483647 2 2 0 1 " nx " 0"; next} {print} $1=="op" && $2==nx-1 {print "op " nx " XORI xori d,r,i"; print "op " nx+1 " GOTO goto l"; print "op " nx+2 " FMIN fmin d,f,f"} /^sem GEI /{print "sem XORI rd t1 b ; im t2 c ; alu_xor t3 t1 t2 ; wr a t3"; print "sem GOTO br a"; print "sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4"}' | mod yaz > $T/t2.pmk; dolasma "yeni komutlar + kural" $T/t2.pmk
+NP=$(mod tab < $TAB | awk '$1=="NPSEUDO"{print $2}')   # yeni takma komut kimligi mevcut takma komutlardan sonra
+mod gor < $TAB | awk -v np=$NP '/^section 6 /{ $5=$5+1; print $0 " 9 " np " 2 90 87 2 117 108 3 0"; next} {print}' | mod yaz > $T/t3.pmk; [ "$(mod dogrula < $T/t3.pmk)" = "1" ] && dolasma "yeni takma komut (ul = lt)" $T/t3.pmk || pass
 # ---- 3b) kucuk sablon: iki dizi + veri/bss adresleri (dizi uzunluklarina bagli yerlesim); skaler yer tutucunun yerlesimi (space boyutu) etkilemesi ice aktarmada reddedilir
 cat > $T/ornek.pma.in <<'EOT'
 memory 4096

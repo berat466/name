@@ -302,7 +302,8 @@ lim $PM run $R/asm/asm.pmb < $T/c2.pma > $T/c2e.pmb 2>/dev/null; lim $PM run $R/
 [ $rc2 != 0 ] && pass || fail "asm yeni: ';' artik aciklama olmamali ama kabul edildi"
 # 5d) yeni tablo komutu: tabloya komut eklenir, gorunumde yeni komut yazilir
 mod() { { echo "@@$1"; cat; } | arac komut; }
-mod gor < $OPT | awk '{print} /^op 54 GEI/{print "op 55 XORI xori d,r,i"} /^sem GEI /{print "sem XORI rd t1 b ; im t2 c ; alu_xor t3 t1 t2 ; wr a t3"}' | mod yaz > $T/xo.pmk
+NX=$(mod tab < $OPT | awk '$1=="OPCOUNT"{print $2}')
+mod gor < $OPT | awk -v nx=$NX '{print} $1=="op" && $2==nx-1 {print "op " nx " XORI xori d,r,i"} /^sem GEI /{print "sem XORI rd t1 b ; im t2 c ; alu_xor t3 t1 t2 ; wr a t3"}' | mod yaz > $T/xo.pmk
 [ "$(mod dogrula < $T/xo.pmk)" = "1" ] && pass || fail "genisletilmis tablo gecersiz"
 { echo "@@tab"; cat $T/xo.pmk; } | arac komut > $T/soz_xo.txt
 sed 's/^  halt$/  xori r0, r1, 5\n  halt/' $T/base.pmv > $T/xo.pmv

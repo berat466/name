@@ -20,6 +20,12 @@ int64_t f2i(double d) {
   if (d <= -9223372036854775808.0) return INT64_MIN;
   return int64_t(d);
 }
+// uint64 donusumu (Plan Bolum 01): NaN ve <= -1 -> 0, >= 2^64 -> UINT64_MAX (doyurmali), aksi halde sifira dogru yuvarlama
+uint64_t f2u(double d) {
+  if (d != d || d <= -1.0) return 0;
+  if (d >= 18446744073709551616.0) return UINT64_MAX;
+  return uint64_t(d);
+}
 struct Frame { const Ins* ret_ip; uint64_t* caller_R; uint32_t caller_func; };
 }  // namespace
 

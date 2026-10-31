@@ -199,7 +199,11 @@ bool is_cmp_op(int op) {
 
 bool native_available() { return true; }
 bool native_supported(const Program& p) {
-  for (const Func& f : p.funcs) for (const Ins& in : f.code) if (!sem_of(in.op)) return false;
+  for (const Func& f : p.funcs) for (const Ins& in : f.code) {
+    const MicroOp* m = sem_of(in.op);
+    if (!m) return false;
+    for (; m->k != MK_END; m++) if (m->k >= MK_SX || (m->k == MK_CMP && m->a >= CMPK_LTU)) return false;   // Plan Bolum 01 mikro-islemleri yalniz yorumlayicida
+  }
   return true;
 }
 

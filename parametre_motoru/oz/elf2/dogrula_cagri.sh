@@ -15,13 +15,14 @@ TAB=${TAB:-$R/oz/komut/komutlar.pmk}
 KM() { { echo "@@$1"; cat; } | (ulimit -v 900000; timeout 60 $PM run $R/oz/arac/komut.pmb); }
 # ---- genisletilmis arac takimi (kopya agacta)
 mkdir -p $T/w/oz; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/elf2 $T/w/oz/; rm -f $T/w/oz/elf2/gen2.pmb
-KM gor < $TAB | awk '{print} /^op 54 GEI/{print "op 55 STOP stop -"; print "op 56 RETX retx s"; print "op 57 CALLX callx F,b"; print "op 58 HOSTX hostx h,b"} /^sem GEI /{print "sem STOP halt"; print "sem RETX rd t1 a ; ret t1"; print "sem CALLX call a b"; print "sem HOSTX host a b"}' | KM yaz > $T/w/oz/komut/komutlar.pmk
+N0=$(KM tab < $TAB | awk '$1=="OPCOUNT"{print $2}'); IS=$N0; IR=$((N0+1)); IC=$((N0+2)); IH=$((N0+3))   # yeni komut kimlikleri: tablonun sonuna eklenir
+KM gor < $TAB | awk -v n0=$N0 -v is=$IS -v ir=$IR -v ic=$IC -v ih=$IH '{print} $1=="op" && $2==n0-1 {print "op " is " STOP stop -"; print "op " ir " RETX retx s"; print "op " ic " CALLX callx F,b"; print "op " ih " HOSTX hostx h,b"} /^sem GEI /{print "sem STOP halt"; print "sem RETX rd t1 a ; ret t1"; print "sem CALLX call a b"; print "sem HOSTX host a b"}' | KM yaz > $T/w/oz/komut/komutlar.pmk
 [ "$(KM dogrula < $T/w/oz/komut/komutlar.pmk)" = "1" ] && pass || fail "genisletilmis tablo gecersiz"
 (cd $T/w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) && pass || fail "genisletilmis tablodan gen2 uretilemedi"
 XG=$T/w/oz/elf2/gen2.pmb; OG=$R/oz/elf2/gen2.pmb
 yama() { awk -v from=$1 -v to=$2 -v nf=$3 'BEGIN{pre=1;lone=0} pre{print; if(NF==1){lone++; if(lone==2)pre=0} next} NF==nf && $1==from {$1=to} {print}'; }
-# yeni komutlarla yamali liste: HALT(36)->STOP(55), RET(35)->RETX(56), CALL(34)->CALLX(57), HOST(40)->HOSTX(58)
-yamali() { yama 36 55 1 | yama 35 56 2 | yama 34 57 3 | yama 40 58 3; }
+# yeni komutlarla yamali liste: HALT(36)->STOP, RET(35)->RETX, CALL(34)->CALLX, HOST(40)->HOSTX
+yamali() { yama 36 $IS 1 | yama 35 $IR 2 | yama 34 $IC 3 | yama 40 $IH 3; }
 komutsatirlari() { awk 'BEGIN{pre=1;lone=0} pre{if(NF==1){lone++; if(lone==2)pre=0} next} {print}'; }
 izle() {   # stdout, rc, tuzak adi
   lim "$@" > $T/o 2> $T/e; local r=$?; echo "rc=$r"; cat $T/o; [ $r = 2 ] && head -c 11 $T/e | cut -d' ' -f1-2
@@ -30,7 +31,7 @@ kos() {   # etiket pma [fuel...]
   local et=$1 pma=$2; shift 2
   $PM asm $pma -o $T/k.pmb --strip > /dev/null 2>&1 || { fail "$et: derlenemedi"; return; }
   $PM liste $T/k.pmb > $T/k.l; yamali < $T/k.l > $T/ky.l
-  if komutsatirlari < $T/ky.l | grep -qE '^(55|56|57|58)( |$)' && ! komutsatirlari < $T/ky.l | grep -qE '^(34|35|36|40)( |$)'; then pass; else fail "$et: yama komut kimliklerini degistirmedi ya da eski komut kalmis"; fi
+  if komutsatirlari < $T/ky.l | grep -qE "^($IS|$IR|$IC|$IH)( |\$)" && ! komutsatirlari < $T/ky.l | grep -qE '^(34|35|36|40)( |$)'; then pass; else fail "$et: yama komut kimliklerini degistirmedi ya da eski komut kalmis"; fi
   lim $PM run $XG < $T/ky.l > $T/ky.elf 2>/dev/null; [ -s $T/ky.elf ] && chmod +x $T/ky.elf && pass || { fail "$et: yeni komutlu liste ELF'e cevrilemedi"; return; }
   lim $PM run $OG < $T/ky.l > $T/ko.elf 2>/dev/null; [ -s $T/ko.elf ] && fail "$et: eski gen2 bilinmeyen komut kimliklerini reddetmedi" || pass
   local fuels="${@:-0}" f

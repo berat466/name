@@ -19,13 +19,14 @@
 #include "ops.h"
 
 enum AluK : uint8_t { ALUK_ADD, ALUK_SUB, ALUK_MUL, ALUK_AND, ALUK_OR, ALUK_XOR, ALUK_SHL, ALUK_SHR, ALUK_SAR };
-enum CmpK : uint8_t { CMPK_EQ, CMPK_NE, CMPK_LT, CMPK_LE, CMPK_GT, CMPK_GE };
+enum CmpK : uint8_t { CMPK_EQ, CMPK_NE, CMPK_LT, CMPK_LE, CMPK_GT, CMPK_GE, CMPK_LTU, CMPK_LEU };
 enum UnK : uint8_t { UNK_NEG, UNK_NOT };
 enum FaluK : uint8_t { FALUK_ADD, FALUK_SUB, FALUK_MUL, FALUK_DIV };
 enum FunK : uint8_t { FUNK_NEG, FUNK_SQRT };
 enum FcmpK : uint8_t { FCMPK_EQ, FCMPK_LT, FCMPK_LE };
 enum MicroKind : uint8_t { MK_END, MK_RD, MK_IM, MK_LK, MK_ALU, MK_CMP, MK_UN, MK_DIVS, MK_MODS, MK_DIVN, MK_MODN, MK_WR,
-                           MK_LD, MK_ST, MK_BR, MK_BRZ, MK_BRNZ, MK_CALLM, MK_RETM, MK_HALTM, MK_HOSTM, MK_ALLOCM, MK_FALU, MK_FUN, MK_FCMP, MK_CVTIF, MK_CVTFI };
+                           MK_LD, MK_ST, MK_BR, MK_BRZ, MK_BRNZ, MK_CALLM, MK_RETM, MK_HALTM, MK_HOSTM, MK_ALLOCM, MK_FALU, MK_FUN, MK_FCMP, MK_CVTIF, MK_CVTFI,
+                           MK_SX, MK_ZX, MK_DIVU, MK_MODU, MK_LIT, MK_U2F, MK_F2U };   // MK_SX.. : Plan Bolum 01 (tamsayi turleri); makine kodu uretecinde (native) DESTEKLENMEZ -> yorumlayici
 struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define OPD_a 0
 #define OPD_b 1
@@ -87,12 +88,65 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define SEM_ST(M)   M##_RD(1,a) M##_RD(2,b) M##_ST(1,2,c)
 #define SEM_ALLOC(M) M##_RD(1,b) M##_ALLOCM(2,1) M##_WR(a,2)
 #define SEM_HOST(M) M##_HOSTM(a,b)
+// Plan Bolum 01: tamsayi turleri (isaret/sifir genisletme M##_SX/ZX, isaretsiz karsilastirma/bolme). Yorumlayicida calisir; native uretecte desteklenmez.
+#define SEM_SEXT8(M) M##_RD(1,b) M##_SX(8,2,1) M##_WR(a,2)
+#define SEM_SEXT16(M) M##_RD(1,b) M##_SX(16,2,1) M##_WR(a,2)
+#define SEM_SEXT32(M) M##_RD(1,b) M##_SX(32,2,1) M##_WR(a,2)
+#define SEM_ZEXT8(M) M##_RD(1,b) M##_ZX(8,2,1) M##_WR(a,2)
+#define SEM_ZEXT16(M) M##_RD(1,b) M##_ZX(16,2,1) M##_WR(a,2)
+#define SEM_ZEXT32(M) M##_RD(1,b) M##_ZX(32,2,1) M##_WR(a,2)
+#define SEM_ADD_I8(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(ADD,3,1,2) M##_SX(8,4,3) M##_WR(a,4)
+#define SEM_SUB_I8(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SUB,3,1,2) M##_SX(8,4,3) M##_WR(a,4)
+#define SEM_MUL_I8(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(MUL,3,1,2) M##_SX(8,4,3) M##_WR(a,4)
+#define SEM_SHL_I8(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SHL,3,1,2) M##_SX(8,4,3) M##_WR(a,4)
+#define SEM_DIV_I8(M) M##_RD(1,b) M##_RD(2,c) M##_DIVS(3,1,2) M##_SX(8,4,3) M##_WR(a,4)
+#define SEM_MOD_I8(M) M##_RD(1,b) M##_RD(2,c) M##_MODS(3,1,2) M##_SX(8,4,3) M##_WR(a,4)
+#define SEM_NEG_I8(M) M##_RD(1,b) M##_UN(NEG,2,1) M##_SX(8,3,2) M##_WR(a,3)
+#define SEM_ADD_I16(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(ADD,3,1,2) M##_SX(16,4,3) M##_WR(a,4)
+#define SEM_SUB_I16(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SUB,3,1,2) M##_SX(16,4,3) M##_WR(a,4)
+#define SEM_MUL_I16(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(MUL,3,1,2) M##_SX(16,4,3) M##_WR(a,4)
+#define SEM_SHL_I16(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SHL,3,1,2) M##_SX(16,4,3) M##_WR(a,4)
+#define SEM_DIV_I16(M) M##_RD(1,b) M##_RD(2,c) M##_DIVS(3,1,2) M##_SX(16,4,3) M##_WR(a,4)
+#define SEM_MOD_I16(M) M##_RD(1,b) M##_RD(2,c) M##_MODS(3,1,2) M##_SX(16,4,3) M##_WR(a,4)
+#define SEM_NEG_I16(M) M##_RD(1,b) M##_UN(NEG,2,1) M##_SX(16,3,2) M##_WR(a,3)
+#define SEM_ADD_I32(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(ADD,3,1,2) M##_SX(32,4,3) M##_WR(a,4)
+#define SEM_SUB_I32(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SUB,3,1,2) M##_SX(32,4,3) M##_WR(a,4)
+#define SEM_MUL_I32(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(MUL,3,1,2) M##_SX(32,4,3) M##_WR(a,4)
+#define SEM_SHL_I32(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SHL,3,1,2) M##_SX(32,4,3) M##_WR(a,4)
+#define SEM_DIV_I32(M) M##_RD(1,b) M##_RD(2,c) M##_DIVS(3,1,2) M##_SX(32,4,3) M##_WR(a,4)
+#define SEM_MOD_I32(M) M##_RD(1,b) M##_RD(2,c) M##_MODS(3,1,2) M##_SX(32,4,3) M##_WR(a,4)
+#define SEM_NEG_I32(M) M##_RD(1,b) M##_UN(NEG,2,1) M##_SX(32,3,2) M##_WR(a,3)
+#define SEM_ADD_U8(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(ADD,3,1,2) M##_ZX(8,4,3) M##_WR(a,4)
+#define SEM_SUB_U8(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SUB,3,1,2) M##_ZX(8,4,3) M##_WR(a,4)
+#define SEM_MUL_U8(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(MUL,3,1,2) M##_ZX(8,4,3) M##_WR(a,4)
+#define SEM_SHL_U8(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SHL,3,1,2) M##_ZX(8,4,3) M##_WR(a,4)
+#define SEM_NEG_U8(M) M##_RD(1,b) M##_UN(NEG,2,1) M##_ZX(8,3,2) M##_WR(a,3)
+#define SEM_NOT_U8(M) M##_RD(1,b) M##_UN(NOT,2,1) M##_ZX(8,3,2) M##_WR(a,3)
+#define SEM_ADD_U16(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(ADD,3,1,2) M##_ZX(16,4,3) M##_WR(a,4)
+#define SEM_SUB_U16(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SUB,3,1,2) M##_ZX(16,4,3) M##_WR(a,4)
+#define SEM_MUL_U16(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(MUL,3,1,2) M##_ZX(16,4,3) M##_WR(a,4)
+#define SEM_SHL_U16(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SHL,3,1,2) M##_ZX(16,4,3) M##_WR(a,4)
+#define SEM_NEG_U16(M) M##_RD(1,b) M##_UN(NEG,2,1) M##_ZX(16,3,2) M##_WR(a,3)
+#define SEM_NOT_U16(M) M##_RD(1,b) M##_UN(NOT,2,1) M##_ZX(16,3,2) M##_WR(a,3)
+#define SEM_ADD_U32(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(ADD,3,1,2) M##_ZX(32,4,3) M##_WR(a,4)
+#define SEM_SUB_U32(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SUB,3,1,2) M##_ZX(32,4,3) M##_WR(a,4)
+#define SEM_MUL_U32(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(MUL,3,1,2) M##_ZX(32,4,3) M##_WR(a,4)
+#define SEM_SHL_U32(M) M##_RD(1,b) M##_RD(2,c) M##_ALU(SHL,3,1,2) M##_ZX(32,4,3) M##_WR(a,4)
+#define SEM_NEG_U32(M) M##_RD(1,b) M##_UN(NEG,2,1) M##_ZX(32,3,2) M##_WR(a,3)
+#define SEM_NOT_U32(M) M##_RD(1,b) M##_UN(NOT,2,1) M##_ZX(32,3,2) M##_WR(a,3)
+#define SEM_DIVU(M) M##_RD(1,b) M##_RD(2,c) M##_DIVU(3,1,2) M##_WR(a,3)
+#define SEM_MODU(M) M##_RD(1,b) M##_RD(2,c) M##_MODU(3,1,2) M##_WR(a,3)
+#define SEM_LTU(M) M##_RD(1,b) M##_RD(2,c) M##_CMP(LTU,3,1,2) M##_WR(a,3)
+#define SEM_LEU(M) M##_RD(1,b) M##_RD(2,c) M##_CMP(LEU,3,1,2) M##_WR(a,3)
+#define SEM_U2F(M) M##_RD(1,b) M##_U2F(2,1) M##_WR(a,2)
+#define SEM_F2U(M) M##_RD(1,b) M##_F2U(2,1) M##_WR(a,2)
 
 #define PM_SEM_OPS(X) \
   X(MOV) X(LDI) X(LDK) X(ADD) X(SUB) X(MUL) X(AND) X(OR) X(XOR) X(SHL) X(SHR) X(SAR) X(EQ) X(NE) X(LT) X(LE) \
   X(NEG) X(NOT) X(DIV) X(MOD) X(ADDI) X(MULI) X(ANDI) X(SHLI) X(SHRI) X(SARI) X(DIVI) X(MODI) \
   X(EQI) X(NEI) X(LTI) X(LEI) X(GTI) X(GEI) X(JMP) X(JZ) X(JNZ) X(CALL) X(RET) X(HALT) X(LD) X(ST) X(ALLOC) X(HOST) \
-  X(FADD) X(FSUB) X(FMUL) X(FDIV) X(FNEG) X(FSQRT) X(FEQ) X(FLT) X(FLE) X(I2F) X(F2I)
+  X(FADD) X(FSUB) X(FMUL) X(FDIV) X(FNEG) X(FSQRT) X(FEQ) X(FLT) X(FLE) X(I2F) X(F2I) \
+  X(SEXT8) X(SEXT16) X(SEXT32) X(ZEXT8) X(ZEXT16) X(ZEXT32) X(ADD_I8) X(SUB_I8) X(MUL_I8) X(SHL_I8) X(DIV_I8) X(MOD_I8) X(NEG_I8) X(ADD_I16) X(SUB_I16) X(MUL_I16) X(SHL_I16) X(DIV_I16) X(MOD_I16) X(NEG_I16) X(ADD_I32) X(SUB_I32) X(MUL_I32) X(SHL_I32) X(DIV_I32) X(MOD_I32) X(NEG_I32) X(ADD_U8) X(SUB_U8) X(MUL_U8) X(SHL_U8) X(NEG_U8) X(NOT_U8) X(ADD_U16) X(SUB_U16) X(MUL_U16) X(SHL_U16) X(NEG_U16) X(NOT_U16) X(ADD_U32) X(SUB_U32) X(MUL_U32) X(SHL_U32) X(NEG_U32) X(NOT_U32) X(DIVU) X(MODU) X(LTU) X(LEU) X(U2F) X(F2U)
 
 // ---------------- DATA genisletmesi: makine kodu uretecinin okudugu tablo ----------------
 #define DATA_RD(t,x) {MK_RD, t, OPD_##x, 0, 0},
@@ -122,6 +176,12 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define DATA_FCMP(cc,t,t1,t2) {MK_FCMP, FCMPK_##cc, t, t1, t2},
 #define DATA_CVTIF(t,t1) {MK_CVTIF, t, t1, 0, 0},
 #define DATA_CVTFI(t,t1) {MK_CVTFI, t, t1, 0, 0},
+#define DATA_SX(w,t,t1) {MK_SX, w, t, t1, 0},
+#define DATA_ZX(w,t,t1) {MK_ZX, w, t, t1, 0},
+#define DATA_DIVU(t,t1,t2) {MK_DIVU, t, t1, t2, 0},
+#define DATA_MODU(t,t1,t2) {MK_MODU, t, t1, t2, 0},
+#define DATA_U2F(t,t1) {MK_U2F, t, t1, 0, 0},
+#define DATA_F2U(t,t1) {MK_F2U, t, t1, 0, 0},
 #ifdef PM_SEM_TABLES
 #define X(N) static const MicroOp sem_##N[] = { SEM_##N(DATA) {MK_END, 0, 0, 0, 0} };
 PM_SEM_OPS(X)
@@ -153,6 +213,8 @@ inline const MicroOp* sem_of(int op) {
 #define CMP_LE(x, y) (int64_t(x) <= int64_t(y))
 #define CMP_GT(x, y) (int64_t(x) > int64_t(y))
 #define CMP_GE(x, y) (int64_t(x) >= int64_t(y))
+#define CMP_LTU(x, y) (uint64_t(x) < uint64_t(y))
+#define CMP_LEU(x, y) (uint64_t(x) <= uint64_t(y))
 #define UN_NEG(x) (uint64_t(0) - (x))
 #define UN_NOT(x) (~(x))
 #define INTERP_RD(t,x)  T##t = R[in.x];
@@ -200,4 +262,10 @@ inline const MicroOp* sem_of(int op) {
 #define INTERP_FCMP(cc,t,t1,t2) T##t = uint64_t(FCMP_##cc(T##t1, T##t2));
 #define INTERP_CVTIF(t,t1) T##t = fromF(double(int64_t(T##t1)));
 #define INTERP_CVTFI(t,t1) T##t = uint64_t(f2i(asF(T##t1)));
+#define INTERP_SX(w,t,t1) T##t = uint64_t(int64_t(int##w##_t(T##t1)));
+#define INTERP_ZX(w,t,t1) T##t = uint64_t(uint##w##_t(T##t1));
+#define INTERP_DIVU(t,t1,t2) { if (T##t2 == 0) TRAP(T_DIV0); T##t = T##t1 / T##t2; }
+#define INTERP_MODU(t,t1,t2) { if (T##t2 == 0) TRAP(T_DIV0); T##t = T##t1 % T##t2; }
+#define INTERP_U2F(t,t1) T##t = fromF(double(uint64_t(T##t1)));
+#define INTERP_F2U(t,t1) T##t = f2u(asF(T##t1));
 #endif

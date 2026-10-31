@@ -91,7 +91,8 @@ done
 #   Program listesinde standart komutlar yeni komut numarasina cevrilir (add->FMIN, addi->AIMM, ldk->LDK2); oracle: C++ (FMIN) ve pm'in standart komutla sonucu (AIMM, LDK2).
 ELF2DIR=${ELF2DIR:-$D}; X=$T/x; mkdir -p $X/oz; cp -r $ELF2DIR $X/oz/elf2; cp -r $ELF2DIR/../arac $ELF2DIR/../komut $ELF2DIR/../nesne $X/oz/; rm -f $X/oz/elf2/gen2.pmb
 KM() { { echo "@@$1"; cat; } | (ulimit -v 900000; timeout 60 $PM run $X/oz/arac/komut.pmb); }
-KM gor < $X/oz/komut/komutlar.pmk | awk '{print} /^op 54 GEI/{print "op 55 FMIN fmin d,f,f"; print "op 56 AIMM aimm d,r,i"; print "op 57 LDK2 ldk2 d,k"; print "op 58 JZX jzx r,l"} /^sem GEI /{print "sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4"; print "sem AIMM rd t3 b ; im t5 c ; alu_add t2 t3 t5 ; wr a t2"; print "sem LDK2 lk t7 b ; wr a t7"; print "sem JZX rd t5 a ; brz t5 b"}' | KM yaz > $X/ext.pmk
+N0=$(KM tab < $X/oz/komut/komutlar.pmk | awk '$1=="OPCOUNT"{print $2}'); IF=$N0; IA=$((N0+1)); IL=$((N0+2)); IJ=$((N0+3))   # yeni komut kimlikleri tablonun sonuna eklenir
+KM gor < $X/oz/komut/komutlar.pmk | awk -v n0=$N0 '{print} $1=="op" && $2==n0-1 {print "op " n0 " FMIN fmin d,f,f"; print "op " n0+1 " AIMM aimm d,r,i"; print "op " n0+2 " LDK2 ldk2 d,k"; print "op " n0+3 " JZX jzx r,l"} /^sem GEI /{print "sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4"; print "sem AIMM rd t3 b ; im t5 c ; alu_add t2 t3 t5 ; wr a t2"; print "sem LDK2 lk t7 b ; wr a t7"; print "sem JZX rd t5 a ; brz t5 b"}' | KM yaz > $X/ext.pmk
 if [ "$(KM dogrula < $X/ext.pmk)" = "1" ] && (cd $X/oz/elf2 && OPT=$X/ext.pmk ./uret.sh $PM > /dev/null 2>&1); then pass; else fail "genisletilmis tablodan gen2 uretilemedi"; fi
 yama() {   # from to nf : program listesinde (on bolumden sonra) NF==nf ve ilk jeton from olan satirlari to yap
   awk -v from=$1 -v to=$2 -v nf=$3 'BEGIN{pre=1;lone=0} pre{print; if(NF==1){lone++; if(lone==2)pre=0} next} NF==nf && $1==from {$1=to} {print}'
@@ -152,16 +153,16 @@ int main(int argc, char** argv) {
 EOT
 HEX=$(sed -n 's/^OZEL="\(.*\)"$/\1/p' ondalik_prog.sh | head -1 | tr ' ' '\n' | head -$NP | tr '\n' ' ')
 $PM asm $T/fmall.pma -o $T/fmall.pmb --strip > /dev/null 2>&1 || fail "fmin tarama programi derlenemedi"
-if g++ -O0 -o $T/fmin_oracle $T/fmin_oracle.cpp 2>/dev/null && $T/fmin_oracle $HEX > $T/fm.exp; then xcmp "FMIN tum cift desenleri" $T/fmall.pmb 3 55 4 $T/fm.exp; else fail "fmin oracle derlenemedi"; fi
+if g++ -O0 -o $T/fmin_oracle $T/fmin_oracle.cpp 2>/dev/null && $T/fmin_oracle $HEX > $T/fm.exp; then xcmp "FMIN tum cift desenleri" $T/fmall.pmb 3 $IF 4 $T/fm.exp; else fail "fmin oracle derlenemedi"; fi
 # AIMM = ADDI (anlik toplama): standart komutlu programin pm sonucu ile esit
 printf 'memory 4096\ndata tab = %s\nfunc main() {\n mov i, 0\nl: gei z, i, 23\n jnz z, d\n add a, i, tab\n ld x, a, 0\n addi r, x, 5\n host puti, r\n host putc, 32\n addi r, x, -77\n host puti, r\n host putc, 10\n addi i, i, 1\n jmp l\nd: halt\n}\nentry main\n' "$VALS" > $T/aimm.pma
-$PM asm $T/aimm.pma -o $T/aimm.pmb --strip > /dev/null 2>&1 && xcmp "AIMM" $T/aimm.pmb 41 56 4 || fail "aimm programi derlenemedi"
+$PM asm $T/aimm.pma -o $T/aimm.pmb --strip > /dev/null 2>&1 && xcmp "AIMM" $T/aimm.pmb 41 $IA 4 || fail "aimm programi derlenemedi"
 # LDK2 = LDK (sabit havuzu): buyuk sabitli program
 printf 'func main() {\n mov a, 1.5\n host puti, a\n host putc, 32\n mov b, 0x7ff8000000000001\n host puti, b\n host putc, 32\n mov c, -123456789012345\n host puti, c\n host putc, 10\n halt\n}\n' > $T/ldk2.pma
-$PM asm $T/ldk2.pma -o $T/ldk2.pmb --strip > /dev/null 2>&1 && xcmp "LDK2" $T/ldk2.pmb 2 57 3 || fail "ldk2 programi derlenemedi"
+$PM asm $T/ldk2.pma -o $T/ldk2.pmb --strip > /dev/null 2>&1 && xcmp "LDK2" $T/ldk2.pmb 2 $IL 3 || fail "ldk2 programi derlenemedi"
 # JZX = JZ (kosullu atlama; mikro-islem brz, gecici kimligi != operand yuvasi): GERI (yakit varyanti) ve ileri atlama
 printf 'func main() {\n ldi n, 0\n ldi s, 0\nL: addi n, n, 1\n add s, s, n\n gei c, n, 6\n jz c, L\n jz s, E\n host puti, s\n host putc, 10\nE: halt\n}\n' > $T/jzx.pma
-$PM asm $T/jzx.pma -o $T/jzx.pmb --strip > /dev/null 2>&1 && xcmp "JZX" $T/jzx.pmb 32 58 3 || fail "jzx programi derlenemedi"
+$PM asm $T/jzx.pma -o $T/jzx.pmb --strip > /dev/null 2>&1 && xcmp "JZX" $T/jzx.pmb 32 $IJ 3 || fail "jzx programi derlenemedi"
 # ---- 4) mikro yolu gercekten kullanildi
 $PM liste $T/int.pmb > $T/p.l; lim $PM run $G2 < $T/p.l > $T/n.elf 2>/dev/null; lim $T/zorla.sh < $T/p.l > $T/z.elf 2>/dev/null
 if cmp -s $T/n.elf $T/z.elf; then fail "zorlanmis ELF sablonlu ELF ile ayni bayt (mikro yolu kullanilmadi)"; else pass; fi

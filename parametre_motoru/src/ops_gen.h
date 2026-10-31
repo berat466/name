@@ -56,7 +56,58 @@
   X(LTI, "lti", 3, "dri") \
   X(LEI, "lei", 3, "dri") \
   X(GTI, "gti", 3, "dri") \
-  X(GEI, "gei", 3, "dri")
+  X(GEI, "gei", 3, "dri") \
+  X(SEXT8, "sext8", 2, "dr") \
+  X(SEXT16, "sext16", 2, "dr") \
+  X(SEXT32, "sext32", 2, "dr") \
+  X(ZEXT8, "zext8", 2, "dr") \
+  X(ZEXT16, "zext16", 2, "dr") \
+  X(ZEXT32, "zext32", 2, "dr") \
+  X(ADD_I8, "add_i8", 3, "drr") \
+  X(SUB_I8, "sub_i8", 3, "drr") \
+  X(MUL_I8, "mul_i8", 3, "drr") \
+  X(SHL_I8, "shl_i8", 3, "drr") \
+  X(DIV_I8, "div_i8", 3, "drr") \
+  X(MOD_I8, "mod_i8", 3, "drr") \
+  X(NEG_I8, "neg_i8", 2, "dr") \
+  X(ADD_I16, "add_i16", 3, "drr") \
+  X(SUB_I16, "sub_i16", 3, "drr") \
+  X(MUL_I16, "mul_i16", 3, "drr") \
+  X(SHL_I16, "shl_i16", 3, "drr") \
+  X(DIV_I16, "div_i16", 3, "drr") \
+  X(MOD_I16, "mod_i16", 3, "drr") \
+  X(NEG_I16, "neg_i16", 2, "dr") \
+  X(ADD_I32, "add_i32", 3, "drr") \
+  X(SUB_I32, "sub_i32", 3, "drr") \
+  X(MUL_I32, "mul_i32", 3, "drr") \
+  X(SHL_I32, "shl_i32", 3, "drr") \
+  X(DIV_I32, "div_i32", 3, "drr") \
+  X(MOD_I32, "mod_i32", 3, "drr") \
+  X(NEG_I32, "neg_i32", 2, "dr") \
+  X(ADD_U8, "add_u8", 3, "drr") \
+  X(SUB_U8, "sub_u8", 3, "drr") \
+  X(MUL_U8, "mul_u8", 3, "drr") \
+  X(SHL_U8, "shl_u8", 3, "drr") \
+  X(NEG_U8, "neg_u8", 2, "dr") \
+  X(NOT_U8, "not_u8", 2, "dr") \
+  X(ADD_U16, "add_u16", 3, "drr") \
+  X(SUB_U16, "sub_u16", 3, "drr") \
+  X(MUL_U16, "mul_u16", 3, "drr") \
+  X(SHL_U16, "shl_u16", 3, "drr") \
+  X(NEG_U16, "neg_u16", 2, "dr") \
+  X(NOT_U16, "not_u16", 2, "dr") \
+  X(ADD_U32, "add_u32", 3, "drr") \
+  X(SUB_U32, "sub_u32", 3, "drr") \
+  X(MUL_U32, "mul_u32", 3, "drr") \
+  X(SHL_U32, "shl_u32", 3, "drr") \
+  X(NEG_U32, "neg_u32", 2, "dr") \
+  X(NOT_U32, "not_u32", 2, "dr") \
+  X(DIVU, "divu", 3, "drr") \
+  X(MODU, "modu", 3, "drr") \
+  X(LTU, "ltu", 3, "drr") \
+  X(LEU, "leu", 3, "drr") \
+  X(U2F, "u2f", 2, "dr") \
+  X(F2U, "f2u", 2, "dr")
 
 // X(ENUM, "ad", arguman_sayisi)  host islevleri
 #define PM_HOSTS(X) \

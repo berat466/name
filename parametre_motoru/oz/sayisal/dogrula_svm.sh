@@ -51,7 +51,8 @@ done
 for f in $T/bl/bellek_*.pma $T/bl/alloc_*.pma; do $PM asm $f -o $T/k.pmb --strip > /dev/null 2>&1 && kos "$(basename $f .pma)" $T/k.pmb $T/bos; done
 # ---- 3d) genisletilmis tablo (yalniz OP+SEM): FMIN (sel), AIMM (im), LDK2 (lk); svm tabloyu calisma aninda okur
 KM() { { echo "@@$1"; cat; } | (ulimit -v 900000; timeout 60 $PM run $D/../arac/komut.pmb); }
-KM gor < $TABLO | awk '{print} /^op 54 GEI/{print "op 55 FMIN fmin d,f,f"; print "op 56 AIMM aimm d,r,i"; print "op 57 LDK2 ldk2 d,k"} /^sem GEI /{print "sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4"; print "sem AIMM rd t3 b ; im t5 c ; alu_add t2 t3 t5 ; wr a t2"; print "sem LDK2 lk t7 b ; wr a t7"}' | KM yaz > $T/ext.pmk
+N0=$(KM tab < $TABLO | awk '$1=="OPCOUNT"{print $2}'); IF=$N0; IA=$((N0+1)); IL=$((N0+2))   # yeni komut kimlikleri tablonun sonuna eklenir
+KM gor < $TABLO | awk -v n0=$N0 '{print} $1=="op" && $2==n0-1 {print "op " n0 " FMIN fmin d,f,f"; print "op " n0+1 " AIMM aimm d,r,i"; print "op " n0+2 " LDK2 ldk2 d,k"} /^sem GEI /{print "sem FMIN rd t1 b ; rd t2 c ; flt t3 t1 t2 ; sel t4 t3 t1 t2 ; wr a t4"; print "sem AIMM rd t3 b ; im t5 c ; alu_add t2 t3 t5 ; wr a t2"; print "sem LDK2 lk t7 b ; wr a t7"}' | KM yaz > $T/ext.pmk
 yama() { awk -v from=$1 -v to=$2 -v nf=$3 'BEGIN{pre=1;lone=0} pre{print; if(NF==1){lone++; if(lone==2)pre=0} next} NF==nf && $1==from {$1=to} {print}'; }
 xsvm() {   # etiket pmb from to nf [beklenen]
   $PM liste $2 | yama $3 $4 $5 > $T/xp.l
@@ -82,12 +83,12 @@ int main(int argc, char** argv) {
 EOT
 HEX=$(sed -n 's/^OZEL="\(.*\)"$/\1/p' ../elf2/ondalik_prog.sh | head -1 | tr ' ' '\n' | head -$NP | tr '\n' ' ')
 $PM asm $T/fmall.pma -o $T/fmall.pmb --strip > /dev/null 2>&1 || fail "fmin tarama programi derlenemedi"
-if g++ -O0 -o $T/fmin_oracle $T/fmin_oracle.cpp 2>/dev/null && $T/fmin_oracle $HEX > $T/fm.exp; then xsvm "FMIN tum cift desenleri" $T/fmall.pmb 3 55 4 $T/fm.exp; else fail "fmin oracle derlenemedi"; fi
+if g++ -O0 -o $T/fmin_oracle $T/fmin_oracle.cpp 2>/dev/null && $T/fmin_oracle $HEX > $T/fm.exp; then xsvm "FMIN tum cift desenleri" $T/fmall.pmb 3 $IF 4 $T/fm.exp; else fail "fmin oracle derlenemedi"; fi
 VALS=$(sed -n 's/^VALS="\(.*\)"$/\1/p' ../elf2/tamsayi_prog.sh)
 printf 'memory 4096\ndata tab = %s\nfunc main() {\n mov i, 0\nl: gei z, i, 23\n jnz z, d\n add a, i, tab\n ld x, a, 0\n addi r, x, 5\n host puti, r\n host putc, 32\n addi r, x, -77\n host puti, r\n host putc, 10\n addi i, i, 1\n jmp l\nd: halt\n}\nentry main\n' "$VALS" > $T/aimm.pma
-$PM asm $T/aimm.pma -o $T/aimm.pmb --strip > /dev/null 2>&1 && xsvm "AIMM" $T/aimm.pmb 41 56 4 || fail "aimm programi derlenemedi"
+$PM asm $T/aimm.pma -o $T/aimm.pmb --strip > /dev/null 2>&1 && xsvm "AIMM" $T/aimm.pmb 41 $IA 4 || fail "aimm programi derlenemedi"
 printf 'func main() {\n mov a, 1.5\n host puti, a\n host putc, 32\n mov b, 0x7ff8000000000001\n host puti, b\n host putc, 32\n mov c, -123456789012345\n host puti, c\n host putc, 10\n halt\n}\n' > $T/ldk2.pma
-$PM asm $T/ldk2.pma -o $T/ldk2.pmb --strip > /dev/null 2>&1 && xsvm "LDK2" $T/ldk2.pmb 2 57 3 || fail "ldk2 programi derlenemedi"
+$PM asm $T/ldk2.pma -o $T/ldk2.pmb --strip > /dev/null 2>&1 && xsvm "LDK2" $T/ldk2.pmb 2 $IL 3 || fail "ldk2 programi derlenemedi"
 # ---- 5) grafik: svm kendi host islevleriyle present/poll/frame'i gecirir; kare raporu, son kare, ascii pm ile ayni
 for a in hayat sahne pong; do
   $PM asm $R/uygulamalar/$a.pma -o $T/k.pmb --strip > /dev/null 2>&1 || continue

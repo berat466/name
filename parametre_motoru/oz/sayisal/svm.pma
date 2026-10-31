@@ -31,7 +31,7 @@ space TS 16
 space OP3 4
 space G 64
 
-data PNAMES = "rd\0im\0lk\0wr\0alu_add\0alu_sub\0alu_mul\0alu_and\0alu_or\0alu_xor\0alu_shl\0alu_shr\0alu_sar\0cmp_eq\0cmp_ne\0cmp_lt\0cmp_le\0cmp_gt\0cmp_ge\0un_neg\0un_not\0divs\0mods\0divn\0modn\0ld\0st\0br\0brz\0brnz\0call\0ret\0halt\0host\0alloc\0fadd\0fsub\0fmul\0fdiv\0fneg\0fsqrt\0feq\0flt\0fle\0i2f\0f2i\0sel\0"
+data PNAMES = "rd\0im\0lk\0wr\0alu_add\0alu_sub\0alu_mul\0alu_and\0alu_or\0alu_xor\0alu_shl\0alu_shr\0alu_sar\0cmp_eq\0cmp_ne\0cmp_lt\0cmp_le\0cmp_gt\0cmp_ge\0un_neg\0un_not\0divs\0mods\0divn\0modn\0ld\0st\0br\0brz\0brnz\0call\0ret\0halt\0host\0alloc\0fadd\0fsub\0fmul\0fdiv\0fneg\0fsqrt\0feq\0flt\0fle\0i2f\0f2i\0sel\0sx8\0sx16\0sx32\0zx8\0zx16\0zx32\0cmp_ltu\0cmp_leu\0divu\0modu\0lit\0"
 data HNAMES = "putc\0puti\0putf\0getc\0present\0poll\0frame\0"
 data M_TRAP = "@@TRAP \0"
 data M_RED = "@@RED \0"
@@ -504,6 +504,37 @@ f9: st gi, G, 15
 
 ; ---- yurutme ----
 ; sonuc: cikis degeri (ana islev donusu); tuzakta donmez
+; isaretsiz 64 bit bolme: x / y (y != 0)
+func udiv(x, y) {
+    lti z, y, 0
+    jz z, u1
+    ; y >= 2^63: bolum 0 ya da 1
+    mov m, -9223372036854775808
+    xor a, x, m
+    xor b, y, m
+    lt z, a, b
+    jz z, u0
+    ret 0
+u0: ret 1
+u1: lti z, x, 0
+    jnz z, u2
+    div q, x, y
+    ret q
+u2: shri h, x, 1
+    div q, h, y
+    shli q, q, 1
+    mul t, q, y
+    sub r, x, t
+    ; r >= y (isaretsiz) ise bir artir
+    mov m, -9223372036854775808
+    xor a, r, m
+    xor b, y, m
+    lt z, a, b
+    jnz z, u3
+    addi q, q, 1
+u3: ret q
+}
+
 func run() {
     ld ent, G, 11
     ld memw, G, 10
@@ -907,7 +938,7 @@ fp45: eqi z, pid, 45
 fp46: f2i v, x
     jmp a_st
 d_sel: eqi z, pid, 47
-    jz z, d_bad
+    jz z, d_new
     add a, f1, TS
     ld c, a, 0
     add a, f2, TS
@@ -917,6 +948,75 @@ d_sel: eqi z, pid, 47
     mov v, y
     jz c, a_st
     mov v, x
+    jmp a_st
+d_new: ; 48..58: isaret/sifir genisletme, isaretsiz karsilastirma ve bolme, sabit sayi
+    gei z, pid, 48
+    jz z, d_bad
+    lei z, pid, 53
+    jz z, n_cmp
+    add a, f1, TS
+    ld x, a, 0
+    eqi z, pid, 48
+    jz z, nx2
+    shli x, x, 56
+    sari v, x, 56
+    jmp a_st
+nx2: eqi z, pid, 49
+    jz z, nx3
+    shli x, x, 48
+    sari v, x, 48
+    jmp a_st
+nx3: eqi z, pid, 50
+    jz z, nx4
+    shli x, x, 32
+    sari v, x, 32
+    jmp a_st
+nx4: eqi z, pid, 51
+    jz z, nx5
+    andi v, x, 255
+    jmp a_st
+nx5: eqi z, pid, 52
+    jz z, nx6
+    andi v, x, 65535
+    jmp a_st
+nx6: shli x, x, 32
+    shri v, x, 32
+    jmp a_st
+n_cmp: lei z, pid, 55
+    jz z, n_div
+    add a, f1, TS
+    ld x, a, 0
+    add a, f2, TS
+    ld y, a, 0
+    ; isaretsiz karsilastirma: en anlamli biti cevirip isaretli karsilastir
+    mov m, -9223372036854775808
+    xor x, x, m
+    xor y, y, m
+    eqi z, pid, 54
+    jz z, nc2
+    lt v, x, y
+    jmp a_st
+nc2: le v, x, y
+    jmp a_st
+n_div: lei z, pid, 57
+    jz z, n_lit
+    add a, f1, TS
+    ld x, a, 0
+    add a, f2, TS
+    ld y, a, 0
+    jnz y, nd_nz
+    call x, trap, N_DIV0
+nd_nz: call q, udiv, x, y
+    eqi z, pid, 56
+    jz z, nd_m
+    mov v, q
+    jmp a_st
+nd_m: mul t, q, y
+    sub v, x, t
+    jmp a_st
+n_lit: eqi z, pid, 58
+    jz z, d_bad
+    mov v, f1
     jmp a_st
 d_bad: call x, red, 30
 mdone: mov ip, nip

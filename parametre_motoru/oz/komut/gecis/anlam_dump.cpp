@@ -6,7 +6,7 @@
 #define PM_SEM_TABLES
 #include "../../../src/anlam.h"
 static const char* ALU[] = {"add", "sub", "mul", "and", "or", "xor", "shl", "shr", "sar"};
-static const char* CMP[] = {"eq", "ne", "lt", "le", "gt", "ge"};
+static const char* CMP[] = {"eq", "ne", "lt", "le", "gt", "ge", "ltu", "leu"};
 static const char* UN[] = {"neg", "not"};
 static const char* FALU[] = {"add", "sub", "mul", "div"};
 static const char* FUN[] = {"neg", "sqrt"};
@@ -52,6 +52,11 @@ int main() {
         case MK_FCMP: printf("f%s t%d t%d t%d", FCMP[m->a], m->b, m->c, m->d); break;
         case MK_CVTIF: printf("i2f t%d t%d", m->a, m->b); break;
         case MK_CVTFI: printf("f2i t%d t%d", m->a, m->b); break;
+        case MK_SX: printf("sx%d t%d t%d", m->a, m->b, m->c); break;
+        case MK_ZX: printf("zx%d t%d t%d", m->a, m->b, m->c); break;
+        case MK_DIVU: printf("divu t%d t%d t%d", m->a, m->b, m->c); break;
+        case MK_MODU: printf("modu t%d t%d t%d", m->a, m->b, m->c); break;
+        case MK_U2F: case MK_F2U: printf("%s t%d t%d", m->k == MK_U2F ? "u2f_dedicated" : "f2u_dedicated", m->a, m->b); break;
         default: printf("BILINMEYEN%d", m->k);
       }
     }
