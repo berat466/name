@@ -98,6 +98,30 @@ for f in T:
         flags = 1 if (tm <= fm and fx <= tx) else 2
         body = [2, f[0], t[0], conv_op(f, t), flags, 0]
         conv.append([len(body)] + body)
+# kayan nokta (f16 bf16 f32 f64; deger double olarak tam saklanir): tamsayi <-> kayan ve kayan <-> kayan
+FL = [t for t in T if t[1] in ('f16', 'bf16', 'f32', 'f64')]
+FMT = {'f16': (11, 5), 'bf16': (8, 8), 'f32': (24, 8), 'f64': (53, 11)}   # (anlamli bit sayisi, us biti)
+def fl_exact(f, t):   # f -> t kayan: t'nin anlamli biti ve us araligi f'yi kapsiyor mu
+    return FMT[t[1]][0] >= FMT[f[1]][0] and FMT[t[1]][1] >= FMT[f[1]][1]
+for i_ in T:
+    if i_[2] not in INTLIKE or i_[3] > 64: continue
+    for f_ in FL:
+        # tamsayi -> kayan
+        u64src = (i_[2] != 2 and i_[4] == 0 and i_[3] == 64)
+        o = (opid['u2f'] if u64src else opid['i2f']) if f_[1] == 'f64' else opid[('u2f_%s' if u64src else 'i2f_%s') % f_[1]]
+        body = [2, i_[0], f_[0], o, 1 if (i_[3] < FMT[f_[1]][0] or (i_[2] == 2)) else 2, 0]
+        conv.append([len(body)] + body)
+        # kayan -> tamsayi
+        if i_[2] == 2: o = opid['ftobool']
+        elif i_[3] == 64: o = opid['f2u'] if i_[4] == 0 else opid['f2i']
+        else: o = opid[('f2i_i%d' if i_[4] else 'f2i_u%d') % i_[3]]
+        body = [2, f_[0], i_[0], o, 2, 0]
+        conv.append([len(body)] + body)
+for f_ in FL:
+    for t_ in FL:
+        o = -1 if (f_ is t_ or fl_exact(f_, t_)) else opid['rnd_' + t_[1]]
+        body = [2, f_[0], t_[0], o, 1 if o == -1 else 2, 0]
+        conv.append([len(body)] + body)
 # nullptr_t: bool'a (her zaman false) ve isaretsiz 64 bit gostericiye (ozdes)
 nl = byname['nullptr']
 for t in (byname['bool'], byname['u64']):

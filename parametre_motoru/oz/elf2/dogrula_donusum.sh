@@ -63,6 +63,23 @@ for f in "${REPS[@]}"; do veri=$($T/oracle veri $f); sveri=$(echo "$veri" | tr '
     awk -v n=$NS -v tot=$(wc -l < $T/exp.txt) 'BEGIN{ORS=""} {a[NR]=$0} END{for(i=0;i<n;i++){k=int(i*(tot-1)/(n-1))+1; print a[k] "\n"}}' $T/exp.txt > $T/exps.txt
     svmcikti $T/ps.l $T/svm.out; cmp -s $T/svm.out $T/exps.txt && pass || fail "$f->$t: svm cikti oracle'dan farkli ($(cmp $T/svm.out $T/exps.txt 2>&1 | head -c 80))"
   done; done
+# 4) kayan nokta donusumleri (tamsayi <-> f16/bf16/f32/f64, kayan <-> kayan): BAGIMSIZ tam-rasyonel referans (ref_donusum.py)
+FLS=(f16 bf16 f32 f64)
+kayan_cift() {   # kaynak hedef
+  local f=$1 t=$2 op=${CV[${ID[$1]},${ID[$2]}]}
+  [ -n "$op" ] || { fail "$f->$t: matriste kayit yok"; return; }
+  python3 ref_donusum.py veri $f $t 0 | paste -sd, > $T/kv.txt; python3 ref_donusum.py bekle $f $t 0 > $T/exp.txt
+  [ -s $T/exp.txt ] || { fail "$f->$t: referans bos"; return; }
+  python3 ref_donusum.py veri $f $t $NS | paste -sd, > $T/ksv.txt; python3 ref_donusum.py bekle $f $t $NS > $T/exps.txt
+  prog $f $t $op "$(cat $T/kv.txt)" $T/p.pma
+  derle $T/p.pma $T/p.pmb $T/p.l || { fail "$f->$t: derlenemedi ($(head -c 100 $T/asm.err))"; return; }
+  lim $PM run $T/p.pmb < /dev/null > $T/pm.out 2>/dev/null; cmp -s $T/pm.out $T/exp.txt && pass || fail "$f->$t: C++ pm cikti referanstan farkli ($(cmp $T/pm.out $T/exp.txt 2>&1 | head -c 80))"
+  if elfcikti $T/p.l $T/elf.out; then cmp -s $T/elf.out $T/exp.txt && pass || fail "$f->$t: ELF cikti referanstan farkli ($(cmp $T/elf.out $T/exp.txt 2>&1 | head -c 80))"; else fail "$f->$t: ELF uretilemedi/calismadi"; fi
+  prog $f $t $op "$(cat $T/ksv.txt)" $T/ps.pma; derle $T/ps.pma $T/ps.pmb $T/ps.l || { fail "$f->$t (svm): derlenemedi"; return; }
+  svmcikti $T/ps.l $T/svm.out; cmp -s $T/svm.out $T/exps.txt && pass || fail "$f->$t: svm cikti referanstan farkli ($(cmp $T/svm.out $T/exps.txt 2>&1 | head -c 80))"
+}
+for i in "${REPS[@]}"; do for fl in "${FLS[@]}"; do kayan_cift $i $fl; kayan_cift $fl $i; done; done
+for a in "${FLS[@]}"; do for b in "${FLS[@]}"; do kayan_cift $a $b; done; done
 echo "donusum: $ok gecti, $bad basarisiz"
 rm -rf $T
 [ $bad = 0 ]

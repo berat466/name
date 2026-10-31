@@ -54,6 +54,7 @@ def vals_double(n):
         mx = (2.0 - 2.0 ** -mb_) * 2.0 ** emax_
         for d_ in (0.4999999, 0.5, 0.5000001): sp.append(mx + d_ * 2.0 ** (emax_ - mb_))
         sp += [-v for v in sp[-12:]]
+    sp += [2.0**31, 2147483647.0, 2147483648.5, 3e9, 4e9, 4294967295.0, 4294967296.0, 2.0**53, 2.0**62, 9.223372036854775e18, 9223372036854775808.0, 1.5 * 2.0**63, 1.8446744073709548e19, 18446744073709551616.0, 1e19, 1e20, -2147483649.0, -3e9, -4e9, -9.2e18, -9223372036854775808.0, -1e19, -0.5, 0.5, -1.5, 1.9999999, 255.5, 256.0, 65535.5, 128.0, -128.5, -129.0, 127.5, 32768.0, 32767.9, -32769.0]
     bits = [d2b(v) for v in sp] + [0x7FF8000000000000, 0x7FF0000000000001, u2s(0xFFF8DEADBEEF0000), u2s(0xFFFFFFFFFFFFFFFF), 0x7FF7FFFFFFFFFFFF]
     g = lcg(12345)
     while len(bits) < max(n, len(bits)) and n > 0 and len(bits) < n:
@@ -93,54 +94,56 @@ def ints(n):
         r = next(g); base.append(r >> (r % 40))
     return sample([u2s(v) for v in base], n)
 def sgn(f): return f
-mode = sys.argv[1]
-if mode == 'veri':
-    kind, n = sys.argv[2], int(sys.argv[3])
-    lst = vals_double(n) if kind == 'rnd' else ints(n) if kind == 'int' else vals_fmt(kind[3:], n)
-    print(', '.join(str(v) for v in lst))
-elif mode == 'bekle':
-    f, op, n = sys.argv[2], sys.argv[3], int(sys.argv[4]); mb, emin, emax = FM[f]
-    if op == 'rnd':
-        for b in vals_double(n): print(rnd_bits(b, f))
-    elif op in ('i2f', 'u2f'):
-        for v in ints(n):
-            u = v & ((1 << 64) - 1); val = (v if op == 'i2f' else u)
-            print(frac_to_bits(round_frac(abs(Fraction(val)), mb, emin, emax), val < 0))
-    else:
-        L = vals_fmt(f, n)
-        def isnan(b): return ((b >> 52) & 2047) == 2047 and (b & ((1 << 52) - 1)) != 0
-        def fin(b): return ((b >> 52) & 2047) != 2047
-        for xb in L:
-            ys = L if op in ('add', 'sub', 'mul', 'div') else [None]
-            for yb in ys:
-                x = b2d(xb)
-                if op == 'sqrt':
-                    if x != x: res = xb
-                    elif x < 0: res = NAN_DEFAULT
-                    elif x == 0 or x == float('inf'): res = xb
-                    else:
-                        fr = Fraction(x); p, q = fr.numerator, fr.denominator; K = 80
-                        N = (p * q) << (2 * K); r = isqrt(N); den = q << K
-                        v = Fraction(2 * r + 1, 2 * den) if r * r != N else Fraction(r, den)
-                        res = frac_to_bits(round_frac(v, mb, emin, emax), False)
-                else:
-                    y = b2d(yb)
-                    inf = float('inf')
-                    if x != x or y != y: res = NAN_DEFAULT if False else None
-                    if op in ('add', 'sub') and fin(xb) and fin(yb):
-                        t = Fraction(x) + (Fraction(y) if op == 'add' else -Fraction(y))
-                        if t == 0: res = d2b(x + y if op == 'add' else x - y)   # isaret kurali (+0/-0) donanimdan: ayni ifade IEEE
-                        else: res = frac_to_bits(round_frac(abs(t), mb, emin, emax), t < 0)
-                    elif op == 'mul' and fin(xb) and fin(yb):
-                        t = Fraction(x) * Fraction(y)
-                        res = d2b(x * y) if t == 0 else frac_to_bits(round_frac(abs(t), mb, emin, emax), t < 0)
-                    elif op == 'div' and fin(xb) and fin(yb) and y != 0:
-                        t = Fraction(x) / Fraction(y)
-                        res = d2b(x / y) if t == 0 else frac_to_bits(round_frac(abs(t), mb, emin, emax), t < 0)
-                    else:
-                        # sonsuz / sifir / NaN girdileri: IEEE kurali double'da (isaret ve NaN varsayilanlari) -- sonuc zaten bicimde gosterilir (sonsuz/sifir/NaN)
-                        try:
-                            z = {'add': x + y, 'sub': x - y, 'mul': x * y, 'div': (x / y if y != 0 else (float('nan') if x == 0 or x != x else (inf if (x > 0) == (str(y)[0] != '-') else -inf)))}[op]
-                        except Exception: z = float('nan')
-                        res = NAN_DEFAULT if z != z else d2b(z)
-                print(res)
+def main():
+  mode = sys.argv[1]
+  if mode == 'veri':
+      kind, n = sys.argv[2], int(sys.argv[3])
+      lst = vals_double(n) if kind == 'rnd' else ints(n) if kind == 'int' else vals_fmt(kind[3:], n)
+      print(', '.join(str(v) for v in lst))
+  elif mode == 'bekle':
+      f, op, n = sys.argv[2], sys.argv[3], int(sys.argv[4]); mb, emin, emax = FM[f]
+      if op == 'rnd':
+          for b in vals_double(n): print(rnd_bits(b, f))
+      elif op in ('i2f', 'u2f'):
+          for v in ints(n):
+              u = v & ((1 << 64) - 1); val = (v if op == 'i2f' else u)
+              print(frac_to_bits(round_frac(abs(Fraction(val)), mb, emin, emax), val < 0))
+      else:
+          L = vals_fmt(f, n)
+          def isnan(b): return ((b >> 52) & 2047) == 2047 and (b & ((1 << 52) - 1)) != 0
+          def fin(b): return ((b >> 52) & 2047) != 2047
+          for xb in L:
+              ys = L if op in ('add', 'sub', 'mul', 'div') else [None]
+              for yb in ys:
+                  x = b2d(xb)
+                  if op == 'sqrt':
+                      if x != x: res = xb
+                      elif x < 0: res = NAN_DEFAULT
+                      elif x == 0 or x == float('inf'): res = xb
+                      else:
+                          fr = Fraction(x); p, q = fr.numerator, fr.denominator; K = 80
+                          N = (p * q) << (2 * K); r = isqrt(N); den = q << K
+                          v = Fraction(2 * r + 1, 2 * den) if r * r != N else Fraction(r, den)
+                          res = frac_to_bits(round_frac(v, mb, emin, emax), False)
+                  else:
+                      y = b2d(yb)
+                      inf = float('inf')
+                      if x != x or y != y: res = NAN_DEFAULT if False else None
+                      if op in ('add', 'sub') and fin(xb) and fin(yb):
+                          t = Fraction(x) + (Fraction(y) if op == 'add' else -Fraction(y))
+                          if t == 0: res = d2b(x + y if op == 'add' else x - y)   # isaret kurali (+0/-0) donanimdan: ayni ifade IEEE
+                          else: res = frac_to_bits(round_frac(abs(t), mb, emin, emax), t < 0)
+                      elif op == 'mul' and fin(xb) and fin(yb):
+                          t = Fraction(x) * Fraction(y)
+                          res = d2b(x * y) if t == 0 else frac_to_bits(round_frac(abs(t), mb, emin, emax), t < 0)
+                      elif op == 'div' and fin(xb) and fin(yb) and y != 0:
+                          t = Fraction(x) / Fraction(y)
+                          res = d2b(x / y) if t == 0 else frac_to_bits(round_frac(abs(t), mb, emin, emax), t < 0)
+                      else:
+                          # sonsuz / sifir / NaN girdileri: IEEE kurali double'da (isaret ve NaN varsayilanlari) -- sonuc zaten bicimde gosterilir (sonsuz/sifir/NaN)
+                          try:
+                              z = {'add': x + y, 'sub': x - y, 'mul': x * y, 'div': (x / y if y != 0 else (float('nan') if x == 0 or x != x else (inf if (x > 0) == (str(y)[0] != '-') else -inf)))}[op]
+                          except Exception: z = float('nan')
+                          res = NAN_DEFAULT if z != z else d2b(z)
+                  print(res)
+if __name__ == '__main__': main()

@@ -32,6 +32,17 @@ bg mut_conv u64_u8_sext i64 u8 sext8
 bg mut_conv i16_i32_zext i16 i32 zext32
 bg mut_conv u16_i8_zext u16 i8 zext8
 bg mut_conv bool_u8_tobool bool u8 sext8
+bg mut_conv i32_f32_cift i32 f32 i2f
+bg mut_conv u64_f64_isaretli u64 f64 i2f
+bg mut_conv i64_f16_ozdes i64 f16 -1
+bg mut_conv f64_f32_ozdes f64 f32 -1
+bg mut_conv f32_f16_ozdes f32 f16 -1
+bg mut_conv f16_bf16_ozdes f16 bf16 -1
+bg mut_conv f64_i8_dar f64 i8 f2i_i16
+bg mut_conv f64_u32_isaretli f64 u32 f2i_i32
+bg mut_conv f32_u64_isaretli f32 u64 f2i
+bg mut_conv f64_bool_tamsayi f64 bool f2i
+bg mut_conv i8_f16_u2f i8 f16 u2f_f16
 bg mut_tablo tobool_eq 's/^\(sem TOBOOL rd t1 b ; lit t2 0 ; \)cmp_ne t3/\1cmp_eq t3/'
 bg mut_tablo zext16_genislik 's/^\(sem ZEXT16 rd t1 b ; \)zx16 t2 t1/\1zx8 t2 t1/'
 bg mut_tablo sext32_genislik 's/^\(sem SEXT32 rd t1 b ; \)sx32 t2 t1/\1sx16 t2 t1/'
