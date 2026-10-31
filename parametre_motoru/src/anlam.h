@@ -335,10 +335,19 @@ inline const MicroOp* sem_of(int op) {
 #define INTERP_HALTM() { result = 0; goto done; }
 #define INTERP_HOSTM(h,b)  { CHECKPOINT(); host_call(io, in.h, R + in.b); }
 #define INTERP_ALLOCM(t,tn) { int64_t n_ = int64_t(T##tn); if (n_ < 0 || uint64_t(n_) > mem_words - heap) TRAP(T_ALLOC); T##t = heap; heap += uint64_t(n_); }
-#define FALU_ADD(x, y) (asF(x) + asF(y))
-#define FALU_SUB(x, y) (asF(x) - asF(y))
-#define FALU_MUL(x, y) (asF(x) * asF(y))
-#define FALU_DIV(x, y) (asF(x) / asF(y))
+// NaN yayilimi TANIMLI: iki islenenden biri NaN ise sonuc ILK NaN islenenin sessizlestirilmis hali (yoksa ikincisi); NaN yoksa donanim sonucu (gecersiz islemde varsayilan NaN).
+// Bu, x86-64 SSE davranisidir; C++ derleyicisi degisme-degisme (a+b -> b+a) yapsa da yorumlayici sonucu degismez (ELF ile bit-bit ayni kalir).
+static inline double pm_fnan(double a, double b, double r) {
+  if (r == r) return r;
+  uint64_t u;
+  if (a != a) { std::memcpy(&u, &a, 8); u |= 1ULL << 51; std::memcpy(&r, &u, 8); return r; }
+  if (b != b) { std::memcpy(&u, &b, 8); u |= 1ULL << 51; std::memcpy(&r, &u, 8); return r; }
+  return r;
+}
+#define FALU_ADD(x, y) pm_fnan(asF(x), asF(y), asF(x) + asF(y))
+#define FALU_SUB(x, y) pm_fnan(asF(x), asF(y), asF(x) - asF(y))
+#define FALU_MUL(x, y) pm_fnan(asF(x), asF(y), asF(x) * asF(y))
+#define FALU_DIV(x, y) pm_fnan(asF(x), asF(y), asF(x) / asF(y))
 #define FUN_NEG(x)  (-asF(x))
 #define FUN_SQRT(x) (std::sqrt(asF(x)))
 #define FCMP_EQ(x, y) (asF(x) == asF(y))

@@ -269,8 +269,10 @@ cmp -s $T/fmall.elf $T/fmall_b.elf && fail "sablonlu ve SEM'li ELF ayni bayt (SE
 (ulimit -v 900000; { echo "-6 1"; cat $T/fmall.l; } | $PM run $T/w3/oz/elf2/gen2.pmb > $T/fmall_z2.elf 2>/dev/null); cmp -s $T/fmall_z.elf $T/fmall_z2.elf && pass || fail "-6 1 ELF'i sablonlu/sablonsuz gen2 ile ayni degil (mikro yolu ayni olmali)"
 # ---- 8) ANLAM (PRIM + SEM) bolumleri: C++ referansiyla esitlik, olumsuz ornekler, genisletme noktasi
 g++ -std=c++17 -I $R/src -o $T/anlam_dump gecis/anlam_dump.cpp 2>/dev/null && $T/anlam_dump | sort > $T/sem_cpp.txt || fail "anlam_dump derlenemedi"
-mod gor < $TAB | grep '^sem ' | grep -v -E '^sem (FMIN|U2F|F2U) ' | sort > $T/sem_tab.txt
-grep -v -E '^sem (U2F|F2U) ' $T/sem_cpp.txt > $T/sem_cpp2.txt; mv $T/sem_cpp2.txt $T/sem_cpp.txt
+# C++ tarafinda ozel (dedicated) mikro-islemle gerceklenen komutlar (u2f/f2u, dar kayan nokta yuvarlama, bswap) tablodaki mikro-programla BIREBIR kiyaslanmaz;
+# onlar icin esdegerlik ELF = svm = C++ pm = bagimsiz referans testleriyle (dogrula_tur/dar/donusum) saglanir.
+mod gor < $TAB | grep '^sem ' | grep -v -E '^sem (FMIN|U2F|F2U|[A-Z0-9]+_(F32|F16|BF16)|BSWAP[0-9]+) ' | sort > $T/sem_tab.txt
+grep -v -E '^sem (FMIN|U2F|F2U|[A-Z0-9]+_(F32|F16|BF16)|BSWAP[0-9]+) ' $T/sem_cpp.txt > $T/sem_cpp2.txt; mv $T/sem_cpp2.txt $T/sem_cpp.txt
 cmp -s $T/sem_cpp.txt $T/sem_tab.txt && pass || fail "tablodaki SEM tanimlari src/anlam.h (C++ referansi) ile ayni degil: $(diff $T/sem_cpp.txt $T/sem_tab.txt | head -3 | tr '\n' '|')"
 mod gor < $TAB | grep -q '^prim 47 sel to,ti,ti,ti ext 1=0$' && pass || fail "prim satiri beklenen bicimde degil"
 sred() { y=$(mod gor < $TAB | sed "$2" | mod yaz 2>/dev/null); if [ "${y:0:4}" = "HATA" ]; then pass; else out=$(printf '%s\n' "$y" | mod dogrula 2>/dev/null); [ "${out:0:1}" = "0" ] && pass || fail "SEM olumsuz ornek kabul edildi: $1 ($out)"; fi; }
