@@ -33,7 +33,7 @@ mut sym_kucuk    's/gei z, c, 65\n    jz z, n1a\n    lei z, c, 90\n    jnz z, n9
 mut walk_uzunluk 's/lti z, rl, 4\n    jz z, w2a/lti z, rl, 1\n    jz z, w2a/'
 mut bolum_sonu   's/v8: eq z, p, nt\n    jnz z, v9\n    ret 7/v8: eq z, p, nt\n    jmp v9\n    ret 7/'
 mut host_yinele  's/jz o, h2\n    ret 41/jmp h2\n    ret 41/'
-mut opaque_gor   's/    eqi z, vs, 1\n    jz z, gop\n    ; yapisal bolum/    jmp gop\n    ; yapisal bolum/'
+mut opaque_gor   's/(gok: eqi z, vs, 1\n)    jz z, gop\n    ; yapisal bolum/$1    ; yapisal bolum/'
 mut pseudo_id_aralik 's/gei z, pid, 256\n    jnz z, pbad/gei z, pid, 99999\n    jnz z, pbad/'
 mut pseudo_id_yinele 's/jz o, p2\n    ret 90/jmp p2\n    ret 90/'
 mut pseudo_ad_komut 's/jz same, p3\n    ret 91/jmp p3\n    ret 91/'
