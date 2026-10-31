@@ -113,7 +113,38 @@
   X(BAND, "band", 3, "drr") \
   X(BOR, "bor", 3, "drr") \
   X(BXOR, "bxor", 3, "drr") \
-  X(NULLB, "nullb", 2, "dr")
+  X(NULLB, "nullb", 2, "dr") \
+  X(RND_F32, "rnd_f32", 2, "df") \
+  X(ADD_F32, "add_f32", 3, "dff") \
+  X(SUB_F32, "sub_f32", 3, "dff") \
+  X(MUL_F32, "mul_f32", 3, "dff") \
+  X(DIV_F32, "div_f32", 3, "dff") \
+  X(SQRT_F32, "sqrt_f32", 2, "df") \
+  X(I2F_F32, "i2f_f32", 2, "dr") \
+  X(U2F_F32, "u2f_f32", 2, "dr") \
+  X(RND_F16, "rnd_f16", 2, "df") \
+  X(ADD_F16, "add_f16", 3, "dff") \
+  X(SUB_F16, "sub_f16", 3, "dff") \
+  X(MUL_F16, "mul_f16", 3, "dff") \
+  X(DIV_F16, "div_f16", 3, "dff") \
+  X(SQRT_F16, "sqrt_f16", 2, "df") \
+  X(I2F_F16, "i2f_f16", 2, "dr") \
+  X(U2F_F16, "u2f_f16", 2, "dr") \
+  X(RND_BF16, "rnd_bf16", 2, "df") \
+  X(ADD_BF16, "add_bf16", 3, "dff") \
+  X(SUB_BF16, "sub_bf16", 3, "dff") \
+  X(MUL_BF16, "mul_bf16", 3, "dff") \
+  X(DIV_BF16, "div_bf16", 3, "dff") \
+  X(SQRT_BF16, "sqrt_bf16", 2, "df") \
+  X(I2F_BF16, "i2f_bf16", 2, "dr") \
+  X(U2F_BF16, "u2f_bf16", 2, "dr") \
+  X(F2I_I8, "f2i_i8", 2, "df") \
+  X(F2I_U8, "f2i_u8", 2, "df") \
+  X(F2I_I16, "f2i_i16", 2, "df") \
+  X(F2I_U16, "f2i_u16", 2, "df") \
+  X(F2I_I32, "f2i_i32", 2, "df") \
+  X(F2I_U32, "f2i_u32", 2, "df") \
+  X(FTOBOOL, "ftobool", 2, "df")
 
 // X(ENUM, "ad", arguman_sayisi)  host islevleri
 #define PM_HOSTS(X) \

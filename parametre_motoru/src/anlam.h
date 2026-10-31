@@ -16,6 +16,7 @@
 // yakit 0 iken kontrol noktasina gelinirse TRAP FUEL. Komut sayisina bagli degildir.
 #pragma once
 #include <cstdint>
+#include <cstring>
 #include "ops.h"
 
 enum AluK : uint8_t { ALUK_ADD, ALUK_SUB, ALUK_MUL, ALUK_AND, ALUK_OR, ALUK_XOR, ALUK_SHL, ALUK_SHR, ALUK_SAR };
@@ -26,7 +27,7 @@ enum FunK : uint8_t { FUNK_NEG, FUNK_SQRT };
 enum FcmpK : uint8_t { FCMPK_EQ, FCMPK_LT, FCMPK_LE };
 enum MicroKind : uint8_t { MK_END, MK_RD, MK_IM, MK_LK, MK_ALU, MK_CMP, MK_UN, MK_DIVS, MK_MODS, MK_DIVN, MK_MODN, MK_WR,
                            MK_LD, MK_ST, MK_BR, MK_BRZ, MK_BRNZ, MK_CALLM, MK_RETM, MK_HALTM, MK_HOSTM, MK_ALLOCM, MK_FALU, MK_FUN, MK_FCMP, MK_CVTIF, MK_CVTFI,
-                           MK_SX, MK_ZX, MK_DIVU, MK_MODU, MK_LIT, MK_U2F, MK_F2U };   // MK_SX.. : Plan Bolum 01 (tamsayi turleri); makine kodu uretecinde (native) DESTEKLENMEZ -> yorumlayici
+                           MK_SX, MK_ZX, MK_DIVU, MK_MODU, MK_LIT, MK_U2F, MK_F2U, MK_RNDF, MK_I2FN };   // MK_SX.. : Plan Bolum 01 (tamsayi turleri); makine kodu uretecinde (native) DESTEKLENMEZ -> yorumlayici
 struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define OPD_a 0
 #define OPD_b 1
@@ -148,13 +149,81 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define SEM_BXOR(M) M##_RD(1,b) M##_RD(2,c) M##_LIT(3,0) M##_CMP(NE,4,1,3) M##_CMP(NE,3,2,3) M##_ALU(XOR,4,4,3) M##_WR(a,4)
 #define SEM_NULLB(M) M##_RD(1,b) M##_LIT(2,0) M##_WR(a,2)
 
+// Plan Bolum 01: dar kayan nokta (f32/f16/bf16) komutlari; RNDF = bicim izgarasina yuvarla, I2FN = tamsayi -> bicim (fmt 0..2 isaretli, 4..6 isaretsiz)
+#define SEM_RND_F32(M) M##_RD(1,b) M##_RNDF(0,2,1) M##_WR(a,2)
+#define SEM_ADD_F32(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(ADD,3,1,2) M##_RNDF(0,4,3) M##_WR(a,4)
+#define SEM_SUB_F32(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(SUB,3,1,2) M##_RNDF(0,4,3) M##_WR(a,4)
+#define SEM_MUL_F32(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(MUL,3,1,2) M##_RNDF(0,4,3) M##_WR(a,4)
+#define SEM_DIV_F32(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(DIV,3,1,2) M##_RNDF(0,4,3) M##_WR(a,4)
+#define SEM_SQRT_F32(M) M##_RD(1,b) M##_FUN(SQRT,2,1) M##_RNDF(0,3,2) M##_WR(a,3)
+#define SEM_I2F_F32(M) M##_RD(1,b) M##_I2FN(0,2,1) M##_WR(a,2)
+#define SEM_U2F_F32(M) M##_RD(1,b) M##_I2FN(4,2,1) M##_WR(a,2)
+#define SEM_RND_F16(M) M##_RD(1,b) M##_RNDF(1,2,1) M##_WR(a,2)
+#define SEM_ADD_F16(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(ADD,3,1,2) M##_RNDF(1,4,3) M##_WR(a,4)
+#define SEM_SUB_F16(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(SUB,3,1,2) M##_RNDF(1,4,3) M##_WR(a,4)
+#define SEM_MUL_F16(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(MUL,3,1,2) M##_RNDF(1,4,3) M##_WR(a,4)
+#define SEM_DIV_F16(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(DIV,3,1,2) M##_RNDF(1,4,3) M##_WR(a,4)
+#define SEM_SQRT_F16(M) M##_RD(1,b) M##_FUN(SQRT,2,1) M##_RNDF(1,3,2) M##_WR(a,3)
+#define SEM_I2F_F16(M) M##_RD(1,b) M##_I2FN(1,2,1) M##_WR(a,2)
+#define SEM_U2F_F16(M) M##_RD(1,b) M##_I2FN(5,2,1) M##_WR(a,2)
+#define SEM_RND_BF16(M) M##_RD(1,b) M##_RNDF(2,2,1) M##_WR(a,2)
+#define SEM_ADD_BF16(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(ADD,3,1,2) M##_RNDF(2,4,3) M##_WR(a,4)
+#define SEM_SUB_BF16(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(SUB,3,1,2) M##_RNDF(2,4,3) M##_WR(a,4)
+#define SEM_MUL_BF16(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(MUL,3,1,2) M##_RNDF(2,4,3) M##_WR(a,4)
+#define SEM_DIV_BF16(M) M##_RD(1,b) M##_RD(2,c) M##_FALU(DIV,3,1,2) M##_RNDF(2,4,3) M##_WR(a,4)
+#define SEM_SQRT_BF16(M) M##_RD(1,b) M##_FUN(SQRT,2,1) M##_RNDF(2,3,2) M##_WR(a,3)
+#define SEM_I2F_BF16(M) M##_RD(1,b) M##_I2FN(2,2,1) M##_WR(a,2)
+#define SEM_U2F_BF16(M) M##_RD(1,b) M##_I2FN(6,2,1) M##_WR(a,2)
+#define SEM_F2I_I8(M) M##_RD(1,b) M##_CVTFI(2,1) M##_SX(8,3,2) M##_WR(a,3)
+#define SEM_F2I_U8(M) M##_RD(1,b) M##_CVTFI(2,1) M##_ZX(8,3,2) M##_WR(a,3)
+#define SEM_F2I_I16(M) M##_RD(1,b) M##_CVTFI(2,1) M##_SX(16,3,2) M##_WR(a,3)
+#define SEM_F2I_U16(M) M##_RD(1,b) M##_CVTFI(2,1) M##_ZX(16,3,2) M##_WR(a,3)
+#define SEM_F2I_I32(M) M##_RD(1,b) M##_CVTFI(2,1) M##_SX(32,3,2) M##_WR(a,3)
+#define SEM_F2I_U32(M) M##_RD(1,b) M##_CVTFI(2,1) M##_ZX(32,3,2) M##_WR(a,3)
+#define SEM_FTOBOOL(M) M##_RD(1,b) M##_LIT(2,0) M##_FCMP(EQ,3,1,2) M##_LIT(4,0) M##_CMP(EQ,3,3,4) M##_WR(a,3)
+
 #define PM_SEM_OPS(X) \
   X(MOV) X(LDI) X(LDK) X(ADD) X(SUB) X(MUL) X(AND) X(OR) X(XOR) X(SHL) X(SHR) X(SAR) X(EQ) X(NE) X(LT) X(LE) \
   X(NEG) X(NOT) X(DIV) X(MOD) X(ADDI) X(MULI) X(ANDI) X(SHLI) X(SHRI) X(SARI) X(DIVI) X(MODI) \
   X(EQI) X(NEI) X(LTI) X(LEI) X(GTI) X(GEI) X(JMP) X(JZ) X(JNZ) X(CALL) X(RET) X(HALT) X(LD) X(ST) X(ALLOC) X(HOST) \
   X(FADD) X(FSUB) X(FMUL) X(FDIV) X(FNEG) X(FSQRT) X(FEQ) X(FLT) X(FLE) X(I2F) X(F2I) \
   X(SEXT8) X(SEXT16) X(SEXT32) X(ZEXT8) X(ZEXT16) X(ZEXT32) X(ADD_I8) X(SUB_I8) X(MUL_I8) X(SHL_I8) X(DIV_I8) X(MOD_I8) X(NEG_I8) X(ADD_I16) X(SUB_I16) X(MUL_I16) X(SHL_I16) X(DIV_I16) X(MOD_I16) X(NEG_I16) X(ADD_I32) X(SUB_I32) X(MUL_I32) X(SHL_I32) X(DIV_I32) X(MOD_I32) X(NEG_I32) X(ADD_U8) X(SUB_U8) X(MUL_U8) X(SHL_U8) X(NEG_U8) X(NOT_U8) X(ADD_U16) X(SUB_U16) X(MUL_U16) X(SHL_U16) X(NEG_U16) X(NOT_U16) X(ADD_U32) X(SUB_U32) X(MUL_U32) X(SHL_U32) X(NEG_U32) X(NOT_U32) X(DIVU) X(MODU) X(LTU) X(LEU) X(U2F) X(F2U) \
-  X(TOBOOL) X(BNOT) X(BAND) X(BOR) X(BXOR) X(NULLB)
+  X(TOBOOL) X(BNOT) X(BAND) X(BOR) X(BXOR) X(NULLB) \
+  X(RND_F32) X(ADD_F32) X(SUB_F32) X(MUL_F32) X(DIV_F32) X(SQRT_F32) X(I2F_F32) X(U2F_F32) X(RND_F16) X(ADD_F16) X(SUB_F16) X(MUL_F16) X(DIV_F16) X(SQRT_F16) X(I2F_F16) X(U2F_F16) X(RND_BF16) X(ADD_BF16) X(SUB_BF16) X(MUL_BF16) X(DIV_BF16) X(SQRT_BF16) X(I2F_BF16) X(U2F_BF16) X(F2I_I8) X(F2I_U8) X(F2I_I16) X(F2I_U16) X(F2I_I32) X(F2I_U32) X(FTOBOOL)
+
+
+// Plan Bolum 01: dar kayan nokta bicimleri f32 / f16 / bf16 (deger double olarak tam saklanir; her sonuc bicimin izgarasina yuvarlanir). Bu C++ gercekleme TAMSAYI algoritmasidir
+// (mikro-program sihirli-toplama yontemi ya da derleyici donusumu degil): en yakina, esitlikte cifte; tasma -> sonsuz; NaN -> sessiz NaN (yuk kisaltilir).
+#include <cmath>
+struct PmFmt { int mb, emin, emax; };
+static const PmFmt PM_FMT[3] = {{23, -126, 127}, {10, -14, 15}, {7, -126, 127}};
+// m * 2^E degerini (m > 0) izgaraya yuvarla; sonuc buyuklugu (tasmada sonsuz)
+static inline double pm_round_core(unsigned __int128 m, int E, const PmFmt& f) {
+  int msb = 127; while (msb >= 0 && !((m >> msb) & 1)) msb--;
+  int q = msb + E - f.mb; if (q < f.emin - f.mb) q = f.emin - f.mb;
+  unsigned __int128 r;
+  if (E >= q) r = m << (E - q);
+  else { int sh = q - E; if (sh > 127) r = 0; else { r = m >> sh; unsigned __int128 rem = m & ((((unsigned __int128)1) << sh) - 1), half = ((unsigned __int128)1) << (sh - 1);
+      if (rem > half || (rem == half && (r & 1))) r++; } }
+  if (r == 0) return 0.0;
+  double v = std::ldexp((double)(uint64_t)r, q);          // r <= 2^(mb+1): double'da tam
+  if (v >= std::ldexp(1.0, f.emax + 1)) return HUGE_VAL;
+  return v;
+}
+static inline double pm_rndfmt(double x, int fmt) {
+  const PmFmt& f = PM_FMT[fmt]; uint64_t b; std::memcpy(&b, &x, 8);
+  uint64_t sign = b & (1ULL << 63), ab = b ^ sign; int e = int(ab >> 52); uint64_t mant = ab & ((1ULL << 52) - 1);
+  auto mk = [&](uint64_t v) { double d; std::memcpy(&d, &v, 8); return d; };
+  if (e == 2047) { if (mant == 0) return x; int s = 52 - f.mb; return mk(sign | (2047ULL << 52) | ((mant >> s) << s) | (1ULL << 51)); }
+  if (ab == 0) return x;
+  uint64_t m = e ? (mant | (1ULL << 52)) : mant; int E = (e ? e : 1) - 1023 - 52;
+  double r = pm_round_core(m, E, f); return mk(sign | [&] { uint64_t t; std::memcpy(&t, &r, 8); return t; }());
+}
+static inline double pm_i2fmt(uint64_t x, bool isSigned, int fmt) {
+  bool neg = isSigned && int64_t(x) < 0; uint64_t a = neg ? (0 - x) : x;
+  if (a == 0) return 0.0;
+  double r = pm_round_core(a, 0, PM_FMT[fmt]); return neg ? -r : r;
+}
 
 // ---------------- DATA genisletmesi: makine kodu uretecinin okudugu tablo ----------------
 #define DATA_RD(t,x) {MK_RD, t, OPD_##x, 0, 0},
@@ -191,6 +260,8 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define DATA_U2F(t,t1) {MK_U2F, t, t1, 0, 0},
 #define DATA_F2U(t,t1) {MK_F2U, t, t1, 0, 0},
 #define DATA_LIT(t,v) {MK_LIT, t, v, 0, 0},
+#define DATA_RNDF(fmt,t,t1) {MK_RNDF, fmt, t, t1, 0},
+#define DATA_I2FN(fmt,t,t1) {MK_I2FN, fmt, t, t1, 0},
 #ifdef PM_SEM_TABLES
 #define X(N) static const MicroOp sem_##N[] = { SEM_##N(DATA) {MK_END, 0, 0, 0, 0} };
 PM_SEM_OPS(X)
@@ -278,4 +349,6 @@ inline const MicroOp* sem_of(int op) {
 #define INTERP_U2F(t,t1) T##t = fromF(double(uint64_t(T##t1)));
 #define INTERP_F2U(t,t1) T##t = f2u(asF(T##t1));
 #define INTERP_LIT(t,v) T##t = uint64_t(int64_t(v));
+#define INTERP_RNDF(fmt,t,t1) T##t = fromF(pm_rndfmt(asF(T##t1), fmt));
+#define INTERP_I2FN(fmt,t,t1) T##t = fromF(pm_i2fmt(T##t1, (fmt) < 4, (fmt) & 3));
 #endif

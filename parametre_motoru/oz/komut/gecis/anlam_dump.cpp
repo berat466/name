@@ -57,6 +57,7 @@ int main() {
         case MK_DIVU: printf("divu t%d t%d t%d", m->a, m->b, m->c); break;
         case MK_MODU: printf("modu t%d t%d t%d", m->a, m->b, m->c); break;
         case MK_LIT: printf("lit t%d %d", m->a, m->b); break;
+        case MK_RNDF: case MK_I2FN: printf("%s%d t%d t%d", m->k == MK_RNDF ? "rndf_dedicated" : "i2fn_dedicated", m->a, m->b, m->c); break;
         case MK_U2F: case MK_F2U: printf("%s t%d t%d", m->k == MK_U2F ? "u2f_dedicated" : "f2u_dedicated", m->a, m->b); break;
         default: printf("BILINMEYEN%d", m->k);
       }
