@@ -28,9 +28,15 @@ one() {   # etiket tanim.pmy
     $PM liste $T/ref.pmb > $T/ref.l 2>/dev/null; (ulimit -v 900000; timeout 30 $PM run $R/oz/elf2/gen2.pmb < $T/ref.l > $T/ref.elf 2>/dev/null) && fail "$1: zincir reddetti (rc=$rz: $(head -c 80 $T/z.out)) ama gen2 (pm ile) uretebiliyor" || { pass; ret=$((ret+1)); }
     return; fi
   uret=$((uret+1))
-  (ulimit -v 900000; timeout 10 $PM run "$2" < /dev/null > $T/o1 2> $T/e1); r1=$?
-  if [ $r1 = 124 ] || [ $r1 = 134 ] || grep -q "TRAP: FUEL" $T/e1; then skip=$((skip+1)); return; fi
-  (ulimit -v 900000; timeout 10 $T/u.elf < /dev/null > $T/o2 2> $T/e2); r2=$?
+  TL=10; ML=900000
+  (ulimit -v $ML; timeout $TL $PM run "$2" < /dev/null > $T/o1 2> $T/e1); r1=$?
+  if [ $r1 = 124 ] || [ $r1 = 134 ] || grep -q "TRAP: FUEL" $T/e1; then
+    # ilk deneme sinira takildi: sinirlar buyutulup BIR KEZ daha denenir (atlanan = buyuk sinirda da bitmeyen/yakit bitiren programlar; ELF ile karsilastirma yine de yapilir)
+    TL=${BUYUK_SURE:-120}; ML=6000000
+    (ulimit -v $ML; timeout $TL $PM run "$2" < /dev/null > $T/o1 2> $T/e1); r1=$?
+    if [ $r1 = 124 ] || [ $r1 = 134 ] || grep -q "TRAP: FUEL" $T/e1; then skip=$((skip+1)); echo "atlandi (pm ${TL}s/${ML}KB sinirinda bitmedi/yakit tuzagi, rc=$r1): $1" >> ${ATLANAN:-/dev/null}; return; fi
+  fi
+  (ulimit -v $ML; timeout $TL $T/u.elf < /dev/null > $T/o2 2> $T/e2); r2=$?
   [ $r1 = $r2 ] && cmp -s $T/o1 $T/o2 && pass || fail "$1: davranis farkli (pm rc=$r1, elf rc=$r2)"
   gr "$1" "$2"
   # uretilen ELF'in PMB1'i C++ zincirinin PMB1'iyle ayni mi? (yap.elf|asm.elf == pm yapisal -o)

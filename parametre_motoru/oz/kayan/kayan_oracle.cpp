@@ -37,6 +37,7 @@ template <int F> static std::vector<W> values(int n) {
     return W{uint64_t(frac), (uint64_t(s) << 63) | (uint64_t(ef) << 48) | uint64_t(frac >> 64)};
   };
   const int KB = F == 0 ? 63 : 112; const U ONE = 1, FM = (ONE << KB) - 1;
+  if (F == 0) { v.push_back(W{0x0000000000000001ULL, 0x3FFF}); v.push_back(W{0x7FFFFFFFFFFFFFFFULL, 0x4005}); }   // unnormal (NaN sayilir): kucuk N'de de bulunsun diye basta
   for (int s = 0; s < 2; s++) {
     v.push_back(mk(s, 0, 0)); v.push_back(mk(s, 0x7FFF, 0)); v.push_back(mk(s, 1, 0)); v.push_back(mk(s, 0x7FFE, FM)); v.push_back(mk(s, 16383, 0)); v.push_back(mk(s, 16383, ONE << (KB - 1)));
     v.push_back(mk(s, 0, 1)); v.push_back(mk(s, 0, FM)); v.push_back(mk(s, 16383 + 63, 0)); v.push_back(mk(s, 16383 + 64, 12345)); v.push_back(mk(s, 16383 + 112, 7)); v.push_back(mk(s, 16383 - 1, FM));
@@ -47,7 +48,6 @@ template <int F> static std::vector<W> values(int n) {
     v.push_back(mk(s, 16383 + 63, (U(0x123456789ABCDEFULL) << 3) & FM)); v.push_back(mk(s, 16383 + 62, FM)); v.push_back(mk(s, 16383 + 127, 5)); v.push_back(mk(s, 16383 + 126, FM)); v.push_back(mk(s, 16383 + 128, 0));
   }
   v.push_back(defnanw<F>()); v.push_back(mk(0, 0x7FFF, ONE << (KB - 1))); v.push_back(mk(1, 0x7FFF, 12345));
-  if (F == 0) { v.push_back(W{0x0000000000000001ULL, 0x3FFF}); v.push_back(W{0x7FFFFFFFFFFFFFFFULL, 0x4005}); }   // unnormal (NaN sayilir)
   if (F == 1 && n > 48) { /* f128: ek ozel degerler yukarida */ }
   while (int(v.size()) < n) {
     if (v.size() > 30 && rnd() % 3 == 0) {   // komsu: oncekinin ussu/mantisi az degistirilmis (iptal, es-uzaklik, yapiskan bit sinamasi)
@@ -170,7 +170,7 @@ template <int F> static void veri(int n) {
 typedef float _Complex C64; typedef double _Complex C128; typedef long double _Complex C160;
 static double nanpayload(int kind) { uint64_t b = kind == 0 ? 0x7FF8024680000000ULL : 0x7FF8000000001234ULL; double d; std::memcpy(&d, &b, 8); return d; }   // c64: float NaN 0x7FC01234 (double kabinda)
 static std::vector<double> dpool(int kind) {   // kind 0: float degerleri (c64), 1: double
-  std::vector<double> v = {0.0, -0.0, 1.0, -1.5, 3.0e38, -2.5e-38, 0.1, 1234.5678, 7.0e-3, -9.75, 65504.0, 1.0e-20};   // NaN yuku yalniz donusum havuzunda (aritmetikte iki NaN islenenden hangisinin yayilacagi derleyiciye gore degisir: degisme/yeniden siralama)
+  std::vector<double> v = {0.0, -0.0, 1.0, -1.5, 3.0e38, -2.5e-38, 0.1, 1234.5678, 7.0e-3, -9.75, 65504.0, 1.0e-20, 1.0e-40, -1.4e-45, 2.3e-39};   // NaN yuku yalniz donusum havuzunda (aritmetikte iki NaN islenenden hangisinin yayilacagi derleyiciye gore degisir: degisme/yeniden siralama)
   if (kind == 1) { v.push_back(1.0e300); v.push_back(-4.9e-324); v.push_back(2.2250738585072014e-308); v.push_back(6.02e23); }
   v.push_back(INFINITY); v.push_back(-INFINITY);
   for (int i = 0; i < 6; i++) v.push_back((double)(rnd() % 2000001 - 1000000) / 1000.0 * std::pow(10.0, int(rnd() % 20) - 10));
@@ -210,7 +210,7 @@ template <int K> static void cveri(int n) {
   puts(s.c_str());
 }
 static std::vector<LD> lpool() {
-  std::vector<LD> v = {0.0L, -0.0L, 1.0L, -1.5L, 3.0e4000L, -2.5e-4000L, 0.1L, 1234.5678L, 7.0e-3L, -9.75L, 1.0e-20L, 4.0e-4940L, INFINITY, -INFINITY, 123456789.0L, 2.0L};
+  std::vector<LD> v = {0.0L, -0.0L, 1.0L, -1.5L, 3.0e4000L, -2.5e-4000L, 0.1L, 1234.5678L, 7.0e-3L, -9.75L, 1.0e-20L, 4.0e-4940L, INFINITY, -INFINITY, 123456789.0L, 2.0L, 1.0L + ldexpl(1.0L, -32), -(1.0L + ldexpl(1.0L, -31))};
   for (int i = 0; i < 6; i++) v.push_back((LD)(int64_t)(rnd() % 2000001 - 1000000) / 1000.0L * powl(10.0L, int(rnd() % 80) - 40));
   return v;
 }

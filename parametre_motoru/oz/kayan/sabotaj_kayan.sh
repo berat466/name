@@ -14,7 +14,7 @@ import sys, random
 op, seed, path = sys.argv[1], int(sys.argv[2]), sys.argv[3]
 rr = random.Random(seed); out = []
 SW = {'alu_add': 'alu_sub', 'alu_sub': 'alu_add', 'cmp_lt': 'cmp_le', 'cmp_le': 'cmp_lt', 'cmp_gt': 'cmp_ge', 'cmp_ge': 'cmp_gt', 'cmp_ltu': 'cmp_leu', 'cmp_leu': 'cmp_ltu', 'alu_and': 'alu_or', 'alu_or': 'alu_and',
-      'alu_xor': 'alu_or', 'alu_shl': 'alu_shr', 'alu_shr': 'alu_shl', 'cmp_eq': 'cmp_ne', 'cmp_ne': 'cmp_eq'}
+      'alu_xor': 'alu_or', 'alu_shl': 'alu_shr', 'alu_shr': 'alu_shl', 'cmp_eq': 'cmp_ne', 'cmp_ne': 'cmp_eq', 'fadd': 'fsub', 'fsub': 'fadd', 'fmul': 'fdiv', 'fdiv': 'fmul', 'feq': 'fle'}
 done = False
 for l in open(path).read().split('\n'):
     if l.startswith('sem ' + op + ' '):

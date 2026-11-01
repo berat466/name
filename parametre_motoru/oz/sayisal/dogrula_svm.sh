@@ -13,9 +13,9 @@ kos() {
   $PM liste $pmb > $T/l.txt 2>/dev/null || { fail "$et: liste"; return; }
   { cat $TABLO; [ -n "$fuel" ] && echo "@@YAKIT $fuel"; echo "@@PROGRAM"; cat $T/l.txt; echo "@@GIRDI"; cat $inp; } > $T/in.txt
   lim $PM run $pmb ${fuel:+--fuel $fuel} < $inp > $T/o1 2> $T/e1; r1=$?
-  if [ $r1 = 124 ]; then skip=$((skip+1)); return; fi
+  if [ $r1 = 124 ]; then skip=$((skip+1)); echo "atlandi (pm kendisi ${LIMS:-120}s icinde bitmedi): $et" >> ${ATLANAN:-/dev/null}; return; fi
   lim $PM run $SVM < $T/in.txt > $T/o2 2> $T/e2; r2=$?
-  if [ $r2 = 124 ]; then if [ -n "$HIZLI" ]; then fail "$et: svm zaman asimi"; else skip=$((skip+1)); fi; return; fi
+  if [ $r2 = 124 ]; then if [ -n "$HIZLI" ]; then fail "$et: svm zaman asimi"; else skip=$((skip+1)); echo "atlandi (svm ${LIMS:-120}s icinde bitmedi; pm rc=$r1): $et" >> ${ATLANAN:-/dev/null}; fi; return; fi
   local exp=$T/o1x; cp $T/o1 $exp
   if [ $r1 = 2 ]; then tn=$(grep -a '^TRAP:' $T/e1 | cut -d' ' -f2); printf '@@TRAP %s\n' "$tn" >> $exp; fi
   if [ $r1 = $r2 ] && cmp -s $exp $T/o2; then pass; else fail "$et: pm rc=$r1 svm rc=$r2 $(cmp $exp $T/o2 2>&1 | head -c 70) $(head -c 60 $T/e2)"; fi
