@@ -147,7 +147,8 @@
   X(FTOBOOL, "ftobool", 2, "df") \
   X(BSWAP16, "bswap16", 2, "dr") \
   X(BSWAP32, "bswap32", 2, "dr") \
-  X(BSWAP64, "bswap64", 2, "dr")
+  X(BSWAP64, "bswap64", 2, "dr") \
+  X(CAST, "cast", 2, "dr")
 
 // X(ENUM, "ad", arguman_sayisi)  host islevleri
 #define PM_HOSTS(X) \

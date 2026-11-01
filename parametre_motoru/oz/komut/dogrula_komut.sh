@@ -118,7 +118,7 @@ rmod 22 15 22; kc "f32: bit != 1+usbit+mantbit" $T/e1 148      # f32: ad 3 harf 
 rmod 0 6 9; kc "tur sinifi 9" $T/e1 146
 rmod 0 10 3; kc "tur hizasi 2'nin kuvveti degil" $T/e1 146
 rmod 0 11 0; kc "tur bellek sozcugu 0" $T/e1 146
-rmod 0 1 4; kc "TYPES kayit etiketi bilinmiyor" $T/e1 141
+rmod 0 1 9; kc "TYPES kayit etiketi bilinmiyor" $T/e1 141
 rmod 0 7 0; kc "tur bit 0" $T/e1 146
 rmod 0 7 257; kc "tur bit 257" $T/e1 146
 rmod 0 8 2; kc "tur isareti 2" $T/e1 146
@@ -151,6 +151,19 @@ cv "6 2 1 2 9999 0 0" 7; kc "donusum: komut kimligi aralik disi" $T/e1 150
 cv "7 3 1 2 120 120 5 0" 8; [ "$(mod dogrula < $T/e1)" = "1" ] && pass || fail "gecerli abi kaydi reddedildi ($(mod dogrula < $T/e1))"
 cv "7 3 1 2 120 120 99 0" 8; kc "abi: bilinmeyen tur" $T/e1 151
 ABIW=$(awk -v h=$HT 'NR==h+1 { p=2; for(i=0;i<29;i++) p+=$p+1; n=$p+1; s=""; for(i=0;i<n;i++) s=s " " $(p+i); print n "|" substr(s,2) }' $T/k.num); cv "${ABIW#*|}" "${ABIW%%|*}"; kc "abi: ayni C turu adi yinelenen" $T/e1 152
+# OPSIG (4) / HOSTSIG (5) kayitlari: rtag ETIKET SIRA SOZCUK DEGER = ETIKET etiketli SIRA. kaydin SOZCUK. sozcugunu (0 = uzunluk) DEGER yap
+rtag() { awk -v h=$HT -v tg=$1 -v k=$2 -v o=$3 -v v=$4 'NR==h+1 { p=2; c=0; while (p<=NF) { if ($(p+1)==tg) { if (c==k) { $(p+o)=v; break } c++ } p+=$p+1 } } {print}' $T/k.num > $T/e1; }
+# OPSIG kayit sozcukleri: 1 etiket 2 komut 3 a 4 b 5 c 6 kural 7 ne
+rtag 4 1 2 9999; kc "OPSIG: komut kimligi aralik disi" $T/e1 153
+rtag 4 1 3 -11; kc "OPSIG: yuva a alan kodu gecersiz (-11)" $T/e1 155
+rtag 4 1 4 250; kc "OPSIG: yuva b kesin tur tanimsiz (250)" $T/e1 155
+rtag 4 1 5 300; kc "OPSIG: yuva c kesin tur aralik disi (300)" $T/e1 155
+rtag 4 1 6 2; kc "OPSIG: kural 2" $T/e1 140
+rtag 4 1 2 0; kc "OPSIG: ayni komut iki imza" $T/e1 156
+rtag 5 1 2 99; kc "HOSTSIG: host kimligi aralik disi" $T/e1 154
+rtag 5 1 2 0; kc "HOSTSIG: ayni host iki imza" $T/e1 157
+rtag 5 1 3 250; kc "HOSTSIG: donus turu tanimsiz" $T/e1 155
+rtag 5 1 4 -12; kc "HOSTSIG: arg0 alan kodu gecersiz" $T/e1 155
 # TYPES gor/yaz gidis-donus (opak yuk korunur)
 mod gor < $TAB | mod yaz | cmp -s - <(mod kanon < $TAB) && pass || fail "TYPES gor/yaz gidis-donusu bozuldu"
 # profil: bir komutun operand turu sayisi 4 (profil en cok 3'e izin verir) -> "0 54"

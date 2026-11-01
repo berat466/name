@@ -122,13 +122,101 @@ for f_ in FL:
         o = -1 if (f_ is t_ or fl_exact(f_, t_)) else opid['rnd_' + t_[1]]
         body = [2, f_[0], t_[0], o, 1 if o == -1 else 2, 0]
         conv.append([len(body)] + body)
+
+# ---- OPSIG (etiket 4) ve HOSTSIG (etiket 5): komutlarin program duzeyi tur imzalari. Alan kodlari (yuva a,b,c = OP bicimindeki operand sirasi):
+#   0 yok/yazmac degil  >0 kesin tur kimligi  -1 INT1 (tamsayi benzeri 1 sozcuk)  -2 FLT1 (kayan 1 sozcuk)  -3 ANY1 (herhangi 1 sozcuk)  -4/-5/-6 a/b/c yuvasiyla AYNI tur
+#   -7 ADDR (i64|u64)  -8 FREE (hedef: bildirilmis tur serbest, 1 sozcuk)  -9 INTDST (hedef tamsayi benzeri; akis izlemede i64)  -10 INT64 (i64|u64)
+# kural: 1 = DONUSUM (b yuvasi turu -> a yuvasi turu icin TYPES'ta bu komutu (ya da CAST icin -1'i) kaydeden bir donusum olmali)
+NONE, INT1, FLT1, ANY1, SAME_A, SAME_B, SAME_C, ADDR, FREE, INTDST, INT64 = 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10
+tid = {t[1]: t[0] for t in T}
+opfmt = {}
+for l in gor:
+    t = l.split()
+    if len(t) >= 5 and t[0] == 'op': opfmt[t[2]] = t[4]
+def sig(name, fmt):
+    n = name.upper(); k = fmt.split(',') if fmt != '-' else []
+    I = lambda x: tid[x]
+    if n == 'MOV': return (SAME_B, ANY1, NONE, 0)
+    if n == 'CAST': return (FREE, ANY1, NONE, 1)
+    if n == 'LDI': return (INTDST, NONE, NONE, 0)
+    if n == 'LDK': return (FREE, NONE, NONE, 0)
+    if n in ('ADD', 'SUB', 'MUL', 'AND', 'OR', 'XOR'): return (SAME_B, INT64, SAME_B, 0)
+    if n in ('DIV', 'MOD'): return (I('i64'), I('i64'), I('i64'), 0)
+    if n == 'SHL': return (SAME_B, INT64, INT1, 0)
+    if n == 'SHR': return (I('u64'), I('u64'), INT1, 0)
+    if n == 'SAR': return (I('i64'), I('i64'), INT1, 0)
+    if n in ('EQ', 'NE'): return (I('bool'), INT64, SAME_B, 0)
+    if n in ('LT', 'LE'): return (I('bool'), I('i64'), I('i64'), 0)
+    if n in ('NEG', 'NOT'): return (SAME_B, INT64, NONE, 0)
+    if n in ('FADD', 'FSUB', 'FMUL', 'FDIV'): return (I('f64'), I('f64'), I('f64'), 0)
+    if n in ('FNEG', 'FSQRT'): return (I('f64'), I('f64'), NONE, 0)
+    if n in ('FEQ', 'FLT', 'FLE'): return (I('bool'), FLT1, SAME_B, 0)
+    if n == 'I2F': return (I('f64'), I('i64'), NONE, 0)
+    if n == 'F2I': return (I('i64'), I('f64'), NONE, 0)
+    if n == 'JMP': return (NONE, NONE, NONE, 0)
+    if n in ('JZ', 'JNZ'): return (INT1, NONE, NONE, 0)
+    if n in ('CALL', 'RET', 'HALT', 'HOST'): return None   # ozel kurallar (denetleyicide)
+    if n == 'LD': return (FREE, ADDR, NONE, 0)
+    if n == 'ST': return (ANY1, ADDR, NONE, 0)
+    if n == 'ALLOC': return (I('u64'), INT64, NONE, 0)
+    if n in ('ADDI', 'MULI', 'ANDI', 'SHLI', 'SHRI', 'SARI'): return (SAME_B, INT64, NONE, 0)
+    if n in ('DIVI', 'MODI'): return (I('i64'), I('i64'), NONE, 0)
+    if n in ('EQI', 'NEI', 'LTI', 'LEI', 'GTI', 'GEI'): return (I('bool'), INT64, NONE, 0)
+    if n in ('SEXT8', 'SEXT16', 'SEXT32'): return (I('i' + n[4:]), INT1, NONE, 1)
+    if n in ('ZEXT8', 'ZEXT16', 'ZEXT32'): return (I('u' + n[4:]), INT1, NONE, 1)
+    import re
+    m = re.match(r'^(ADD|SUB|MUL|SHL|NEG|NOT|DIV|MOD)_([IU])(8|16|32)$', n)
+    if m:
+        ty = I(m.group(2).lower() + m.group(3))
+        if m.group(1) in ('NEG', 'NOT'): return (ty, ty, NONE, 0)
+        if m.group(1) == 'SHL': return (ty, ty, INT1, 0)
+        return (ty, ty, ty, 0)
+    if n in ('DIVU', 'MODU'): return (I('u64'), I('u64'), I('u64'), 0)
+    if n in ('LTU', 'LEU'): return (I('bool'), I('u64'), I('u64'), 0)
+    if n == 'U2F': return (I('f64'), I('u64'), NONE, 0)
+    if n == 'F2U': return (I('u64'), I('f64'), NONE, 0)
+    if n == 'TOBOOL': return (I('bool'), INT1, NONE, 1)
+    if n == 'BNOT': return (I('bool'), INT1, NONE, 0)
+    if n in ('BAND', 'BOR', 'BXOR'): return (I('bool'), INT1, INT1, 0)
+    if n == 'NULLB': return (I('bool'), I('nullptr'), NONE, 0)
+    m = re.match(r'^(RND|ADD|SUB|MUL|DIV|SQRT|I2F|U2F)_(F32|F16|BF16)$', n)
+    if m:
+        ty = I(m.group(2).lower())
+        if m.group(1) == 'RND': return (ty, FLT1, NONE, 1)
+        if m.group(1) in ('I2F', 'U2F'): return (ty, INT1, NONE, 1)
+        if m.group(1) == 'SQRT': return (ty, ty, NONE, 0)
+        return (ty, ty, ty, 0)
+    m = re.match(r'^F2I_([IU])(8|16|32)$', n)
+    if m: return (I(m.group(1).lower() + m.group(2)), FLT1, NONE, 1)
+    if n == 'FTOBOOL': return (I('bool'), FLT1, NONE, 1)
+    m = re.match(r'^BSWAP(16|32|64)$', n)
+    if m: return (I('u' + m.group(1)), I('u' + m.group(1)), NONE, 0)
+    return 'EKSIK'
+sigrec = []; eksik = []
+for l in gor:
+    t = l.split()
+    if len(t) >= 5 and t[0] == 'op':
+        r = sig(t[2], t[4])
+        if r == 'EKSIK': eksik.append(t[2]); continue
+        if r is None: continue
+        body = [4, int(t[1]), r[0], r[1], r[2], r[3], 0]
+        sigrec.append([len(body)] + body)
+if eksik: sys.exit('turler_ekle: imzasi tanimsiz komutlar: ' + ' '.join(eksik))
+# HOSTSIG: [5, host_kimligi, donus_alani, arg0, arg1, arg2, ne]  (arg i = blok yazmaci b+i ; donus = b yazmaci)
+HS = {'putc': (NONE, INT1, NONE, NONE), 'puti': (NONE, INT1, NONE, NONE), 'putf': (NONE, FLT1, NONE, NONE), 'getc': (I_ := tid['i64'], NONE, NONE, NONE),
+      'present': (NONE, ADDR, INT1, INT1), 'poll': (tid['i64'], NONE, NONE, NONE), 'frame': (NONE, NONE, NONE, NONE)}
+for l in gor:
+    t = l.split()
+    if len(t) >= 3 and t[0] == 'host' and t[2] in HS:
+        r = HS[t[2]]; body = [5, int(t[1]), r[0], r[1], r[2], r[3], 0]
+        sigrec.append([len(body)] + body)
 # nullptr_t: bool'a (her zaman false) ve isaretsiz 64 bit gostericiye (ozdes)
 nl = byname['nullptr']
 for t in (byname['bool'], byname['u64']):
     body = [2, nl[0], t[0], opid['nullb'] if t[2] == 2 else -1, 1 if t[2] != 2 else 2, 0]
     conv.append([len(body)] + body)
-words = [len(rec) + len(conv)]
-for r in rec + conv: words += r
+words = [len(rec) + len(conv) + len(sigrec)]
+for r in rec + conv + sigrec: words += r
 line = 'section 10 0 1 ' + ' '.join(str(w) for w in words)
 out = [l for l in gor if not l.startswith('section 10 ')] + [line]
 print('\n'.join(out))

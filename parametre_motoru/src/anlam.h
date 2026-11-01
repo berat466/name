@@ -142,6 +142,7 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define SEM_U2F(M) M##_RD(1,b) M##_U2F(2,1) M##_WR(a,2)
 #define SEM_F2U(M) M##_RD(1,b) M##_F2U(2,1) M##_WR(a,2)
 // Plan Bolum 01: bool / nullptr_t (mantiksal komutlar; yeni mikro-islem yok, yalniz LIT sabiti)
+#define SEM_CAST(M) M##_RD(1,b) M##_WR(a,1)
 #define SEM_TOBOOL(M) M##_RD(1,b) M##_LIT(2,0) M##_CMP(NE,3,1,2) M##_WR(a,3)
 #define SEM_BNOT(M) M##_RD(1,b) M##_LIT(2,0) M##_CMP(EQ,3,1,2) M##_WR(a,3)
 #define SEM_BAND(M) M##_RD(1,b) M##_RD(2,c) M##_LIT(3,0) M##_CMP(NE,4,1,3) M##_CMP(NE,3,2,3) M##_ALU(AND,4,4,3) M##_WR(a,4)
@@ -195,7 +196,7 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
   X(SEXT8) X(SEXT16) X(SEXT32) X(ZEXT8) X(ZEXT16) X(ZEXT32) X(ADD_I8) X(SUB_I8) X(MUL_I8) X(SHL_I8) X(DIV_I8) X(MOD_I8) X(NEG_I8) X(ADD_I16) X(SUB_I16) X(MUL_I16) X(SHL_I16) X(DIV_I16) X(MOD_I16) X(NEG_I16) X(ADD_I32) X(SUB_I32) X(MUL_I32) X(SHL_I32) X(DIV_I32) X(MOD_I32) X(NEG_I32) X(ADD_U8) X(SUB_U8) X(MUL_U8) X(SHL_U8) X(NEG_U8) X(NOT_U8) X(ADD_U16) X(SUB_U16) X(MUL_U16) X(SHL_U16) X(NEG_U16) X(NOT_U16) X(ADD_U32) X(SUB_U32) X(MUL_U32) X(SHL_U32) X(NEG_U32) X(NOT_U32) X(DIVU) X(MODU) X(LTU) X(LEU) X(U2F) X(F2U) \
   X(TOBOOL) X(BNOT) X(BAND) X(BOR) X(BXOR) X(NULLB) \
   X(RND_F32) X(ADD_F32) X(SUB_F32) X(MUL_F32) X(DIV_F32) X(SQRT_F32) X(I2F_F32) X(U2F_F32) X(RND_F16) X(ADD_F16) X(SUB_F16) X(MUL_F16) X(DIV_F16) X(SQRT_F16) X(I2F_F16) X(U2F_F16) X(RND_BF16) X(ADD_BF16) X(SUB_BF16) X(MUL_BF16) X(DIV_BF16) X(SQRT_BF16) X(I2F_BF16) X(U2F_BF16) X(F2I_I8) X(F2I_U8) X(F2I_I16) X(F2I_U16) X(F2I_I32) X(F2I_U32) X(FTOBOOL) \
-  X(BSWAP16) X(BSWAP32) X(BSWAP64)
+  X(BSWAP16) X(BSWAP32) X(BSWAP64) X(CAST)
 
 
 // Plan Bolum 01: dar kayan nokta bicimleri f32 / f16 / bf16 (deger double olarak tam saklanir; her sonuc bicimin izgarasina yuvarlanir). Bu C++ gercekleme TAMSAYI algoritmasidir

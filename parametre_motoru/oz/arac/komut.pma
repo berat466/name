@@ -31,6 +31,8 @@ space RWA 8192
 space RWB 256
 space G 64
 space TYA 512
+space OSG 8192
+space HSG 512
 
 func fail(code) {
     host putc, 72
@@ -141,11 +143,14 @@ data MYAZ = "yaz\0"
 data MDOG = "dogrula\0"
 data MKAN = "kanon\0"
 data MTUR = "tur\0"
+data MIMZA = "imza\0"
 data W_TUR = "tur\0"
 data W_DONUSUM = "donusum\0"
 data W_ABI = "abi\0"
+data W_OPSIG = "opsig\0"
+data W_HOSTSIG = "hostsig\0"
 
-; ilk satir "@@mod": mod kimligi 1 tab 2 opsh 3 gor 4 yaz 5 dogrula 6 kanon 7 tur; G[8] = govdenin baslangici
+; ilk satir "@@mod": mod kimligi 1 tab 2 opsh 3 gor 4 yaz 5 dogrula 6 kanon 7 tur 8 imza; G[8] = govdenin baslangici
 func getmode(n) {
     lti z, n, 3
     jnz z, bad
@@ -187,8 +192,11 @@ m7: call r, streq, 2, l, MKAN
     jz r, m8
     ret 6
 m8: call r, streq, 2, l, MTUR
-    jz r, bad
+    jz r, m9
     ret 7
+m9: call r, streq, 2, l, MIMZA
+    jz r, bad
+    ret 8
 bad: call x, fail, 2
     ret 0
 }
@@ -331,7 +339,21 @@ c21: gei z, i, 512
     st zr, a, 0
     addi i, i, 1
     jmp c21
-c22: ret 0
+c22: mov i, 0
+c23: gei z, i, 8192
+    jnz z, c24
+    add a, i, OSG
+    st zr, a, 0
+    addi i, i, 1
+    jmp c23
+c24: mov i, 0
+c25: gei z, i, 512
+    jnz z, c26
+    add a, i, HSG
+    st zr, a, 0
+    addi i, i, 1
+    jmp c25
+c26: ret 0
 }
 
 ; bolum yukunun [s, e) sinirlari icinde n kayit: her kaydin uzunlugu sinira sigar mi? sonuc: 0 ya da hata
@@ -771,6 +793,10 @@ y1: ge z, j, n
     jnz z, y19
     eqi z, tag, 3
     jnz z, y19
+    eqi z, tag, 4
+    jnz z, y19
+    eqi z, tag, 5
+    jnz z, y19
     ret 141
 y2: ld id, a, 2
     ld nl, a, 3
@@ -883,7 +909,11 @@ y19: addi j, j, 1
 y20: ; gecis 2: DONUSUM ve ABI kayitlari
     addi r, s, 1
     mov j, 0
+    mov nopc, 1000000
+    ld so_, SA, 2
+    jz so_, ynoop
     call nopc, nops
+ynoop:
 y21: ge z, j, n
     jnz z, yok
     add a, r, T
@@ -923,7 +953,7 @@ y23: eqi z, vop2, -1
     jnz z, y29
 y24: ret 150
 y25: eqi z, tag, 3
-    jz z, y29
+    jz z, y30
     ld nl, a, 3
     addi np, r, 4
     lti z, nl, 1
@@ -966,9 +996,112 @@ y28: add pm, pm, prl
 y29: addi j, j, 1
     mov r, end
     jmp y21
+y30: ; OPSIG (4): 4 komut a b c kural ne   HOSTSIG (5): 5 host donus a0 a1 a2 ne
+    eqi z, tag, 4
+    jz z, y3x
+    ld ox, a, 2
+    ld sa, a, 3
+    ld sb, a, 4
+    ld sc, a, 5
+    ld rk, a, 6
+    ld ne2, a, 7
+    addi t, rl, -6
+    lti z, t, 1
+    jnz z, ybad
+    lti z, ne2, 0
+    jnz z, ybad
+    shli t2, ne2, 1
+    addi t2, t2, 8
+    add t2, t2, r
+    gt z, t2, end
+    jnz z, ybad
+    lti z, ox, 0
+    jnz z, y31
+    lt z, ox, nopc
+    jnz z, y32
+y31: ret 153
+y32: gti z, rk, 1
+    jnz z, ybad
+    lti z, rk, 0
+    jnz z, ybad
+    add b, ox, OSG
+    ld o, b, 0
+    jz o, y33
+    ret 156
+y33: addi t5, r, 1
+    st t5, b, 0
+    call ok2, spec_ok, sa
+    jz ok2, yspec
+    call ok2, spec_ok, sb
+    jz ok2, yspec
+    call ok2, spec_ok, sc
+    jz ok2, yspec
+    jmp y29
+y3x: eqi z, tag, 5
+    jz z, y29
+y40: ld hx, a, 2
+    ld sr, a, 3
+    ld s0, a, 4
+    ld s1, a, 5
+    ld s2, a, 6
+    ld ne2, a, 7
+    addi t, rl, -6
+    lti z, t, 1
+    jnz z, ybad
+    lti z, ne2, 0
+    jnz z, ybad
+    shli t2, ne2, 1
+    addi t2, t2, 8
+    add t2, t2, r
+    gt z, t2, end
+    jnz z, ybad
+    lti z, hx, 0
+    jnz z, y41
+    mov nh2, 1000000
+    ld sh_, SA, 3
+    jz sh_, ynoh
+    call nh2, nhosts
+ynoh:
+    lt z, hx, nh2
+    jnz z, y42
+y41: ret 154
+y42: add b, hx, HSG
+    ld o, b, 0
+    jz o, y43
+    ret 157
+y43: addi t5, r, 1
+    st t5, b, 0
+    call ok2, spec_ok, sr
+    jz ok2, yspec
+    call ok2, spec_ok, s0
+    jz ok2, yspec
+    call ok2, spec_ok, s1
+    jz ok2, yspec
+    call ok2, spec_ok, s2
+    jz ok2, yspec
+    jmp y29
+yspec: ret 155
 ybad: ret 140
 yfld: ret 146
 yok: ret 0
+}
+
+; tur alani kodu gecerli mi: 0 yok, -1..-10 sinif/aynilik kodlari, 1..255 kesin tur (TYA'da tanimli olmali)
+func spec_ok(v) {
+    jnz v, s1
+    ret 1
+s1: lti z, v, 0
+    jz z, s2
+    lti z, v, -10
+    jnz z, s9
+    ret 1
+s2: gti z, v, 255
+    jnz z, s9
+    add b, v, TYA
+    ld o, b, 0
+    jz o, s9
+    ret 1
+s9: ret 0
 }
 
 ; PRIM bolumu: mikro-islem sozlugu: kayit = id, adlen, ad.., nalan, alan_turu*nalan (1 temp-girdi 2 temp-cikti 3 operand 4 sabit sayi), ne, ciftler
@@ -4678,7 +4811,37 @@ t5: gei z, k, 6
     jmp t5
 t5b: host putc, 10
     jmp t8
-t6: call x, pdat, W_ABI
+t6: eqi z, tag, 3
+    jnz z, t6a
+    eqi z, tag, 4
+    jz z, t6c
+    call x, pdat, W_OPSIG
+    mov k, 2
+t6b: gei z, k, 7
+    jnz z, t6e
+    host putc, 32
+    add b, r, k
+    add b, b, T
+    ld v, b, 0
+    host puti, v
+    addi k, k, 1
+    jmp t6b
+t6c: eqi z, tag, 5
+    jz z, t8
+    call x, pdat, W_HOSTSIG
+    mov k, 2
+t6d: gei z, k, 7
+    jnz z, t6e
+    host putc, 32
+    add b, r, k
+    add b, b, T
+    ld v, b, 0
+    host puti, v
+    addi k, k, 1
+    jmp t6d
+t6e: host putc, 10
+    jmp t8
+t6a: call x, pdat, W_ABI
     host putc, 32
     ld ab, a, 2
     host puti, ab
@@ -4696,6 +4859,197 @@ t8: addi j, j, 1
     mov r, end
     jmp t1
 t9: ret 0
+}
+
+
+; ======================= program duzeyi tur denetleyicisinin sozlugu (imza) =======================
+;   nops ; her komut: kimlik nk c0 c1 c2 (operand tur karakterleri) akis hedef_yuvasi a b c kural   (imza yoksa a=b=c=-99)
+;   ntur ; her tur: kimlik sinif nsoz bit isaret ;  ndon ; her donusum: kaynak hedef komut ;  nhost ; her host: kimlik donus a0 a1 a2
+func emit_imza() {
+    call n, nops
+    host puti, n
+    host putc, 10
+    mov o, 0
+im1: ge z, o, n
+    jnz z, im9
+    call r, oprec, o
+    call x, opfields, r
+    ld nk, G, 24
+    ld kp, G, 25
+    host puti, o
+    host putc, 32
+    host puti, nk
+    mov k, 0
+im2: gei z, k, 3
+    jnz z, im3
+    host putc, 32
+    mov ch, 0
+    ge z, k, nk
+    jnz z, im2a
+    add a, kp, k
+    add a, a, T
+    ld kid, a, 0
+    call ch, kchar, kid
+im2a: host puti, ch
+    addi k, k, 1
+    jmp im2
+im3: call x, semflow, o
+    host putc, 32
+    ld v, G, 50
+    host puti, v
+    host putc, 32
+    ld v, G, 51
+    host puti, v
+    ; imza: TYPES etiket 4
+    mov sa, -99
+    mov sb, -99
+    mov sc, -99
+    mov rk, 0
+    ld s10, SA, 10
+    jz s10, im4z
+    addi s, s10, -1
+    add a, s, T
+    ld cnt, a, 0
+    addi q, s, 1
+    mov j, 0
+im4: ge z, j, cnt
+    jnz z, im4z
+    add a, q, T
+    ld rl, a, 0
+    ld tag, a, 1
+    eqi z, tag, 4
+    jz z, im4n
+    ld ox, a, 2
+    ne z, ox, o
+    jnz z, im4n
+    ld sa, a, 3
+    ld sb, a, 4
+    ld sc, a, 5
+    ld rk, a, 6
+im4n: add q, q, rl
+    addi q, q, 1
+    addi j, j, 1
+    jmp im4
+im4z: host putc, 32
+    host puti, sa
+    host putc, 32
+    host puti, sb
+    host putc, 32
+    host puti, sc
+    host putc, 32
+    host puti, rk
+    host putc, 10
+    addi o, o, 1
+    jmp im1
+im9: ; turler
+    ld s10, SA, 10
+    jnz s10, im10
+    host puti, 0
+    host putc, 10
+    host puti, 0
+    host putc, 10
+    host puti, 0
+    host putc, 10
+    ret 0
+im10: addi s, s10, -1
+    add a, s, T
+    ld cnt, a, 0
+    mov pass, 1
+im11: ; sayac: pass 1 tur, 2 donusum, 3 host -> once adet sonra kayitlar
+    mov tg, pass
+    eqi z, pass, 1
+    jz z, im11a
+    mov tg, 1
+im11a: eqi z, pass, 2
+    jz z, im11b
+    mov tg, 2
+im11b: eqi z, pass, 3
+    jz z, im11c
+    mov tg, 5
+im11c: mov cn, 0
+    addi q, s, 1
+    mov j, 0
+im12: ge z, j, cnt
+    jnz z, im13
+    add a, q, T
+    ld rl, a, 0
+    ld tag, a, 1
+    ne z, tag, tg
+    jnz z, im12n
+    addi cn, cn, 1
+im12n: add q, q, rl
+    addi q, q, 1
+    addi j, j, 1
+    jmp im12
+im13: host puti, cn
+    host putc, 10
+    addi q, s, 1
+    mov j, 0
+im14: ge z, j, cnt
+    jnz z, im19
+    add a, q, T
+    ld rl, a, 0
+    ld tag, a, 1
+    ne z, tag, tg
+    jnz z, im14n
+    eqi z, pass, 1
+    jz z, im15
+    ; tur: kimlik sinif nsoz bit isaret
+    ld id, a, 2
+    ld nl, a, 3
+    addi np, q, 4
+    add p2, np, nl
+    add b, p2, T
+    ld cls, b, 0
+    ld bt, b, 1
+    ld sg, b, 2
+    ld nw, b, 5
+    host puti, id
+    host putc, 32
+    host puti, cls
+    host putc, 32
+    host puti, nw
+    host putc, 32
+    host puti, bt
+    host putc, 32
+    host puti, sg
+    host putc, 10
+    jmp im14n
+im15: eqi z, pass, 2
+    jz z, im16
+    ld v, a, 2
+    host puti, v
+    host putc, 32
+    ld v, a, 3
+    host puti, v
+    host putc, 32
+    ld v, a, 4
+    host puti, v
+    host putc, 10
+    jmp im14n
+im16: ld v, a, 2
+    host puti, v
+    host putc, 32
+    ld v, a, 3
+    host puti, v
+    host putc, 32
+    ld v, a, 4
+    host puti, v
+    host putc, 32
+    ld v, a, 5
+    host puti, v
+    host putc, 32
+    ld v, a, 6
+    host puti, v
+    host putc, 10
+im14n: add q, q, rl
+    addi q, q, 1
+    addi j, j, 1
+    jmp im14
+im19: addi pass, pass, 1
+    gti z, pass, 3
+    jz z, im11
+    ret 0
 }
 
 ; ======================= ana =======================
@@ -4737,7 +5091,11 @@ m4: eqi z, md, 3
     jz z, m5
     call x, emit_gor
     ret 0
-m5: eqi z, md, 7
+m5: eqi z, md, 8
+    jz z, m5b
+    call x, emit_imza
+    ret 0
+m5b: eqi z, md, 7
     jz z, m5a
     call x, emit_tur
     ret 0
