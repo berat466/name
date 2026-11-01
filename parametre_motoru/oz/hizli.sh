@@ -187,21 +187,38 @@ if [ $LISTE = 1 ]; then
   exit 0
 fi
 cekirdek_hazir
+export HIZLI_ONBELLEK=${HIZLI_ONBELLEK:-/tmp/hizli_onbellek}; export PATH="$R/oz/onbellek_bin:$PATH"   # seffaf g++ derleme onbellegi (icerik anahtarli)
 LOG=${LOG:-$(mktemp -d)}; mkdir -p "$LOG"
 T0=$(date +%s)
 # GLOBAL YUVA HAVUZU (oz/slot.sh): dogrulama paketleri ve sabotaj mutantlari ayni anda en cok HIZLI_SLOTSAYI islem calistirir (asiri yukleme yok, bos cekirdek yok, paketler arasi bariyer yok).
 export HIZLI_SLOT=$(mktemp -d); export HIZLI_SLOTSAYI=${SLOTLAR:-$(nproc 2>/dev/null || echo 4)}
 . "$R/oz/slot.sh"
 mkfifo "$HIZLI_SLOT/jeton"; exec 9<> "$HIZLI_SLOT/jeton"; for _i in $(seq 1 $HIZLI_SLOTSAYI); do printf x >&9; done
-basla() {   # ad dizin komut [oncelikli]: paket yuvasini alir (agirlik sirasiyla), bittiginde birakir; duvar ve CPU suresi .res/.cpu dosyalarina yazilir
-  ( t0=$(date +%s); slot_al; : > "$LOG/$1.basladi"
+# SONUC ONBELLEGI (guvenli, dogrulanabilir): anahtar = tum depo agacinin icerik ozeti (src, oz, tests, derlenmis pm/pmb dahil; .git haric) + paket adi + komut satiri.
+# Agacta TEK BAYT degisirse anahtar degisir ve paket yeniden kosulur; yalniz GECEN paketler saklanir (basarisizlar asla). HIZLI_YENIDEN=1 onbellegi yok sayar. Onbellekten gelen paket ozette "(onbellek)" ile isaretlenir.
+SON=${HIZLI_SONUC:-/tmp/hizli_sonuc}; mkdir -p "$SON"
+AGAC=$(cd "$R" && find . -type f -not -path './.git/*' -not -name '*.pyc' -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -c1-40)
+onb_anahtar() { printf '%s|%s|%s' "$AGAC" "$1" "$2" | sha256sum | cut -c1-40; }
+onb_dene() {   # ad komut: onbellekte gecen sonuc varsa log/res yazar ve 0 doner
+  local k; k=$(onb_anahtar "$1" "$2"); [ -z "$HIZLI_YENIDEN" ] && [ -f "$SON/$k.ok" ] || return 1
+  cp "$SON/$k.log" "$LOG/$1.log"; cp "$SON/$k.cpu" "$LOG/$1.cpu" 2>/dev/null; echo "0 $(cat $SON/$k.ok)" > "$LOG/$1.res"; echo onbellek > "$LOG/$1.onb"; return 0
+}
+onb_sakla() {  # ad komut sure rc
+  [ "$4" = 0 ] || return 0; local k; k=$(onb_anahtar "$1" "$2"); cp "$LOG/$1.log" "$SON/$k.log"; cp "$LOG/$1.cpu" "$SON/$k.cpu" 2>/dev/null; echo "$3" > "$SON/$k.ok"
+}
+basla() {   # ad dizin komut: paket yuvasini alir (agirlik sirasiyla), bittiginde birakir; duvar ve CPU suresi .res/.cpu dosyalarina yazilir
+  ( t0=$(date +%s)
+    if onb_dene "$1" "$3"; then : > "$LOG/$1.basladi"; exit 0; fi
+    slot_al; : > "$LOG/$1.basladi"
     cd "$2" && bash -c "ulimit -c 0; $3; r=\$?; times > $LOG/$1.cpu; exit \$r" > "$LOG/$1.log" 2>&1; rc=$?
-    slot_birak; echo "$rc $(( $(date +%s) - t0 ))" > "$LOG/$1.res" ) &
+    slot_birak; sure=$(( $(date +%s) - t0 )); echo "$rc $sure" > "$LOG/$1.res"; onb_sakla "$1" "$3" "$sure" "$rc" ) &
   while [ ! -e "$LOG/$1.basladi" ]; do sleep 0.1; done      # sonraki paket, bu paket yuvasini aldiktan sonra siraya girer (agirlik sirasi korunur)
 }
 basla_sabotaj() {   # sabotaj paketi: kendisi yuva tutmaz; mutantlari yuva havuzundan alir
-  ( t0=$(date +%s); cd "$2" && bash -c "ulimit -c 0; $3; r=\$?; times > $LOG/$1.cpu; exit \$r" > "$LOG/$1.log" 2>&1; rc=$?
-    echo "$rc $(( $(date +%s) - t0 ))" > "$LOG/$1.res" ) &
+  ( t0=$(date +%s)
+    if onb_dene "$1" "$3"; then exit 0; fi
+    cd "$2" && bash -c "ulimit -c 0; $3; r=\$?; times > $LOG/$1.cpu; exit \$r" > "$LOG/$1.log" 2>&1; rc=$?
+    sure=$(( $(date +%s) - t0 )); echo "$rc $sure" > "$LOG/$1.res"; onb_sakla "$1" "$3" "$sure" "$rc" ) &
 }
 while IFS='|' read -r ad dz bt hz tm w ac; do
   [ -z "$ad" ] && continue
@@ -223,7 +240,8 @@ for r in $LOG/*.res; do
   ad=$(basename $r .res); read -r rc sn < $r; N=$((N+1))
   son=$(tail -n 1 "$LOG/$ad.log" | cut -c1-120)
   cpu=$(awk 'NR==2{split($1,a,"m"); split($2,b,"m"); u=a[1]*60+a[2]; v=b[1]*60+b[2]; printf "%d", u+v}' "$LOG/$ad.cpu" 2>/dev/null); CPUT=$((CPUT + ${cpu:-0}))
-  if [ "$rc" = 0 ]; then printf '  GECTI  %-16s %5ss (cpu %5ss)  %s\n' "$ad" "$sn" "${cpu:-?}" "$son"
+  onb=""; [ -e "$LOG/$ad.onb" ] && onb=" (onbellek; ilk kosu ${sn}s)"
+  if [ "$rc" = 0 ]; then printf '  GECTI  %-16s %5ss (cpu %5ss)%s  %s\n' "$ad" "$sn" "${cpu:-?}" "$onb" "$son"
   else FAIL=$((FAIL+1)); printf '  KALDI  %-16s %5ss (cpu %5ss)  rc=%s  %s\n' "$ad" "$sn" "${cpu:-?}" "$rc" "$son"; grep -a '^HATA' "$LOG/$ad.log" | head -5 | sed 's/^/           /'; fi
 done
 echo "toplam $N paket, $FAIL basarisiz, duvar $(( $(date +%s) - T0 )) sn, toplam CPU ${CPUT} sn (yuva $HIZLI_SLOTSAYI); tam ciktilar: $LOG"; rm -rf "$HIZLI_SLOT"

@@ -6,7 +6,18 @@ PM=${1:-../../pm}; JOBS=${2:-4}; PERK=${3:-4}; D=$(cd "$(dirname "$0")" && pwd);
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
 KM() { { echo "@@$1"; cat; } | $PM run $R/oz/arac/komut.pmb; }
 KM gor < $R/oz/komut/komutlar.pmk > $T/gor.txt
-sonuc() { if $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/kayan && LIMS=200 timeout 600 ./dogrula_kayan.sh $PM 70 4"; then echo "KACTI: $2"; else echo "yakalandi: $2"; fi; }
+ilgili() {   # komut adi -> ilk asamada kosulacak test gruplari (dogrula_kayan.sh ONLY duzenli ifadesi); kacan mutant yine TAM kosuyla sinanir
+  case "$1" in
+    ADD_C*|SUB_C*|MUL_C*|DIV_C*|EQ_C*|NE_C*|TOBOOL_C*) echo "cbin|cun";;
+    CV_C*|CV_F80_C*|CV_F64_C*) echo "karmasik don";;
+    SQRT_*) echo "sqrt|un";;
+    ADD_F*|SUB_F*|MUL_F*|DIV_F*|EQ_F*|NE_F*|LT_F*|LE_F*) echo "bin";;
+    CV_F64_F*) echo " cd";;
+    CV_I64_F*|CV_U64_F*|CV_I128_F*|CV_U128_F*) echo " ci|dar kayan";;
+    *) echo " un|bin";;
+  esac
+}
+sonuc() { O=$(ilgili "$3"); if $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/kayan && ONLY='$O' LIMS=200 timeout 600 ./dogrula_kayan.sh $PM 40 3" && $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/kayan && LIMS=200 timeout 600 ./dogrula_kayan.sh $PM 70 4"; then echo "KACTI: $2"; else echo "yakalandi: $2"; fi; }
 mut() {   # etiket komut satir_no_degisimi_python
   ( w=$T/w_$1; taban $w
     python3 - "$2" "$3" "$T/gor.txt" <<'PY' | KM yaz > $w/oz/komut/komutlar.pmk || { echo "SABOTAJ HATASI: $1"; exit 3; }
@@ -35,7 +46,7 @@ if not done: sys.exit(5)
 print('\n'.join(out))
 PY
     (cd $w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: gen2 uretilemedi"; exit 4; }
-    sonuc $w $1; rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
+    sonuc $w $1 $2; rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
 bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; ( slot_al; "$@"; slot_birak ) & }
 for op in ADD_F80 SUB_F128 MUL_F80 MUL_F128 DIV_F80 DIV_F128 SQRT_F80 SQRT_F128 LT_F80 LE_F128 EQ_F80 NE_F128 TOBOOL_F80 CV_F64_F80 CV_F128_F64 CV_F80_F128 CV_F128_F80 CV_F80_F32 CV_F128_BF16 CV_I64_F80 CV_U64_F128 CV_I128_F80 CV_U128_F128 CV_F80_I64 CV_F128_U64 CV_F80_I128 CV_F128_U128 CV_F80_I16 \

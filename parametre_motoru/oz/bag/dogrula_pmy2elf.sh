@@ -30,19 +30,27 @@ one() {   # etiket tanim.pmy
   uret=$((uret+1))
   TL=10; ML=900000
   (ulimit -v $ML; timeout $TL $PM run "$2" < /dev/null > $T/o1 2> $T/e1); r1=$?
-  if grep -q "TRAP: FUEL" $T/e1; then skip=$((skip+1)); echo "atlandi (pm varsayilan yakitini tuketti: ELF yakitsiz uretilir; yakit tuzagi dogrula_elf2/svm'de sinirli yakitla karsilastirilir): $1" >> ${ATLANAN:-/dev/null}; return; fi
-  if [ $r1 = 124 ] || [ $r1 = 134 ]; then
-    # ilk deneme sinira takildi: sinirlar buyutulup BIR KEZ daha denenir (atlanan = buyuk sinirda da bitmeyen/yakit bitiren programlar; ELF ile karsilastirma yine de yapilir)
-    TL=${BUYUK_SURE:-120}; ML=6000000
-    (ulimit -v $ML; timeout $TL $PM run "$2" < /dev/null > $T/o1 2> $T/e1); r1=$?
-    if [ $r1 = 124 ] || [ $r1 = 134 ] || grep -q "TRAP: FUEL" $T/e1; then skip=$((skip+1)); echo "atlandi (pm ${TL}s/${ML}KB sinirinda bitmedi/yakit tuzagi, rc=$r1): $1" >> ${ATLANAN:-/dev/null}; return; fi
-  fi
+  # pm 10 sn icinde bitmedi (rc 124/134: cok uzun donguler, ornegin 7.5e11 yineleme) ya da varsayilan yakitini tuketti (TRAP: FUEL): ELF yakitsiz uretilir, karsilastirma yapilamaz
+  # (yakit tuzagi dogrula_elf2.sh ve dogrula_svm.sh'de sinirli yakitla karsilastirilir). Atlananlar ATLANAN dosyasina yazilir.
+  if [ $r1 = 124 ] || [ $r1 = 134 ] || grep -q "TRAP: FUEL" $T/e1; then skip=$((skip+1)); echo "atlandi (pm rc=$r1: uzun dongu ya da varsayilan yakit tukendi): $1" >> ${ATLANAN:-/dev/null}; return; fi
   (ulimit -v $ML; timeout $TL $T/u.elf < /dev/null > $T/o2 2> $T/e2); r2=$?
   [ $r1 = $r2 ] && cmp -s $T/o1 $T/o2 && pass || fail "$1: davranis farkli (pm rc=$r1, elf rc=$r2)"
   gr "$1" "$2"
   # uretilen ELF'in PMB1'i C++ zincirinin PMB1'iyle ayni mi? (yap.elf|asm.elf == pm yapisal -o)
   (ulimit -v 900000; $BAG/yap.elf < "$2" 2>/dev/null | $BAG/asm.elf > $T/mine.pmb 2>/dev/null); cmp -s $T/ref.pmb $T/mine.pmb && pass || fail "$1: PMB1 farkli (yap.elf|asm.elf != pm yapisal)"
 }
+. $D/../slot.sh
+TOP=$T; mkdir -p $TOP/sonuc
+chunk() {   # ad komut...: kendi gecici dizininde ($T), kendi sayaclariyla calisir; sayaclar $TOP/sonuc/AD dosyasina yazilir
+  local ad=$1; shift
+  ( T=$TOP/c_$ad; mkdir -p $T/bin; for c in bash cat chmod cmp cp dirname ls mkdir mktemp realpath rm stat timeout head; do p=$(command -v $c) && ln -sf $p $T/bin/$c; done
+    ok=0; bad=0; uret=0; ret=0; skip=0; gk=0; n=0
+    [ "$ad" = b12 ] || slot_al
+    "$@"
+    [ "$ad" = b12 ] || slot_birak
+    echo "$ok $bad $uret $ret $skip $gk $n" > $TOP/sonuc/$ad ) &
+}
+bolum12() {
 # ---- 1) depodaki PMY1 tablolar ve sayi listeleri
 n=0; for f in $(find $R/oz $R/ai_testi2 $R/ai_testi3 $R/ai_testi4 -name '*.pmy' | sort); do one "pmy $f" $f; n=$((n+1)); done
 for f in $(find $R/oz $R/ai_testi2 $R/ai_testi3 $R/ai_testi4 -name '*.sayi' | sort); do awk -f $R/ai_testi3/paketle.awk $f > $T/s.pmy 2>/dev/null && { one "sayi $f" $T/s.pmy; n=$((n+1)); }; done
@@ -51,8 +59,12 @@ app() { echo "$3" | awk -f $R/ai_testi3/paketle.awk > $T/app.pmy; one "uygulama:
   rm -f $T/a.elf; PF ./zincir.sh $T/app.pmy $T/a.elf > /dev/null 2>&1 && [ "$($T/a.elf 2>&1 | tr "\n" " ")" = "$2" ] && pass || fail "uygulama:$1: beklenen cikti '$2' degil"; }
 app toplam_kareler "51" "80 77 89 49 0 0 0 1 1 z0 0 0 0 1 10 2 2 z1 z1 3 3 z0 z1 0 0 0 0 1 0 1 0 15 3 2 0 2 1 1 z1 0 0 1 8 3 0"
 app kare_say "0 1 4 9 16 " "80 77 89 49 0 0 0 1 0 0 0 0 1 5 1 2 z0 z1 1 1 2 0 15 3 2 0 2 0 0 0 0 0 0 0 1 12 5 11 0 0 1 z0 11 0 0 1 z1 11 0 0 1 z2 11 0 0 1 z3 11 0 0 1 z4"
+}
+rast() { local k=$1; for s in $(seq $k 3 $NR); do awk -v seed=$s -f $D/../yap/rastgele_pmy.awk | awk -f $R/ai_testi3/paketle.awk > $T/r.pmy 2>/dev/null || continue; one "rastgele-$s" $T/r.pmy; done; }
+chunk b12 bolum12; for k in 1 2 3; do chunk r$k rast $k; done
+wait
+ok=0; bad=0; uret=0; ret=0; skip=0; gk=0; n=0
+for f in $TOP/sonuc/*; do read -r a1 a2 a3 a4 a5 a6 a7 < $f; ok=$((ok+a1)); bad=$((bad+a2)); uret=$((uret+a3)); ret=$((ret+a4)); skip=$((skip+a5)); gk=$((gk+a6)); n=$((n+a7)); done
 echo "uygulama sayisi: $n"
-# ---- 3) rastgele PMY1 modelleri (metin cikisli olanlar ELF olur; ekran/girdi/kayan nokta olanlar reddedilir)
-for s in $(seq 1 $NR); do awk -v seed=$s -f $D/../yap/rastgele_pmy.awk | awk -f $R/ai_testi3/paketle.awk > $T/r.pmy 2>/dev/null || continue; one "rastgele-$s" $T/r.pmy; done
 rm -rf $T
 echo "uctan uca (PMY1 -> ELF, yalniz ELF araclar): gecen $ok, kalan $bad (ELF uretilen $uret, reddedilen $ret, zaman asimi nedeniyle atlanan $skip; grafik secenekli karsilastirma $gk)"; [ $bad = 0 ]

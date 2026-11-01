@@ -3,7 +3,7 @@
 # kendi kopya agacinda gen2'yi yeniden uretir ve dogrula_tur.sh'in BASARISIZ olmasini bekler. Kullanim: sabotaj_tur.sh [pm] [paralel]   (SADECE: etiket deseni)
 PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] \&\& JOBS=1000
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
-sonuc() { if $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/elf2 && LIMS=200 timeout 600 ./dogrula_tur.sh $PM ${NE:-0} ${NS:-14}"; then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
+sonuc() { if $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/elf2 && LIMS=200 timeout 600 ./dogrula_tur.sh $PM ${NE:-0} 4" && $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/elf2 && LIMS=200 timeout 600 ./dogrula_tur.sh $PM ${NE:-0} ${NS:-14}"; then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
 mut_tablo() {   # etiket sed_ifadesi (komut tablosu okunabilir gorunumu)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
   ( w=$T/w_$1; taban $w

@@ -11,7 +11,7 @@ mut_i() {   # etiket ifade (tablonun okunabilir gorunumu uzerinde)
   rm -rf $T/w; mkdir -p $T/w/src $T/w/oz; cp -r $R/oz/nesne $R/oz/komut $T/w/oz/; cp -r $R/oz/arac $R/oz/elf2 $T/w/oz/
   mutview "$2" || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
   (cd $T/w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: uretici derlenemedi"; kacti=$((kacti+1)); return; }
-  if $D/../ilkhata.sh $T/log env ELF2DIR=$T/w/oz/elf2 GEN2=$T/w/oz/elf2/gen2.pmb $D/dogrula_mikro.sh $PM 40; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+  if $D/../ilkhata.sh $T/log env ELF2DIR=$T/w/oz/elf2 GEN2=$T/w/oz/elf2/gen2.pmb $D/dogrula_mikro.sh $PM 8 && $D/../ilkhata.sh $T/log env ELF2DIR=$T/w/oz/elf2 GEN2=$T/w/oz/elf2/gen2.pmb $D/dogrula_mikro.sh $PM 40; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
 }
 mut() {   # paralel sarmalayici: her mutant KENDI gecici dizininde ($T) ve global yuva havuzunda calisir; sonuc satirlari $TOP/c_ETIKET dosyasina yazilir
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return

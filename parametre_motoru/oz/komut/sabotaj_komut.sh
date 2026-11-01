@@ -7,7 +7,7 @@ mut_i() {   # etiket ifade
   rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/src $R/Makefile $T/w/; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $R/oz/sayisal $T/w/oz/; cp $R/oz/paketle.pmy $R/oz/coz.pmy $R/oz/yaz.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w/oz/
   (cd $T/w/oz/arac && perl -0pi -e "$2" komut.pma && ! cmp -s komut.pma $R/oz/arac/komut.pma) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
   (cd $T/w/oz/arac && $PM asm komut.pma -o komut.pmb --strip > /dev/null 2>&1) || { echo "mutant $1: derlenemedi"; kacti=$((kacti+1)); return; }
-  if $D/../ilkhata.sh $T/log bash -c "cd $T/w/oz/komut && timeout 900 ./dogrula_komut.sh $PM ${NR:-12}"; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+  if $D/../ilkhata.sh $T/log bash -c "cd $T/w/oz/komut && timeout 900 ./dogrula_komut.sh $PM 1" && $D/../ilkhata.sh $T/log bash -c "cd $T/w/oz/komut && timeout 900 ./dogrula_komut.sh $PM ${NR:-12}"; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
 }
 # TABAN: degistirilmemis kopyada denetim gecmeli (aksi halde tum mutantlar yanlis nedenle "yakalanmis" sayilir)
 if [ -z "$SADECE" ] || [ -n "$TABAN" ]; then

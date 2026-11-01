@@ -4,7 +4,7 @@
 PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] \&\& JOBS=1000
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
 KM() { { echo "@@$1"; cat; } | $PM run $R/oz/arac/komut.pmb; }
-sonuc() { if $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/elf2 && LIMS=200 timeout 600 ./dogrula_donusum.sh $PM 12"; then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
+sonuc() { if $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/elf2 && LIMS=200 timeout 600 ./dogrula_donusum.sh $PM 3" && $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/elf2 && LIMS=200 timeout 600 ./dogrula_donusum.sh $PM 12"; then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
 mut_conv() {   # etiket kaynak_tur_adi hedef_tur_adi yeni_komut_kimligi_ya_da_ad  (donusum kaydinin komut sozcugunu degistirir)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
   ( w=$T/w_$1; taban $w

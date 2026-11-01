@@ -18,7 +18,7 @@ if not done: sys.exit(5)
 " "$2" "$3" "$4" | KM yaz > $w/oz/komut/komutlar.pmk || { echo "SABOTAJ HATASI: $1 uygulanamadi"; exit 3; }
     cmp -s $w/oz/komut/komutlar.pmk $R/oz/komut/komutlar.pmk && { echo "SABOTAJ HATASI: $1 degisiklik yok"; exit 3; }
     (cd $w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: gen2 uretilemedi"; exit 4; }
-    if $D/../ilkhata.sh $T/log_$1 bash -c "cd $w/oz/elf2 && LIMS=200 timeout 900 ./dogrula_dar.sh $PM 0 12"; then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
+    if $D/../ilkhata.sh $T/log_$1 bash -c "cd $w/oz/elf2 && LIMS=200 timeout 900 ./dogrula_dar.sh $PM 0 4" && $D/../ilkhata.sh $T/log_$1 bash -c "cd $w/oz/elf2 && LIMS=200 timeout 900 ./dogrula_dar.sh $PM 0 12"; then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
     rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
 # DENK (davranisi degistirmeyen) mutantlar bilincle YOK: cmp_lt->cmp_le (ef == EMIN esitliginde ayni secim), abs>=T -> abs>T (r>=T ayni durumu kapsar),

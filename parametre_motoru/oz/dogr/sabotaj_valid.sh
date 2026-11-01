@@ -7,7 +7,7 @@ mut_i() {   # etiket ifade
   rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/dogr $R/oz/mutasyon.cpp $T/w/oz/ 2>/dev/null
   (cd $T/w/oz/dogr && perl -0pi -e "$2" valid.pma.in && ! cmp -s valid.pma.in $D/valid.pma.in) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
   (cd $T/w/oz/nesne && TOOLS=valid GORUNUM=0 ./metinden.sh $PM > /dev/null 2>&1) || { echo "mutant $1: derlenemedi"; kacti=$((kacti+1)); return; }
-  if $D/../ilkhata.sh $T/log env VALID=$T/w/oz/dogr/valid.pmb $D/dogrula_valid.sh $PM ${NL:-25} ${NB:-20}; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+  if $D/../ilkhata.sh $T/log env VALID=$T/w/oz/dogr/valid.pmb $D/dogrula_valid.sh $PM 5 4 && $D/../ilkhata.sh $T/log env VALID=$T/w/oz/dogr/valid.pmb $D/dogrula_valid.sh $PM ${NL:-25} ${NB:-20}; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
 }
 mut() {   # paralel sarmalayici: her mutant KENDI gecici dizininde ($T) ve global yuva havuzunda calisir; sonuc satirlari $TOP/c_ETIKET dosyasina yazilir
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
