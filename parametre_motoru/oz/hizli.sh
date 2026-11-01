@@ -189,35 +189,43 @@ fi
 cekirdek_hazir
 LOG=${LOG:-$(mktemp -d)}; mkdir -p "$LOG"
 T0=$(date +%s)
-bos_is() { local r; r=$(jobs -rp | wc -l); echo $r; }
-basla() {   # ad dizin komut
-  ( local t0=$(date +%s); cd "$2" && bash -c "ulimit -c 0; $3" > "$LOG/$1.log" 2>&1; echo "$? $(( $(date +%s) - t0 ))" > "$LOG/$1.res" ) &
+# GLOBAL YUVA HAVUZU (oz/slot.sh): dogrulama paketleri ve sabotaj mutantlari ayni anda en cok HIZLI_SLOTSAYI islem calistirir (asiri yukleme yok, bos cekirdek yok, paketler arasi bariyer yok).
+export HIZLI_SLOT=$(mktemp -d); export HIZLI_SLOTSAYI=${SLOTLAR:-$(nproc 2>/dev/null || echo 4)}
+. "$R/oz/slot.sh"
+mkfifo "$HIZLI_SLOT/jeton"; exec 9<> "$HIZLI_SLOT/jeton"; for _i in $(seq 1 $HIZLI_SLOTSAYI); do printf x >&9; done
+basla() {   # ad dizin komut [oncelikli]: paket yuvasini alir (agirlik sirasiyla), bittiginde birakir; duvar ve CPU suresi .res/.cpu dosyalarina yazilir
+  ( t0=$(date +%s); slot_al; : > "$LOG/$1.basladi"
+    cd "$2" && bash -c "ulimit -c 0; $3; r=\$?; times > $LOG/$1.cpu; exit \$r" > "$LOG/$1.log" 2>&1; rc=$?
+    slot_birak; echo "$rc $(( $(date +%s) - t0 ))" > "$LOG/$1.res" ) &
+  while [ ! -e "$LOG/$1.basladi" ]; do sleep 0.1; done      # sonraki paket, bu paket yuvasini aldiktan sonra siraya girer (agirlik sirasi korunur)
+}
+basla_sabotaj() {   # sabotaj paketi: kendisi yuva tutmaz; mutantlari yuva havuzundan alir
+  ( t0=$(date +%s); cd "$2" && bash -c "ulimit -c 0; $3; r=\$?; times > $LOG/$1.cpu; exit \$r" > "$LOG/$1.log" 2>&1; rc=$?
+    echo "$rc $(( $(date +%s) - t0 ))" > "$LOG/$1.res" ) &
 }
 while IFS='|' read -r ad dz bt hz tm w ac; do
   [ -z "$ad" ] && continue
-  while [ "$(bos_is)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done
   basla "$ad" "$R/$dz" "$(komut_satiri "$ad" "$dz" "$bt" "$hz" "$tm")"
 done <<< "$LIST"
-wait
 if [ $SAB = 1 ]; then
   while IFS='|' read -r ad dz bt; do
     [ -z "$ad" ] && continue
     case " $LIST" in *"
 $ad|"*) ;; *) [ $TAM = 0 ] && [ -z "$ELLE" ] && continue;; esac
-    while [ "$(bos_is)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done
-    basla "sabotaj_$ad" "$R/$dz" "./$bt $PM"
+    basla_sabotaj "sabotaj_$ad" "$R/$dz" "./$bt $PM"
   done <<< "$SABOTAJ"
-  wait
 fi
+wait
 
 # ---- ozet
-FAIL=0; N=0
+FAIL=0; N=0; CPUT=0
 for r in $LOG/*.res; do
   ad=$(basename $r .res); read -r rc sn < $r; N=$((N+1))
   son=$(tail -n 1 "$LOG/$ad.log" | cut -c1-120)
-  if [ "$rc" = 0 ]; then printf '  GECTI  %-14s %4ss  %s\n' "$ad" "$sn" "$son"
-  else FAIL=$((FAIL+1)); printf '  KALDI  %-14s %4ss  rc=%s  %s\n' "$ad" "$sn" "$rc" "$son"; grep -a '^HATA' "$LOG/$ad.log" | head -5 | sed 's/^/           /'; fi
+  cpu=$(awk 'NR==2{split($1,a,"m"); split($2,b,"m"); u=a[1]*60+a[2]; v=b[1]*60+b[2]; printf "%d", u+v}' "$LOG/$ad.cpu" 2>/dev/null); CPUT=$((CPUT + ${cpu:-0}))
+  if [ "$rc" = 0 ]; then printf '  GECTI  %-16s %5ss (cpu %5ss)  %s\n' "$ad" "$sn" "${cpu:-?}" "$son"
+  else FAIL=$((FAIL+1)); printf '  KALDI  %-16s %5ss (cpu %5ss)  rc=%s  %s\n' "$ad" "$sn" "${cpu:-?}" "$rc" "$son"; grep -a '^HATA' "$LOG/$ad.log" | head -5 | sed 's/^/           /'; fi
 done
-echo "toplam $N paket, $FAIL basarisiz, $(( $(date +%s) - T0 )) sn (paralel $JOBS); tam ciktilar: $LOG"
+echo "toplam $N paket, $FAIL basarisiz, duvar $(( $(date +%s) - T0 )) sn, toplam CPU ${CPUT} sn (yuva $HIZLI_SLOTSAYI); tam ciktilar: $LOG"; rm -rf "$HIZLI_SLOT"
 [ $TAM = 0 ] && [ -z "$ELLE" ] && echo "not: hizli mod azaltilmis ornek sayisiyla calisir; buyuk asama sonrasi oz/hizli.sh --tam"
 [ $FAIL = 0 ]

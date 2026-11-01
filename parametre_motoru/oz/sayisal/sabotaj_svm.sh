@@ -2,14 +2,19 @@
 # dogrula_svm.sh'nin yakaladigini kanitlar: svm.pma'da dagitim/operand eslemesi/bellek/tuzak/ondalik kollarini tek tek bozar, svm.pmb'yi yeniden uretir,
 # (HIZLI) denetimin BASARISIZ olmasini bekler. NOT: svm tamsayi/ondalik aritmetigi pm'nin VM'inde calisir; burada sinanan dagitim, esleme, bellek, tuzak ve bilesimdir.
 # Kullanim: sabotaj_svm.sh [pm]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
+PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); TOP=$T; . $D/../slot.sh
 yakalandi=0; kacti=0
-mut() {   # etiket ifade
+mut_i() {   # etiket ifade
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
   cp $D/svm.pma $T/svm.pma
   (cd $T && perl -0pi -e "$2" svm.pma && ! cmp -s svm.pma $D/svm.pma) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
   $PM asm $T/svm.pma -o $T/svm.pmb --strip > /dev/null 2>&1 || { echo "mutant $1: derlenemedi"; kacti=$((kacti+1)); return; }
-  if LIMS=8 SVM=$T/svm.pmb HIZLI=1 $D/dogrula_svm.sh $PM 3 > $T/log 2>&1; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+  if $D/../ilkhata.sh $T/log env LIMS=8 SVM=$T/svm.pmb HIZLI=1 $D/dogrula_svm.sh $PM 3; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+}
+mut() {   # paralel sarmalayici: her mutant KENDI gecici dizininde ($T) ve global yuva havuzunda calisir; sonuc satirlari $TOP/c_ETIKET dosyasina yazilir
+  [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
+  ( slot_al; T="$TOP/m_$1"; mkdir -p "$T"; mut_i "$@" > "$TOP/c_$1" 2>&1; slot_birak; rm -rf "$T" ) &
+  [ -n "$HIZLI_SLOT" ] || while [ "$(jobs -rp | wc -l)" -ge "${JOBS:-4}" ]; do wait -n 2>/dev/null || sleep 0.2; done
 }
 mut add_sub 's/add v, x, y\n    jmp a_st\na6:/sub v, x, y\n    jmp a_st\na6:/'
 mut cmp_lt 's/lt v, x, y\n    jmp a_st\nc17:/le v, x, y\n    jmp a_st\nc17:/'
@@ -37,6 +42,9 @@ mut feq_op 's/feq v, x, y/fle v, x, y/'
 mut f2i_op 's/fp46: f2i v, x/fp46: mov v, x/'
 mut sel_sira 's/mov v, y\n    jz c, a_st\n    mov v, x/mov v, x\n    jz c, a_st\n    mov v, y/'
 mut sel_kosul 's/jz c, a_st\n    mov v, x/jnz c, a_st\n    mov v, x/'
+wait
+cat $TOP/c_* 2>/dev/null
+yakalandi=$(cat $TOP/c_* 2>/dev/null | grep -cE '^yakalandi|dogrulama yakaladi'); kacti=$(cat $TOP/c_* 2>/dev/null | grep -cE '^KACTI|^SABOTAJ HATASI|derlenemedi|uretilemedi')
 echo "sabotaj(svm): $yakalandi yakalandi, $kacti kacti"
-rm -rf $T
+rm -rf $TOP
 [ $kacti = 0 ]

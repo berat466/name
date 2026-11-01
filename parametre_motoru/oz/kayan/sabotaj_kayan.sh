@@ -2,11 +2,11 @@
 # dogrula_kayan.sh'in yakaladigini kanitlar: genis kayan nokta / karmasik komutlarinin SEM kayitlarinda (tablo) rastgele ama tohumlu MUTANTLAR uretir (islem degistirme, karsilastirma degistirme, sabit +-1,
 # sel kollarini takas); kendi kopya agacinda gen2'yi yeniden uretir ve dogrula_kayan.sh'in BASARISIZ olmasini bekler. KACAN mutantlar listelenir (denk mutant olabilir: elle incelenir).
 # Kullanim: sabotaj_kayan.sh [pm] [paralel] [mutant_sayisi_komut_basina]   (SADECE: komut adi deseni)
-PM=${1:-../../pm}; JOBS=${2:-4}; PERK=${3:-4}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
+PM=${1:-../../pm}; JOBS=${2:-4}; PERK=${3:-4}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] \&\& JOBS=1000
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
 KM() { { echo "@@$1"; cat; } | $PM run $R/oz/arac/komut.pmb; }
 KM gor < $R/oz/komut/komutlar.pmk > $T/gor.txt
-sonuc() { if (cd $1/oz/kayan && LIMS=200 timeout 600 ./dogrula_kayan.sh $PM 70 4 > $T/log_$2 2>&1); then echo "KACTI: $2"; else echo "yakalandi: $2"; fi; }
+sonuc() { if $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/kayan && LIMS=200 timeout 600 ./dogrula_kayan.sh $PM 70 4"; then echo "KACTI: $2"; else echo "yakalandi: $2"; fi; }
 mut() {   # etiket komut satir_no_degisimi_python
   ( w=$T/w_$1; taban $w
     python3 - "$2" "$3" "$T/gor.txt" <<'PY' | KM yaz > $w/oz/komut/komutlar.pmk || { echo "SABOTAJ HATASI: $1"; exit 3; }
@@ -37,7 +37,7 @@ PY
     (cd $w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: gen2 uretilemedi"; exit 4; }
     sonuc $w $1; rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
-bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; "$@" & }
+bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; ( slot_al; "$@"; slot_birak ) & }
 for op in ADD_F80 SUB_F128 MUL_F80 MUL_F128 DIV_F80 DIV_F128 SQRT_F80 SQRT_F128 LT_F80 LE_F128 EQ_F80 NE_F128 TOBOOL_F80 CV_F64_F80 CV_F128_F64 CV_F80_F128 CV_F128_F80 CV_F80_F32 CV_F128_BF16 CV_I64_F80 CV_U64_F128 CV_I128_F80 CV_U128_F128 CV_F80_I64 CV_F128_U64 CV_F80_I128 CV_F128_U128 CV_F80_I16 \
           ADD_C64 MUL_C64 DIV_C64 ADD_C128 MUL_C128 DIV_C128 ADD_C160 MUL_C160 DIV_C160 EQ_C160 TOBOOL_C128 CV_C160_C64 CV_C128_C160 CV_F80_C128; do
   [ -z "$SADECE" ] || [[ "$op" =~ $SADECE ]] || continue

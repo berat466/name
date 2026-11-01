@@ -1,10 +1,10 @@
 #!/bin/bash
 # dogrula_i128.sh'in yakaladigini kanitlar: 128 bit komutlarinin SEM kayitlarini (tablo), svm'nin mulhu/rdw/wrw uygulamasini ve gen2'nin OPW simgesini tek tek bozar (mutant);
 # kendi kopya agacinda yeniden uretip dogrula_i128.sh'in BASARISIZ olmasini bekler. Kullanim: sabotaj_i128.sh [pm] [paralel]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; JOBS=${2:-4}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
+PM=${1:-../../pm}; JOBS=${2:-4}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] \&\& JOBS=1000
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
 KM() { { echo "@@$1"; cat; } | $PM run $R/oz/arac/komut.pmb; }
-sonuc() { if (cd $1/oz/tur128 && LIMS=200 timeout 700 ./dogrula_i128.sh $PM 26 4 > $T/log_$2 2>&1); then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
+sonuc() { if $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/tur128 && LIMS=200 timeout 700 ./dogrula_i128.sh $PM 26 4"; then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
 mut_sem() {   # etiket KOMUT eski yeni
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
   ( w=$T/w_$1; taban $w
@@ -38,7 +38,7 @@ PY
     esac
     sonuc $w $1; rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
-bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; "$@" & }
+bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; ( slot_al; "$@"; slot_birak ) & }
 bg mut_sem add_tasima ADD_I128 'cmp_ltu t6 t5 t1' 'cmp_leu t6 t5 t1'
 bg mut_sem add_yuksek ADD_U128 'alu_add t7 t7 t6' 'alu_add t7 t7 t7'
 bg mut_sem sub_odunc SUB_I128 'cmp_ltu t6 t1 t3' 'cmp_ltu t6 t3 t1'

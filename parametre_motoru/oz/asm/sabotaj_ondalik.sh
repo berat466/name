@@ -2,13 +2,18 @@
 # dogrula_ondalik.sh'in yakaladigini kanitlar: asm.pma.in'deki fbits/fb_* kodunu tek tek bozar (mutant), asm.pmb'yi yeniden uretir, denetimin BASARISIZ olmasini bekler.
 # Not: `drop_sinir` (drop >= 60 kisayolu) bilerek yok: drop 60..63 icin q >> drop = 0 ve rem < half oldugundan sonuc zaten 0 (esdeger mutant).
 # Not: eski `tasima_m` (yalniz `shri m, m, 1` silme) esdegerdi (sonraki `and m, m, 2^52-1` ayni biti atar); simdi `addi eb` silinir.
-PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); yakalandi=0; kacti=0
-mut() {   # etiket ifade
+PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); TOP=$T; . $D/../slot.sh; yakalandi=0; kacti=0
+mut_i() {   # etiket ifade
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
   rm -rf $T/w; mkdir -p $T/w/src $T/w/oz; cp -r $R/oz/nesne $R/oz/komut $T/w/oz/; cp -r $R/oz/arac $R/oz/asm $T/w/oz/
   (cd $T/w/oz/asm && perl -0pi -e "$2" asm.pma.in && ! cmp -s asm.pma.in $D/asm.pma.in) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
   (cd $T/w/oz/nesne && TOOLS=asm GORUNUM=0 ./metinden.sh $PM > /dev/null 2>&1) || { echo "mutant $1: derlenemedi"; kacti=$((kacti+1)); return; }
-  if ASMPMB=$T/w/oz/asm/asm.pmb $D/dogrula_ondalik.sh $PM ${NF:-40} > $T/log 2>&1; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+  if $D/../ilkhata.sh $T/log env ASMPMB=$T/w/oz/asm/asm.pmb $D/dogrula_ondalik.sh $PM ${NF:-40}; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+}
+mut() {   # paralel sarmalayici: her mutant KENDI gecici dizininde ($T) ve global yuva havuzunda calisir; sonuc satirlari $TOP/c_ETIKET dosyasina yazilir
+  [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
+  ( slot_al; T="$TOP/m_$1"; mkdir -p "$T"; mut_i "$@" > "$TOP/c_$1" 2>&1; slot_birak; rm -rf "$T" ) &
+  [ -n "$HIZLI_SLOT" ] || while [ "$(jobs -rp | wc -l)" -ge "${JOBS:-4}" ]; do wait -n 2>/dev/null || sleep 0.2; done
 }
 mut tie_cift       's/andi t, m, 1\n    jz t, nrd/andi t, m, 1\n    jz zr, nrd/'
 mut tie_yapisik    's/    jnz sb, up\n/    jmp nrd\n/'
@@ -27,5 +32,8 @@ mut tam_basamak    's/f6: jnz infrac, f8\n    addi e10, e10, 1/f6: jnz infrac, f
 mut isaret_sifir   's/jnz nsig, h0\n    st sgn, G, 13/jnz nsig, h0\n    st zr, G, 13/'
 mut shr1_tasima    's/shli w, w, 31/shli w, w, 30/'
 mut bolme_bit      's/mov bit, 57\ni3:/mov bit, 56\ni3:/'
+wait
+cat $TOP/c_* 2>/dev/null
+yakalandi=$(cat $TOP/c_* 2>/dev/null | grep -cE '^yakalandi|dogrulama yakaladi'); kacti=$(cat $TOP/c_* 2>/dev/null | grep -cE '^KACTI|^SABOTAJ HATASI|derlenemedi|uretilemedi')
 echo "sabotaj(asm ondalik): $yakalandi yakalandi, $kacti kacti"
-rm -rf $T; [ $kacti = 0 ]
+rm -rf $TOP; [ $kacti = 0 ]

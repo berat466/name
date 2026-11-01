@@ -1,7 +1,7 @@
 #!/bin/bash
 # dogrula_cagri.sh'in yakaladigini kanitlar: ret/halt/call/host mikro-islem sablonlarini (komut tablosu) ve gen2'nin ilgili kodunu tek tek bozar (mutant),
 # kendi kopya agacinda gen2'yi yeniden uretir ve dogrula_cagri.sh'in BASARISIZ olmasini bekler. Kullanim: sabotaj_cagri.sh [pm] [paralel]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
+PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] \&\& JOBS=1000
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
 mut_tablo() {   # etiket sed_ifadesi (komut tablosu okunabilir gorunumu)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
@@ -9,7 +9,7 @@ mut_tablo() {   # etiket sed_ifadesi (komut tablosu okunabilir gorunumu)
     { echo "@@gor"; cat $R/oz/komut/komutlar.pmk; } | $PM run $R/oz/arac/komut.pmb | sed "$2" | { echo "@@yaz"; cat; } | $PM run $R/oz/arac/komut.pmb > $w/oz/komut/komutlar.pmk
     cmp -s $w/oz/komut/komutlar.pmk $R/oz/komut/komutlar.pmk && { echo "SABOTAJ HATASI: $1 uygulanamadi"; exit 3; }
     [ "$(echo "@@dogrula"; cat $w/oz/komut/komutlar.pmk)" ] ; (cd $w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: gen2 uretilemedi"; exit 4; }
-    if (cd $w/oz/elf2 && TAB=$w/oz/komut/komutlar.pmk timeout 400 ./dogrula_cagri.sh $PM > $T/log_$1 2>&1); then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
+    if $D/../ilkhata.sh $T/log_$1 bash -c "cd $w/oz/elf2 && TAB=$w/oz/komut/komutlar.pmk timeout 400 ./dogrula_cagri.sh $PM"; then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
     rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
 mut_gen2() {   # etiket perl_ifadesi (oz/elf2/gen2.pma.in)
@@ -17,10 +17,10 @@ mut_gen2() {   # etiket perl_ifadesi (oz/elf2/gen2.pma.in)
   ( w=$T/w_$1; taban $w
     (cd $w/oz/elf2 && perl -0pi -e "$2" gen2.pma.in && ! cmp -s gen2.pma.in $R/oz/elf2/gen2.pma.in) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; exit 3; }
     (cd $w/oz/nesne && TOOLS=gen2 GORUNUM=0 ./metinden.sh $PM > /dev/null 2>&1) || { echo "mutant $1: gen2 uretilemedi"; exit 4; }
-    if (cd $w/oz/elf2 && timeout 400 ./dogrula_cagri.sh $PM > $T/log_$1 2>&1); then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
+    if $D/../ilkhata.sh $T/log_$1 bash -c "cd $w/oz/elf2 && timeout 400 ./dogrula_cagri.sh $PM"; then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
     rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
-bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; "$@" & }
+bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; ( slot_al; "$@"; slot_birak ) & }
 # ---- tablo: sablonlar
 bg mut_tablo ret_yok 's/^tpl prim ret : .*/tpl prim ret : -/'
 bg mut_tablo ret_ofset 's/tpl prim ret : 48 8B 44 24 TMP_F0 48 89 03 C3/tpl prim ret : 48 8B 44 24 TMP_F0 48 89 43 08 C3/'

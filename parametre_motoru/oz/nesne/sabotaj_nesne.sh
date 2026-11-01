@@ -2,12 +2,12 @@
 # dogrula_nesne.sh'in yakaladigini kanitlar: baglayici.pma'yi tek tek bozar (mutant), kendi kucuk agacinda yeniden derler, dogrula_nesne.sh'in BASARISIZ olmasini bekler;
 # ayrica sayisal nesnelerin (.pmo) sayilarini bozar (bagil kayit katsayisi/konumu, anahtar turu) ve ayni denetimi bekler.
 # Kullanim: sabotaj_nesne.sh [pm]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/..; T=$(mktemp -d); yakalandi=0; kacti=0
+PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/..; T=$(mktemp -d); TOP=$T; . $D/../slot.sh; yakalandi=0; kacti=0
 taban() { rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/nesne $R/komut $R/arac $R/asm $R/dogr $R/elf2 $T/w/oz/; }
 sonuc() {   # etiket
-  if (cd $T/w/oz/nesne && ./dogrula_nesne.sh $PM > $T/log 2>&1); then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+  if $D/../ilkhata.sh $T/log bash -c "cd $T/w/oz/nesne && ./dogrula_nesne.sh $PM"; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
 }
-mut() {   # etiket ifade (baglayici.pma)
+mut_i() {   # etiket ifade (baglayici.pma)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
   taban
   (cd $T/w/oz/arac && perl -0pi -e "$2" baglayici.pma && ! cmp -s baglayici.pma $R/arac/baglayici.pma) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
@@ -24,6 +24,11 @@ mutnesne() {   # etiket nesne ifade (awk, nesne sayilari uzerinde)
 # Bilerek YOK (esdeger/ulasilamaz mutantlar): skaler_aralik (`ge d1, nk` -> `gt`: yalniz S1+nk degerli bir sabit olsaydi fark eder; gecerli nesnede yok),
 #   skaler_tur ve dizi_basi (yer tutucu araligindaki ama anahtara/dizi basina uymayan sabit olsaydi fark eder; ice_aktar bunlari uretmez),
 #   bagil_skaler (skaler anahtar icin bagil kayit: ice_aktar yerlesimi etkileyen skaleri reddeder, bu yol gecerli nesnede hic calismaz).
+mut() {   # paralel sarmalayici: her mutant KENDI gecici dizininde ($T) ve global yuva havuzunda calisir; sonuc satirlari $TOP/c_ETIKET dosyasina yazilir
+  [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
+  ( slot_al; T="$TOP/m_$1"; mkdir -p "$T"; mut_i "$@" > "$TOP/c_$1" 2>&1; slot_birak; rm -rf "$T" ) &
+  [ -n "$HIZLI_SLOT" ] || while [ "$(jobs -rp | wc -l)" -ge "${JOBS:-4}" ]; do wait -n 2>/dev/null || sleep 0.2; done
+}
 mut skaler_eksi 's/neg sv, sv\n    call x, spc/call x, spc/'
 mut dizi_say 's/a1: ge z, i, c\n    jnz z, a9/a1: gt z, i, c\n    jnz z, a9/'
 mut bagil_katsayi 's/mul dl, dl, cf/add dl, dl, cf/'
@@ -41,6 +46,9 @@ mut konum_sayaci 's/t9: addi pos, pos, 1/t9: addi pos, pos, 2/'
 mutnesne nesne_katsayi asm 'NR==2+22{print;next} /^[0-9]+ [0-9]+ 1$/ && !d {$3=2; d=1} {print}'
 mutnesne nesne_anahtar gen2 'NR==2{$1=1-$1} {print}'
 mutnesne nesne_konum valid 'NR==1{print;next} NF==3 && $3==1 && !d {$1=$1+1; d=1} {print}'
+wait
+cat $TOP/c_* 2>/dev/null
+yakalandi=$(cat $TOP/c_* 2>/dev/null | grep -cE '^yakalandi|dogrulama yakaladi'); kacti=$(cat $TOP/c_* 2>/dev/null | grep -cE '^KACTI|^SABOTAJ HATASI|derlenemedi|uretilemedi')
 echo "sabotaj(nesne/baglayici): $yakalandi yakalandi, $kacti kacti"
-rm -rf $T
+rm -rf $TOP
 [ $kacti = 0 ]

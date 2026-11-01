@@ -1,17 +1,22 @@
 #!/bin/bash
 # dogrula_mikro.sh'in yakaladigini kanitlar: sablon.txt'te MIKRO-ISLEM sablonlarini (p_<islem>) tek tek bozar, gen2.pmb'yi yeniden uretir, denetimin BASARISIZ olmasini bekler.
 # Kullanim: sabotaj_mikro.sh [pm]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
+PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); TOP=$T; . $D/../slot.sh
 yakalandi=0; kacti=0
 mutview() {   # tabloyu (okunabilir gorunum uzerinden) kopya agacta degistirir: x86 sablonlari tabloda
   { echo "@@gor"; cat $T/w/oz/komut/komutlar.pmk; } | $PM run $R/oz/arac/komut.pmb > $T/g.txt && perl -0pe "$1" $T/g.txt > $T/g2.txt && ! cmp -s $T/g.txt $T/g2.txt && { echo "@@yaz"; cat $T/g2.txt; } | $PM run $R/oz/arac/komut.pmb > $T/w/oz/komut/komutlar.pmk
 }
-mut() {   # etiket ifade (tablonun okunabilir gorunumu uzerinde)
+mut_i() {   # etiket ifade (tablonun okunabilir gorunumu uzerinde)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
   rm -rf $T/w; mkdir -p $T/w/src $T/w/oz; cp -r $R/oz/nesne $R/oz/komut $T/w/oz/; cp -r $R/oz/arac $R/oz/elf2 $T/w/oz/
   mutview "$2" || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
   (cd $T/w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: uretici derlenemedi"; kacti=$((kacti+1)); return; }
-  if ELF2DIR=$T/w/oz/elf2 GEN2=$T/w/oz/elf2/gen2.pmb $D/dogrula_mikro.sh $PM 40 > $T/log 2>&1; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+  if $D/../ilkhata.sh $T/log env ELF2DIR=$T/w/oz/elf2 GEN2=$T/w/oz/elf2/gen2.pmb $D/dogrula_mikro.sh $PM 40; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+}
+mut() {   # paralel sarmalayici: her mutant KENDI gecici dizininde ($T) ve global yuva havuzunda calisir; sonuc satirlari $TOP/c_ETIKET dosyasina yazilir
+  [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
+  ( slot_al; T="$TOP/m_$1"; mkdir -p "$T"; mut_i "$@" > "$TOP/c_$1" 2>&1; slot_birak; rm -rf "$T" ) &
+  [ -n "$HIZLI_SLOT" ] || while [ "$(jobs -rp | wc -l)" -ge "${JOBS:-4}" ]; do wait -n 2>/dev/null || sleep 0.2; done
 }
 mut sub_op 's/(tpl prim alu_sub :.*?) 48 29 C8/$1 48 01 C8/'
 mut mul_op 's/(tpl prim alu_mul :.*?) 48 0F AF C1/$1 48 21 C8 90/'
@@ -62,6 +67,9 @@ mut br_geri_yakit 's/tpl sp 26 br_back : 4D 85 F6 0F 84 REL_FUEL 49 FF CE E9 REL
 mut brz_geri_atla 's/(tpl sp 27 brz_back : [^\n]*) 0F 85 11 00 00 00/$1 0F 84 11 00 00 00/'
 mut brnz_geri_atla 's/(tpl sp 28 brnz_back : [^\n]*) 0F 84 11 00 00 00/$1 0F 85 11 00 00 00/'
 mut brz_geri_hedef 's/(tpl sp 27 brz_back : [^\n]*) E9 REL_TF1/$1 E9 REL_TF0/'
+wait
+cat $TOP/c_* 2>/dev/null
+yakalandi=$(cat $TOP/c_* 2>/dev/null | grep -cE '^yakalandi|dogrulama yakaladi'); kacti=$(cat $TOP/c_* 2>/dev/null | grep -cE '^KACTI|^SABOTAJ HATASI|derlenemedi|uretilemedi')
 echo "sabotaj(mikro-islem sablonlari): $yakalandi yakalandi, $kacti kacti"
-[ -n "$KEEP" ] && echo "KEEP: $T" || rm -rf $T
+[ -n "$KEEP" ] && echo "KEEP: $T" || rm -rf $TOP
 [ $kacti = 0 ]

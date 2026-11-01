@@ -2,7 +2,7 @@
 # dogrula_gorunum.sh'in yakaladigini kanitlar: oz/arac/gorunum.pma'yi tek tek bozar (mutant), kendi kucuk agacinda yeniden derler, dogrula_gorunum.sh'in BASARISIZ olmasini bekler.
 # Once KISA=1 (bolum 1-4: gercek nesneler, rastgele/bozulmus gorunumler, olumsuz ornekler); kacan mutant icin TAM kosu (uctan uca duzenleme + ELF) denenir.
 # Kullanim: sabotaj_gorunum.sh [pm] [paralel]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; JOBS=${2:-4}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/..; T=$(mktemp -d)
+PM=${1:-../../pm}; JOBS=${2:-4}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] && JOBS=1000
 taban() {   # dizin: oz agacinin tam kopyasi (kisa kosu yalniz bir kismini kullanir; kacan mutantlar icin tam kosu hepsini ister)
   rm -rf $1; mkdir -p $1; cp -r $R $1/oz
 }
@@ -13,15 +13,15 @@ mut() {   # etiket perl_ifadesi
     taban $w
     (cd $w/oz/arac && perl -0pi -e "$ifd" gorunum.pma && ! cmp -s gorunum.pma $R/arac/gorunum.pma) || { echo "SABOTAJ HATASI: $et uygulanamadi"; exit 3; }
     (cd $w/oz/arac && $PM asm gorunum.pma -o gorunum.pmb --strip > /dev/null 2>&1) || { echo "mutant $et: derlenemedi"; exit 4; }
-    if (cd $w/oz/nesne && KISA=1 ./dogrula_gorunum.sh $PM 12 12 > $T/log_$et 2>&1); then
-      if (cd $w/oz/nesne && ./dogrula_gorunum.sh $PM 6 6 > $T/logt_$et 2>&1); then echo "KACTI: $et"; exit 1; else echo "yakalandi (tam kosu): $et ($(grep -c HATA $T/logt_$et) hata)"; exit 0; fi
+    if $D/../ilkhata.sh $T/log_$et bash -c "cd $w/oz/nesne && KISA=1 ./dogrula_gorunum.sh $PM 12 12"; then
+      if $D/../ilkhata.sh $T/logt_$et bash -c "cd $w/oz/nesne && ./dogrula_gorunum.sh $PM 6 6"; then echo "KACTI: $et"; exit 1; else echo "yakalandi (tam kosu): $et ($(grep -c HATA $T/logt_$et) hata)"; exit 0; fi
     else echo "yakalandi: $et ($(grep -c HATA $T/log_$et) hata)"; exit 0; fi
   ) > $T/sonuc_$et 2>&1
   cat $T/sonuc_$et; rm -rf $w
 }
 calistir() {   # mut cagrisini arka plana al, JOBS ile sinirla
   while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done
-  mut "$@" &
+  ( slot_al; mut "$@"; slot_birak ) &
 }
 # Bilerek YOK (esdeger mutant): veri sayisi konumundaki bagil kayit kumesi denetimi (`eq z, m, nh`): kaldirilsa bile ayni nesneler ayni kodla (8) reddedilir -- sonda tuketilen kayit sayisi
 #   (`cn == nb`) ikinci kapidir; iki kapi ayni hata kodunu verir (derinlemesine savunma).

@@ -1,19 +1,24 @@
 #!/bin/bash
 # dogrula_komut.sh'in yakaladigini kanitlar: komut.pma'yi tek tek bozar (mutant), kendi kucuk deposunda (src + oz/{komut,arac,asm,dogr,elf2}) yeniden derler, dogrula_komut.sh'in BASARISIZ olmasini bekler.
 # Kullanim: sabotaj_komut.sh [pm]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); yakalandi=0; kacti=0
-mut() {   # etiket ifade
+PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); TOP=$T; . $D/../slot.sh; yakalandi=0; kacti=0
+mut_i() {   # etiket ifade
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
   rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/src $R/Makefile $T/w/; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $R/oz/sayisal $T/w/oz/; cp $R/oz/paketle.pmy $R/oz/coz.pmy $R/oz/yaz.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w/oz/
   (cd $T/w/oz/arac && perl -0pi -e "$2" komut.pma && ! cmp -s komut.pma $R/oz/arac/komut.pma) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
   (cd $T/w/oz/arac && $PM asm komut.pma -o komut.pmb --strip > /dev/null 2>&1) || { echo "mutant $1: derlenemedi"; kacti=$((kacti+1)); return; }
-  if (cd $T/w/oz/komut && timeout 900 ./dogrula_komut.sh $PM ${NR:-12} > $T/log 2>&1); then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+  if $D/../ilkhata.sh $T/log bash -c "cd $T/w/oz/komut && timeout 900 ./dogrula_komut.sh $PM ${NR:-12}"; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
 }
 # TABAN: degistirilmemis kopyada denetim gecmeli (aksi halde tum mutantlar yanlis nedenle "yakalanmis" sayilir)
 if [ -z "$SADECE" ] || [ -n "$TABAN" ]; then
   rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/src $R/Makefile $T/w/; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/dogr $R/oz/elf2 $R/oz/sayisal $T/w/oz/; cp $R/oz/paketle.pmy $R/oz/coz.pmy $R/oz/yaz.pmy $R/oz/coz.sayi.in $R/oz/yaz.sayi.in $R/oz/uret_ikili.sh $T/w/oz/
-  (cd $T/w/oz/komut && timeout 900 ./dogrula_komut.sh $PM ${NR:-12} > $T/taban.log 2>&1) && echo "taban: gecti" || { echo "TABAN BASARISIZ: $(grep -c HATA $T/taban.log) hata"; head -5 $T/taban.log; exit 1; }
+  $D/../ilkhata.sh $T/taban.log bash -c "cd $T/w/oz/komut && timeout 900 ./dogrula_komut.sh $PM ${NR:-12}" && echo "taban: gecti" || { echo "TABAN BASARISIZ: $(grep -c HATA $T/taban.log) hata"; head -5 $T/taban.log; exit 1; }
 fi
+mut() {   # paralel sarmalayici: her mutant KENDI gecici dizininde ($T) ve global yuva havuzunda calisir; sonuc satirlari $TOP/c_ETIKET dosyasina yazilir
+  [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
+  ( slot_al; T="$TOP/m_$1"; mkdir -p "$T"; mut_i "$@" > "$TOP/c_$1" 2>&1; slot_birak; rm -rf "$T" ) &
+  [ -n "$HIZLI_SLOT" ] || while [ "$(jobs -rp | wc -l)" -ge "${JOBS:-4}" ]; do wait -n 2>/dev/null || sleep 0.2; done
+}
 mut magic        's/eqi z, m, 1347242801\n    jnz z, v1\n    ret 2/eqi z, m, 1347242801\n    jmp v1\n    ret 2/'
 mut buyuk_surum  's/eqi z, mj, 1\n    jnz z, v2\n    ret 3/eqi z, mj, 1\n    jmp v2\n    ret 3/'
 mut zorunlu      's/andi t, fl, 1\n    jz t, v7\n    ret 6/andi t, fl, 1\n    jmp v7\n    ret 6/'
@@ -87,5 +92,8 @@ mut limok_shi 's/nei z, mnhi, -1\n    jnz z, lbad\n    addi t, b, -1/nei z, mnhi
 mut limok_128 's/ne z, mxhi, t\n    jnz z, lbad/ne z, mxhi, mxhi\n    jnz z, lbad/'
 mut limok_u64 's/l64a: mov u, 1\n    shl u, u, b\n    addi w, u, -1\n    ne z, mxlo, w/l64a: mov u, 1\n    shl u, u, b\n    addi w, u, -1\n    ne z, mxlo, mxlo/'
 mut limok_u128 's/l128u: jnz mnlo, lbad\n    jnz mnhi, lbad/l128u: jnz mnlo, lbad/'
+wait
+cat $TOP/c_* 2>/dev/null
+yakalandi=$(cat $TOP/c_* 2>/dev/null | grep -cE '^yakalandi|dogrulama yakaladi'); kacti=$(cat $TOP/c_* 2>/dev/null | grep -cE '^KACTI|^SABOTAJ HATASI|derlenemedi|uretilemedi')
 echo "sabotaj(komut): $yakalandi yakalandi, $kacti kacti"
-rm -rf $T; [ $kacti = 0 ]
+rm -rf $TOP; [ $kacti = 0 ]

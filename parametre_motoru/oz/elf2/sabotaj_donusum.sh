@@ -1,10 +1,10 @@
 #!/bin/bash
 # dogrula_donusum.sh'in yakaladigini kanitlar: TYPES bolumundeki donusum kayitlarini (komut kimligi) ve donusum komutlarinin anlamini tek tek bozar (mutant),
 # kendi kopya agacinda dogrula_donusum.sh'i calistirir ve BASARISIZ olmasini bekler. Kullanim: sabotaj_donusum.sh [pm] [paralel]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
+PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] \&\& JOBS=1000
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
 KM() { { echo "@@$1"; cat; } | $PM run $R/oz/arac/komut.pmb; }
-sonuc() { if (cd $1/oz/elf2 && LIMS=200 timeout 600 ./dogrula_donusum.sh $PM 12 > $T/log_$2 2>&1); then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
+sonuc() { if $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/elf2 && LIMS=200 timeout 600 ./dogrula_donusum.sh $PM 12"; then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
 mut_conv() {   # etiket kaynak_tur_adi hedef_tur_adi yeni_komut_kimligi_ya_da_ad  (donusum kaydinin komut sozcugunu degistirir)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
   ( w=$T/w_$1; taban $w
@@ -23,7 +23,7 @@ mut_tablo() {   # etiket sed_ifadesi (okunabilir gorunum; gen2 yeniden uretilir)
     (cd $w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: gen2 uretilemedi"; exit 4; }
     sonuc $w $1; rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
-bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; "$@" & }
+bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; ( slot_al; "$@"; slot_birak ) & }
 bg mut_conv i32_i8_ozdes i32 i8 -1
 bg mut_conv i8_u16_ozdes i8 u16 -1
 bg mut_conv i64_bool_ozdes i64 bool -1

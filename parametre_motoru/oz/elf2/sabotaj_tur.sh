@@ -1,9 +1,9 @@
 #!/bin/bash
 # dogrula_tur.sh'in yakaladigini kanitlar: tamsayi turu ailelerinin SEM kayitlarini (komut tablosu) ve svm'nin uint64 bolme yardimcisini tek tek bozar (mutant),
 # kendi kopya agacinda gen2'yi yeniden uretir ve dogrula_tur.sh'in BASARISIZ olmasini bekler. Kullanim: sabotaj_tur.sh [pm] [paralel]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
+PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] \&\& JOBS=1000
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
-sonuc() { if (cd $1/oz/elf2 && LIMS=200 timeout 600 ./dogrula_tur.sh $PM ${NE:-0} ${NS:-14} > $T/log_$2 2>&1); then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
+sonuc() { if $D/../ilkhata.sh $T/log_$2 bash -c "cd $1/oz/elf2 && LIMS=200 timeout 600 ./dogrula_tur.sh $PM ${NE:-0} ${NS:-14}"; then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
 mut_tablo() {   # etiket sed_ifadesi (komut tablosu okunabilir gorunumu)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
   ( w=$T/w_$1; taban $w
@@ -18,7 +18,7 @@ mut_svm() {   # etiket sed_ifadesi (oz/sayisal/svm.pma)
     (cd $w/oz/sayisal && sed -i "$2" svm.pma && ! cmp -s svm.pma $R/oz/sayisal/svm.pma) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; exit 3; }
     sonuc $w $1; rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
-bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; "$@" & }
+bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; ( slot_al; "$@"; slot_birak ) & }
 bg mut_tablo sext8_yanlis_genislik 's/^sem SEXT8 rd t1 b ; sx8 t2 t1/sem SEXT8 rd t1 b ; sx16 t2 t1/'
 bg mut_tablo zext8_isaretli 's/^\(sem ZEXT8 rd t1 b ; \)zx8 t2 t1/\1sx8 t2 t1/'
 bg mut_tablo add_i8_sarma_yok 's/^\(sem ADD_I8 .*alu_add t3 t1 t2\) ; sx8 t4 t3 ; wr a t4/\1 ; wr a t3/'

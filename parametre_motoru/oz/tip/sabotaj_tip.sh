@@ -1,7 +1,7 @@
 #!/bin/bash
 # dogrula_tip.sh'in yakaladigini kanitlar: tipdogr.pma'yi tek tek bozar (mutant), kendi kopyasinda yeniden derler ve dogrula_tip.sh'in BASARISIZ olmasini bekler.
 # Kullanim: sabotaj_tip.sh [pm] [paralel]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; JOBS=${2:-4}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
+PM=${1:-../../pm}; JOBS=${2:-4}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] \&\& JOBS=1000
 taban() { rm -rf $1; mkdir -p $1/oz; cp -r $R/oz/komut $R/oz/arac $R/oz/asm $R/oz/elf2 $R/oz/tip $1/oz/; }
 mut() {   # etiket eski yeni  (tipdogr.pma'da ilk eski metni yenisiyle degistirir)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
@@ -14,10 +14,10 @@ if old not in s: sys.exit(5)
 open(p, 'w').write(s.replace(old, new, 1))
 PY
     (cd $w/oz/tip && $PM asm tipdogr.pma -o tipdogr.pmb --strip > /dev/null 2>&1) || { echo "mutant $1: derlenemedi"; exit 4; }
-    if (cd $w/oz/tip && timeout 600 ./dogrula_tip.sh $PM > $T/log_$1 2>&1); then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
+    if $D/../ilkhata.sh $T/log_$1 bash -c "cd $w/oz/tip && timeout 600 ./dogrula_tip.sh $PM"; then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
     rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
-bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; "$@" & }
+bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; ( slot_al; "$@"; slot_birak ) & }
 bg mut match_kesin 'gti z, sp, 0
     jz z, m1
     eq z, t, sp' 'gti z, sp, 0

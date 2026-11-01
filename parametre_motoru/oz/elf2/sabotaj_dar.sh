@@ -1,7 +1,7 @@
 #!/bin/bash
 # dogrula_dar.sh'in yakaladigini kanitlar: dar kayan nokta komutlarinin SEM kayitlarini (komut tablosu) tek tek bozar (mutant), kendi kopya agacinda gen2'yi yeniden uretir
 # ve dogrula_dar.sh'in BASARISIZ olmasini bekler.  Kullanim: sabotaj_dar.sh [pm] [paralel]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
+PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] \&\& JOBS=1000
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
 KM() { { echo "@@$1"; cat; } | $PM run $R/oz/arac/komut.pmb; }
 mut_sem() {   # etiket KOMUT eski yeni   (SEM satirinda ilk eski metni yeniyle degistirir)
@@ -18,12 +18,12 @@ if not done: sys.exit(5)
 " "$2" "$3" "$4" | KM yaz > $w/oz/komut/komutlar.pmk || { echo "SABOTAJ HATASI: $1 uygulanamadi"; exit 3; }
     cmp -s $w/oz/komut/komutlar.pmk $R/oz/komut/komutlar.pmk && { echo "SABOTAJ HATASI: $1 degisiklik yok"; exit 3; }
     (cd $w/oz/elf2 && ./uret.sh $PM > /dev/null 2>&1) || { echo "mutant $1: gen2 uretilemedi"; exit 4; }
-    if (cd $w/oz/elf2 && LIMS=200 timeout 900 ./dogrula_dar.sh $PM 0 12 > $T/log_$1 2>&1); then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
+    if $D/../ilkhata.sh $T/log_$1 bash -c "cd $w/oz/elf2 && LIMS=200 timeout 900 ./dogrula_dar.sh $PM 0 12"; then echo "KACTI: $1"; else echo "yakalandi: $1 ($(grep -c HATA $T/log_$1) hata)"; fi
     rm -rf $w ) > $T/sonuc_$1 2>&1; cat $T/sonuc_$1
 }
 # DENK (davranisi degistirmeyen) mutantlar bilincle YOK: cmp_lt->cmp_le (ef == EMIN esitliginde ayni secim), abs>=T -> abs>T (r>=T ayni durumu kapsar),
 # C = 1.25*2^k (x >= 0 icin 1.5 sart degil), esik 53 -> 52 (2^52..2^53 araliginda yapiskanli yol da dogru sonuc verir).
-bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; "$@" & }
+bg() { while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n 2>/dev/null || sleep 0.2; done; ( slot_al; "$@"; slot_birak ) & }
 bg mut_sem rnd_kaydir RND_F32 'lit t6 29' 'lit t6 28'
 bg mut_sem rnd_kaydir16 RND_F16 'lit t6 42' 'lit t6 41'
 bg mut_sem rnd_sessiz RND_F32 'lit t2 51 ; alu_shl t6 t6 t2 ; alu_or t7 t7 t6' 'lit t2 50 ; alu_shl t6 t6 t2 ; alu_or t7 t7 t6'
