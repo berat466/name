@@ -9,6 +9,8 @@ KM() { { echo "@@$1"; cat; } | (ulimit -v 900000; timeout 60 $PM run $KOMUT); }
 KM tur < $TAB > $T/tur.txt; KM imza < $TAB > $T/imza.txt
 [ -s $T/imza.txt ] && pass || fail "imza sozlugu uretilemedi"
 $PM asm tipdogr.pma -o $T/tip_yeni.pmb --strip > /dev/null 2>&1 && cmp -s $T/tip_yeni.pmb $D/tipdogr.pmb && pass || fail "tipdogr.pmb guncel degil (pm asm tipdogr.pma --strip)"
+# tipdogr'un native ELF'i (gen2): sayisal arac kendi zincirinde uretilip calisir
+$PM liste $D/tipdogr.pmb > $T/tip.l && (ulimit -v 2000000; $PM run $R/oz/elf2/gen2.pmb < $T/tip.l > $T/tipdogr.elf 2>/dev/null) && chmod +x $T/tipdogr.elf && pass || fail "tipdogr ELF uretilemedi"
 # tc ETIKET BEKLENEN "tur bildirimi" < program   (bildirim satirlari ';' ile ayrilir)
 tc() {
   local et=$1 exp=$2 spec=$3; cat > $T/p.pma
@@ -18,6 +20,9 @@ tc() {
   echo "$spec" | tr ';' '\n' | python3 $D/tipler.py $T/tur.txt $pad > $T/p.t 2>$T/t.err || { fail "$et: bildirim hatasi ($(head -c 100 $T/t.err))"; return; }
   out=$( { echo "@@IMZA"; cat $T/imza.txt; echo "@@PROGRAM"; cat $T/p.l; echo "@@TIPLER"; cat $T/p.t; } | (ulimit -v 1500000; timeout 60 $PM run $TIP) )
   [ "$out" = "$exp" ] && pass || fail "$et: beklenen '$exp', bulunan '$out'"
+  # ayni girdi ELF (gen2 ile uretilmis tipdogr.elf) ile: pm yorumlayicisiyla birebir ayni cikti
+  oute=$( { echo "@@IMZA"; cat $T/imza.txt; echo "@@PROGRAM"; cat $T/p.l; echo "@@TIPLER"; cat $T/p.t; } | (ulimit -v 4000000; timeout 120 $T/tipdogr.elf) )
+  [ "$oute" = "$out" ] && pass || fail "$et: ELF cikti '$oute' pm cikti '$out'"
 }
 # ---------------- OLUMLU ----------------
 tc "int zinciri + donusumler" "1" "0 - : i32 i32 i32 i8 bool i32" <<'EOT'
