@@ -89,6 +89,10 @@ if kind == 'ccv':
     o += ['    cv_f80_c128 q128, fr']; p2('q128', 'c128')
     o += ['    cv_f80_c160 t160, fr']; p160('t160')
     o += ['    host putc, 10', '    addi i, i, 1', '    jmp li', 'done: halt', '}', 'entry main']
+if kind == 'sq':
+    veri = ora('sqveri' + sfx, n)
+    o += ['memory 65536', 'data tab = ' + veri, 'func main() {', '    mov i, 0', 'li: gei z, i, %d' % n, '    jnz z, done', '    muli a, i, 2', '    addi a, a, tab', '    ld xl, a, 0', '    ld xh, a, 1', '    pack_%s x, xl, xh' % f, '    sqrt_%s r, x' % f]
+    W('r'); o += ['    host putc, 10', '    addi i, i, 1', '    jmp li', 'done: halt', '}', 'entry main']
 if kind == 'ni':
     veri = ora('niveri', n)
     o += ['memory 65536', 'data tab = ' + veri, 'func main() {', '    mov i, 0', 'li: gei z, i, %d' % n, '    jnz z, done', '    muli a, i, 3', '    addi a, a, tab', '    ld lo, a, 0', '    ld hi, a, 1', '    ld d, a, 2', '    pack_i128 qs, lo, hi', '    pack_u128 qu, lo, hi']

@@ -48,7 +48,7 @@ call [d,] ad, arg...  host [d,] ad, arg...
 Sabitler (tamsayı `42`, `0x1f`, `'A'`; ondalık `2.5`, `1e-3`) her operandda yazılabilir; yükleyici bunları işlev girişinde yazmaca taşır. Tür denetimi: tamsayı komutta ondalık sabit (ve tersi) hatadır. Tanımsız ad, yanlış argüman sayısı, bulunamayan etiket/giriş derleme hatasıdır. Yazma biçimi kasıtlı olarak tanıdık (assembler benzeri, adlı, yerel) tutulmuştur: hazır dil modelleri bunu sayı tablosundan çok daha güvenilir üretir.
 
 ## 6. Kanonik ikili biçim (PMB1)
-`"PMB1"`, bayrak, bellek, giriş, sabit havuzu, veri, bss, işlevler (`parametre, yazmaç, komut sayısı`, komutlar), isteğe bağlı ad bölümü (`--strip` ile atılır). Tüm tamsayılar LEB128; işaretli değerler zigzag; atlama hedefleri **göreli**. Aynı program her zaman aynı baytları üretir (kanonik).
+`"PMB1"`, bayrak, bellek, giriş, sabit havuzu, veri, bss, işlevler (`parametre, yazmaç, komut sayısı`, komutlar), isteğe bağlı ad bölümü (`--strip` ile atılır). Tüm tamsayılar LEB128; işaretli değerler zigzag; atlama hedefleri **göreli**. Komut kodu: < 255 ise tek ham bayt; ≥ 255 ise `0xFF` ardından LEB128(kod − 255) (Bölüm 01 ile eklendi; tablo 342 komut taşır). Aynı program her zaman aynı baytları üretir (kanonik).
 
 ## 7. Doğrulama
 Yükleyici ikiliyi çözerken ve çözdükten sonra denetler (doğrudan-operand `divi/modi` sabiti 0/-1 ise reddedilir): başlık, boyut sınırları, komut kodu, yazmaç/etiket/işlev/sabit/host indeksleri, çağrı penceresinin yazmaçlara sığması, her işlevin `jmp/ret/halt` ile bitmesi. Doğrulamayı geçen program VM'i çökertemez; kalan hatalar tuzak olarak bildirilir. (Ölçüm: bölüm 12.)

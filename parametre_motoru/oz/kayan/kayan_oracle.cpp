@@ -41,8 +41,14 @@ template <int F> static std::vector<W> values(int n) {
     v.push_back(mk(s, 0, 0)); v.push_back(mk(s, 0x7FFF, 0)); v.push_back(mk(s, 1, 0)); v.push_back(mk(s, 0x7FFE, FM)); v.push_back(mk(s, 16383, 0)); v.push_back(mk(s, 16383, ONE << (KB - 1)));
     v.push_back(mk(s, 0, 1)); v.push_back(mk(s, 0, FM)); v.push_back(mk(s, 16383 + 63, 0)); v.push_back(mk(s, 16383 + 64, 12345)); v.push_back(mk(s, 16383 + 112, 7)); v.push_back(mk(s, 16383 - 1, FM));
   }
+  // es-uzaklik (tie) ureten islenenler: (1+2^-a)(1+2^-b), a+b = KB+1 ; tamsayi sinirlarina yakin rastgele mantisler (2^62..2^64, 2^126..2^128)
+  for (int s = 0; s < 2; s++) {
+    v.push_back(mk(s, 16383, ONE << (KB - (KB + 1) / 2))); v.push_back(mk(s, 16383, ONE << (KB - (KB + 2) / 2)));
+    v.push_back(mk(s, 16383 + 63, (U(0x123456789ABCDEFULL) << 3) & FM)); v.push_back(mk(s, 16383 + 62, FM)); v.push_back(mk(s, 16383 + 127, 5)); v.push_back(mk(s, 16383 + 126, FM)); v.push_back(mk(s, 16383 + 128, 0));
+  }
   v.push_back(defnanw<F>()); v.push_back(mk(0, 0x7FFF, ONE << (KB - 1))); v.push_back(mk(1, 0x7FFF, 12345));
   if (F == 0) { v.push_back(W{0x0000000000000001ULL, 0x3FFF}); v.push_back(W{0x7FFFFFFFFFFFFFFFULL, 0x4005}); }   // unnormal (NaN sayilir)
+  if (F == 1 && n > 48) { /* f128: ek ozel degerler yukarida */ }
   while (int(v.size()) < n) {
     if (v.size() > 30 && rnd() % 3 == 0) {   // komsu: oncekinin ussu/mantisi az degistirilmis (iptal, es-uzaklik, yapiskan bit sinamasi)
       W p = v.back(); if (!isnanw<F>(p)) {
@@ -162,8 +168,9 @@ template <int F> static void veri(int n) {
 
 // ================= KARMASIK SAYILAR (c64 = float _Complex, c128 = double _Complex, c160 = long double _Complex) : -fcx-limited-range -ffp-contract=off ile derlenir =================
 typedef float _Complex C64; typedef double _Complex C128; typedef long double _Complex C160;
+static double nanpayload(int kind) { uint64_t b = kind == 0 ? 0x7FF8024680000000ULL : 0x7FF8000000001234ULL; double d; std::memcpy(&d, &b, 8); return d; }   // c64: float NaN 0x7FC01234 (double kabinda)
 static std::vector<double> dpool(int kind) {   // kind 0: float degerleri (c64), 1: double
-  std::vector<double> v = {0.0, -0.0, 1.0, -1.5, 3.0e38, -2.5e-38, 0.1, 1234.5678, 7.0e-3, -9.75, 65504.0, 1.0e-20};
+  std::vector<double> v = {0.0, -0.0, 1.0, -1.5, 3.0e38, -2.5e-38, 0.1, 1234.5678, 7.0e-3, -9.75, 65504.0, 1.0e-20};   // NaN yuku yalniz donusum havuzunda (aritmetikte iki NaN islenenden hangisinin yayilacagi derleyiciye gore degisir: degisme/yeniden siralama)
   if (kind == 1) { v.push_back(1.0e300); v.push_back(-4.9e-324); v.push_back(2.2250738585072014e-308); v.push_back(6.02e23); }
   v.push_back(INFINITY); v.push_back(-INFINITY);
   for (int i = 0; i < 6; i++) v.push_back((double)(rnd() % 2000001 - 1000000) / 1000.0 * std::pow(10.0, int(rnd() % 20) - 10));
@@ -171,9 +178,16 @@ static std::vector<double> dpool(int kind) {   // kind 0: float degerleri (c64),
   return v;
 }
 static void pd(const char* sep, double d) { printf("%s%lld", sep, (long long)(int64_t)dbits(d)); }
+static std::vector<std::pair<double, double>> cpairs(int K, int n) {
+  rng = 0x77AA55ULL + K; auto P = dpool(K); std::vector<std::pair<double, double>> vs;
+  const double fx[][2] = {{0, 0}, {-0.0, 0}, {0, -0.0}, {1, 0}, {0, 1}, {1, 1}, {-1.5, 2.25}, {INFINITY, 0}, {0, INFINITY}, {INFINITY, INFINITY}};
+  for (auto& f : fx) if ((int)vs.size() < n) vs.push_back({f[0], f[1]});
+  while ((int)vs.size() < n) { double a = P[rnd() % P.size()]; double b = P[rnd() % P.size()]; vs.push_back({a, b}); }
+  return vs;
+}
 template <int K> static void cbin(int n) {   // K: 0 c64, 1 c128
-  rng = 0x77AA55ULL + K; auto P = dpool(K); typedef typename std::conditional<K == 0, C64, C128>::type C; typedef typename std::conditional<K == 0, float, double>::type R;
-  std::vector<std::pair<double, double>> vs; for (int i = 0; i < n; i++) vs.push_back({P[rnd() % P.size()], P[rnd() % P.size()]});
+  typedef typename std::conditional<K == 0, C64, C128>::type C; typedef typename std::conditional<K == 0, float, double>::type R;
+  auto vs = cpairs(K, n);
   for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) {
     C a, b; __real__ a = (R)vs[i].first; __imag__ a = (R)vs[i].second; __real__ b = (R)vs[j].first; __imag__ b = (R)vs[j].second;
     C r[4] = {a + b, a - b, a * b, a / b}; bool first = true;
@@ -182,8 +196,8 @@ template <int K> static void cbin(int n) {   // K: 0 c64, 1 c128
   }
 }
 template <int K> static void cun(int n) {
-  rng = 0x77AA55ULL + K; auto P = dpool(K); typedef typename std::conditional<K == 0, C64, C128>::type C; typedef typename std::conditional<K == 0, float, double>::type R;
-  std::vector<std::pair<double, double>> vs; for (int i = 0; i < n; i++) vs.push_back({P[rnd() % P.size()], P[rnd() % P.size()]});
+  typedef typename std::conditional<K == 0, C64, C128>::type C; typedef typename std::conditional<K == 0, float, double>::type R;
+  auto vs = cpairs(K, n);
   for (int i = 0; i < n; i++) {
     C a; __real__ a = (R)vs[i].first; __imag__ a = (R)vs[i].second; C ng = -a, cj = ~a;
     printf("%lld %lld %lld %lld %d %lld %lld\n", (long long)(int64_t)dbits((double)__real__ ng), (long long)(int64_t)dbits((double)__imag__ ng), (long long)(int64_t)dbits((double)__real__ cj), (long long)(int64_t)dbits((double)__imag__ cj), a ? 1 : 0,
@@ -191,8 +205,8 @@ template <int K> static void cun(int n) {
   }
 }
 template <int K> static void cveri(int n) {
-  rng = 0x77AA55ULL + K; auto P = dpool(K); std::string s;
-  for (int i = 0; i < n; i++) { double x = P[rnd() % P.size()]; double y = P[rnd() % P.size()]; char b[80]; snprintf(b, 80, "%s%lld,%lld", i ? "," : "", (long long)(int64_t)dbits(x), (long long)(int64_t)dbits(y)); s += b; }
+  auto vs = cpairs(K, n); std::string s;
+  for (int i = 0; i < n; i++) { char b[80]; snprintf(b, 80, "%s%lld,%lld", i ? "," : "", (long long)(int64_t)dbits(vs[i].first), (long long)(int64_t)dbits(vs[i].second)); s += b; }
   puts(s.c_str());
 }
 static std::vector<LD> lpool() {
@@ -201,8 +215,15 @@ static std::vector<LD> lpool() {
   return v;
 }
 static void pl(LD x) { W w = fromLD(x); printf(" %lld %lld", (long long)(int64_t)w.lo, (long long)(int64_t)w.hi); }
+static std::vector<std::pair<LD, LD>> lpairs(int n) {
+  rng = 0x77AA55ULL + 2; auto P = lpool(); std::vector<std::pair<LD, LD>> vs;
+  const LD fx[][2] = {{0, 0}, {-0.0L, 0}, {0, -0.0L}, {1, 0}, {0, 1}, {1, 1}, {-1.5L, 2.25L}, {INFINITY, 0}, {0, INFINITY}, {INFINITY, INFINITY}};
+  for (auto& f : fx) if ((int)vs.size() < n) vs.push_back({f[0], f[1]});
+  while ((int)vs.size() < n) { LD a = P[rnd() % P.size()]; LD b = P[rnd() % P.size()]; vs.push_back({a, b}); }
+  return vs;
+}
 static void cbin160(int n) {
-  rng = 0x77AA55ULL + 2; auto P = lpool(); std::vector<std::pair<LD, LD>> vs; for (int i = 0; i < n; i++) vs.push_back({P[rnd() % P.size()], P[rnd() % P.size()]});
+  auto vs = lpairs(n);
   for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) {
     C160 a, b; __real__ a = vs[i].first; __imag__ a = vs[i].second; __real__ b = vs[j].first; __imag__ b = vs[j].second;
     C160 r[4] = {a + b, a - b, a * b, a / b};
@@ -211,17 +232,18 @@ static void cbin160(int n) {
   }
 }
 static void cun160(int n) {
-  rng = 0x77AA55ULL + 2; auto P = lpool(); std::vector<std::pair<LD, LD>> vs; for (int i = 0; i < n; i++) vs.push_back({P[rnd() % P.size()], P[rnd() % P.size()]});
+  auto vs = lpairs(n);
   for (int i = 0; i < n; i++) { C160 a; __real__ a = vs[i].first; __imag__ a = vs[i].second; C160 ng = -a, cj = ~a; pl(__real__ ng); pl(__imag__ ng); pl(__real__ cj); pl(__imag__ cj); printf(" %d", a ? 1 : 0); pl(__real__ a); pl(__imag__ a); printf("\n"); }
 }
 static void cveri160(int n) {
-  rng = 0x77AA55ULL + 2; auto P = lpool(); std::string s;
-  for (int i = 0; i < n; i++) { for (int k = 0; k < 2; k++) { W w = fromLD(P[rnd() % P.size()]); char b[96]; snprintf(b, 96, "%s%lld,%lld", (i || k) ? "," : "", (long long)(int64_t)w.lo, (long long)(int64_t)w.hi); s += b; } }
+  auto vs = lpairs(n); std::string s;
+  for (int i = 0; i < n; i++) { for (int k = 0; k < 2; k++) { W w = fromLD(k ? vs[i].second : vs[i].first); char b[96]; snprintf(b, 96, "%s%lld,%lld", (i || k) ? "," : "", (long long)(int64_t)w.lo, (long long)(int64_t)w.hi); s += b; } }
   puts(s.c_str());
 }
 // donusumler: n karmasik deger -> her tur cifti (c64<->c128<->c160) ve gercek -> karmasik (f64 kabi, f80)
+static std::vector<LD> lpoolnan() { auto v = lpool(); v.push_back((LD)NAN); W w{0xC000000000001234ULL, 0x7FFF}; v.push_back(toLD(w)); return v; }
 static void ccv(int n) {
-  rng = 0x99BB11ULL; auto P = dpool(1); auto L = lpool();
+  rng = 0x99BB11ULL; auto P = dpool(1); P.push_back(nanpayload(1)); P.push_back(nanpayload(0)); auto L = lpoolnan();
   for (int i = 0; i < n; i++) {
     double re = P[rnd() % P.size()], im = P[rnd() % P.size()]; C128 c128; __real__ c128 = re; __imag__ c128 = im;
     LD lre = L[rnd() % L.size()], lim = L[rnd() % L.size()]; C160 c160; __real__ c160 = lre; __imag__ c160 = lim;
@@ -236,7 +258,7 @@ static void ccv(int n) {
   }
 }
 static void ccveri(int n) {
-  rng = 0x99BB11ULL; auto P = dpool(1); auto L = lpool(); std::string s;
+  rng = 0x99BB11ULL; auto P = dpool(1); P.push_back(nanpayload(1)); P.push_back(nanpayload(0)); auto L = lpoolnan(); std::string s;
   for (int i = 0; i < n; i++) {
     double re = P[rnd() % P.size()], im = P[rnd() % P.size()]; LD lre = L[rnd() % L.size()], lim = L[rnd() % L.size()];
     W a = fromLD(lre), b = fromLD(lim); char buf[200]; snprintf(buf, 200, "%s%lld,%lld,%lld,%lld,%lld,%lld", i ? "," : "", (long long)(int64_t)dbits(re), (long long)(int64_t)dbits(im), (long long)(int64_t)a.lo, (long long)(int64_t)a.hi, (long long)(int64_t)b.lo, (long long)(int64_t)b.hi); s += buf;
@@ -275,6 +297,30 @@ static void ni(int n) {
     printf(" %lld %lld %lld %lld\n", (long long)(int64_t)uint64_t(a), (long long)(int64_t)uint64_t(a >> 64), (long long)(int64_t)uint64_t(b2), (long long)(int64_t)uint64_t(b2 >> 64));
   }
 }
+
+// ================= karekok (yogun): pozitif degerler, tam kareler ve komsulari =================
+template <int F> static std::vector<W> sqvalues(int n) {
+  typedef typename T<F>::type X; std::vector<W> v; rng = 0xC0FFEEULL + F;
+  const int KB = F == 0 ? 63 : 112;
+  for (int i = 0; i < n; i++) {
+    X x;
+    int k = int(rnd() % 6);
+    if (k == 0) { uint64_t r = rnd() % 100000; x = (X)r * (X)r; }                     // tam kare
+    else if (k == 1) { uint64_t r = rnd() % 100000 + 1; x = (X)r * (X)r; x = x * (1 + (X)1 / (X)(1ULL << 40)); }   // tam karenin hemen ustu
+    else if (k == 2) { x = (X)(rnd() % 1000000) / (X)1000; }
+    else if (k == 3) { int e = int(rnd() % 600) - 300; x = (X)((int64_t)(rnd() >> 12)) * (F == 0 ? ldexpl(1.0L, e) : (X)ldexpq((X)1, e)); if (x < 0) x = -x; }
+    else if (k == 4) { x = (X)(rnd() >> 11) / (X)(1ULL << 52); }
+    else { x = (X)1 + (X)(rnd() % 1000) / (X)(1ULL << 55); }
+    W w = put<F>(x); w.hi &= ~(F == 0 ? (1ULL << 15) : (1ULL << 63));   // pozitif
+    v.push_back(w); (void)KB;
+  }
+  return v;
+}
+template <int F> static void sqveri(int n) { auto v = sqvalues<F>(n); std::string s; for (size_t i = 0; i < v.size(); i++) { char b[64]; snprintf(b, 64, "%s%lld,%lld", i ? "," : "", (long long)(int64_t)v[i].lo, (long long)(int64_t)v[i].hi); s += b; } puts(s.c_str()); }
+template <int F> static void sq(int n) {
+  typedef typename T<F>::type X; auto v = sqvalues<F>(n);
+  for (auto& w : v) { X a = T<F>::get(w), r; if constexpr (F == 0) r = sqrtl(a); else r = sqrtq(a); W o = put<F>(r); prW(o); printf("\n"); }
+}
 int main(int argc, char** argv) {
   if (argc < 3) return 2; std::string m = argv[1]; int n = atoi(argv[2]);
   if (m == "veri80") veri<0>(n); else if (m == "veri128") veri<1>(n);
@@ -285,6 +331,7 @@ int main(int argc, char** argv) {
   else if (m == "cbin64") cbin<0>(n); else if (m == "cbin128") cbin<1>(n); else if (m == "cbin160") cbin160(n);
   else if (m == "cun64") cun<0>(n); else if (m == "cun128") cun<1>(n); else if (m == "cun160") cun160(n);
   else if (m == "cveri64") cveri<0>(n); else if (m == "cveri128") cveri<1>(n); else if (m == "cveri160") cveri160(n);
+  else if (m == "sq80") sq<0>(n); else if (m == "sq128") sq<1>(n); else if (m == "sqveri80") sqveri<0>(n); else if (m == "sqveri128") sqveri<1>(n);
   else if (m == "ni") ni(n); else if (m == "niveri") niveri(n);
   else if (m == "ccv") ccv(n); else if (m == "ccveri") ccveri(n);
   else if (m == "dbl" || m == "int") {   // veri: double bit desenleri / 64 bit tamsayilar (cd / ci ile ayni uretim)

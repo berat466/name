@@ -30,7 +30,7 @@ while IFS= read -r l; do l=${l#abi 1 }; cn=${l%%|*}; rest=${l#*|}; set -- $rest;
   nabi=$((nabi+1)); done < <(grep '^abi ' $T/or.txt)
 [ "$nabi" -ge 30 ] && pass || fail "abi: yalniz $nabi eslesme denetlendi"
 # her tablo ABI girdisi ya oracle'da var ya da bilinen genisleme (karmasik/yarim duyarlik/f128/std::byte/nullptr_t)
-KNOWN="float _Complex|double _Complex|long double _Complex|_Float16|__bf16|__float128|std::byte|std::nullptr_t"
+KNOWN="float _Complex|double _Complex|long double _Complex|_Float16|__bf16|__float128|std::byte|std::nullptr_t|_Float32|_Float64|_Float128|_Float32x|_Float64x|std::float16_t|std::float32_t|std::float64_t|std::float128_t|std::bfloat16_t"
 grep '^abi ' $T/tur.txt | while IFS= read -r l; do cn=$(echo "$l" | sed 's/^abi 1 [0-9]* //'); grep -qF "abi 1 $cn|" $T/or.txt || echo "$cn" | grep -qE "^($KNOWN)$" || echo "TANIMSIZ_ABI $cn"; done > $T/unk.txt
 [ ! -s $T/unk.txt ] && pass || fail "abi: oracle'da olmayan beklenmeyen girdi: $(head -2 $T/unk.txt | tr '\n' ' ')"
 # 3) bayt sirasi: tablodaki tum turler kucuk-sonlu (0) ve ana makine kucuk-sonlu
@@ -39,6 +39,31 @@ echo | $T/oracle >/dev/null; [ "$(printf '\001' | od -An -tu1 | tr -d ' ')" = 1 
 # 4) kanonik gidis-donus ve tur sozlugunda yinelenen ad yok
 KM kanon < $TAB | cmp -s - $TAB && pass || fail "tablo kanonik degil"
 [ "$(awk '$1=="tur"{print $3}' $T/tur.txt | sort | uniq -d | wc -l)" = 0 ] && pass || fail "yinelenen tur adi"
+# 5) DONUSUM KAPSAMI (Plan 01.030): sayisal turlerin her sirali cifti icin kayitli donusum YOLU (tek komut ya da kayitli donusumlerin birlesimi) var; yok olanlar yalniz tasarim geregi:
+#    karmasik -> karmasik olmayan (gercek/sanal parca real_*/imag_* komutlariyla alinir) ve nullptr_t ile sayisal turler arasi (nullptr_t -> bool / isaretsiz 64 haric)
+python3 - $T/tur.txt <<'PY' && pass || fail "donusum kapsami: beklenmeyen eksik donusum yolu"
+import sys
+names, cls, adj = {}, {}, {}
+for l in open(sys.argv[1]):
+    t = l.split()
+    if t[0] == 'tur': names[int(t[1])] = t[2]; cls[int(t[1])] = int(t[3]); adj[int(t[1])] = set()
+for l in open(sys.argv[1]):
+    t = l.split()
+    if t[0] == 'donusum': adj[int(t[1])].add(int(t[2]))
+bad = []
+for a in names:
+    seen = {a}; st = [a]
+    while st:
+        x = st.pop()
+        for y in adj[x]:
+            if y not in seen: seen.add(y); st.append(y)
+    for b in names:
+        if b in seen: continue
+        if cls[a] == 6 and cls[b] != 6: continue          # karmasik -> gercek: real_/imag_ komutlari
+        if cls[a] == 7 or cls[b] == 7: continue           # nullptr_t: yalniz bool ve isaretsiz 64 bit
+        bad.append((names[a], names[b]))
+if bad: print('eksik donusum yolu:', bad[:20]); sys.exit(1)
+PY
 echo "turler: $ok gecti, $bad basarisiz"
 rm -rf $T
 [ $bad = 0 ]

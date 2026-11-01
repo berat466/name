@@ -67,7 +67,7 @@ abi = {'char': 'char', 'signed char': 'schar', 'unsigned char': 'uchar', 'short'
        'bool': 'bool', 'wchar_t': 'wchar', 'char8_t': 'char8', 'char16_t': 'char16', 'char32_t': 'char32', 'std::byte': 'byte', 'std::nullptr_t': 'nullptr',
        'void*': 'u64', 'size_t': 'u64', 'ptrdiff_t': 'i64', 'intptr_t': 'i64', 'uintptr_t': 'u64', 'int8_t': 'i8', 'int16_t': 'i16', 'int32_t': 'i32', 'int64_t': 'i64',
        'uint8_t': 'u8', 'uint16_t': 'u16', 'uint32_t': 'u32', 'uint64_t': 'u64', '__int128': 'i128', 'unsigned __int128': 'u128', '_Float16': 'f16', '__bf16': 'bf16',
-       '__float128': 'f128', 'float _Complex': 'c64', 'double _Complex': 'c128', 'long double _Complex': 'c160'}
+       '__float128': 'f128', '_Float32': 'f32', '_Float64': 'f64', '_Float128': 'f128', '_Float32x': 'f64', '_Float64x': 'f80', 'std::float16_t': 'f16', 'std::float32_t': 'f32', 'std::float64_t': 'f64', 'std::float128_t': 'f128', 'std::bfloat16_t': 'bf16', 'float _Complex': 'c64', 'double _Complex': 'c128', 'long double _Complex': 'c160'}
 ids = {ad: i for (i, ad, *_r) in T}
 for cn, tn in abi.items():
     body = [3, 1] + name_words(cn) + [ids[tn], 0]
@@ -297,6 +297,7 @@ def sig(name, fmt):
     if m: return (I(m.group(2).lower()), I(m.group(1).lower()), NONE, 1)
     m = re.match(r'^CV_(I128|U128)_(F64|F32|F16|BF16)$', n)
     if m: return (I(m.group(2).lower()), I(m.group(1).lower()), NONE, 1)
+    if n == 'BSWAP128': return (SAME_B, ANY128, NONE, 0)
     m = re.match(r'^CV_F64_(I128|U128)$', n)
     if m: return (I(m.group(1).lower()), I('f64'), NONE, 1)
     CR = {'C64': 'f32', 'C128': 'f64', 'C160': 'f80'}

@@ -300,7 +300,7 @@ static inline double pm_i2fmt(uint64_t x, bool isSigned, int fmt) {
   double r = pm_round_core(a, 0, PM_FMT[fmt]); return neg ? -r : r;
 }
 
-enum W128K { W128_DIVS, W128_MODS, W128_DIVU, W128_MODU, W128_HI, W128_PACK, W128_MOV, W128_LDI, W128_ADD, W128_SUB, W128_MUL, W128_NEG, W128_NOT, W128_AND, W128_OR, W128_XOR, W128_SHL, W128_SHR, W128_SAR, W128_EQ, W128_NE, W128_LTS, W128_LES, W128_LTU, W128_LEU, W128_SEXT, W128_ZEXT, W128_TOBOOL, W128_TRUNC };
+enum W128K { W128_DIVS, W128_MODS, W128_DIVU, W128_MODU, W128_HI, W128_PACK, W128_MOV, W128_LDI, W128_ADD, W128_SUB, W128_MUL, W128_NEG, W128_NOT, W128_AND, W128_OR, W128_XOR, W128_SHL, W128_SHR, W128_SAR, W128_EQ, W128_NE, W128_LTS, W128_LES, W128_LTU, W128_LEU, W128_SEXT, W128_ZEXT, W128_TOBOOL, W128_TRUNC, W128_BSWAP };
 // Plan Bolum 01: 128 bit tamsayilar (genis operand: r, r+1 = dusuk, yuksek sozcuk). C++ gercekleme DERLEYICININ unsigned __int128 turuyle (mikro-program degil): bagimsiz referans.
 static inline int pm_w128(int code, int p1, int p2, uint64_t* R, int a, int b, int c) {
   typedef unsigned __int128 U; typedef __int128 S;
@@ -337,6 +337,7 @@ static inline int pm_w128(int code, int p1, int p2, uint64_t* R, int a, int b, i
     case W128_SEXT: W(a, U(S(int64_t(R[b])))); break;
     case W128_ZEXT: W(a, U(R[b])); break;
     case W128_TOBOOL: R[a] = L(b) != 0; break;
+    case W128_BSWAP: { uint64_t lo = R[b], hi = R[b + 1]; R[a] = __builtin_bswap64(hi); R[a + 1] = __builtin_bswap64(lo); break; }
     case W128_TRUNC: {   // p1 = bit (8/16/32/64), p2 = isaretli
       uint64_t v = R[b];
       if (p1 == 8) v = p2 ? uint64_t(int64_t(int8_t(v))) : uint64_t(uint8_t(v));

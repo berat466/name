@@ -298,3 +298,11 @@ def i128_2narrow(signed, nar, rnd_sem=None):
         g.ld('t1', 'Z', 0); g.st('NV', 't1'); ops_ = rnd_sem.split(' ; ')
         g.e('spld t1 %d' % g.var('NV')); g.e(*ops_[1:-1]); g.out1('t3')
     return g
+def bswap128():
+    """128 bit bayt sirasi cevirme: sonuc.lo = bswap64(kaynak.hi), sonuc.hi = bswap64(kaynak.lo)"""
+    g = G.newG(); g.rdw('t1', 'b', 0); g.rdw('t5', 'b', 1)
+    for src, dst in (('t1', 't4'), ('t5', 't6')):
+        g.e('lit %s 0' % dst)
+        for k in range(8): g.e('lit t2 %d' % (8 * k), 'alu_shr t3 %s t2' % src, 'lit t2 255', 'alu_and t3 t3 t2', 'lit t2 %d' % (56 - 8 * k), 'alu_shl t3 t3 t2', 'alu_or %s %s t3' % (dst, dst))
+    g.out2('t6', 't4')
+    return g

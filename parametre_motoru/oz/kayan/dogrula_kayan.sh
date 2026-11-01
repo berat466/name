@@ -27,11 +27,17 @@ karsilastir() {   # etiket pma beklenen svm_pma svm_beklenen
 test1() {   # tur F orakel_ad
   local kind=$1 F=$2 sfx=80; [ $F = f128 ] && sfx=128
   local on=$kind$sfx; [ $kind = cd -o $kind = ci ] && on=$kind$sfx
-  python3 kayan_prog.py $kind $F $NE $T/oracle > $T/k.pma && $T/oracle $on $NE > $T/k.exp || { fail "$kind $F: uretim"; return; }
+  local ne=$NE; [ $kind = un ] && ne=$((NE*4))   # tekli islemler/donusumler: deger basina maliyet dusuk, rastgele mantis kapsami icin daha cok deger
+  python3 kayan_prog.py $kind $F $ne $T/oracle > $T/k.pma && $T/oracle $on $ne > $T/k.exp || { fail "$kind $F: uretim"; return; }
   python3 kayan_prog.py $kind $F $NS $T/oracle > $T/ks.pma && $T/oracle $on $NS > $T/ks.exp || { fail "$kind $F svm: uretim"; return; }
   karsilastir "$F $kind" $T/k.pma $T/k.exp $T/ks.pma $T/ks.exp
 }
 for F in f80 f128; do for k in bin un cd ci; do test1 $k $F; done; done
+# karekok (yogun): tam kareler ve komsulari, ust ust cok deger (bit bit kok arama mikro-programi)
+for F in f80 f128; do
+  sfx=80; [ $F = f128 ] && sfx=128
+  python3 kayan_prog.py sq $F $((NE*6)) $T/oracle > $T/k.pma && $T/oracle sq$sfx $((NE*6)) > $T/k.exp && python3 kayan_prog.py sq $F $NS $T/oracle > $T/ks.pma && $T/oracle sq$sfx $NS > $T/ks.exp && karsilastir "$F sqrt (yogun)" $T/k.pma $T/k.exp $T/ks.pma $T/ks.exp || fail "$F sq uretim"
+done
 # 128 bit tamsayi <-> dar kayan nokta (f64 f32 f16 bf16)
 python3 kayan_prog.py ni f64 $NE $T/oracle > $T/k.pma && $T/oracle ni $NE > $T/k.exp && python3 kayan_prog.py ni f64 $NS $T/oracle > $T/ks.pma && $T/oracle ni $NS > $T/ks.exp && karsilastir "i128/u128 <-> dar kayan" $T/k.pma $T/k.exp $T/ks.pma $T/ks.exp || fail "ni uretim"
 # karmasik sayilar (c64 c128 c160): oracle derleyicinin _Complex turleri (-fcx-limited-range = motorun tanimi: duz formuller)
