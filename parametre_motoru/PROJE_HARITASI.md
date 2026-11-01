@@ -71,7 +71,10 @@ Hızlı çalıştırma: `oz/hizli.sh` (ilgili paketler + kritik denetimler), tam
 | float, grafik, mikro, cagri | `oz/elf2/dogrula_*.sh` | SSE2 ondalık, ekran/girdi, SEM'den yerel üretim (zorlanmış), `call/ret/halt/host` mikro şablonları |
 | svm | `oz/sayisal/dogrula_svm.sh` | SEM yürütücüsü = `pm` |
 | komut | `oz/komut/dogrula_komut.sh` | PMK1 biçimi, kayıpsız çevirim, genişletme (yeni komutlar yalnız sayılarla) |
-| turler | `oz/komut/dogrula_turler.sh` | TYPES bölümü: tür özellikleri, limitler, LP64 ABI eşlemesi (C++ derleyici gerçekleriyle) |
+| turler | `oz/komut/dogrula_turler.sh` | TYPES bölümü: tür özellikleri, limitler, LP64 ABI eşlemesi (C++ derleyici gerçekleriyle), dönüşüm kapsamı |
+| uyum | `oz/komut/dogrula_uyum.sh` | PMB1 geriye uyumluluk (komut kodu ≥ 255 kaçış kodlaması öncesi programlar bayt-bayt aynı) |
+| tip | `oz/tip/dogrula_tip.sh` | program düzeyi tür sistemi (PMT1 + TYPES imzaları → tipdogr) |
+| i128, kayan | `oz/tur128/dogrula_i128.sh`, `oz/kayan/dogrula_kayan.sh` | 128 bit tamsayı, f80/f128 yazılım kayan nokta, karmaşık sayılar: ELF = svm = C++ pm = bağımsız oracle (anlam: `oz/kayan/KAYAN_NOKTA.md`) |
 | tur, dar, donusum | `oz/elf2/dogrula_{tur,dar,donusum}.sh` | tamsayı/bool/bswap aileleri, f32/f16/bf16, dönüşüm matrisi: ELF = svm = C++ pm = bağımsız referans (C++ oracle / tam rasyonel Python) |
 | nesne, gorunum | `oz/nesne/dogrula_{nesne,gorunum}.sh` | bağlayıcı = metin yolu; PMV gor↔yaz kimliği, uçtan uca düzenleme; bağımsız Python referansı |
 | arac | `oz/arac/dogrula_arac.sh` | araçların ve ikililerin tazeliği |
