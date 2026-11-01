@@ -31,3 +31,6 @@ CV_F80_C128_2	f80 -> f64: ust sozcuge tasima hic uygulanmaz (53 bit tek sozcuk)
 MUL_C160_1	carpimin en dusuk kismi (ust 128 bitin altindaki tasima) yalniz yapiskan bit/es-uzaklik icin; test girdilerinde es-uzaklik operandlari olmadan etkisiz (rastgele taramada 0 fark)
 MUL_C160_4	f80 sabit uretecinin alt 32 bit maskesi: f80 sabitlerinde alt 32 bit hep 0
 DIV_C160_3	bolenin NaN sinifi bayragi: bolen kareler toplamidir, test girdilerinde NaN olamaz (NaN islenenli bolme DIV_F80 testinde)
+LE_F128_4	lit -1 -> -2: ardindan 32 bit mantiksal kaydirma ayni degeri verir (0xFFFFFFFF); sabit uretecinde etkisiz
+NE_F128_4	lit -1 -> -2: ardindan 32 bit mantiksal kaydirma ayni degeri verir; sabit uretecinde etkisiz
+LT_F80_4	lt komutu r_eq'yi kullanmaz (esitlik bacagindaki sifir&sifir OR'u olu kod)

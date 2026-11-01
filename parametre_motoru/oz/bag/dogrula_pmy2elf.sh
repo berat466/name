@@ -30,7 +30,8 @@ one() {   # etiket tanim.pmy
   uret=$((uret+1))
   TL=10; ML=900000
   (ulimit -v $ML; timeout $TL $PM run "$2" < /dev/null > $T/o1 2> $T/e1); r1=$?
-  if [ $r1 = 124 ] || [ $r1 = 134 ] || grep -q "TRAP: FUEL" $T/e1; then
+  if grep -q "TRAP: FUEL" $T/e1; then skip=$((skip+1)); echo "atlandi (pm varsayilan yakitini tuketti: ELF yakitsiz uretilir; yakit tuzagi dogrula_elf2/svm'de sinirli yakitla karsilastirilir): $1" >> ${ATLANAN:-/dev/null}; return; fi
+  if [ $r1 = 124 ] || [ $r1 = 134 ]; then
     # ilk deneme sinira takildi: sinirlar buyutulup BIR KEZ daha denenir (atlanan = buyuk sinirda da bitmeyen/yakit bitiren programlar; ELF ile karsilastirma yine de yapilir)
     TL=${BUYUK_SURE:-120}; ML=6000000
     (ulimit -v $ML; timeout $TL $PM run "$2" < /dev/null > $T/o1 2> $T/e1); r1=$?

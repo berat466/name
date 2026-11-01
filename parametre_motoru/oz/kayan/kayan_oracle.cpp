@@ -177,13 +177,14 @@ static std::vector<double> dpool(int kind) {   // kind 0: float degerleri (c64),
   if (kind == 1) { v.push_back(1.0e300); v.push_back(-4.9e-324); v.push_back(2.2250738585072014e-308); v.push_back(6.02e23); }
   v.push_back(INFINITY); v.push_back(-INFINITY);
   for (int i = 0; i < 6; i++) v.push_back((double)(rnd() % 2000001 - 1000000) / 1000.0 * std::pow(10.0, int(rnd() % 20) - 10));
-  if (kind == 0) for (auto& x : v) x = double(float(x));
+  if (kind == 0) { for (int i = 0; i < 10; i++) v.push_back((double)(rnd() % 2000001 + 1000000) / 3.0e6 * std::pow(10.0, -22 + int(rnd() % 3)));   // karesi f32 alt normal araligina dusen kucuk degerler
+    for (auto& x : v) x = double(float(x)); }
   return v;
 }
 static void pd(const char* sep, double d) { printf("%s%lld", sep, (long long)(int64_t)dbits(d)); }
 static std::vector<std::pair<double, double>> cpairs(int K, int n) {
   rng = 0x77AA55ULL + K; auto P = dpool(K); std::vector<std::pair<double, double>> vs;
-  const double fx[][2] = {{0, 0}, {-0.0, 0}, {0, -0.0}, {1, 0}, {0, 1}, {1, 1}, {-1.5, 2.25}, {INFINITY, 0}, {0, INFINITY}, {INFINITY, INFINITY}, {-1, 0}, {0, -1}, {-1, -1}, {-0.0, -1}, {1e-20, 1e-20}};
+  const double fx[][2] = {{0, 0}, {-0.0, 0}, {0, -0.0}, {1, 0}, {0, 1}, {1, 1}, {-1.5, 2.25}, {INFINITY, 0}, {0, INFINITY}, {INFINITY, INFINITY}, {-1, 0}, {0, -1}, {-1, -1}, {-0.0, -1}, {1e-20, 1e-20}, {1.1, 1.3}, {3.7, 2.9}, {0.3, 0.7}, {12345.678, 4321.987}, {3.3e-20, 1.7e-20}, {-5.9e-21, 8.3e-21}};
   for (auto& f : fx) if ((int)vs.size() < n) vs.push_back({f[0], f[1]});
   while ((int)vs.size() < n) { double a = P[rnd() % P.size()]; double b = P[rnd() % P.size()]; vs.push_back({a, b}); }
   return vs;
