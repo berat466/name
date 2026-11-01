@@ -28,7 +28,7 @@ space MD 40000
 space PM 1024
 space HM 1024
 space TS 16
-space SC 64
+space SC 256
 space OP3 4
 space G 64
 

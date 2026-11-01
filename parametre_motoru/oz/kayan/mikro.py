@@ -6,7 +6,7 @@ def s64(v): v &= M64; return v - (1 << 64) if v >> 63 else v
 class Trap(Exception): pass
 def calistir(ops, operand_regs, a=0, b=0, c=0, nregs=64, adim_siniri=3000000):
     """ops: mikro-islem metinleri; operand_regs: yazmac dizisi (liste, degistirilir); a,b,c: operand yuvalari (yazmac numaralari)"""
-    T = [0] * 32; SC = [0] * 64; OP = {'a': a, 'b': b, 'c': c}
+    T = [0] * 32; SC = [0] * 256; OP = {'a': a, 'b': b, 'c': c}
     prog = [o.split() for o in ops]
     i = 0; lpk = 0; adim = 0
     R = operand_regs

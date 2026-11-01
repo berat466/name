@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Plan Bolum 01 (genis degerler icin mikro-program dongusu ve kazima alani): mikro-islemler
 #   lpb            : dongu basi (konum isaretlenir)            lpe ti : gecici ti sifir degilse dongu basina don (tek seviye, mikro-program ici)
-#   spld to,n      : kazima alani sozcugu n (0..63) -> gecici   spst n,ti : gecici -> kazima alani sozcugu n
+#   spld to,n      : kazima alani sozcugu n (0..255) -> gecici   spst n,ti : gecici -> kazima alani sozcugu n
 # Kazima alani komut ornegi boyunca yasar (komutlar arasi kalici degil); ELF'te yigin isaretcisinin altinda sabit konumlar, svm'de ayri dizi.
 # x86: MARK_Fk (konum kaydet), RELM_Fk (kayitli konuma bagil 32 bit), SCR_Fk (kazima sozcugu diski: -(144+8n))
 import sys
