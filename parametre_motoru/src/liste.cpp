@@ -49,7 +49,7 @@ Program liste_to_program(const std::string& text) {
     f.nparams = uint32_t(u()); f.nregs = uint32_t(u()); unsigned long long nc = u(); f.code.resize(nc);
     for (Ins& in : f.code) {
       unsigned long long op = u(); if (op >= OP_COUNT) throw PmError("liste: bilinmeyen komut kodu");
-      in.op = uint8_t(op); in.a = in.b = in.c = 0; const OpInfo& oi = kOpInfo[op];
+      in.op = uint16_t(op); in.a = in.b = in.c = 0; const OpInfo& oi = kOpInfo[op];
       for (int j = 0; j < oi.nops; j++) { int32_t v = int32_t(sg()); (j == 0 ? in.a : j == 1 ? in.b : in.c) = v; }
     }
   }
@@ -109,7 +109,7 @@ std::string liste_dogrula(const std::string& text) {
       f.nparams = uint32_t(np); f.nregs = uint32_t(nr);
       for (uint64_t i = 0; i < nc; i++) {
         Ins in; in.a = in.b = in.c = 0;
-        uint64_t op = U(OP_COUNT - 1); in.op = uint8_t(op); const OpInfo& oi = kOpInfo[op];
+        uint64_t op = U(OP_COUNT - 1); in.op = uint16_t(op); const OpInfo& oi = kOpInfo[op];
         for (int j = 0; j < oi.nops; j++) {
           int64_t v = S(); if (v < INT32_MIN || v > INT32_MAX) throw PmError("liste: operand sinir disi");
           (j == 0 ? in.a : j == 1 ? in.b : in.c) = int32_t(v);

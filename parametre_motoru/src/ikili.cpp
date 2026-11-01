@@ -61,7 +61,7 @@ std::vector<uint8_t> encode_program(const Program& p, bool strip_names) {
     put_var(o, f.nparams); put_var(o, f.nregs); put_var(o, f.code.size());
     for (size_t pc = 0; pc < f.code.size(); pc++) {
       const Ins& in = f.code[pc];
-      o.push_back(in.op);
+      if (in.op < 255) o.push_back(uint8_t(in.op)); else { o.push_back(255); put_var(o, uint64_t(in.op) - 255); }   // PMB1: komut kodu < 255 tek bayt; >= 255: 0xFF + LEB128(kod-255)
       const OpInfo& oi = kOpInfo[in.op];
       for (int j = 0; j < oi.nops; j++) {
         char k = oi.kinds[j]; int32_t v = field(in, j);
@@ -103,9 +103,10 @@ Program parse_program(const uint8_t* data, size_t n) {   // yalniz bicim cozumu 
     f.code.resize(ncode);
     for (size_t pc = 0; pc < ncode; pc++) {
       Ins& in = f.code[pc];
-      uint8_t op = r.byte();
+      uint64_t op = r.byte();
+      if (op == 255) { uint64_t ex = r.var(); if (ex > 65535) throw PmError("ikili: bilinmeyen komut kodu"); op += ex; }
       if (op >= OP_COUNT) throw PmError("ikili: bilinmeyen komut kodu");
-      in.op = op; in.a = in.b = in.c = 0;
+      in.op = uint16_t(op); in.a = in.b = in.c = 0;
       const OpInfo& oi = kOpInfo[op];
       for (int j = 0; j < oi.nops; j++) {
         char k = oi.kinds[j]; int64_t v;
@@ -144,7 +145,7 @@ void validate_program(const Program& p) {
       throw PmError("dogrulama: fonksiyon " + std::to_string(fi) + " komut " + std::to_string(pc) + ": " + m);
     };
     if (f.code.empty()) bad(0, "bos fonksiyon");
-    uint8_t last = f.code.back().op;
+    uint16_t last = f.code.back().op;
     if (last != OP_JMP && last != OP_RET && last != OP_HALT) bad(f.code.size() - 1, "son komut jmp/ret/halt olmali");
     for (size_t pc = 0; pc < f.code.size(); pc++) {
       const Ins& in = f.code[pc]; const OpInfo& oi = kOpInfo[in.op];

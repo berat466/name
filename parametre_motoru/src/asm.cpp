@@ -261,7 +261,7 @@ struct Asm {
     for (const Ins& in : C) { const OpInfo& oi = kOpInfo[in.op]; for (int j = 0; j < oi.nops; j++) if (oi.kinds[j] == 'l') tgt[size_t(j == 0 ? in.a : j == 1 ? in.b : in.c)] = 1; }
     std::vector<int> rd(f.nregs, 0), wr(f.nregs, 0);
     for (const Ins& in : C) regAccess(in, [&](int r) { rd[size_t(r)]++; }, [&](int r) { wr[size_t(r)]++; });
-    auto stops = [](uint8_t op) { return op == OP_JMP || op == OP_JZ || op == OP_JNZ || op == OP_RET || op == OP_HALT || op == OP_CALL || op == OP_HOST; };
+    auto stops = [](uint16_t op) { return op == OP_JMP || op == OP_JZ || op == OP_JNZ || op == OP_RET || op == OP_HALT || op == OP_CALL || op == OP_HOST; };
     auto refs = [&](const Ins& in, int r) { bool x = false; regAccess(in, [&](int q) { if (q == r) x = true; }, [&](int q) { if (q == r) x = true; }); return x; };
     for (size_t u = 0; u < M; u++) {   // A
       const Ins m = C[u];

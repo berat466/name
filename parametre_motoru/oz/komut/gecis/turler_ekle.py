@@ -131,6 +131,33 @@ for f_ in FL:
         body = [2, f_[0], t_[0], o, 1 if o == -1 else 2, 0]
         conv.append([len(body)] + body)
 
+# genis kayan nokta (f80, f128): tamsayi (<=64 ve 128 bit, bool, karakter, bayt) <-> F, dar kayan <-> F, f80 <-> f128
+WF = [t for t in T if t[1] in ('f80', 'f128')]
+NARROW = [t for t in T if t[1] in ('f16', 'bf16', 'f32', 'f64')]
+for w_ in WF:
+    wp = 64 if w_[1] == 'f80' else 113    # anlamli bit sayisi
+    for i_ in T:
+        if i_[2] not in INTLIKE: continue
+        # tamsayi -> F
+        if i_[3] == 128: o = opid[('cv_i128_%s' if i_[4] else 'cv_u128_%s') % w_[1]]
+        else:
+            u64src = (i_[2] != 2 and i_[4] == 0 and i_[3] == 64)
+            o = opid[('cv_u64_%s' if u64src else 'cv_i64_%s') % w_[1]]
+        exact = (i_[2] == 2) or (i_[3] <= wp)
+        body = [2, i_[0], w_[0], o, 1 if exact else 2, 0]; conv.append([len(body)] + body)
+        # F -> tamsayi
+        if i_[2] == 2: o = opid['tobool_' + w_[1]]
+        elif i_[3] == 128: o = opid[('cv_%s_i128' if i_[4] else 'cv_%s_u128') % w_[1]]
+        else: o = opid['cv_%s_%s%d' % (w_[1], 'i' if i_[4] else 'u', i_[3])]
+        body = [2, w_[0], i_[0], o, 2, 0]; conv.append([len(body)] + body)
+    for n_ in NARROW:
+        body = [2, n_[0], w_[0], opid['cv_f64_' + w_[1]], 1, 0]; conv.append([len(body)] + body)
+        body = [2, w_[0], n_[0], opid['cv_%s_%s' % (w_[1], n_[1])], 2, 0]; conv.append([len(body)] + body)
+    for v_ in WF:
+        if v_ is w_: o, fl = -1, 1
+        else: o = opid['cv_%s_%s' % (v_[1], w_[1])]; fl = 1 if (v_[1] == 'f80') else 2
+        body = [2, v_[0], w_[0], o, fl, 0]; conv.append([len(body)] + body)
+
 # ---- OPSIG (etiket 4) ve HOSTSIG (etiket 5): komutlarin program duzeyi tur imzalari. Alan kodlari (yuva a,b,c = OP bicimindeki operand sirasi):
 #   0 yok/yazmac degil  >0 kesin tur kimligi  -1 INT1 (tamsayi benzeri 1 sozcuk)  -2 FLT1 (kayan 1 sozcuk)  -3 ANY1 (herhangi 1 sozcuk)  -4/-5/-6 a/b/c yuvasiyla AYNI tur
 #   -7 ADDR (i64|u64)  -8 FREE (hedef: bildirilmis tur serbest, 1 sozcuk)  -9 INTDST (hedef tamsayi benzeri; akis izlemede i64)  -10 INT64 (i64|u64)  -11 ANY128 (i128|u128)
@@ -225,6 +252,26 @@ def sig(name, fmt):
     if m: return (I('i64' if m.group(1) == 'I128' else 'u64'), I(m.group(1).lower()), NONE, 0)
     m = re.match(r'^PACK_(I128|U128)$', n)
     if m: return (I(m.group(1).lower()), INT64, INT64, 0)
+    m = re.match(r'^(ADD|SUB|MUL|DIV)_(F80|F128)$', n)
+    if m: ty = I(m.group(2).lower()); return (ty, ty, ty, 0)
+    m = re.match(r'^(SQRT|NEG|ABS|MOV)_(F80|F128)$', n)
+    if m: ty = I(m.group(2).lower()); return (ty, ty, NONE, 0)
+    m = re.match(r'^PACK_(F80|F128)$', n)
+    if m: return (I(m.group(1).lower()), INT64, INT64, 0)
+    m = re.match(r'^(LO64|HI64)_(F80|F128)$', n)
+    if m: return (I('u64'), I(m.group(2).lower()), NONE, 0)
+    m = re.match(r'^(EQ|NE|LT|LE)_(F80|F128)$', n)
+    if m: ty = I(m.group(2).lower()); return (I('bool'), ty, ty, 0)
+    m = re.match(r'^TOBOOL_(F80|F128)$', n)
+    if m: return (I('bool'), I(m.group(1).lower()), NONE, 1)
+    m = re.match(r'^CV_(F64|F80|F128)_(F80|F128|F64|F32|F16|BF16)$', n)
+    if m: return (I(m.group(2).lower()), I(m.group(1).lower()), NONE, 1)
+    m = re.match(r'^CV_(I64|U64)_(F80|F128)$', n)
+    if m: return (I(m.group(2).lower()), INT1, NONE, 1)
+    m = re.match(r'^CV_(I128|U128)_(F80|F128)$', n)
+    if m: return (I(m.group(2).lower()), I(m.group(1).lower()), NONE, 1)
+    m = re.match(r'^CV_(F80|F128)_([IU](8|16|32|64|128))$', n)
+    if m: return (I(m.group(2).lower()), I(m.group(1).lower()), NONE, 1)
     return 'EKSIK'
 sigrec = []; eksik = []
 for l in gor:

@@ -6,7 +6,7 @@
 // Bu dosya yalniz C++ tarafi yapilarini (Ins, Limits, enum/yardimci tipler) tutar.
 #include "ops_gen.h"
 
-enum Op : uint8_t {
+enum Op : uint16_t {
 #define X(E, N, C, K) OP_##E,
   PM_OPS(X)
 #undef X
@@ -31,7 +31,7 @@ enum HostId : uint8_t {
 struct HostInfo { const char* name; int arity; };
 extern const HostInfo kHostInfo[H_COUNT];
 
-struct Ins { uint8_t op; int32_t a, b, c; };   // bellek ici cozulmus hal
+struct Ins { uint16_t op; int32_t a, b, c; };   // bellek ici cozulmus hal
 
 struct Limits {
   static constexpr uint32_t kMaxFuncs = 65535;

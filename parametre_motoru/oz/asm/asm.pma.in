@@ -69,8 +69,8 @@ space GA 524288
 space GB 524288
 space GC 524288
 space OUTB 1048576
-space NMO 256
-space NML 256
+space NMO 4096
+space NML 4096
 space G 128
 space FBN 1024
 space FDG 1024
@@ -3386,8 +3386,14 @@ p1: ge z, p, m
     add g, cs, p
     add a, g, GOP
     ld op, a, 0
+    lti z, op, 255
+    jz z, ex1
     call x, outb, op
-    add a, op, NOPS
+    jmp ex2
+ex1: call x, outb, 255
+    addi v, op, -255
+    call x, uleb, v
+ex2: add a, op, NOPS
     ld nops, a, 0
     mov j, 0
 j1: ge z, j, nops

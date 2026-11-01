@@ -24,7 +24,7 @@ space FRF 65600
 space NK 8192
 space MS 8192
 space MN 8192
-space MD 40000
+space MD 400000
 space PM 1024
 space HM 1024
 space TS 16
@@ -370,7 +370,7 @@ s3: ge z, k, nm
     addi src, src, 3
     muli t, tot, 5
     add dst, t, MD
-    gei z, tot, 7999
+    gei z, tot, 79999
     jz z, s4
     call x, red, 14
 s4: add b, src, TB

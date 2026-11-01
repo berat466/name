@@ -27,7 +27,7 @@ enum FunK : uint8_t { FUNK_NEG, FUNK_SQRT };
 enum FcmpK : uint8_t { FCMPK_EQ, FCMPK_LT, FCMPK_LE };
 enum MicroKind : uint8_t { MK_END, MK_RD, MK_IM, MK_LK, MK_ALU, MK_CMP, MK_UN, MK_DIVS, MK_MODS, MK_DIVN, MK_MODN, MK_WR,
                            MK_LD, MK_ST, MK_BR, MK_BRZ, MK_BRNZ, MK_CALLM, MK_RETM, MK_HALTM, MK_HOSTM, MK_ALLOCM, MK_FALU, MK_FUN, MK_FCMP, MK_CVTIF, MK_CVTFI,
-                           MK_SX, MK_ZX, MK_DIVU, MK_MODU, MK_LIT, MK_U2F, MK_F2U, MK_RNDF, MK_I2FN, MK_BSWAP, MK_W128 };   // MK_SX.. : Plan Bolum 01 (tamsayi turleri); makine kodu uretecinde (native) DESTEKLENMEZ -> yorumlayici
+                           MK_SX, MK_ZX, MK_DIVU, MK_MODU, MK_LIT, MK_U2F, MK_F2U, MK_RNDF, MK_I2FN, MK_BSWAP, MK_W128, MK_WFP };   // MK_SX.. : Plan Bolum 01 (tamsayi turleri); makine kodu uretecinde (native) DESTEKLENMEZ -> yorumlayici
 struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define OPD_a 0
 #define OPD_b 1
@@ -252,7 +252,8 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define SEM_DIV_U128(M) M##_W128(W128_DIVU,0,0)
 #define SEM_MOD_U128(M) M##_W128(W128_MODU,0,0)
 
-#define PM_SEM_OPS(X) \
+#include "anlam_wfp_gen.h"
+#define PM_SEM_OPS(X) PM_SEM_OPS_WFP(X) \
   X(MOV) X(LDI) X(LDK) X(ADD) X(SUB) X(MUL) X(AND) X(OR) X(XOR) X(SHL) X(SHR) X(SAR) X(EQ) X(NE) X(LT) X(LE) \
   X(NEG) X(NOT) X(DIV) X(MOD) X(ADDI) X(MULI) X(ANDI) X(SHLI) X(SHRI) X(SARI) X(DIVI) X(MODI) \
   X(EQI) X(NEI) X(LTI) X(LEI) X(GTI) X(GEI) X(JMP) X(JZ) X(JNZ) X(CALL) X(RET) X(HALT) X(LD) X(ST) X(ALLOC) X(HOST) \
@@ -367,6 +368,7 @@ static inline int pm_w128(int code, int p1, int p2, uint64_t* R, int a, int b, i
 #define DATA_HOSTM(h,b) {MK_HOSTM, OPD_##h, OPD_##b, 0, 0},
 #define DATA_ALLOCM(t,tn) {MK_ALLOCM, t, tn, 0, 0},
 
+#include "anlam_wfp.h"
 #define DATA_FALU(op,t,t1,t2) {MK_FALU, FALUK_##op, t, t1, t2},
 #define DATA_FUN(op,t,t1) {MK_FUN, FUNK_##op, t, t1, 0},
 #define DATA_FCMP(cc,t,t1,t2) {MK_FCMP, FCMPK_##cc, t, t1, t2},
@@ -379,6 +381,7 @@ static inline int pm_w128(int code, int p1, int p2, uint64_t* R, int a, int b, i
 #define DATA_U2F(t,t1) {MK_U2F, t, t1, 0, 0},
 #define DATA_F2U(t,t1) {MK_F2U, t, t1, 0, 0},
 #define DATA_W128(kod,x1,x2) {MK_W128, kod, x1, x2, 0},
+#define DATA_WFP(kod,x1,x2) {MK_WFP, kod, x1, x2, 0},
 #define DATA_BSWAP(w,t,t1) {MK_BSWAP, w, t, t1, 0},
 #define DATA_LIT(t,v) {MK_LIT, t, v, 0, 0},
 #define DATA_RNDF(fmt,t,t1) {MK_RNDF, fmt, t, t1, 0},
@@ -479,6 +482,7 @@ static inline double pm_fnan(double a, double b, double r) {
 #define INTERP_U2F(t,t1) T##t = fromF(double(uint64_t(T##t1)));
 #define INTERP_F2U(t,t1) T##t = f2u(asF(T##t1));
 #define INTERP_W128(kod,x1,x2) { if (pm_w128(kod, x1, x2, R, in.a, in.b, in.c)) TRAP(T_DIV0); }
+#define INTERP_WFP(kod,x1,x2) { pm_wfp(kod, x1, x2, R, in.a, in.b, in.c); }
 #define INTERP_BSWAP(w,t,t1) T##t = ((w) == 16 ? uint64_t(__builtin_bswap16(uint16_t(T##t1))) : (w) == 32 ? uint64_t(__builtin_bswap32(uint32_t(T##t1))) : __builtin_bswap64(T##t1));
 #define INTERP_LIT(t,v) T##t = uint64_t(int64_t(v));
 #define INTERP_RNDF(fmt,t,t1) T##t = fromF(pm_rndfmt(asF(T##t1), fmt));

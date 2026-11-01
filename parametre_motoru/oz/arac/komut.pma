@@ -1243,7 +1243,7 @@ m1b: mov one, 1
     ld nk, G, 24
     lti z, nm, 0
     jnz z, mbad
-    gti z, nm, 255
+    gti z, nm, 8191
     jnz z, mbad
     addi m0p, r, 3
     muli t, nm, 5

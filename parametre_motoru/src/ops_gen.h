@@ -210,7 +210,79 @@
   X(DIV_I128, "div_i128", 3, "Qqq") \
   X(MOD_I128, "mod_i128", 3, "Qqq") \
   X(DIV_U128, "div_u128", 3, "Qqq") \
-  X(MOD_U128, "mod_u128", 3, "Qqq")
+  X(MOD_U128, "mod_u128", 3, "Qqq") \
+  X(ADD_F80, "add_f80", 3, "Qqq") \
+  X(SUB_F80, "sub_f80", 3, "Qqq") \
+  X(MUL_F80, "mul_f80", 3, "Qqq") \
+  X(DIV_F80, "div_f80", 3, "Qqq") \
+  X(SQRT_F80, "sqrt_f80", 2, "Qq") \
+  X(NEG_F80, "neg_f80", 2, "Qq") \
+  X(ABS_F80, "abs_f80", 2, "Qq") \
+  X(MOV_F80, "mov_f80", 2, "Qq") \
+  X(PACK_F80, "pack_f80", 3, "Qrr") \
+  X(LO64_F80, "lo64_f80", 2, "dq") \
+  X(HI64_F80, "hi64_f80", 2, "dq") \
+  X(EQ_F80, "eq_f80", 3, "dqq") \
+  X(NE_F80, "ne_f80", 3, "dqq") \
+  X(LT_F80, "lt_f80", 3, "dqq") \
+  X(LE_F80, "le_f80", 3, "dqq") \
+  X(TOBOOL_F80, "tobool_f80", 2, "dq") \
+  X(CV_F64_F80, "cv_f64_f80", 2, "Qf") \
+  X(CV_F80_F64, "cv_f80_f64", 2, "dq") \
+  X(CV_F80_F32, "cv_f80_f32", 2, "dq") \
+  X(CV_F80_F16, "cv_f80_f16", 2, "dq") \
+  X(CV_F80_BF16, "cv_f80_bf16", 2, "dq") \
+  X(CV_I64_F80, "cv_i64_f80", 2, "Qr") \
+  X(CV_U64_F80, "cv_u64_f80", 2, "Qr") \
+  X(CV_I128_F80, "cv_i128_f80", 2, "Qq") \
+  X(CV_U128_F80, "cv_u128_f80", 2, "Qq") \
+  X(CV_F80_I64, "cv_f80_i64", 2, "dq") \
+  X(CV_F80_U64, "cv_f80_u64", 2, "dq") \
+  X(CV_F80_I128, "cv_f80_i128", 2, "Qq") \
+  X(CV_F80_U128, "cv_f80_u128", 2, "Qq") \
+  X(CV_F80_I8, "cv_f80_i8", 2, "dq") \
+  X(CV_F80_U8, "cv_f80_u8", 2, "dq") \
+  X(CV_F80_I16, "cv_f80_i16", 2, "dq") \
+  X(CV_F80_U16, "cv_f80_u16", 2, "dq") \
+  X(CV_F80_I32, "cv_f80_i32", 2, "dq") \
+  X(CV_F80_U32, "cv_f80_u32", 2, "dq") \
+  X(ADD_F128, "add_f128", 3, "Qqq") \
+  X(SUB_F128, "sub_f128", 3, "Qqq") \
+  X(MUL_F128, "mul_f128", 3, "Qqq") \
+  X(DIV_F128, "div_f128", 3, "Qqq") \
+  X(SQRT_F128, "sqrt_f128", 2, "Qq") \
+  X(NEG_F128, "neg_f128", 2, "Qq") \
+  X(ABS_F128, "abs_f128", 2, "Qq") \
+  X(MOV_F128, "mov_f128", 2, "Qq") \
+  X(PACK_F128, "pack_f128", 3, "Qrr") \
+  X(LO64_F128, "lo64_f128", 2, "dq") \
+  X(HI64_F128, "hi64_f128", 2, "dq") \
+  X(EQ_F128, "eq_f128", 3, "dqq") \
+  X(NE_F128, "ne_f128", 3, "dqq") \
+  X(LT_F128, "lt_f128", 3, "dqq") \
+  X(LE_F128, "le_f128", 3, "dqq") \
+  X(TOBOOL_F128, "tobool_f128", 2, "dq") \
+  X(CV_F64_F128, "cv_f64_f128", 2, "Qf") \
+  X(CV_F128_F64, "cv_f128_f64", 2, "dq") \
+  X(CV_F128_F32, "cv_f128_f32", 2, "dq") \
+  X(CV_F128_F16, "cv_f128_f16", 2, "dq") \
+  X(CV_F128_BF16, "cv_f128_bf16", 2, "dq") \
+  X(CV_I64_F128, "cv_i64_f128", 2, "Qr") \
+  X(CV_U64_F128, "cv_u64_f128", 2, "Qr") \
+  X(CV_I128_F128, "cv_i128_f128", 2, "Qq") \
+  X(CV_U128_F128, "cv_u128_f128", 2, "Qq") \
+  X(CV_F128_I64, "cv_f128_i64", 2, "dq") \
+  X(CV_F128_U64, "cv_f128_u64", 2, "dq") \
+  X(CV_F128_I128, "cv_f128_i128", 2, "Qq") \
+  X(CV_F128_U128, "cv_f128_u128", 2, "Qq") \
+  X(CV_F128_I8, "cv_f128_i8", 2, "dq") \
+  X(CV_F128_U8, "cv_f128_u8", 2, "dq") \
+  X(CV_F128_I16, "cv_f128_i16", 2, "dq") \
+  X(CV_F128_U16, "cv_f128_u16", 2, "dq") \
+  X(CV_F128_I32, "cv_f128_i32", 2, "dq") \
+  X(CV_F128_U32, "cv_f128_u32", 2, "dq") \
+  X(CV_F80_F128, "cv_f80_f128", 2, "Qq") \
+  X(CV_F128_F80, "cv_f128_f80", 2, "Qq")
 
 // X(ENUM, "ad", arguman_sayisi)  host islevleri
 #define PM_HOSTS(X) \
