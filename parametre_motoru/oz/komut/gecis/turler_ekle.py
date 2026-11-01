@@ -199,6 +199,8 @@ def sig(name, fmt):
     if n == 'FTOBOOL': return (I('bool'), FLT1, NONE, 1)
     m = re.match(r'^BSWAP(16|32|64)$', n)
     if m: return (I('u' + m.group(1)), I('u' + m.group(1)), NONE, 0)
+    m = re.match(r'^(DIV|MOD)_(I128|U128)$', n)
+    if m: ty = I(m.group(2).lower()); return (ty, ty, ty, 0)
     m = re.match(r'^(MOV|LDI|ADD|SUB|MUL|AND|OR|XOR|NEG|NOT|SHL)_(I128|U128)$', n)
     if m:
         ty = I(m.group(2).lower()); k = m.group(1)

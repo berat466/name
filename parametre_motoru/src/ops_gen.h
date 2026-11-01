@@ -206,7 +206,11 @@
   X(HI64_I128, "hi64_i128", 2, "dq") \
   X(PACK_I128, "pack_i128", 3, "Qrr") \
   X(HI64_U128, "hi64_u128", 2, "dq") \
-  X(PACK_U128, "pack_u128", 3, "Qrr")
+  X(PACK_U128, "pack_u128", 3, "Qrr") \
+  X(DIV_I128, "div_i128", 3, "Qqq") \
+  X(MOD_I128, "mod_i128", 3, "Qqq") \
+  X(DIV_U128, "div_u128", 3, "Qqq") \
+  X(MOD_U128, "mod_u128", 3, "Qqq")
 
 // X(ENUM, "ad", arguman_sayisi)  host islevleri
 #define PM_HOSTS(X) \

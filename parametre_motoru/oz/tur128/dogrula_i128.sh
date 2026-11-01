@@ -35,7 +35,9 @@ EOT
     for op in add sub mul and or xor; do echo "    ${op}_i128 r, x, y"; W r; done
     for op in add sub mul and or xor; do echo "    ${op}_u128 r, x, y"; W r; done
     for op in eq_128 ne_128 lt_i128 le_i128 lt_u128 le_u128; do echo "    $op c, x, y"; N c; done
-    echo "    host putc, 10"; echo "    addi j, j, 1"; echo "    jmp lj"; echo "nj: addi i, i, 1"; echo "    jmp li"; echo "done: halt"; echo "}"; echo "entry main"; } > $2
+    echo "    tobool_i128 c, y"; echo "    jz c, nodiv"; echo "    host putc, 124"; echo "    host putc, 32"
+    echo "    div_i128 r, x, y"; W r; echo "    mod_i128 r, x, y"; W r; echo "    div_u128 r, x, y"; W r; echo "    mod_u128 r, x, y"; W r
+    echo "nodiv: host putc, 10"; echo "    addi j, j, 1"; echo "    jmp lj"; echo "nj: addi i, i, 1"; echo "    jmp li"; echo "done: halt"; echo "}"; echo "entry main"; } > $2
 }
 progtek() {   # N cikti
   local veri=$($T/oracle veri $1); local n=$(echo "$veri" | tr ',' '\n' | wc -l); n=$((n/2))
@@ -125,6 +127,15 @@ for c in ok bad oob; do
   exp=0; [ $c = ok ] && exp='1 1'
   a=$(lim $PM run $VAL < $T/b_$c.l | head -1); b=$($PM listedogrula $T/b_$c.l | head -1)
   [ "${a%% *}" = "${exp%% *}" ] && [ "${b%% *}" = "${exp%% *}" ] && pass || fail "genis hedef siniri ($c): beklenen $exp; sayisal valid '$a', C++ listedogrula '$b'"
+done
+# sifira bolme: ucu de ayni tuzak (DIV0, cikis kodu 2); svm "@@TRAP DIV0" yazar
+for op in div_i128 mod_i128 div_u128 mod_u128; do
+  printf 'func main() {\n ldi a, 5\n ldi b, 0\n ldi c, 0\n ldi d, 0\n %s e, a, c\n halt\n}\nentry main\n' $op > $T/z.pma
+  derle $T/z.pma $T/z.pmb $T/z.l || { fail "$op sifira bolme: derlenemedi"; continue; }
+  lim $PM run $T/z.pmb < /dev/null > /dev/null 2> $T/z.err; rc1=$?
+  lim $PM run $GEN < $T/z.l > $T/z.elf 2>/dev/null && chmod +x $T/z.elf && lim $T/z.elf > /dev/null 2> $T/z.err2; rc2=$?
+  { cat $TAB; echo "@@PROGRAM"; cat $T/z.l; echo "@@GIRDI"; } > $T/sv.in; lim $PM run $T/svm.pmb < $T/sv.in > $T/z.svm 2>/dev/null
+  [ $rc1 = 2 ] && [ $rc2 = 2 ] && grep -q 'DIV0' $T/z.svm && grep -q 'DIV0' $T/z.err && pass || fail "$op sifira bolme: pm rc=$rc1 ELF rc=$rc2 svm='$(head -c 40 $T/z.svm)'"
 done
 echo "128 bit tamsayi: $ok gecti, $bad basarisiz"
 [ -n "$KEEP" ] && echo "T=$T" || rm -rf "$T"

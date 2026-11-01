@@ -15,7 +15,7 @@ space OFF 524288
 space FBASE 65536
 space FNP 65536
 space FNR 65536
-space G 64
+space G 128
 space EV 65536
 data NOPS = @NOPS@
 data MSGOFF = 0 11 21 33 45
@@ -712,7 +712,30 @@ k4: sub d, tok, 400
     addi t, k, 60
     add t, t, G
     ld fv, t, 0
-    eqi z, ty, 11
+    eqi z, ty, 12
+    jz z, kt13
+    ; MARK_Fk: o anki cikti konumunu sakla (mikro-program dongusu basi)
+    ld p, G, 2
+    st p, G, 70
+    ret 0
+kt13: eqi z, ty, 13
+    jz z, kt14
+    ; RELM_Fk: kayitli konuma bagil 32 bit (geri atlama)
+    ld p, G, 2
+    ld t, G, 70
+    sub r, t, p
+    sub r, r, 4
+    call x, eb32, r
+    ret 0
+kt14: eqi z, ty, 14
+    jz z, kt11
+    ; SCR_Fk: kazima sozcugu fv: yigin isaretcisinin 144+8*fv bayt altinda
+    mul r, fv, 8
+    add r, r, 144
+    neg r, r
+    call x, eb32, r
+    ret 0
+kt11: eqi z, ty, 11
     jz z, k4m
     ; OPW_Fk: alan k operand yuvasi (fv) + alan k+1 literal sozcuk indeksi -> 8 * (operand + n) (genis operandin n. sozcugu)
     add t, fv, 20

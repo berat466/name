@@ -1294,7 +1294,7 @@ m3: gei z, i, 4
     jz z, m4
     lti z, v, 1
     jnz z, mbad2
-    gti z, v, 8
+    gti z, v, 16
     jnz z, mbad2
     addi sh, v, -1
     shl bit, one, sh
@@ -1305,7 +1305,7 @@ m4: eqi z, ft, 2
     jz z, m5
     lti z, v, 1
     jnz z, mbad2
-    gti z, v, 8
+    gti z, v, 16
     jnz z, mbad2
     addi sh, v, -1
     shl bit, one, sh

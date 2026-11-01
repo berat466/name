@@ -29,7 +29,14 @@ int main(int argc, char** argv) {
   if (m == "cift") {
     for (U x : v) for (U y : v) {
       for (int k = 0; k < 2; k++) { pr(x + y); pr(x - y); pr(x * y); pr(x & y); pr(x | y); pr(x ^ y); }
-      printf(" %d %d %d %d %d %d\n", (int)(x == y), (int)(x != y), (int)(S(x) < S(y)), (int)(S(x) <= S(y)), (int)(x < y), (int)(x <= y));
+      printf(" %d %d %d %d %d %d", (int)(x == y), (int)(x != y), (int)(S(x) < S(y)), (int)(S(x) <= S(y)), (int)(x < y), (int)(x <= y));
+      if (y != 0) {   // bolme/kalan (y != 0); isaretli: buyukluk uzerinden, INT128_MIN / -1 sarar (motor tanimi: bolum INT128_MIN, kalan 0)
+        printf(" |");
+        U ax = S(x) < 0 ? U(0) - x : x, ay = S(y) < 0 ? U(0) - y : y; U q = ax / ay, r = ax % ay;
+        if ((S(x) < 0) != (S(y) < 0)) q = U(0) - q; if (S(x) < 0) r = U(0) - r;
+        pr(q); pr(r); pr(x / y); pr(x % y);
+      }
+      printf("\n");
     }
     return 0;
   }
