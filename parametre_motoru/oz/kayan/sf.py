@@ -7,6 +7,7 @@ Gecici ayrimi: t1..t12 yardimci/ara, t13 dongu sayaci, t14..t16 sabit uretimi.""
 M64 = (1 << 64) - 1
 F128 = dict(name='f128', P=113, bias=16383, ex=False)
 F80 = dict(name='f80', P=64, bias=16383, ex=True)
+F64 = dict(name='f64', P=53, bias=1023, ex=False, one=True)   # tek sozcuk (yalniz kodlama: acma/paketleme)
 class G:
     def __init__(self): self.o = []; self.n = 0; self.v = {}
     def var(self, name, w=1):
@@ -62,8 +63,23 @@ class G:
         self.loop(128, body)
     # ---- ACMA (unpack): operand yuvasi 'b'/'c' -> X_s X_E X_c X_m(2) X_rl X_rh
     def unpack(self, X, fmt, slot):
-        self.e('rdw t1 %s 0' % slot, 'rdw t2 %s 1' % slot); self.st(X + '_rl', 't1'); self.st(X + '_rh', 't2')
+        if fmt.get('one'): self.e('rd t1 %s' % slot, 'lit t2 0')
+        else: self.e('rdw t1 %s 0' % slot, 'rdw t2 %s 1' % slot)
+        self.st(X + '_rl', 't1'); self.st(X + '_rh', 't2')
         bias = fmt['bias']
+        if fmt.get('one'):   # f64: tek sozcuk (t1); yuksek sozcuk 0
+            self.e('lit t3 63', 'alu_shr t4 t1 t3'); self.st(X + '_s', 't4')
+            self.e('lit t3 52', 'alu_shr t5 t1 t3', 'lit t6 2047', 'alu_and t5 t5 t6')
+            self.c('t6', (1 << 52) - 1); self.e('alu_and t6 t1 t6', 'lit t8 0', 'cmp_ne t7 t6 t8')   # t6 kesir, t7 kesir!=0
+            self.e('lit t3 63', 'cmp_ne t9 t5 t8', 'alu_shl t9 t9 t3', 'lit t3 11', 'alu_shl t10 t6 t3', 'alu_or t10 t10 t9')
+            self.st(X + '_m', 't8', 0); self.st(X + '_m', 't10', 1)
+            self.e('lit t11 2047', 'cmp_eq t4 t5 t11', 'cmp_eq t3 t5 t8')   # t4 = us tam-1 , t3 = us sifir
+            # sinif: t3 ef==0, t4 ef==max, t7 kesir!=0
+            self.e('lit t6 1', 'alu_xor t9 t7 t6', 'alu_and t10 t3 t9', 'alu_and t11 t4 t9', 'alu_and t12 t4 t7')
+            self.e('lit t6 1', 'lit t9 0', 'sel t6 t10 t9 t6', 'lit t9 2', 'sel t6 t11 t9 t6', 'lit t9 3', 'sel t6 t12 t9 t6'); self.st(X + '_c', 't6')
+            self.c('t9', -bias); self.e('alu_add t9 t5 t9'); self.c('t10', 1 - bias); self.e('sel t9 t3 t10 t9'); self.st(X + '_E', 't9')
+            self.normalize(X)
+            return
         if not fmt['ex']:
             self.e('lit t3 63', 'alu_shr t4 t2 t3'); self.st(X + '_s', 't4')
             self.e('lit t3 48', 'alu_shr t5 t2 t3', 'lit t6 32767', 'alu_and t5 t5 t6')
@@ -87,7 +103,8 @@ class G:
         self.c('t9', -bias); self.e('alu_add t9 t5 t9'); self.c('t10', 1 - bias); self.e('sel t9 t3 t10 t9'); self.st(X + '_E', 't9')
         self.normalize(X)
     # ---- PAKLA (pack): R_s R_E R_m R_st -> W_lo W_hi  (sonlu, sifir olmayan deger; sifir/sonsuz/NaN bu yoldan gecmez)
-    def pack(self, fmt, R, W='W'):
+    def pack(self, fmt, R, W='W', odd=False):
+        """R_s R_E R_m R_st -> W (lo, hi) ; odd=True: en yakina-cifte yerine 'tek'e yuvarlama (kaybolan bitler varsa en dusuk bit 1) -- cifte yuvarlamayi onlemek icin"""
         P, bias = fmt['P'], fmt['bias']; emin = 1 - bias
         self.ld('t1', R + '_E'); self.c('t2', emin)
         self.e('alu_sub t3 t2 t1', 'lit t4 0', 'cmp_gt t5 t3 t4', 'sel t3 t5 t3 t4', 'lit t6 140', 'cmp_gt t5 t3 t6', 'sel t3 t5 t6 t3')   # t3 = alt-normal ek kaydirma
@@ -98,19 +115,30 @@ class G:
         self.ld('t1', W + '_k'); self.ld('t2', W + '_g'); self.e('alu_or t1 t1 t2'); self.st(W + '_k', 't1')
         self.ld('t3', W + '_q', 0); self.e('lit t4 1', 'alu_and t2 t3 t4'); self.st(W + '_g', 't2'); self.shr1(W + '_q')
         self.e('lit t12 1', 'alu_sub t13 t13 t12', 'lpe t13')
-        # en yakina-cifte: inc = g & (k | q&1)
-        self.ld('t1', W + '_q', 0); self.e('lit t2 1', 'alu_and t3 t1 t2'); self.ld('t4', W + '_k'); self.e('alu_or t3 t3 t4'); self.ld('t5', W + '_g'); self.e('alu_and t3 t3 t5')
-        self.ld('t1', W + '_q', 0); self.ld('t2', W + '_q', 1); self.e('alu_add t4 t1 t3', 'cmp_ltu t5 t4 t1', 'alu_add t2 t2 t5'); self.st(W + '_q', 't4', 0); self.st(W + '_q', 't2', 1)
+        if not odd:   # en yakina-cifte: inc = g & (k | q&1)
+            self.ld('t1', W + '_q', 0); self.e('lit t2 1', 'alu_and t3 t1 t2'); self.ld('t4', W + '_k'); self.e('alu_or t3 t3 t4'); self.ld('t5', W + '_g'); self.e('alu_and t3 t3 t5')
+            self.ld('t1', W + '_q', 0); self.ld('t2', W + '_q', 1); self.e('alu_add t4 t1 t3', 'cmp_ltu t5 t4 t1', 'alu_add t2 t2 t5'); self.st(W + '_q', 't4', 0); self.st(W + '_q', 't2', 1)
+        else:         # tek'e yuvarlama: q |= (g | k)
+            self.ld('t1', W + '_q', 0); self.ld('t2', W + '_g'); self.ld('t3', W + '_k'); self.e('alu_or t2 t2 t3', 'alu_or t1 t1 t2'); self.st(W + '_q', 't1', 0)
         # tasma: q >= 2^P (yalniz normal)
-        self.ld('t1', W + '_q', 1); self.e('lit t2 %d' % (P - 64) if P > 64 else 'lit t2 0', 'alu_shr t3 t1 t2', 'lit t4 0', 'cmp_ne t3 t3 t4'); self.ld('t5', W + '_nm'); self.e('alu_and t3 t3 t5')   # t3 = ov
+        self.ld('t1', W + '_q', 1)
+        if P > 64: self.e('lit t2 %d' % (P - 64), 'alu_shr t3 t1 t2', 'lit t4 0', 'cmp_ne t3 t3 t4')
+        elif P == 64: self.e('lit t4 0', 'cmp_ne t3 t1 t4')
+        else: self.ld('t1', W + '_q', 0); self.e('lit t2 %d' % P, 'alu_shr t3 t1 t2', 'lit t4 0', 'cmp_ne t3 t3 t4')
+        self.ld('t5', W + '_nm'); self.e('alu_and t3 t3 t5')   # t3 = ov
         self.ld('t1', W + '_q', 0); self.ld('t2', W + '_q', 1); self.e('lit t8 0')
         if P > 64: self.e('lit t6 1', 'lit t7 %d' % (P - 65), 'alu_shl t6 t6 t7', 'sel t1 t3 t8 t1', 'sel t2 t3 t6 t2')
-        else: self.c('t6', 1 << 63); self.e('sel t1 t3 t6 t1', 'sel t2 t3 t8 t2')
+        else: self.c('t6', 1 << (P - 1)); self.e('sel t1 t3 t6 t1', 'sel t2 t3 t8 t2')
         self.st(W + '_q', 't1', 0); self.st(W + '_q', 't2', 1)
         self.ld('t4', R + '_E'); self.e('alu_add t4 t4 t3'); self.st(R + '_E2', 't4')
         # bicim
         self.ld('t1', W + '_nm'); self.ld('t2', R + '_s'); self.ld('t3', R + '_E2'); self.ld('t4', W + '_q', 0); self.ld('t5', W + '_q', 1)
-        if not fmt['ex']:
+        if fmt.get('one'):   # f64
+            self.c('t6', bias - 1); self.e('alu_add t6 t6 t3', 'lit t7 0', 'sel t6 t1 t6 t7', 'lit t7 52', 'alu_shl t6 t6 t7', 'alu_add t4 t4 t6')
+            self.e('lit t7 52', 'alu_shr t6 t4 t7', 'lit t8 2047', 'cmp_ge t8 t6 t8', 'lit t10 %d' % bias, 'cmp_gt t10 t3 t10', 'alu_and t10 t10 t1', 'alu_or t8 t8 t10')   # us alani tasti ya da E2 > emax
+            self.c('t9', 0x7FF << 52); self.e('sel t4 t8 t9 t4')
+            self.e('lit t7 63', 'alu_shl t2 t2 t7', 'alu_or t4 t4 t2', 'lit t5 0')
+        elif not fmt['ex']:
             self.c('t6', bias - 1); self.e('alu_add t6 t6 t3', 'lit t7 0', 'sel t6 t1 t6 t7', 'lit t7 48', 'alu_shl t6 t6 t7', 'alu_add t5 t5 t6')
             self.e('lit t7 48', 'alu_shr t6 t5 t7', 'lit t8 32767', 'cmp_ge t8 t6 t8')
             self.c('t9', 0x7FFF << 48); self.e('lit t10 0', 'sel t5 t8 t9 t5', 'sel t4 t8 t10 t4')
@@ -126,12 +154,15 @@ class G:
         else: self.c('t1', 0xC000000000000000); self.st(name, 't1', 0); self.c('t1', 0xFFFF); self.st(name, 't1', 1)
     def mk_inf(self, name, fmt, svar):
         self.ld('t2', svar)
+        if fmt.get('one'):
+            self.e('lit t3 63', 'alu_shl t2 t2 t3'); self.c('t4', 0x7FF << 52); self.e('alu_or t2 t2 t4'); self.st(name, 't2', 0); self.e('lit t1 0'); self.st(name, 't1', 1); return
         if not fmt['ex']:
             self.c('t1', 0); self.st(name, 't1', 0); self.e('lit t3 63', 'alu_shl t2 t2 t3'); self.c('t4', 0x7FFF << 48); self.e('alu_or t2 t2 t4'); self.st(name, 't2', 1)
         else:
             self.c('t1', 1 << 63); self.st(name, 't1', 0); self.e('lit t3 15', 'alu_shl t2 t2 t3', 'lit t4 32767', 'alu_or t2 t2 t4'); self.st(name, 't2', 1)
     def mk_zero(self, name, fmt, svar):
         self.ld('t2', svar); self.c('t1', 0); self.st(name, 't1', 0)
+        if fmt.get('one'): self.e('lit t3 63', 'alu_shl t2 t2 t3'); self.st(name, 't2', 0); self.st(name, 't1', 1); return
         self.e('lit t3 %d' % (63 if not fmt['ex'] else 15), 'alu_shl t2 t2 t3'); self.st(name, 't2', 1)
     def mk_quiet(self, name, fmt, X):   # X_rl/X_rh -> name_lo/name_hi sessiz
         self.ld('t1', X + '_rl'); self.ld('t2', X + '_rh')
@@ -151,5 +182,7 @@ class G:
         self.copy2('Z', base)
         for cond, cand in order:
             self.ld('t9', cond); self.sel2('Z', 't9', cand, 'Z')
+    def emit_one(self, src='Z'):
+        self.ld('t1', src, 0); self.e('wr a t1')
     def emit_wide(self, src='Z'):
         self.ld('t1', src, 0); self.ld('t2', src, 1); self.e('wrw a 0 t1', 'wrw a 1 t2')

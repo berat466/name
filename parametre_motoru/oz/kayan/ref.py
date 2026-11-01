@@ -150,3 +150,77 @@ def op_sqrt(fmt, x):
         # yapiskan: bir alt bit ekle (sonlu rasyonel yaklasimin tam deger olmadigini yuvarlama icin korur)
         a = Fraction(2 * r + 1, 2 * d * (1 << (K // 2)))
     return rnd(fmt, 0, a)
+# ---- f64 (tek sozcuk) ve donusum referanslari
+FM['f64'] = dict(P=53, bias=1023, ex=False, one=True)
+_decode_w = decode; _pack_w = pack
+def decode(fmt, lo, hi):
+    if fmt == 'f64':
+        s = lo >> 63; ef = (lo >> 52) & 0x7FF; fr = lo & ((1 << 52) - 1)
+        if ef == 0x7FF: return ('inf' if fr == 0 else 'nan', s, None)
+        if ef == 0: return ('zero', s, Fraction(0)) if fr == 0 else ('fin', s, Fraction(fr) * Fraction(2) ** (1 - 1023 - 52))
+        return ('fin', s, Fraction((1 << 52) | fr) * Fraction(2) ** (ef - 1023 - 52))
+    return _decode_w(fmt, lo, hi)
+def pack(fmt, s, ef, mant):
+    if fmt == 'f64':
+        if ef == 'inf': return ((s << 63) | (0x7FF << 52), 0)
+        return ((s << 63) | (ef << 52) | (mant & ((1 << 52) - 1)), 0)
+    return _pack_w(fmt, s, ef, mant)
+FRACW = {'f64': 52, 'f80': 63, 'f128': 112}
+def fraction(fmt, lo, hi):
+    if fmt == 'f64': return lo & ((1 << 52) - 1)
+    if fmt == 'f80': return lo & ((1 << 63) - 1)
+    return ((hi & ((1 << 48) - 1)) << 64) | lo
+def nan_to(fmt, s, fr):
+    fr |= 1 << (FRACW[fmt] - 1)
+    if fmt == 'f64': return ((s << 63) | (0x7FF << 52) | fr, 0)
+    if fmt == 'f80': return (fr | (1 << 63), (s << 15) | 0x7FFF)
+    return (fr & M64, (s << 63) | (0x7FFF << 48) | (fr >> 64))
+def nan_conv(src, dst, lo, hi):
+    c, s, _ = decode(src, lo, hi); fr = fraction(src, lo, hi); ws, wd = FRACW[src], FRACW[dst]
+    fr = (fr << (wd - ws)) if wd >= ws else (fr >> (ws - wd))
+    return nan_to(dst, s, fr)
+def op_w2w(src, dst, x):
+    c, s, v = decode(src, *x)
+    if c == 'nan': return nan_conv(src, dst, *x)
+    if c == 'inf': return inf(dst, s)
+    if c == 'zero': return zero(dst, s)
+    return rnd(dst, s, abs(v))
+def op_w2n(src, nar, x):
+    NP = {'f32': (24, -126, 127), 'f16': (11, -14, 15), 'bf16': (8, -126, 127)}[nar]
+    c, s, v = decode(src, *x)
+    if c == 'nan':
+        lo, hi = nan_conv(src, 'f64', *x)
+        wn = NP[0] - 1; fr = (lo & ((1 << 52) - 1)); fr = (fr >> (52 - wn)) << (52 - wn); fr |= 1 << 51
+        return ((s << 63) | (0x7FF << 52) | fr, 0)
+    if c == 'inf': return inf('f64', s)
+    if c == 'zero': return zero('f64', s)
+    P, emin, emax = NP; a = abs(v)
+    e = a.numerator.bit_length() - a.denominator.bit_length()
+    if Fraction(2) ** e > a: e -= 1
+    q = max(e, emin) - (P - 1)
+    r = a / (Fraction(2) ** q); n = r.numerator // r.denominator; rem = r - n
+    if rem > Fraction(1, 2) or (rem == Fraction(1, 2) and n % 2 == 1): n += 1
+    val = Fraction(n) * Fraction(2) ** q
+    if n == 0: return zero('f64', s)
+    if val >= Fraction(2) ** (emax + 1): return inf('f64', s)
+    return rnd('f64', s, val)
+def op_cmp(fmt, kind, x, y):
+    cx, sx, vx = decode(fmt, *x); cy, sy, vy = decode(fmt, *y)
+    if cx == 'nan' or cy == 'nan': return 1 if kind == 'ne' else 0
+    def key(c, s, v): return (float('-inf') if s else float('inf')) if c == 'inf' else (-v if s else v)
+    kx, ky = key(cx, sx, vx), key(cy, sy, vy)
+    return int({'eq': kx == ky, 'ne': kx != ky, 'lt': kx < ky, 'le': kx <= ky}[kind])
+def op_i2w(fmt, v, signed=True, bits=64):
+    if signed and v >= 1 << (bits - 1): v -= 1 << bits
+    if v == 0: return zero(fmt, 0)
+    return rnd(fmt, 1 if v < 0 else 0, Fraction(abs(v)))
+def op_w2i(fmt, x, bits, signed):
+    c, s, v = decode(fmt, *x); M = (1 << bits) - 1
+    ind = (1 << (bits - 1)) if signed else 0
+    if c in ('nan', 'inf'): return ind
+    t = int(abs(v)); t = -t if s else t
+    if signed:
+        if -(1 << (bits - 1)) <= t < (1 << (bits - 1)): return t & M
+        return ind
+    if 0 <= t < (1 << bits): return t
+    return 0
