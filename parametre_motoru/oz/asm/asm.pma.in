@@ -81,6 +81,8 @@ data RWOFF = @RWOFF@
 data RWDAT = @RWDAT@
 data NOPS = @NOPS@
 data KIND = @KIND@
+data KBASE = @KBASE@
+data KWID = @KWID@
 data ARITY = @ARITY@
 data KWS = "memory\0entry\0data\0space\0func\0main\0"
 
@@ -594,7 +596,7 @@ a1: add a, n, TOKO
     ret 0
 }
 
-func kw(ti, o2, l2) {     ; jeton ti, [o2,l2) metnine esit mi? (anahtar sozcuk icin SRC sonuna konmus metin)
+func kwd(ti, o2, l2) {     ; jeton ti, [o2,l2) metnine esit mi? (anahtar sozcuk icin SRC sonuna konmus metin)
     add a, ti, TOKO
     ld o, a, 0
     add a, ti, TOKL
@@ -916,7 +918,7 @@ func ckw(ti, k) {      ; jeton ti, k. anahtar sozcuge esit mi (G[40+2k], G[41+2k
     add a, k2, 1
     add a, a, G
     ld l2, a, 0
-    call r, kw, ti, o2, l2
+    call r, kwd, ti, o2, l2
     ret r
 }
 
@@ -2041,11 +2043,37 @@ st7: ge z, j, nops
     add kk, kk, j
     add a, kk, KIND
     ld kind, a, 0
+    mov kraw, kind
+    add a, kind, KBASE
+    ld kind, a, 0
+    add a, kraw, KWID
+    ld wdt, a, 0
     eq z, kind, 1
     jz z, st8
     call o, opr, i, j
     ld l, G, 64
+    ld n0, G, 20
     call x, addreg, o, l
+    ld n1, G, 20
+    eq z, n0, n1
+    jnz z, st8
+    ; yeni ayrilan genis hedef: kalan sozcukler icin adsiz ardisik yazmaclar
+    mov wi, 1
+stw: ge z, wi, wdt
+    jnz z, st8
+    ld n, G, 20
+    ge z, n, 65535
+    jz z, stw1
+    call x, err, 52
+stw1: mov zr, 0
+    add a, n, REGO
+    st zr, a, 0
+    add a, n, REGL
+    st zr, a, 0
+    addi n, n, 1
+    st n, G, 20
+    addi wi, wi, 1
+    jmp stw
 st8: add j, j, 1
     jmp st7
 ccall: jnz na, cc1
@@ -2236,6 +2264,11 @@ q4: ge z, j, nops
     add kk, kk, j
     add a, kk, KIND
     ld kind, a, 0
+    mov kraw, kind
+    add a, kind, KBASE
+    ld kind, a, 0
+    add a, kraw, KWID
+    ld wdt, a, 0
     call o, opr, i, j
     ld l, G, 64
     eq z, kind, 1
@@ -2456,6 +2489,11 @@ g1: ge z, j, nops
     add kk, kk, j
     add a, kk, KIND
     ld kind, a, 0
+    mov kraw, kind
+    add a, kind, KBASE
+    ld kind, a, 0
+    add a, kraw, KWID
+    ld wdt, a, 0
     eq z, j, 0
     jz z, g2
     mov v, ca
@@ -2471,8 +2509,11 @@ g4: eq z, kind, 2
     jnz z, g5
     eq z, kind, 4
     jz z, g6
-g5: eq z, v, r
-    jz z, g6
+g5: sub dd, r, v
+    lti z, dd, 0
+    jnz z, g6
+    ge z, dd, wdt
+    jnz z, g6
     ret 1
 g6: add j, j, 1
     jmp g1
@@ -2503,6 +2544,11 @@ g1: ge z, j, nops
     add kk, kk, j
     add a, kk, KIND
     ld kind, a, 0
+    mov kraw, kind
+    add a, kind, KBASE
+    ld kind, a, 0
+    add a, kraw, KWID
+    ld wdt, a, 0
     eq z, kind, 1
     jz z, g6
     eq z, j, 0
@@ -2514,8 +2560,11 @@ g2: eq z, j, 1
     mov v, cb
     jmp g4
 g3: mov v, cc
-g4: eq z, v, r
-    jz z, g6
+g4: sub dd, r, v
+    lti z, dd, 0
+    jnz z, g6
+    ge z, dd, wdt
+    jnz z, g6
     ret 1
 g6: add j, j, 1
     jmp g1
@@ -2584,6 +2633,11 @@ g1: ge z, j, nops
     add kk, kk, j
     add a, kk, KIND
     ld kind, a, 0
+    mov kraw, kind
+    add a, kind, KBASE
+    ld kind, a, 0
+    add a, kraw, KWID
+    ld wdt, a, 0
     eq z, j, 0
     jz z, g2
     mov v, ca
@@ -2602,15 +2656,26 @@ g4: eq z, kind, 1
     eq z, kind, 4
     jnz z, gr
     jmp g6
-gr: add a, v, RD
+gr: mov wi, 0
+gr1: ge z, wi, wdt
+    jnz z, g6
+    add t2, v, wi
+    add a, t2, RD
     ld t, a, 0
     add t, t, 1
     st t, a, 0
-    jmp g6
-gw: add a, v, WR
+    addi wi, wi, 1
+    jmp gr1
+gw: mov wi, 0
+gw1: ge z, wi, wdt
+    jnz z, g6
+    add t2, v, wi
+    add a, t2, WR
     ld t, a, 0
     add t, t, 1
     st t, a, 0
+    addi wi, wi, 1
+    jmp gw1
 g6: add j, j, 1
     jmp g1
 done: ret 0
@@ -2667,6 +2732,11 @@ t2: ge z, j, nops
     add kk, kk, j
     add a, kk, KIND
     ld kind, a, 0
+    mov kraw, kind
+    add a, kind, KBASE
+    ld kind, a, 0
+    add a, kraw, KWID
+    ld wdt, a, 0
     eq z, kind, 7
     jz z, t7
     eq z, j, 0
@@ -2889,6 +2959,11 @@ X4: ge z, j, nops
     add kk, kk, j
     add a, kk, KIND
     ld kind, a, 0
+    mov kraw, kind
+    add a, kind, KBASE
+    ld kind, a, 0
+    add a, kraw, KWID
+    ld wdt, a, 0
     eq z, kind, 7
     jz z, X6
     eq z, j, 0
@@ -3321,6 +3396,11 @@ j1: ge z, j, nops
     add kk, kk, j
     add a, kk, KIND
     ld kind, a, 0
+    mov kraw, kind
+    add a, kind, KBASE
+    ld kind, a, 0
+    add a, kraw, KWID
+    ld wdt, a, 0
     eq z, j, 0
     jz z, j2
     add a, g, GA

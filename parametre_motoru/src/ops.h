@@ -14,6 +14,11 @@ enum Op : uint8_t {
 };
 
 struct OpInfo { const char* name; int nops; const char* kinds; };
+// Operand turu karakterleri (PMK1 KIND bolumu): d hedef, r/f/s kaynak yazmac; GENIS operandlar: q (2 sozcuk kaynak), Q (2 sozcuk hedef), o (4 sozcuk kaynak), O (4 sozcuk hedef).
+// Genis operand = r, r+1, .. r+w-1 ardisik yazmaclar (dusuk sozcuk once). Genislikler KIND bolumu ext 3 ile ayni olmak zorundadir (dogrula_komut.sh denetler).
+inline int kind_width(char k) { return (k == 'q' || k == 'Q') ? 2 : (k == 'o' || k == 'O') ? 4 : 1; }
+inline bool kind_src(char k) { return k == 'r' || k == 'f' || k == 's' || k == 'q' || k == 'o'; }
+inline bool kind_dst(char k) { return k == 'd' || k == 'Q' || k == 'O'; }
 extern const OpInfo kOpInfo[OP_COUNT];
 
 // Host islevleri (sistem arayuzu). Argumanlar pencere yazmaclarinda, sonuc pencerenin ilk yazmacinda.

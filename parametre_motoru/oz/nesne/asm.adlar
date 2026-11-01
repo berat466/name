@@ -17,7 +17,7 @@ func parse_int
 func strip_comment
 func tokenize
 func addtok
-func kw
+func kwd
 func findch
 func addstmt
 func data_line

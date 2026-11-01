@@ -369,7 +369,10 @@ vj: ge z, j, nops
     jnz t, khost
     lt z, v, 0
     jnz z, vbad
-    ge z, v, nr
+    shri w1, kf, 8
+    addi w1, w1, 1
+    add w1, w1, v
+    gt z, w1, nr
     jnz z, vbad
     jmp vnext
 klab:
@@ -590,9 +593,17 @@ s1: ge z, j, nops
     jnz t, srd
     jmp s1n
 srd:
-    call g, getbit, v
-    jnz g, s1n
+    shri wd, kf, 8
+    addi wd, wd, 1
+    mov wi, 0
+srw: ge z, wi, wd
+    jnz z, s1n
+    add vv, v, wi
+    call g, getbit, vv
+    jnz g, srw1
     ret 0
+srw1: addi wi, wi, 1
+    jmp srw
 s1n:
     add j, j, 1
     jmp s1
@@ -612,7 +623,15 @@ s2: ge z, j, nops
     add a, a, j
     add a, a, TOK
     ld v, a, 0
-    call x, setbit, v
+    shri wd, kf, 8
+    addi wd, wd, 1
+    mov wi, 0
+sww: ge z, wi, wd
+    jnz z, s2n
+    add vv, v, wi
+    call x, setbit, vv
+    addi wi, wi, 1
+    jmp sww
 s2n:
     add j, j, 1
     jmp s2

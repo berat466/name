@@ -27,7 +27,7 @@ enum FunK : uint8_t { FUNK_NEG, FUNK_SQRT };
 enum FcmpK : uint8_t { FCMPK_EQ, FCMPK_LT, FCMPK_LE };
 enum MicroKind : uint8_t { MK_END, MK_RD, MK_IM, MK_LK, MK_ALU, MK_CMP, MK_UN, MK_DIVS, MK_MODS, MK_DIVN, MK_MODN, MK_WR,
                            MK_LD, MK_ST, MK_BR, MK_BRZ, MK_BRNZ, MK_CALLM, MK_RETM, MK_HALTM, MK_HOSTM, MK_ALLOCM, MK_FALU, MK_FUN, MK_FCMP, MK_CVTIF, MK_CVTFI,
-                           MK_SX, MK_ZX, MK_DIVU, MK_MODU, MK_LIT, MK_U2F, MK_F2U, MK_RNDF, MK_I2FN, MK_BSWAP };   // MK_SX.. : Plan Bolum 01 (tamsayi turleri); makine kodu uretecinde (native) DESTEKLENMEZ -> yorumlayici
+                           MK_SX, MK_ZX, MK_DIVU, MK_MODU, MK_LIT, MK_U2F, MK_F2U, MK_RNDF, MK_I2FN, MK_BSWAP, MK_W128 };   // MK_SX.. : Plan Bolum 01 (tamsayi turleri); makine kodu uretecinde (native) DESTEKLENMEZ -> yorumlayici
 struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define OPD_a 0
 #define OPD_b 1
@@ -188,6 +188,66 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define SEM_BSWAP32(M) M##_RD(1,b) M##_BSWAP(32,2,1) M##_WR(a,2)
 #define SEM_BSWAP64(M) M##_RD(1,b) M##_BSWAP(64,2,1) M##_WR(a,2)
 
+// Plan Bolum 01: 128 bit komutlari (genis operandlar)
+#define SEM_MOV_I128(M) M##_W128(W128_MOV,0,0)
+#define SEM_LDI_I128(M) M##_W128(W128_LDI,0,0)
+#define SEM_ADD_I128(M) M##_W128(W128_ADD,0,0)
+#define SEM_SUB_I128(M) M##_W128(W128_SUB,0,0)
+#define SEM_MUL_I128(M) M##_W128(W128_MUL,0,0)
+#define SEM_NEG_I128(M) M##_W128(W128_NEG,0,0)
+#define SEM_NOT_I128(M) M##_W128(W128_NOT,0,0)
+#define SEM_AND_I128(M) M##_W128(W128_AND,0,0)
+#define SEM_OR_I128(M) M##_W128(W128_OR,0,0)
+#define SEM_XOR_I128(M) M##_W128(W128_XOR,0,0)
+#define SEM_SHL_I128(M) M##_W128(W128_SHL,0,0)
+#define SEM_MOV_U128(M) M##_W128(W128_MOV,0,0)
+#define SEM_LDI_U128(M) M##_W128(W128_LDI,0,0)
+#define SEM_ADD_U128(M) M##_W128(W128_ADD,0,0)
+#define SEM_SUB_U128(M) M##_W128(W128_SUB,0,0)
+#define SEM_MUL_U128(M) M##_W128(W128_MUL,0,0)
+#define SEM_NEG_U128(M) M##_W128(W128_NEG,0,0)
+#define SEM_NOT_U128(M) M##_W128(W128_NOT,0,0)
+#define SEM_AND_U128(M) M##_W128(W128_AND,0,0)
+#define SEM_OR_U128(M) M##_W128(W128_OR,0,0)
+#define SEM_XOR_U128(M) M##_W128(W128_XOR,0,0)
+#define SEM_SHL_U128(M) M##_W128(W128_SHL,0,0)
+#define SEM_SHR_U128(M) M##_W128(W128_SHR,0,0)
+#define SEM_SAR_I128(M) M##_W128(W128_SAR,0,0)
+#define SEM_EQ_128(M) M##_W128(W128_EQ,0,0)
+#define SEM_NE_128(M) M##_W128(W128_NE,0,0)
+#define SEM_LT_I128(M) M##_W128(W128_LTS,0,0)
+#define SEM_LE_I128(M) M##_W128(W128_LES,0,0)
+#define SEM_LT_U128(M) M##_W128(W128_LTU,0,0)
+#define SEM_LE_U128(M) M##_W128(W128_LEU,0,0)
+#define SEM_SEXT64_I128(M) M##_W128(W128_SEXT,0,0)
+#define SEM_ZEXT64_I128(M) M##_W128(W128_ZEXT,0,0)
+#define SEM_TOBOOL_I128(M) M##_W128(W128_TOBOOL,0,0)
+#define SEM_TRUNC_I128_I8(M) M##_W128(W128_TRUNC,8,1)
+#define SEM_TRUNC_I128_I16(M) M##_W128(W128_TRUNC,16,1)
+#define SEM_TRUNC_I128_I32(M) M##_W128(W128_TRUNC,32,1)
+#define SEM_TRUNC_I128_U8(M) M##_W128(W128_TRUNC,8,0)
+#define SEM_TRUNC_I128_U16(M) M##_W128(W128_TRUNC,16,0)
+#define SEM_TRUNC_I128_U32(M) M##_W128(W128_TRUNC,32,0)
+#define SEM_TRUNC_I128_I64(M) M##_W128(W128_TRUNC,64,0)
+#define SEM_TRUNC_I128_U64(M) M##_W128(W128_TRUNC,64,0)
+#define SEM_SEXT64_U128(M) M##_W128(W128_SEXT,0,0)
+#define SEM_ZEXT64_U128(M) M##_W128(W128_ZEXT,0,0)
+#define SEM_TOBOOL_U128(M) M##_W128(W128_TOBOOL,0,0)
+#define SEM_TRUNC_U128_I8(M) M##_W128(W128_TRUNC,8,1)
+#define SEM_TRUNC_U128_I16(M) M##_W128(W128_TRUNC,16,1)
+#define SEM_TRUNC_U128_I32(M) M##_W128(W128_TRUNC,32,1)
+#define SEM_TRUNC_U128_U8(M) M##_W128(W128_TRUNC,8,0)
+#define SEM_TRUNC_U128_U16(M) M##_W128(W128_TRUNC,16,0)
+#define SEM_TRUNC_U128_U32(M) M##_W128(W128_TRUNC,32,0)
+#define SEM_TRUNC_U128_I64(M) M##_W128(W128_TRUNC,64,0)
+#define SEM_TRUNC_U128_U64(M) M##_W128(W128_TRUNC,64,0)
+#define SEM_CAST_I128_U128(M) M##_W128(W128_MOV,0,0)
+#define SEM_CAST_U128_I128(M) M##_W128(W128_MOV,0,0)
+#define SEM_HI64_I128(M) M##_W128(W128_HI,0,0)
+#define SEM_PACK_I128(M) M##_W128(W128_PACK,0,0)
+#define SEM_HI64_U128(M) M##_W128(W128_HI,0,0)
+#define SEM_PACK_U128(M) M##_W128(W128_PACK,0,0)
+
 #define PM_SEM_OPS(X) \
   X(MOV) X(LDI) X(LDK) X(ADD) X(SUB) X(MUL) X(AND) X(OR) X(XOR) X(SHL) X(SHR) X(SAR) X(EQ) X(NE) X(LT) X(LE) \
   X(NEG) X(NOT) X(DIV) X(MOD) X(ADDI) X(MULI) X(ANDI) X(SHLI) X(SHRI) X(SARI) X(DIVI) X(MODI) \
@@ -196,7 +256,8 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
   X(SEXT8) X(SEXT16) X(SEXT32) X(ZEXT8) X(ZEXT16) X(ZEXT32) X(ADD_I8) X(SUB_I8) X(MUL_I8) X(SHL_I8) X(DIV_I8) X(MOD_I8) X(NEG_I8) X(ADD_I16) X(SUB_I16) X(MUL_I16) X(SHL_I16) X(DIV_I16) X(MOD_I16) X(NEG_I16) X(ADD_I32) X(SUB_I32) X(MUL_I32) X(SHL_I32) X(DIV_I32) X(MOD_I32) X(NEG_I32) X(ADD_U8) X(SUB_U8) X(MUL_U8) X(SHL_U8) X(NEG_U8) X(NOT_U8) X(ADD_U16) X(SUB_U16) X(MUL_U16) X(SHL_U16) X(NEG_U16) X(NOT_U16) X(ADD_U32) X(SUB_U32) X(MUL_U32) X(SHL_U32) X(NEG_U32) X(NOT_U32) X(DIVU) X(MODU) X(LTU) X(LEU) X(U2F) X(F2U) \
   X(TOBOOL) X(BNOT) X(BAND) X(BOR) X(BXOR) X(NULLB) \
   X(RND_F32) X(ADD_F32) X(SUB_F32) X(MUL_F32) X(DIV_F32) X(SQRT_F32) X(I2F_F32) X(U2F_F32) X(RND_F16) X(ADD_F16) X(SUB_F16) X(MUL_F16) X(DIV_F16) X(SQRT_F16) X(I2F_F16) X(U2F_F16) X(RND_BF16) X(ADD_BF16) X(SUB_BF16) X(MUL_BF16) X(DIV_BF16) X(SQRT_BF16) X(I2F_BF16) X(U2F_BF16) X(F2I_I8) X(F2I_U8) X(F2I_I16) X(F2I_U16) X(F2I_I32) X(F2I_U32) X(FTOBOOL) \
-  X(BSWAP16) X(BSWAP32) X(BSWAP64) X(CAST)
+  X(BSWAP16) X(BSWAP32) X(BSWAP64) X(CAST) \
+  X(MOV_I128) X(LDI_I128) X(ADD_I128) X(SUB_I128) X(MUL_I128) X(NEG_I128) X(NOT_I128) X(AND_I128) X(OR_I128) X(XOR_I128) X(SHL_I128) X(MOV_U128) X(LDI_U128) X(ADD_U128) X(SUB_U128) X(MUL_U128) X(NEG_U128) X(NOT_U128) X(AND_U128) X(OR_U128) X(XOR_U128) X(SHL_U128) X(SHR_U128) X(SAR_I128) X(EQ_128) X(NE_128) X(LT_I128) X(LE_I128) X(LT_U128) X(LE_U128) X(SEXT64_I128) X(ZEXT64_I128) X(TOBOOL_I128) X(TRUNC_I128_I8) X(TRUNC_I128_I16) X(TRUNC_I128_I32) X(TRUNC_I128_U8) X(TRUNC_I128_U16) X(TRUNC_I128_U32) X(TRUNC_I128_I64) X(TRUNC_I128_U64) X(SEXT64_U128) X(ZEXT64_U128) X(TOBOOL_U128) X(TRUNC_U128_I8) X(TRUNC_U128_I16) X(TRUNC_U128_I32) X(TRUNC_U128_U8) X(TRUNC_U128_U16) X(TRUNC_U128_U32) X(TRUNC_U128_I64) X(TRUNC_U128_U64) X(CAST_I128_U128) X(CAST_U128_I128) X(HI64_I128) X(PACK_I128) X(HI64_U128) X(PACK_U128)
 
 
 // Plan Bolum 01: dar kayan nokta bicimleri f32 / f16 / bf16 (deger double olarak tam saklanir; her sonuc bicimin izgarasina yuvarlanir). Bu C++ gercekleme TAMSAYI algoritmasidir
@@ -230,6 +291,46 @@ static inline double pm_i2fmt(uint64_t x, bool isSigned, int fmt) {
   bool neg = isSigned && int64_t(x) < 0; uint64_t a = neg ? (0 - x) : x;
   if (a == 0) return 0.0;
   double r = pm_round_core(a, 0, PM_FMT[fmt]); return neg ? -r : r;
+}
+
+enum W128K { W128_HI, W128_PACK, W128_MOV, W128_LDI, W128_ADD, W128_SUB, W128_MUL, W128_NEG, W128_NOT, W128_AND, W128_OR, W128_XOR, W128_SHL, W128_SHR, W128_SAR, W128_EQ, W128_NE, W128_LTS, W128_LES, W128_LTU, W128_LEU, W128_SEXT, W128_ZEXT, W128_TOBOOL, W128_TRUNC };
+// Plan Bolum 01: 128 bit tamsayilar (genis operand: r, r+1 = dusuk, yuksek sozcuk). C++ gercekleme DERLEYICININ unsigned __int128 turuyle (mikro-program degil): bagimsiz referans.
+static inline void pm_w128(int code, int p1, int p2, uint64_t* R, int a, int b, int c) {
+  typedef unsigned __int128 U; typedef __int128 S;
+  auto L = [&](int r) -> U { return (U(R[r + 1]) << 64) | R[r]; };
+  auto W = [&](int r, U v) { R[r] = uint64_t(v); R[r + 1] = uint64_t(v >> 64); };
+  switch (code) {
+    case W128_HI: R[a] = R[b + 1]; break;
+    case W128_PACK: R[a] = R[b]; R[a + 1] = R[c]; break;
+    case W128_MOV: W(a, L(b)); break;
+    case W128_LDI: W(a, U(S(int64_t(int32_t(b))))); break;
+    case W128_ADD: W(a, L(b) + L(c)); break;
+    case W128_SUB: W(a, L(b) - L(c)); break;
+    case W128_MUL: W(a, L(b) * L(c)); break;
+    case W128_NEG: W(a, U(0) - L(b)); break;
+    case W128_NOT: W(a, ~L(b)); break;
+    case W128_AND: W(a, L(b) & L(c)); break;
+    case W128_OR: W(a, L(b) | L(c)); break;
+    case W128_XOR: W(a, L(b) ^ L(c)); break;
+    case W128_SHL: W(a, L(b) << (R[c] & 127)); break;
+    case W128_SHR: W(a, L(b) >> (R[c] & 127)); break;
+    case W128_SAR: W(a, U(S(L(b)) >> (R[c] & 127))); break;
+    case W128_EQ: R[a] = L(b) == L(c); break;
+    case W128_NE: R[a] = L(b) != L(c); break;
+    case W128_LTS: R[a] = S(L(b)) < S(L(c)); break;
+    case W128_LES: R[a] = S(L(b)) <= S(L(c)); break;
+    case W128_LTU: R[a] = L(b) < L(c); break;
+    case W128_LEU: R[a] = L(b) <= L(c); break;
+    case W128_SEXT: W(a, U(S(int64_t(R[b])))); break;
+    case W128_ZEXT: W(a, U(R[b])); break;
+    case W128_TOBOOL: R[a] = L(b) != 0; break;
+    case W128_TRUNC: {   // p1 = bit (8/16/32/64), p2 = isaretli
+      uint64_t v = R[b];
+      if (p1 == 8) v = p2 ? uint64_t(int64_t(int8_t(v))) : uint64_t(uint8_t(v));
+      else if (p1 == 16) v = p2 ? uint64_t(int64_t(int16_t(v))) : uint64_t(uint16_t(v));
+      else if (p1 == 32) v = p2 ? uint64_t(int64_t(int32_t(v))) : uint64_t(uint32_t(v));
+      R[a] = v; break; }
+  }
 }
 
 // ---------------- DATA genisletmesi: makine kodu uretecinin okudugu tablo ----------------
@@ -266,6 +367,7 @@ static inline double pm_i2fmt(uint64_t x, bool isSigned, int fmt) {
 #define DATA_MODU(t,t1,t2) {MK_MODU, t, t1, t2, 0},
 #define DATA_U2F(t,t1) {MK_U2F, t, t1, 0, 0},
 #define DATA_F2U(t,t1) {MK_F2U, t, t1, 0, 0},
+#define DATA_W128(kod,x1,x2) {MK_W128, kod, x1, x2, 0},
 #define DATA_BSWAP(w,t,t1) {MK_BSWAP, w, t, t1, 0},
 #define DATA_LIT(t,v) {MK_LIT, t, v, 0, 0},
 #define DATA_RNDF(fmt,t,t1) {MK_RNDF, fmt, t, t1, 0},
@@ -365,6 +467,7 @@ static inline double pm_fnan(double a, double b, double r) {
 #define INTERP_MODU(t,t1,t2) { if (T##t2 == 0) TRAP(T_DIV0); T##t = T##t1 % T##t2; }
 #define INTERP_U2F(t,t1) T##t = fromF(double(uint64_t(T##t1)));
 #define INTERP_F2U(t,t1) T##t = f2u(asF(T##t1));
+#define INTERP_W128(kod,x1,x2) pm_w128(kod, x1, x2, R, in.a, in.b, in.c);
 #define INTERP_BSWAP(w,t,t1) T##t = ((w) == 16 ? uint64_t(__builtin_bswap16(uint16_t(T##t1))) : (w) == 32 ? uint64_t(__builtin_bswap32(uint32_t(T##t1))) : __builtin_bswap64(T##t1));
 #define INTERP_LIT(t,v) T##t = uint64_t(int64_t(v));
 #define INTERP_RNDF(fmt,t,t1) T##t = fromF(pm_rndfmt(asF(T##t1), fmt));

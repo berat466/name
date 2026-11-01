@@ -712,7 +712,20 @@ k4: sub d, tok, 400
     addi t, k, 60
     add t, t, G
     ld fv, t, 0
-    gei z, ty, 6
+    eqi z, ty, 11
+    jz z, k4m
+    ; OPW_Fk: alan k operand yuvasi (fv) + alan k+1 literal sozcuk indeksi -> 8 * (operand + n) (genis operandin n. sozcugu)
+    add t, fv, 20
+    add t, t, G
+    ld o, t, 0
+    addi t, k, 61
+    add t, t, G
+    ld nn, t, 0
+    add o, o, nn
+    mul r, o, 8
+    call x, eb32, r
+    ret 0
+k4m: gei z, ty, 6
     jz z, k4n
     call x, etok_fn, ty, fv
     ret 0

@@ -205,7 +205,22 @@ m3: eqi z, sp, -6
     jz z, m4
     eq z, t, tc
     ret z
-m4: call ok, is1w, t
+m4: eqi z, sp, -11
+    jz z, m4a
+    ; ANY128: 128 bitlik tamsayi (i128 | u128) -- cok sozcuklu, bas turu
+    lti z, t, 1
+    jnz z, mno
+    gei z, t, 254
+    jnz z, mno
+    add a, t, TCL
+    ld cl, a, 0
+    add a, t, TBT
+    ld bt, a, 0
+    eqi z, cl, 1
+    jz z, mno
+    eqi z, bt, 128
+    ret z
+m4a: call ok, is1w, t
     jz ok, mno
     add a, t, TCL
     ld cl, a, 0
@@ -598,15 +613,15 @@ s2: call kk, isreg_src, c2
     call tc, curtype, f, nr, pc, o2
 s3: ; kaynak denetimi
     jz md2, s6
-    eqi z, c0, 100
-    jnz z, s4
+    call kd, isdst, c0
+    jnz kd, s4
     call kk, isreg_src, c0
     jz kk, s4
     call ok, matchslot, sa, ta, ta, tb, tc
     jnz ok, s4
     call x, die, 21, f, pc
-s4: eqi z, c1, 100
-    jnz z, s5
+s4: call kd, isdst, c1
+    jnz kd, s5
     call kk, isreg_src, c1
     jz kk, s5
     call ok, matchslot, sb, tb, ta, tb, tc
@@ -617,9 +632,9 @@ s5: call kk, isreg_src, c2
     call ok, matchslot, sc, tc, ta, tb, tc
     jnz ok, s6
     call x, die, 21, f, pc
-s6: ; hedef (kind d) yuvasi: yalniz 0. yuvada
-    eqi z, c0, 100
-    jz z, sdone
+s6: ; hedef (kind d/Q/O) yuvasi: yalniz 0. yuvada
+    call kd, isdst, c0
+    jz kd, sdone
     ; hedef turu
     mov rt, 0
     gti z, sa, 0
@@ -785,7 +800,21 @@ hf2: addi i, i, 1
     jmp hf1
 hf9: ret -1
 }
+func isdst(c) {
+    eqi z, c, 100
+    jnz z, y
+    eqi z, c, 81
+    jnz z, y
+    eqi z, c, 79
+    jnz z, y
+    ret 0
+y: ret 1
+}
 func isreg_src(c) {
+    eqi z, c, 113
+    jnz z, y
+    eqi z, c, 111
+    jnz z, y
     eqi z, c, 114
     jnz z, y
     eqi z, c, 102

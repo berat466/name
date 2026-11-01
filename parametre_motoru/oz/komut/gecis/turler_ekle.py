@@ -83,6 +83,14 @@ def lims(t):
     if cls == 2: return 0, 1
     return (-(1 << (bits - 1)), (1 << (bits - 1)) - 1) if sg else (0, (1 << bits) - 1)
 def conv_op(f, t):
+    wf, wt = f[3] == 128, t[3] == 128
+    if wf or wt:
+        if wf and wt: return -1 if f[0] == t[0] else opid['cast_%s_%s' % (f[1], t[1])]
+        if wt:   # dar -> genis: isaretli kaynak sign-extend, digerleri zero-extend
+            signed = f[4] == 1 and f[2] in (1, 3) and f[2] != 2
+            return opid[('sext64_%s' if signed else 'zext64_%s') % t[1]]
+        if t[2] == 2: return opid['tobool_' + f[1]]
+        return opid['trunc_%s_%s%d' % (f[1], 'i' if t[4] else 'u', t[3])]
     if t[2] == 2: return -1 if f[2] == 2 else opid['tobool']
     if f[2] == 2: return -1
     tb, ts, fb, fs = t[3], t[4], f[3], f[4]
@@ -93,7 +101,7 @@ conv = []
 INTLIKE = (1, 2, 3, 4)
 for f in T:
     for t in T:
-        if f[2] not in INTLIKE or t[2] not in INTLIKE or f[3] > 64 or t[3] > 64: continue
+        if f[2] not in INTLIKE or t[2] not in INTLIKE or (f[3] > 64 and f[3] != 128) or (t[3] > 64 and t[3] != 128): continue
         fm, fx = lims(f); tm, tx = lims(t)
         flags = 1 if (tm <= fm and fx <= tx) else 2
         body = [2, f[0], t[0], conv_op(f, t), flags, 0]
@@ -125,9 +133,9 @@ for f_ in FL:
 
 # ---- OPSIG (etiket 4) ve HOSTSIG (etiket 5): komutlarin program duzeyi tur imzalari. Alan kodlari (yuva a,b,c = OP bicimindeki operand sirasi):
 #   0 yok/yazmac degil  >0 kesin tur kimligi  -1 INT1 (tamsayi benzeri 1 sozcuk)  -2 FLT1 (kayan 1 sozcuk)  -3 ANY1 (herhangi 1 sozcuk)  -4/-5/-6 a/b/c yuvasiyla AYNI tur
-#   -7 ADDR (i64|u64)  -8 FREE (hedef: bildirilmis tur serbest, 1 sozcuk)  -9 INTDST (hedef tamsayi benzeri; akis izlemede i64)  -10 INT64 (i64|u64)
+#   -7 ADDR (i64|u64)  -8 FREE (hedef: bildirilmis tur serbest, 1 sozcuk)  -9 INTDST (hedef tamsayi benzeri; akis izlemede i64)  -10 INT64 (i64|u64)  -11 ANY128 (i128|u128)
 # kural: 1 = DONUSUM (b yuvasi turu -> a yuvasi turu icin TYPES'ta bu komutu (ya da CAST icin -1'i) kaydeden bir donusum olmali)
-NONE, INT1, FLT1, ANY1, SAME_A, SAME_B, SAME_C, ADDR, FREE, INTDST, INT64 = 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10
+NONE, INT1, FLT1, ANY1, SAME_A, SAME_B, SAME_C, ADDR, FREE, INTDST, INT64, ANY128 = 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11
 tid = {t[1]: t[0] for t in T}
 opfmt = {}
 for l in gor:
@@ -191,6 +199,30 @@ def sig(name, fmt):
     if n == 'FTOBOOL': return (I('bool'), FLT1, NONE, 1)
     m = re.match(r'^BSWAP(16|32|64)$', n)
     if m: return (I('u' + m.group(1)), I('u' + m.group(1)), NONE, 0)
+    m = re.match(r'^(MOV|LDI|ADD|SUB|MUL|AND|OR|XOR|NEG|NOT|SHL)_(I128|U128)$', n)
+    if m:
+        ty = I(m.group(2).lower()); k = m.group(1)
+        if k == 'LDI': return (ty, NONE, NONE, 0)
+        if k in ('MOV', 'NEG', 'NOT'): return (ty, ty, NONE, 0)
+        if k == 'SHL': return (ty, ty, INT1, 0)
+        return (ty, ty, ty, 0)
+    if n == 'SHR_U128': return (I('u128'), I('u128'), INT1, 0)
+    if n == 'SAR_I128': return (I('i128'), I('i128'), INT1, 0)
+    if n in ('EQ_128', 'NE_128'): return (I('bool'), ANY128, SAME_B, 0)
+    m = re.match(r'^(LT|LE)_(I128|U128)$', n)
+    if m: ty = I(m.group(2).lower()); return (I('bool'), ty, ty, 0)
+    m = re.match(r'^(SEXT64|ZEXT64)_(I128|U128)$', n)
+    if m: return (I(m.group(2).lower()), INT1, NONE, 1)
+    m = re.match(r'^TOBOOL_(I128|U128)$', n)
+    if m: return (I('bool'), I(m.group(1).lower()), NONE, 1)
+    m = re.match(r'^TRUNC_(I128|U128)_([IU](8|16|32|64))$', n)
+    if m: return (I(m.group(2).lower()), I(m.group(1).lower()), NONE, 1)
+    if n == 'CAST_I128_U128': return (I('u128'), I('i128'), NONE, 1)
+    if n == 'CAST_U128_I128': return (I('i128'), I('u128'), NONE, 1)
+    m = re.match(r'^HI64_(I128|U128)$', n)
+    if m: return (I('i64' if m.group(1) == 'I128' else 'u64'), I(m.group(1).lower()), NONE, 0)
+    m = re.match(r'^PACK_(I128|U128)$', n)
+    if m: return (I(m.group(1).lower()), INT64, INT64, 0)
     return 'EKSIK'
 sigrec = []; eksik = []
 for l in gor:

@@ -247,7 +247,7 @@ struct Asm {
     const OpInfo& oi = kOpInfo[in.op];
     for (int j = 0; j < oi.nops; j++) {
       int32_t v = j == 0 ? in.a : j == 1 ? in.b : in.c; char k = oi.kinds[j];
-      if (k == 'r' || k == 'f' || k == 's') onRead(v); else if (k == 'd') onWrite(v);
+      if (kind_src(k)) { for (int w = 0; w < kind_width(k); w++) onRead(v + w); } else if (kind_dst(k)) { for (int w = 0; w < kind_width(k); w++) onWrite(v + w); }
     }
   }
 
@@ -304,10 +304,14 @@ struct Asm {
   // ---- bir fonksiyonun cozumlenmesi ve uretimi ----
   Func build(const FuncSrc& fs) {
     std::map<std::string, int> regs;
-    auto addReg = [&](const std::string& n, int line) {
+    auto addReg = [&](const std::string& n, int line, int width = 1) {
       if (!is_ident(n)) err(line, "gecersiz yazmac adi: " + n);
       if (funcIdx.count(n) || dataAddr.count(n) || host_index(n) >= 0 || op_index(n) >= 0) err(line, "ad cakisiyor (fonksiyon/data/host/komut ile): " + n);
-      if (!regs.count(n)) { int i = int(regs.size()); regs[n] = i; }
+      if (!regs.count(n)) {
+        int i = int(regs.size()); regs[n] = i;
+        // genis hedef: ad ve ardisik w-1 sozcuk ('ad#k' adlari) ayni anda, ardisik numaralarla ayrilir
+        for (int w = 1; w < width; w++) regs[n + "#" + std::to_string(w)] = i + w;
+      }
     };
     for (auto& p : fs.params) {
       if (regs.count(p)) err(fs.line, "parametre tekrarlandi: " + p);
@@ -346,7 +350,7 @@ struct Asm {
         }
       } else {
         if (int(n.a.size()) != oi.nops) err(st.line, std::string(oi.name) + " " + std::to_string(oi.nops) + " operand ister");
-        for (int j = 0; j < oi.nops; j++) if (oi.kinds[j] == 'd') addReg(n.a[j], st.line);
+        for (int j = 0; j < oi.nops; j++) if (kind_dst(oi.kinds[j])) addReg(n.a[j], st.line, kind_width(oi.kinds[j]));
       }
       ir.push_back(std::move(n));
     }
@@ -416,8 +420,8 @@ struct Asm {
       } else {
         for (int j = 0; j < oi.nops; j++) {
           char kd = oi.kinds[j];
-          if (kd == 'd') I.o[j] = dst(n.a[j], n.line);
-          else if (kd == 'r' || kd == 'f' || kd == 's') I.o[j] = src(n.a[j], kd, n.line);
+          if (kind_dst(kd)) I.o[j] = dst(n.a[j], n.line);
+          else if (kind_src(kd)) I.o[j] = src(n.a[j], kd, n.line);
           else if (kd == 'i') {
             int64_t iv; Opd o; o.t = Opd::IMM;
             if (parse_int(n.a[j], iv)) o.v = iv;

@@ -29,6 +29,7 @@ oob|oz/elf|dogrula_oob.sh|||41|eski ELF ureticisi ld/st sinir denetimi
 yap|oz/yap|dogrula_yap.sh|30 100||39|yapisal dil -> pma
 ikili|oz|dogrula_ikili.sh|30||32|PMB1 kodlayici/cozucu
 komut|oz/komut|dogrula_komut.sh|10||34|komut tablosu (PMK1)
+i128|oz/tur128|dogrula_i128.sh|||30|128 bit tamsayilar + genis operand altyapisi (ELF = svm = C++ pm = __int128 oracle; valid/asm genis operand)
 tip|oz/tip|dogrula_tip.sh|||20|program duzeyi tur sistemi: PMT1 tur notu + TYPES imzalari -> tipdogr (sayisal PMA araci)
 turler|oz/komut|dogrula_turler.sh|||20|TYPES bolumu: tur ozellikleri, limitler, ABI veri modeli, bayt sirasi (C++ derleyici gercekleriyle)
 valid|oz/dogr|dogrula_valid.sh|8 8||31|PMB1 dogrulayici (guvenlik kapisi)
@@ -69,7 +70,7 @@ svm|oz/sayisal|sabotaj_svm.sh
 nesne|oz/nesne|sabotaj_nesne.sh
 "
 KRITIK="testler valid mikro arac"
-TUMALAN="elf2 oob yap ikili komut turler tip valid asm kural grafik svm nesne gorunum elf mikro cagri tur dar donusum arac testler ondalik float"
+TUMALAN="elf2 oob yap ikili komut turler tip i128 valid asm kural grafik svm nesne gorunum elf mikro cagri tur dar donusum arac testler ondalik float"
 
 # ---- degisen dosya -> alanlar
 alan_dosya() {
@@ -78,7 +79,8 @@ alan_dosya() {
     src/*|Makefile|tests/*) echo "testler ikili elf elf2 oob mikro asm kural valid yap svm komut nesne arac ondalik float grafik tur" ;;   # C++ cekirdek = bagimsiz referans: her sey ona karsi karsilastirilir
     oz/komut/dogrula_turler.sh|oz/komut/turler_oracle.cpp) echo "turler" ;;
     oz/tip/*) echo "tip" ;;
-    oz/komut/komutlar.pmk) echo "komut turler tip nesne gorunum kural mikro cagri tur dar donusum svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
+    oz/tur128/*) echo "i128" ;;
+    oz/komut/komutlar.pmk) echo "komut turler tip i128 nesne gorunum kural mikro cagri tur dar donusum svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
     oz/komut/*) echo "komut" ;;                                                  # tablo disi: test/belge/gecis dosyalari
     oz/arac/*.sh|oz/arac/ref/*) echo "arac" ;;
     oz/arac/komut.*) echo "arac komut turler tip nesne gorunum asm valid elf2" ;;         # komut.pmb tum sozlukleri uretir

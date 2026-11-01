@@ -424,6 +424,108 @@ func main() {
 }
 entry main
 EOT
+# ---------------- 128 bit (genis operand) ----------------
+tc "i128: pack/add/trunc/hi64 (gecerli)" "1" "0 - : i64 i64 i128 + i128 + i128 + i64 i64" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ pack_i128 x, a, b
+ pack_i128 y, a, b
+ add_i128 z, x, y
+ trunc_i128_i64 t, z
+ hi64_i128 h, z
+ halt
+}
+entry main
+EOT
+tc "i128 komutuna u128 kaynak" "0 21 0 4" "0 - : i64 i64 i128 + u128 + i128 + i64" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ pack_i128 x, a, b
+ pack_u128 y, a, b
+ add_i128 z, x, y
+ halt
+}
+entry main
+EOT
+tc "eq_128: i128 ile u128 karisik" "0 21 0 4" "0 - : i64 i64 i128 + u128 + bool" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ pack_i128 x, a, b
+ pack_u128 y, a, b
+ eq_128 c, x, y
+ halt
+}
+entry main
+EOT
+tc "eq_128: i128 ile i128 (gecerli, ANY128)" "1" "0 - : i64 i64 i128 + i128 + bool" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ pack_i128 x, a, b
+ pack_i128 y, a, b
+ eq_128 c, x, y
+ halt
+}
+entry main
+EOT
+tc "trunc: hedef tur uyumsuz (i64 beklenir, i32 bildirildi)" "0 22 0 3" "0 - : i64 i64 i128 + i32" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ pack_i128 x, a, b
+ trunc_i128_i64 t, x
+ halt
+}
+entry main
+EOT
+tc "kosul: lt_i128 sonucu i32" "0 22 0 4" "0 - : i64 i64 i128 + i128 + i32" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ pack_i128 x, a, b
+ pack_i128 y, a, b
+ lt_i128 c, x, y
+ halt
+}
+entry main
+EOT
+tc "cok sozcuklu kaynak dar yazmacta (x i64)" "0 21 0 3" "0 - : i64 i64 i128 + i64 i64" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ pack_i128 x, a, b
+ add_i128 z, a, x
+ halt
+}
+entry main
+EOT
+tc "genis donusum: sext64_i128 kayan kaynak" "0 21 0 1" "0 - : f64 i128 + i32" <<'EOT'
+func main() {
+ mov a, 1.5
+ sext64_i128 x, a
+ halt
+}
+entry main
+EOT
+tc "genis donusum: gecerli (i32 -> u128 sext64_u128)" "1" "0 - : i32 u128 + i32" <<'EOT'
+func main() {
+ ldi a, 7
+ sext64_u128 x, a
+ halt
+}
+entry main
+EOT
+tc "genis donusum: yanlis komut (i32 -> i128 icin zext64_i128 degil sext64_i128)" "0 23 0 1" "0 - : i32 i128 + i32" <<'EOT'
+func main() {
+ ldi a, 7
+ zext64_i128 x, a
+ halt
+}
+entry main
+EOT
 echo "tip denetleyicisi: $ok gecti, $bad basarisiz"
 rm -rf $T
 [ $bad = 0 ]

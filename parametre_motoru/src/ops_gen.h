@@ -148,7 +148,65 @@
   X(BSWAP16, "bswap16", 2, "dr") \
   X(BSWAP32, "bswap32", 2, "dr") \
   X(BSWAP64, "bswap64", 2, "dr") \
-  X(CAST, "cast", 2, "dr")
+  X(CAST, "cast", 2, "dr") \
+  X(MOV_I128, "mov_i128", 2, "Qq") \
+  X(LDI_I128, "ldi_i128", 2, "Qi") \
+  X(ADD_I128, "add_i128", 3, "Qqq") \
+  X(SUB_I128, "sub_i128", 3, "Qqq") \
+  X(MUL_I128, "mul_i128", 3, "Qqq") \
+  X(NEG_I128, "neg_i128", 2, "Qq") \
+  X(NOT_I128, "not_i128", 2, "Qq") \
+  X(AND_I128, "and_i128", 3, "Qqq") \
+  X(OR_I128, "or_i128", 3, "Qqq") \
+  X(XOR_I128, "xor_i128", 3, "Qqq") \
+  X(SHL_I128, "shl_i128", 3, "Qqr") \
+  X(MOV_U128, "mov_u128", 2, "Qq") \
+  X(LDI_U128, "ldi_u128", 2, "Qi") \
+  X(ADD_U128, "add_u128", 3, "Qqq") \
+  X(SUB_U128, "sub_u128", 3, "Qqq") \
+  X(MUL_U128, "mul_u128", 3, "Qqq") \
+  X(NEG_U128, "neg_u128", 2, "Qq") \
+  X(NOT_U128, "not_u128", 2, "Qq") \
+  X(AND_U128, "and_u128", 3, "Qqq") \
+  X(OR_U128, "or_u128", 3, "Qqq") \
+  X(XOR_U128, "xor_u128", 3, "Qqq") \
+  X(SHL_U128, "shl_u128", 3, "Qqr") \
+  X(SHR_U128, "shr_u128", 3, "Qqr") \
+  X(SAR_I128, "sar_i128", 3, "Qqr") \
+  X(EQ_128, "eq_128", 3, "dqq") \
+  X(NE_128, "ne_128", 3, "dqq") \
+  X(LT_I128, "lt_i128", 3, "dqq") \
+  X(LE_I128, "le_i128", 3, "dqq") \
+  X(LT_U128, "lt_u128", 3, "dqq") \
+  X(LE_U128, "le_u128", 3, "dqq") \
+  X(SEXT64_I128, "sext64_i128", 2, "Qr") \
+  X(ZEXT64_I128, "zext64_i128", 2, "Qr") \
+  X(TOBOOL_I128, "tobool_i128", 2, "dq") \
+  X(TRUNC_I128_I8, "trunc_i128_i8", 2, "dq") \
+  X(TRUNC_I128_I16, "trunc_i128_i16", 2, "dq") \
+  X(TRUNC_I128_I32, "trunc_i128_i32", 2, "dq") \
+  X(TRUNC_I128_U8, "trunc_i128_u8", 2, "dq") \
+  X(TRUNC_I128_U16, "trunc_i128_u16", 2, "dq") \
+  X(TRUNC_I128_U32, "trunc_i128_u32", 2, "dq") \
+  X(TRUNC_I128_I64, "trunc_i128_i64", 2, "dq") \
+  X(TRUNC_I128_U64, "trunc_i128_u64", 2, "dq") \
+  X(SEXT64_U128, "sext64_u128", 2, "Qr") \
+  X(ZEXT64_U128, "zext64_u128", 2, "Qr") \
+  X(TOBOOL_U128, "tobool_u128", 2, "dq") \
+  X(TRUNC_U128_I8, "trunc_u128_i8", 2, "dq") \
+  X(TRUNC_U128_I16, "trunc_u128_i16", 2, "dq") \
+  X(TRUNC_U128_I32, "trunc_u128_i32", 2, "dq") \
+  X(TRUNC_U128_U8, "trunc_u128_u8", 2, "dq") \
+  X(TRUNC_U128_U16, "trunc_u128_u16", 2, "dq") \
+  X(TRUNC_U128_U32, "trunc_u128_u32", 2, "dq") \
+  X(TRUNC_U128_I64, "trunc_u128_i64", 2, "dq") \
+  X(TRUNC_U128_U64, "trunc_u128_u64", 2, "dq") \
+  X(CAST_I128_U128, "cast_i128_u128", 2, "Qq") \
+  X(CAST_U128_I128, "cast_u128_i128", 2, "Qq") \
+  X(HI64_I128, "hi64_i128", 2, "dq") \
+  X(PACK_I128, "pack_i128", 3, "Qrr") \
+  X(HI64_U128, "hi64_u128", 2, "dq") \
+  X(PACK_U128, "pack_u128", 3, "Qrr")
 
 // X(ENUM, "ad", arguman_sayisi)  host islevleri
 #define PM_HOSTS(X) \

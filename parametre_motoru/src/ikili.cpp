@@ -39,7 +39,7 @@ struct Reader {
   }
 };
 
-bool is_reg_kind(char k) { return k == 'd' || k == 'r' || k == 'f' || k == 's' || k == 'b'; }
+bool is_reg_kind(char k) { return kind_src(k) || kind_dst(k) || k == 'b'; }
 int32_t& field(Ins& in, int j) { return j == 0 ? in.a : (j == 1 ? in.b : in.c); }
 int32_t field(const Ins& in, int j) { return j == 0 ? in.a : (j == 1 ? in.b : in.c); }
 
@@ -150,7 +150,7 @@ void validate_program(const Program& p) {
       const Ins& in = f.code[pc]; const OpInfo& oi = kOpInfo[in.op];
       for (int j = 0; j < oi.nops; j++) {
         char k = oi.kinds[j]; int32_t v = field(in, j);
-        if (is_reg_kind(k)) { if (v < 0 || uint32_t(v) >= f.nregs) bad(pc, "yazmac sinir disi"); }
+        if (is_reg_kind(k)) { if (v < 0 || int64_t(v) + kind_width(k) > int64_t(f.nregs)) bad(pc, "yazmac sinir disi"); }
         else if (k == 'l') { if (v < 0 || size_t(v) >= f.code.size()) bad(pc, "atlama hedefi sinir disi"); }
         else if (k == 'F') { if (v < 0 || size_t(v) >= p.funcs.size()) bad(pc, "fonksiyon indeksi gecersiz"); }
         else if (k == 'k') { if (v < 0 || size_t(v) >= p.consts.size()) bad(pc, "sabit indeksi gecersiz"); }
@@ -201,9 +201,9 @@ void analyze_program(Program& p) {
       } else {
         for (int j = 0; j < oi.nops; j++) {
           char k = oi.kinds[j]; int32_t v = j == 0 ? ins.a : j == 1 ? ins.b : ins.c;
-          if ((k == 'r' || k == 'f' || k == 's') && !need(size_t(v))) return;
+          if (kind_src(k)) for (int w = 0; w < kind_width(k); w++) if (!need(size_t(v) + size_t(w))) return;
         }
-        for (int j = 0; j < oi.nops; j++) if (oi.kinds[j] == 'd') setb(s.data(), size_t(j == 0 ? ins.a : j == 1 ? ins.b : ins.c));
+        for (int j = 0; j < oi.nops; j++) if (kind_dst(oi.kinds[j])) for (int w = 0; w < kind_width(oi.kinds[j]); w++) setb(s.data(), size_t(j == 0 ? ins.a : j == 1 ? ins.b : ins.c) + size_t(w));
       }
       auto flow = [&](uint32_t to) {
         uint64_t* t = &in[size_t(to) * W];

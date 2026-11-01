@@ -79,9 +79,9 @@ bg mut hedef_kesin 'jz rt, d_cls
     jnz z, d_rule' 'jz rt, d_cls
     ne z, rt, dt
     jnz z, d_rule'
-bg mut kaynak_denetimi_b 's4: eqi z, c1, 100
-    jnz z, s5' 's4: eqi z, c1, 114
-    jnz z, s5'
+bg mut kaynak_denetimi_b 's4: call kd, isdst, c1
+    jnz kd, s5' 's4: call kd, isdst, c1
+    jmp s5'
 bg mut kaynak_denetimi_c 's5: call kk, isreg_src, c2
     jz kk, s6
     call ok, matchslot, sc, tc, ta, tb, tc

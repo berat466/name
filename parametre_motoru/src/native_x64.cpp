@@ -189,7 +189,7 @@ void reg_access(const Program& P, const Ins& in, R rd, W wr) {
   const OpInfo& oi = kOpInfo[in.op];
   for (int j = 0; j < oi.nops; j++) {
     int32_t v = fld(in, j); char k = oi.kinds[j];
-    if (k == 'r' || k == 'f' || k == 's') rd(v); else if (k == 'd') wr(v);
+    if (kind_src(k)) { for (int w = 0; w < kind_width(k); w++) rd(v + w); } else if (kind_dst(k)) { for (int w = 0; w < kind_width(k); w++) wr(v + w); }
   }
 }
 bool is_cmp_op(int op) {
