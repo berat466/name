@@ -526,6 +526,77 @@ func main() {
 }
 entry main
 EOT
+# ---------------- genis kayan nokta (f80 / f128) ----------------
+tc "f128/f80: aritmetik, karsilastirma, donusumler (gecerli)" "1" "0 - : i64 f64 f128 + f128 + f128 + f80 + f80 + bool bool f64 i64 f32" <<'EOT'
+func main() {
+ ldi a, 1
+ mov d0, 1.5
+ cv_i64_f128 x, a
+ cv_f64_f128 y, d0
+ add_f128 z, x, y
+ mul_f128 z, z, y
+ sqrt_f128 z, z
+ cv_f128_f80 w, z
+ cv_f64_f80 v, d0
+ div_f80 w, w, v
+ lt_f80 c, w, v
+ tobool_f128 e, z
+ cv_f80_f64 f, w
+ cv_f80_i64 g, w
+ cv_f128_f32 h, z
+ halt
+}
+entry main
+EOT
+tc "add_f80 komutuna f128 kaynak" "0 21 0 4" "0 - : i64 f64 f128 + f80 + f80 +" <<'EOT'
+func main() {
+ ldi a, 1
+ mov d0, 1.5
+ cv_i64_f128 x, a
+ cv_f64_f80 y, d0
+ add_f80 z, x, y
+ halt
+}
+entry main
+EOT
+tc "f128 hedefe f80 sonucu yazan komut (add_f128 hedefi f80)" "0 22 0 4" "0 - : i64 f64 f128 + f128 + f80 +" <<'EOT'
+func main() {
+ ldi a, 1
+ mov d0, 1.5
+ cv_i64_f128 x, a
+ cv_f64_f128 y, d0
+ add_f128 z, x, y
+ halt
+}
+entry main
+EOT
+tc "genis kayan: dar yazmaca f128 sonucu (cv_i64_f128 hedefi i64)" "0 22 0 1" "0 - : i64 i64" <<'EOT'
+func main() {
+ ldi a, 1
+ cv_i64_f128 b, a
+ halt
+}
+entry main
+EOT
+tc "kosul: lt_f128 sonucu i32" "0 22 0 3" "0 - : i64 f128 + f128 + i32" <<'EOT'
+func main() {
+ ldi a, 1
+ cv_i64_f128 x, a
+ cv_i64_f128 y, a
+ lt_f128 c, x, y
+ halt
+}
+entry main
+EOT
+tc "f128 -> f80 donusumu: kaynak turu uymayan komut (cv_f80_f128 kaynagi f80, verilen f128)" "0 21 0 2" "0 - : i64 f128 + f128 +" <<'EOT'
+func main() {
+ ldi a, 1
+ cv_i64_f128 x, a
+ cv_f80_f128 y, x
+ halt
+}
+entry main
+EOT
 echo "tip denetleyicisi: $ok gecti, $bad basarisiz"
 rm -rf $T
 [ $bad = 0 ]

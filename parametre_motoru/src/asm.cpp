@@ -472,7 +472,7 @@ struct Asm {
           if (I.args[j].t == Opd::CONST) emitConst(w + int32_t(j), I.args[j].v);
           else { Ins m{}; m.op = OP_MOV; m.a = w + int32_t(j); m.b = reg(I.args[j]); f.code.push_back(m); }
         }
-        Ins c{}; c.op = uint8_t(I.op); c.a = int32_t(I.o[0].v); c.b = w; f.code.push_back(c);
+        Ins c{}; c.op = uint16_t(I.op); c.a = int32_t(I.o[0].v); c.b = w; f.code.push_back(c);
         if (I.has_dest) { Ins m{}; m.op = OP_MOV; m.a = reg(I.dest); m.b = w; f.code.push_back(m); }
         continue;
       }
@@ -482,7 +482,7 @@ struct Asm {
         Ins r{}; r.op = OP_RET; r.a = w; f.code.push_back(r);
         continue;
       }
-      Ins in{}; in.op = uint8_t(I.op);
+      Ins in{}; in.op = uint16_t(I.op);
       const OpInfo& oi = kOpInfo[I.op];
       for (int j = 0; j < oi.nops; j++) {
         int32_t v = 0; const Opd& o = I.o[j];

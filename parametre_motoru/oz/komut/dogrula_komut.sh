@@ -290,13 +290,13 @@ g++ -std=c++17 -I $R/src -o $T/kw $T/kw.cpp 2>/dev/null && $T/kw | sort > $T/kw_
 mod gor < $TAB | awk '$1=="kind" {c=$3; w=1; for (i=5;i<=NF;i++) if ($i ~ /^3=/) {v=$i; sub(/^3=/,"",v); w=v}; f=$4+0; if (index("dQqOorfs", c)) printf "%s %d %d %d\n", c, w, (f%2), (int(f/2)%2)}' | sort > $T/kw_tab.txt
 cmp -s $T/kw_cpp.txt $T/kw_tab.txt && pass || fail "KIND bolumu ile C++ kind_width/kind_src/kind_dst farkli: $(diff $T/kw_cpp.txt $T/kw_tab.txt | head -4 | tr '\n' '|')"
 # ---- 8) ANLAM (PRIM + SEM) bolumleri: C++ referansiyla esitlik, olumsuz ornekler, genisletme noktasi
-g++ -std=c++17 -I $R/src -o $T/anlam_dump gecis/anlam_dump.cpp 2>/dev/null && $T/anlam_dump | sort > $T/sem_cpp.txt || fail "anlam_dump derlenemedi"
+g++ -std=c++17 -I $R/src -o $T/anlam_dump gecis/anlam_dump.cpp -lquadmath 2>/dev/null && $T/anlam_dump | sort > $T/sem_cpp.txt || fail "anlam_dump derlenemedi"
 # C++ tarafinda ozel (dedicated) mikro-islemle gerceklenen komutlar (u2f/f2u, dar kayan nokta yuvarlama, bswap) tablodaki mikro-programla BIREBIR kiyaslanmaz;
 # onlar icin esdegerlik ELF = svm = C++ pm = bagimsiz referans testleriyle (dogrula_tur/dar/donusum) saglanir.
 mod gor < $TAB | grep '^sem ' | grep -v -E '^sem (FMIN|U2F|F2U|[A-Z0-9]+_(F32|F16|BF16)|BSWAP[0-9]+) ' | sort > $T/sem_tab.txt
 grep -v -E '^sem (FMIN|U2F|F2U|[A-Z0-9]+_(F32|F16|BF16)|BSWAP[0-9]+) ' $T/sem_cpp.txt > $T/sem_cpp2.txt; mv $T/sem_cpp2.txt $T/sem_cpp.txt
-# C++ tarafinda unsigned __int128 ile (dedicated) gerceklenen 128 bit komutlari da mikro-programla birebir kiyaslanmaz
-grep w128_dedicated $T/sem_cpp.txt | awk '{print $2}' > $T/w128ops.txt
+# C++ tarafinda unsigned __int128 / long double / __float128 ile (dedicated) gerceklenen 128 bit ve genis kayan nokta komutlari da mikro-programla birebir kiyaslanmaz
+grep -E 'w128_dedicated|wfp_dedicated' $T/sem_cpp.txt | awk '{print $2}' > $T/w128ops.txt
 if [ -s $T/w128ops.txt ]; then grep -v -F -w -f $T/w128ops.txt $T/sem_cpp.txt > $T/sc2.txt; mv $T/sc2.txt $T/sem_cpp.txt; grep -v -E "^sem ($(paste -sd'|' $T/w128ops.txt)) " $T/sem_tab.txt > $T/st2.txt; mv $T/st2.txt $T/sem_tab.txt; fi
 cmp -s $T/sem_cpp.txt $T/sem_tab.txt && pass || fail "tablodaki SEM tanimlari src/anlam.h (C++ referansi) ile ayni degil: $(diff $T/sem_cpp.txt $T/sem_tab.txt | head -3 | tr '\n' '|')"
 mod gor < $TAB | grep -q '^prim 47 sel to,ti,ti,ti ext 1=0$' && pass || fail "prim satiri beklenen bicimde degil"
@@ -307,7 +307,7 @@ sred "operand yuvasi komutta yok (MOV'da c)" 's/^sem MOV rd t1 b ; wr a t1$/sem 
 sred "bilinmeyen komut" 's/^sem MOV rd t1 b ; wr a t1$/sem NOSUCH rd t1 b ; wr a t1/'
 sred "alan sayisi eksik" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t1 ; wr a t1/'
 sred "yinelenen anlam" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t1 b ; wr a t1\nsem MOV rd t1 b ; wr a t1/'
-sred "gecici sinir disi" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t9 b ; wr a t9/'
+sred "gecici sinir disi" 's/^sem MOV rd t1 b ; wr a t1$/sem MOV rd t17 b ; wr a t17/'
 # ---- 8b) PSEUDO (6) ve REWRITE (7) bolumleri: olumsuz ornekler (sayisal alanlarda bozma) ve gidis-donus
 rwred() { y=$(mod gor < $TAB | awk "$3" | mod yaz 2>/dev/null | head -1); [ "$y" = "HATA: $2" ] && pass || fail "kural olumsuz ornek: $1 (beklenen kod $2, bulunan '$y')"; }
 rwred "kural kaynagi bilinmeyen komut" 80 '/^section 7 /{$8=999} {print}'
