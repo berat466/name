@@ -343,6 +343,14 @@ func main() {
 }
 entry main
 EOT
+tc "cok sozcuklu: son yazmacta bas, DEVAM yok" "0 7 0 2" "0 - : i32 i32 i128" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ halt
+}
+entry main
+EOT
 tc "cok sozcuklu: DEVAM yerine baska tur" "0 7 0 0" "0 - : i128 i32 i32" <<'EOT'
 func main() {
  ldi a, 1

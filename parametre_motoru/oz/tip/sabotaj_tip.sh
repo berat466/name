@@ -132,7 +132,9 @@ bg mut atlama_yukle_b 'jz tg, dj1
     add b, gi, XC'
 bg mut atlama_hedefi 'dj1: ld tl, b, 0' 'dj1: ld tl, b, 1'
 bg mut sihirli_sayi 'eqi z, m, 1347441713' 'eqi z, m, 1347441712'
-bg mut surum 'ld v, PT, 1\n    eqi z, v, 1' 'ld v, PT, 1\n    eqi z, v, 2'
+bg mut surum 'ld v, PT, 1
+    eqi z, v, 1' 'ld v, PT, 1
+    eqi z, v, 2'
 bg mut dusme 'fall: addi np, pc, 1' 'fall: addi np, pc, 2'
 bg mut kayit_nregs 'eq z, pr, nr
     jnz z, t5' 'jmp t5
@@ -147,14 +149,7 @@ bg mut devam_oncesi 'd5: ; DEVAM: oncesi cok sozcuklu bir bas tarafindan kapsanm
     jnz r, d5a' 'd5: ; DEVAM: oncesi cok sozcuklu bir bas tarafindan kapsanmali
     jmp d3
     jnz r, d5a'
-bg mut cok_sozcuk_devam 'd2c: ge z, k, nw
-    jnz z, d3
-    add q, r, k
-    ge z, q, nr' 'd2c: ge z, k, nw
-    jnz z, d3
-    add q, r, k
-    jmp d2d
-    ge z, q, nr'
+# cok_sozcuk_devam (q >= nr siniri) bilincle mutantsiz: sinir korumasi atlansa bile okunan sozcuk DEVAM olamayacagindan ayni hata kodu (7) cikar (denk mutant)
 bg mut giris_dyn_baslangic 'eqi z, tt, 254
     jz z, a4b
     mov tt, 253' 'eqi z, tt, 254
