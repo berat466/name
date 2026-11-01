@@ -4,7 +4,7 @@
 PM=${1:-../../pm}; JOBS=${2:-4}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d)
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
 KM() { { echo "@@$1"; cat; } | $PM run $R/oz/arac/komut.pmb; }
-sonuc() { if (cd $1/oz/tur128 && LIMS=200 timeout 700 ./dogrula_i128.sh $PM 14 4 > $T/log_$2 2>&1); then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
+sonuc() { if (cd $1/oz/tur128 && LIMS=200 timeout 700 ./dogrula_i128.sh $PM 26 4 > $T/log_$2 2>&1); then echo "KACTI: $2"; else echo "yakalandi: $2 ($(grep -c HATA $T/log_$2) hata)"; fi; }
 mut_sem() {   # etiket KOMUT eski yeni
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
   ( w=$T/w_$1; taban $w
@@ -47,7 +47,7 @@ bg mut_sem mul_ust MUL_I128 'mulhu t6 t1 t3' 'alu_mul t6 t1 t3'
 bg mut_sem mul_capraz1 MUL_U128 'alu_mul t7 t1 t4' 'alu_mul t7 t1 t3'
 bg mut_sem mul_capraz2 MUL_I128 'alu_mul t7 t2 t3' 'alu_mul t7 t2 t4'
 bg mut_sem neg_borc NEG_I128 'cmp_ne t4 t1 t3' 'cmp_eq t4 t1 t3'
-bg mut_sem not_yuksek NOT_U128 'un_not t2 t2' 'mov t2 t2'
+bg mut_sem not_yuksek NOT_U128 'un_not t2 t2' 'un_neg t2 t2'
 bg mut_sem and_yuksek AND_I128 'alu_and t2 t2 t4' 'alu_or t2 t2 t4'
 bg mut_sem xor_dusuk XOR_U128 'alu_xor t1 t1 t3' 'alu_or t1 t1 t3'
 bg mut_sem shl_buyuk SHL_I128 'sel t8 t4 t6 t7' 'sel t8 t4 t7 t6'

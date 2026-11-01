@@ -53,6 +53,8 @@ progtek() {   # N cikti
     for ty in i128 u128; do v=x; [ $ty = u128 ] && v=xu
       for tn in i8 i16 i32 i64 u8 u16 u32 u64; do echo "    trunc_${ty}_${tn} c, $v"; N c; done
       echo "    tobool_$ty c, $v"; N c; echo "    hi64_$ty c, $v"; N c; done
+    echo "    host putc, 124"; echo "    host putc, 32"
+    for ty in i128 u128; do for im in 5 -5 2147483647 -2147483648; do echo "    ldi_$ty r, $im"; W r; done; done
     echo "    host putc, 10"; echo "    addi i, i, 1"; echo "    jmp li"; echo "done: halt"; echo "}"; echo "entry main"; } > $2
 }
 karsilastir() {   # etiket pma beklenen svm_pma svm_beklenen

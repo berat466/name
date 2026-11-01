@@ -41,6 +41,8 @@ int main(int argc, char** argv) {
       printf(" |");
       for (int k = 0; k < 2; k++) printf(" %lld %lld %lld %lld %lld %lld %lld %lld %d %lld", (long long)(int8_t)x, (long long)(int16_t)x, (long long)(int32_t)x, (long long)(int64_t)x,
              (long long)(uint8_t)x, (long long)(uint16_t)x, (long long)(uint32_t)x, (long long)(uint64_t)x, (int)(x != 0), (long long)(uint64_t)(x >> 64));
+      printf(" |");
+      for (int k = 0; k < 2; k++) { pr(U(S(int64_t(5)))); pr(U(S(int64_t(-5)))); pr(U(S(int64_t(2147483647)))); pr(U(S(int64_t(-2147483647 - 1)))); }   // ldi_i128 / ldi_u128 (imm32 isaret genislemeli)
       printf("\n");
     }
     return 0;
