@@ -23,20 +23,10 @@ bg mut match_kesin 'gti z, sp, 0
     eq z, t, sp' 'gti z, sp, 0
     jz z, m1
     ne z, t, sp'
-bg mut match_ayni_a 'm1: eqi z, sp, -4
-    jz z, m2
-    eq z, t, ta' 'm1: eqi z, sp, -4
-    jz z, m2
-    eq z, t, tb'
 bg mut match_ayni_b 'm2: eqi z, sp, -5
     jz z, m3
     eq z, t, tb' 'm2: eqi z, sp, -5
     jz z, m3
-    eq z, t, ta'
-bg mut match_ayni_c 'm3: eqi z, sp, -6
-    jz z, m4
-    eq z, t, tc' 'm3: eqi z, sp, -6
-    jz z, m4
     eq z, t, ta'
 bg mut match_int_sinif 'gei z, cl, 1
     jz z, mno
@@ -64,9 +54,6 @@ bg mut match_intdst 'm8: eqi z, sp, -9
     gei z, cl, 1' 'm8: eqi z, sp, -9
     jz z, m9
     gei z, cl, 5'
-bg mut tek_sozcuk 'func is1w(t) {          ; 1 sozcuklu gecerli tur mu
-    lti z, t, 1' 'func is1w(t) {          ; 1 sozcuklu gecerli tur mu
-    lti z, t, 0'
 bg mut donusum_komut 'eq z, o, opid
     jz z, c2
     ret 1' 'jmp c3
@@ -140,11 +127,12 @@ bg mut host_donus 'sh5: jz md2, sh0
 bg mut birlestirme 'mov nv, 253
     st nv, b, 0' 'mov nv, sv
     st nv, b, 0'
-bg mut atlama_hedefi 'dj1: ld tl, b, 0' 'dj1: mov tl, 0
-    ld tl, b, 0'
 bg mut atlama_yukle_b 'jz tg, dj1
     add b, gi, XB' 'jz tg, dj1
     add b, gi, XC'
+bg mut atlama_hedefi 'dj1: ld tl, b, 0' 'dj1: ld tl, b, 1'
+bg mut sihirli_sayi 'eqi z, m, 1347441713' 'eqi z, m, 1347441712'
+bg mut surum 'ld v, PT, 1\n    eqi z, v, 1' 'ld v, PT, 1\n    eqi z, v, 2'
 bg mut dusme 'fall: addi np, pc, 1' 'fall: addi np, pc, 2'
 bg mut kayit_nregs 'eq z, pr, nr
     jnz z, t5' 'jmp t5
@@ -155,13 +143,6 @@ bg mut kayit_sayisi 'eq z, nent, nf
 bg mut kayit_sira 'ne z, fi, k
     jz z, t4' 'jmp t4
     jz z, t4'
-bg mut bildirim_kimlik 'lti z, t, 1
-    jnz z, d2bad
-    gei z, t, 254
-    jnz z, d2bad' 'lti z, t, 0
-    jnz z, d2bad
-    gei z, t, 254
-    jnz z, d2bad'
 bg mut devam_oncesi 'd5: ; DEVAM: oncesi cok sozcuklu bir bas tarafindan kapsanmali
     jnz r, d5a' 'd5: ; DEVAM: oncesi cok sozcuklu bir bas tarafindan kapsanmali
     jmp d3
@@ -174,16 +155,12 @@ bg mut cok_sozcuk_devam 'd2c: ge z, k, nw
     add q, r, k
     jmp d2d
     ge z, q, nr'
-bg mut parametre_sayisi 'gt z, npar, nr
-    jz z, d1a' 'ge z, npar, 999999
-    jz z, d1a'
-bg mut sihirli_sayi 't0: ld v, PT, 1' 't0: ld v, PT, 0
-    ld v, PT, 1'
 bg mut giris_dyn_baslangic 'eqi z, tt, 254
     jz z, a4b
     mov tt, 253' 'eqi z, tt, 254
     jz z, a4b
     call tt, i64id, 0'
+# kullanilmayan alan kodlari (-4 a ile ayni, -6 c ile ayni) hicbir komut imzasinda yok: bilincle mutantsiz
 wait
 echo "---"
 for f in $T/sonuc_*; do cat $f; done | awk '/^yakalandi/{y++} /^KACTI/{k++; print} /HATASI|derlenemedi/{h++; print} END{printf "sabotaj(tip): %d yakalandi, %d kacti, %d uygulanamadi/derlenemedi\n", y, k, h}'

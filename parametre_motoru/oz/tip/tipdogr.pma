@@ -400,10 +400,7 @@ d1: ge z, f, nf
     ld nr, b, 0
     add b, f, FP
     ld npar, b, 0
-    gt z, npar, nr
-    jz z, d1a
-    call x, die, 8, f, 0
-d1a: mov r, 0
+    mov r, 0
 d2: ge z, r, nr
     jnz z, d6
     call t, rtype, f, r

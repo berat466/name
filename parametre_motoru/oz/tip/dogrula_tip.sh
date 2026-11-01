@@ -17,7 +17,9 @@ tc() {
   $PM asm $T/p.pma -o $T/p.pmb --strip > $T/asm.err 2>&1 || { fail "$et: derlenemedi ($(head -c 100 $T/asm.err))"; return; }
   $PM liste $T/p.pmb > $T/p.l
   local pad="--pad $T/p.l $T/imza.txt"; [ -n "$EXACT" ] && pad=""
+  [ -n "$LSED" ] && sed -i "$LSED" $T/p.l
   echo "$spec" | tr ';' '\n' | python3 $D/tipler.py $T/tur.txt $pad > $T/p.t 2>$T/t.err || { fail "$et: bildirim hatasi ($(head -c 100 $T/t.err))"; return; }
+  [ -n "$PTSED" ] && sed -i "$PTSED" $T/p.t
   out=$( { echo "@@IMZA"; cat $T/imza.txt; echo "@@PROGRAM"; cat $T/p.l; echo "@@TIPLER"; cat $T/p.t; } | (ulimit -v 1500000; timeout 60 $PM run $TIP) )
   [ "$out" = "$exp" ] && pass || fail "$et: beklenen '$exp', bulunan '$out'"
   # ayni girdi ELF (gen2 ile uretilmis tipdogr.elf) ile: pm yorumlayicisiyla birebir ayni cikti
@@ -319,6 +321,97 @@ EOT
 tc "gecersiz tur kimligi" "0 6 0 0" "0 - : 200" <<'EOT'
 func main() {
  ldi a, 3
+ halt
+}
+entry main
+EOT
+# ---------------- cok sozcuklu bildirimler, PMT1 basligi, sira, host ----------------
+tc "cok sozcuklu: gecerli parametre bildirimi (i128 + DEVAM)" "1" "0 - : i128 + i32;1 - : i32" <<'EOT'
+func f(a, b, c) {
+ ret c
+}
+func main() {
+ halt
+}
+entry main
+EOT
+tc "cok sozcuklu: DEVAM eksik (son yazmac)" "0 7 0 1" "0 - : i32 i128" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ halt
+}
+entry main
+EOT
+tc "cok sozcuklu: DEVAM yerine baska tur" "0 7 0 0" "0 - : i128 i32 i32" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ ldi c, 3
+ halt
+}
+entry main
+EOT
+tc "DEVAM bas olmadan (ilk yazmac)" "0 7 0 0" "0 - : + i32" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ halt
+}
+entry main
+EOT
+tc "DEVAM tek sozcuklu degerin ardindan" "0 7 0 1" "0 - : i32 + i32" <<'EOT'
+func main() {
+ ldi a, 1
+ ldi b, 2
+ ldi c, 3
+ halt
+}
+entry main
+EOT
+tc "DIN yazmac ilk durumda tanimsiz (dongu)" "0 21 0 2" "0 - : i32 i64 i64 dyn" <<'EOT'
+func main() {
+ ldi n, 1
+ ldi one, 1
+L: add t, d, one
+ ldi d, 7
+ jnz n, L
+ halt
+}
+entry main
+EOT
+tc "host donus turu uyumsuz (getc i64, bildirilen i32)" "0 27 0 0" "0 - : i32" <<'EOT'
+func main() {
+ host c, getc
+ halt
+}
+entry main
+EOT
+LSED='s/^40 1 /40 99 /' tc "host imzasi yok (host kimligi 99)" "0 27 0 1" "0 - : i32 i32" <<'EOT'
+func main() {
+ ldi a, 1
+ host puti, a
+ halt
+}
+entry main
+EOT
+tc "kayit sirasi: islev 1 once" "0 4 1 0" "1 - : i32;0 - : i32" <<'EOT'
+func f(a) {
+ ret a
+}
+func main() {
+ halt
+}
+entry main
+EOT
+PTSED='s/^1347441713/1347441712/' tc "PMT1 sihirli sayi yanlis" "0 1 0 0" "0 - : i32" <<'EOT'
+func main() {
+ halt
+}
+entry main
+EOT
+PTSED='s/^1347441713 1 /1347441713 2 /' tc "PMT1 surum yanlis" "0 2 0 0" "0 - : i32" <<'EOT'
+func main() {
  halt
 }
 entry main
