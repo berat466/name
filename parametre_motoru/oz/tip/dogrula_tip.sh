@@ -597,6 +597,64 @@ func main() {
 }
 entry main
 EOT
+# ---------------- karmasik sayilar (c64 c128 c160) ----------------
+tc "karmasik: mk/add/mul/donusum/real/eq (gecerli)" "1" "0 - : f64 f64 c128 + c128 + c128 + c160 + + + c160 + + + f80 + bool" <<'EOT'
+func main() {
+ mov a, 1.5
+ mov b, 2.5
+ mk_c128 x, a, b
+ mk_c128 y, a, b
+ add_c128 z, x, y
+ cv_c128_c160 w, z
+ mul_c160 u, w, w
+ real_c160 r, u
+ eq_c128 e, x, y
+ halt
+}
+entry main
+EOT
+tc "add_c128 komutuna c64 kaynak" "0 21 0 6" "0 - : f32 f32 f64 f64 c64 + c128 + c128 +" <<'EOT'
+func main() {
+ mov a, 1.5
+ mov b, 2.5
+ mov d, 1.5
+ mov e, 2.5
+ mk_c64 x, a, b
+ mk_c128 y, d, e
+ add_c128 z, x, y
+ halt
+}
+entry main
+EOT
+tc "mk_c128 komutuna f32 kaynak (f64 gerekir)" "0 21 0 2" "0 - : f32 f64 c128 +" <<'EOT'
+func main() {
+ mov a, 1.5
+ mov b, 2.5
+ mk_c128 x, a, b
+ halt
+}
+entry main
+EOT
+tc "real_c128 sonucu f32 bildirildi (f64 verir)" "0 22 0 3" "0 - : f64 f64 c128 + f32" <<'EOT'
+func main() {
+ mov a, 1.5
+ mov b, 2.5
+ mk_c128 x, a, b
+ real_c128 r, x
+ halt
+}
+entry main
+EOT
+tc "karmasik: c160 icin DEVAM sayisi eksik (3 gerekir, 2 verildi)" "0 7 0 4" "0 - : f80 + f80 + c160 + +" <<'EOT'
+func main() {
+ ldi t, 1
+ cv_i64_f80 r, t
+ cv_i64_f80 i, t
+ mk_c160 x, r, i
+ halt
+}
+entry main
+EOT
 echo "tip denetleyicisi: $ok gecti, $bad basarisiz"
 rm -rf $T
 [ $bad = 0 ]

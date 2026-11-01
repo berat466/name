@@ -6,7 +6,7 @@ PM=${1:-../../pm}; NE=${2:-22}; NS=${3:-5}; D=$(cd "$(dirname "$0")" && pwd); cd
 pass() { ok=$((ok+1)); }; fail() { bad=$((bad+1)); echo "HATA: $1"; }
 lim() { (ulimit -v 4000000; timeout ${LIMS:-300} "$@"); }
 TAB=$R/oz/komut/komutlar.pmk; ASM=$R/oz/asm/asm.pmb; GEN=$R/oz/elf2/gen2.pmb
-g++ -std=gnu++20 -O1 -o $T/oracle kayan_oracle.cpp -lquadmath || { echo "oracle derlenemedi"; exit 1; }
+g++ -std=gnu++20 -O1 -fcx-limited-range -ffp-contract=off -o $T/oracle kayan_oracle.cpp -lquadmath || { echo "oracle derlenemedi"; exit 1; }
 $PM asm $R/oz/sayisal/svm.pma -o $T/svm.pmb --strip > /dev/null 2>&1 || { echo "svm derlenemedi"; exit 1; }
 derle() { lim $PM run $ASM < $1 > $2 2> $T/asm.err && $PM liste $2 > $3 2>/dev/null; }
 elfcikti() { lim $PM run $GEN < $1 > $T/x.elf 2>/dev/null || return 1; chmod +x $T/x.elf; lim $T/x.elf > $2 2>/dev/null; }
@@ -32,6 +32,17 @@ test1() {   # tur F orakel_ad
   karsilastir "$F $kind" $T/k.pma $T/k.exp $T/ks.pma $T/ks.exp
 }
 for F in f80 f128; do for k in bin un cd ci; do test1 $k $F; done; done
+# 128 bit tamsayi <-> dar kayan nokta (f64 f32 f16 bf16)
+python3 kayan_prog.py ni f64 $NE $T/oracle > $T/k.pma && $T/oracle ni $NE > $T/k.exp && python3 kayan_prog.py ni f64 $NS $T/oracle > $T/ks.pma && $T/oracle ni $NS > $T/ks.exp && karsilastir "i128/u128 <-> dar kayan" $T/k.pma $T/k.exp $T/ks.pma $T/ks.exp || fail "ni uretim"
+# karmasik sayilar (c64 c128 c160): oracle derleyicinin _Complex turleri (-fcx-limited-range = motorun tanimi: duz formuller)
+testc() {   # tur C orakel
+  local kind=$1 C=$2; local sfx=${2#c}; local on=$kind$sfx
+  python3 kayan_prog.py $kind $C $NE $T/oracle > $T/k.pma && $T/oracle $on $NE > $T/k.exp || { fail "$kind $C: uretim"; return; }
+  python3 kayan_prog.py $kind $C $NS $T/oracle > $T/ks.pma && $T/oracle $on $NS > $T/ks.exp || { fail "$kind $C svm: uretim"; return; }
+  karsilastir "$C $kind" $T/k.pma $T/k.exp $T/ks.pma $T/ks.exp
+}
+for C in c64 c128 c160; do testc cbin $C; testc cun $C; done
+python3 kayan_prog.py ccv c128 $NE $T/oracle > $T/k.pma && $T/oracle ccv $NE > $T/k.exp && python3 kayan_prog.py ccv c128 $NS $T/oracle > $T/ks.pma && $T/oracle ccv $NS > $T/ks.exp && karsilastir "karmasik donusumler" $T/k.pma $T/k.exp $T/ks.pma $T/ks.exp || fail "ccv uretim"
 echo "genis kayan nokta: $ok gecti, $bad basarisiz"
 [ -n "$KEEP" ] && echo "T=$T" || rm -rf "$T"
 [ $bad = 0 ]

@@ -9,7 +9,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 import sf, ops
 from sf import F80, F128, F64, G
 L = sys.stdin.read().split('\n')
-if any(l.startswith('op ') and ' ADD_F80 ' in l for l in L): sys.exit('tur11_ekle: tablo zaten genisletilmis')
+GUNCELLE = '--guncelle' in sys.argv
+if not GUNCELLE and any(l.startswith('op ') and ' ADD_F80 ' in l for l in L): sys.exit('tur11_ekle: tablo zaten genisletilmis (--guncelle: mevcut komutlarin SEM kayitlarini yeniden uret)')
 ol = max(i for i, l in enumerate(L) if l.startswith('op ')); oid = int(L[ol].split()[1])
 sl = max(i for i, l in enumerate(L) if l.startswith('sem '))
 RND = {}
@@ -54,6 +55,12 @@ hdr = ['// ' + 'GENIS KAYAN NOKTA komutlarinin C++ anlam makrolari -- oz/komut/g
 for nm, w in cxx: hdr.append('#define SEM_%s(M) M##_WFP(%s,%d,%d)' % (nm, w[0], w[1], w[2]))
 hdr.append('#define PM_SEM_OPS_WFP(X) \\\n  ' + ' '.join('X(%s)' % nm for nm, w in cxx))
 open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'src', 'anlam_wfp_gen.h'), 'w').write('\n'.join(hdr) + '\n')
+if GUNCELLE:   # mevcut komutlarin SEM satirlarini yeniden uretilenlerle degistir (OP/TYPES degismez)
+    yeni = {l.split(' ', 2)[1]: l for l in nsem}; out = []
+    for l in L:
+        t = l.split(' ', 2)
+        out.append(yeni[t[1]] if t[0] == 'sem' and len(t) > 1 and t[1] in yeni else l)
+    print('\n'.join(out), end=''); sys.exit(0)
 ins = {ol: nop, sl: nsem}
 out = []
 for i, l in enumerate(L):

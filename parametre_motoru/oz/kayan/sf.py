@@ -9,7 +9,23 @@ F128 = dict(name='f128', P=113, bias=16383, ex=False)
 F80 = dict(name='f80', P=64, bias=16383, ex=True)
 F64 = dict(name='f64', P=53, bias=1023, ex=False, one=True)   # tek sozcuk (yalniz kodlama: acma/paketleme)
 class G:
-    def __init__(self): self.o = []; self.n = 0; self.v = {}
+    cur = None   # bilesik uretimde (karmasik sayilar): alt islemlerin eklendigi ortak uretec
+    def __init__(self): self.o = []; self.n = 0; self.v = {}; self.sm = {}; self.dm = None
+    def newG():
+        return G.cur if G.cur is not None else G()
+    # operand yuvasi okuma/yazma: normalde komut operandlari (rd/rdw/wr/wrw); bilesik uretimde yuva -> kazima degiskeni (sm: yuva->degisken, dm: hedef degisken)
+    def rd1(self, t, slot):
+        if slot in self.sm: self.e('spld %s %d' % (t, self.var(self.sm[slot])))
+        else: self.e('rd %s %s' % (t, slot))
+    def rdw(self, t, slot, w):
+        if slot in self.sm: self.e('spld %s %d' % (t, self.var(self.sm[slot]) + w))
+        else: self.e('rdw %s %s %d' % (t, slot, w))
+    def out1(self, t):
+        if self.dm: self.e('spst %d %s' % (self.var(self.dm), t))
+        else: self.e('wr a %s' % t)
+    def out2(self, tl, th):
+        if self.dm: self.e('spst %d %s' % (self.var(self.dm), tl), 'spst %d %s' % (self.var(self.dm) + 1, th))
+        else: self.e('wrw a 0 %s' % tl, 'wrw a 1 %s' % th)
     def var(self, name, w=1):
         if name.endswith(('_m', '_q')) or name in ('W', 'Z') or name.startswith('V_'): w = 2   # cok sozcuklu degiskenler (dusuk, yuksek)
         if name not in self.v:
@@ -63,8 +79,8 @@ class G:
         self.loop(128, body)
     # ---- ACMA (unpack): operand yuvasi 'b'/'c' -> X_s X_E X_c X_m(2) X_rl X_rh
     def unpack(self, X, fmt, slot):
-        if fmt.get('one'): self.e('rd t1 %s' % slot, 'lit t2 0')
-        else: self.e('rdw t1 %s 0' % slot, 'rdw t2 %s 1' % slot)
+        if fmt.get('one'): self.rd1('t1', slot); self.e('lit t2 0')
+        else: self.rdw('t1', slot, 0); self.rdw('t2', slot, 1)
         self.st(X + '_rl', 't1'); self.st(X + '_rh', 't2')
         bias = fmt['bias']
         if fmt.get('one'):   # f64: tek sozcuk (t1); yuksek sozcuk 0
@@ -183,6 +199,6 @@ class G:
         for cond, cand in order:
             self.ld('t9', cond); self.sel2('Z', 't9', cand, 'Z')
     def emit_one(self, src='Z'):
-        self.ld('t1', src, 0); self.e('wr a t1')
+        self.ld('t1', src, 0); self.out1('t1')
     def emit_wide(self, src='Z'):
-        self.ld('t1', src, 0); self.ld('t2', src, 1); self.e('wrw a 0 t1', 'wrw a 1 t2')
+        self.ld('t1', src, 0); self.ld('t2', src, 1); self.out2('t1', 't2')

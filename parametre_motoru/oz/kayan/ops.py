@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Yazilim kayan nokta islem mikro-programi ureticileri (GELISTIRME araci; cikti: komut tablosu SEM mikro-programlari)."""
-from sf import G, F128, F80
+from sf import G, F128, F80, F64
 def raw_sign_bit(fmt): return 15 if fmt['ex'] else 63
 def shr_sticky(g, v, cnt, st, maxn):
     """v (2 sozcuk) sag kaydir 'cnt' kez (degisken cnt, 0..maxn), dusen bitler st'ye YA da"""
@@ -13,7 +13,7 @@ def shr_sticky(g, v, cnt, st, maxn):
     g.st(v, 't5', 0); g.st(v, 't6', 1); g.st(st, 't7')
     g.e('lit t12 1', 'alu_sub t13 t13 t12', 'lpe t13')
 def addsub(fmt, sub):
-    g = G()
+    g = G.newG()
     g.unpack('A', fmt, 'b'); g.unpack('B', fmt, 'c')
     if sub: g.ld('t1', 'B_s'); g.e('lit t2 1', 'alu_xor t1 t1 t2'); g.st('B_s', 't1')
     # siralama: buyuk (BG) ve kucuk (SM) buyukluk
@@ -66,7 +66,7 @@ def prod(g, X, Y, out='r'):
     g.e('alu_add t1 t8 t10', 'cmp_ltu t3 t1 t8', 'alu_add t1 t1 t11', 'cmp_ltu t4 t1 t11', 'alu_add t3 t3 t4', 'alu_add t1 t1 t2', 'cmp_ltu t4 t1 t2', 'alu_add t3 t3 t4'); g.st(out + '2', 't1')
     g.e('alu_add t12 t12 t3'); g.st(out + '3', 't12')
 def mul(fmt):
-    g = G()
+    g = G.newG()
     g.unpack('A', fmt, 'b'); g.unpack('B', fmt, 'c')
     prod(g, 'A_m', 'B_m')
     # sticky = (r1|r0) != 0
@@ -84,7 +84,7 @@ def mul(fmt):
     g.emit_wide()
     return g
 def div(fmt):
-    g = G()
+    g = G.newG()
     g.unpack('A', fmt, 'b'); g.unpack('B', fmt, 'c')
     g.copy2('V_r', 'A_m')
     g.ltu2('t9', 'A_m', 'B_m'); g.e('lit t1 1', 'alu_xor t9 t9 t1'); g.st('q0', 't9')    # q0 = A_m >= B_m
@@ -114,7 +114,7 @@ def div(fmt):
     g.emit_wide()
     return g
 def sqrt(fmt):
-    g = G()
+    g = G.newG()
     g.unpack('A', fmt, 'b')
     # e0 = E & 1 ; k = E >> 1 (aritmetik) ; Y = M << (127 + e0) (256 bit: y0..y3)
     g.ld('t1', 'A_E'); g.e('lit t2 1', 'alu_and t3 t1 t2', 'alu_sar t4 t1 t2'); g.st('e0', 't3'); g.st('R_E', 't4')
@@ -179,7 +179,7 @@ def flags(g, X='A'):
     g.flag('f_n' + X, X, 3); g.flag('f_i' + X, X, 2); g.flag('f_z' + X, X, 0)
 def w2w(src, dst, odd=False, final='wide'):
     """src bicimi (f64/f80/f128) -> dst bicimi (f64/f80/f128)"""
-    g = G(); g.unpack('A', src, 'b'); copy_to_R(g); g.pack(dst, 'R', 'W', odd=odd); flags(g)
+    g = G.newG(); g.unpack('A', src, 'b'); copy_to_R(g); g.pack(dst, 'R', 'W', odd=odd); flags(g)
     g.mk_zero('V_z', dst, 'A_s'); g.mk_inf('V_i', dst, 'A_s'); nanconv(g, 'V_n', src, dst, 'A')
     g.chain('W', [('f_zA', 'V_z'), ('f_iA', 'V_i'), ('f_nA', 'V_n')])
     if final == 'wide': g.emit_wide()
@@ -190,11 +190,11 @@ def w2n(src, nar, rnd_sem):
     g = w2w(src, F64, odd=True, final='none')
     g.ld('t1', 'Z', 0); g.st('NV', 't1')
     ops_ = rnd_sem.split(' ; '); assert ops_[0] == 'rd t1 b' and ops_[-1] == 'wr a t3', ops_[0] + ' ... ' + ops_[-1]
-    g.e('spld t1 %d' % g.var('NV')); g.e(*ops_[1:])
+    g.e('spld t1 %d' % g.var('NV')); g.e(*ops_[1:-1]); g.out1('t3')
     return g
 def d2w(dst): return w2w(F64, dst)
 def cmp_(fmt, kind):
-    g = G(); g.unpack('A', fmt, 'b'); g.unpack('B', fmt, 'c'); flags(g, 'A'); flags(g, 'B')
+    g = G.newG(); g.unpack('A', fmt, 'b'); g.unpack('B', fmt, 'c'); flags(g, 'A'); flags(g, 'B')
     g.orf('f_nn', 'f_nA', 'f_nB'); g.andf('f_zz', 'f_zA', 'f_zB')
     # isaret (sifirda 0)
     for X in 'AB': g.ld('t1', X + '_s'); g.ld('t2', 'f_z' + X); g.e('lit t3 1', 'alu_xor t2 t2 t3', 'alu_and t1 t1 t2'); g.st('s' + X, 't1')
@@ -217,21 +217,21 @@ def cmp_(fmt, kind):
     elif kind == 'ne': g.e('lit t3 1', 'alu_xor t1 t1 t3')
     elif kind == 'lt': g.e('alu_or t1 t2 t2')
     else: g.e('alu_or t1 t1 t2')
-    g.e('wr a t1')
+    g.out1('t1')
     return g
 def neg_abs(fmt, kind):
-    g = G(); hi = 15 if fmt['ex'] else 63
-    g.e('rdw t1 b 0', 'rdw t2 b 1', 'lit t3 1', 'lit t4 %d' % hi, 'alu_shl t3 t3 t4')
+    g = G.newG(); hi = 15 if fmt['ex'] else 63
+    g.rdw('t1', 'b', 0); g.rdw('t2', 'b', 1); g.e('lit t3 1', 'lit t4 %d' % hi, 'alu_shl t3 t3 t4')
     if kind == 'neg': g.e('alu_xor t2 t2 t3')
     else: g.e('un_not t3 t3', 'alu_and t2 t2 t3')
-    g.e('wrw a 0 t1', 'wrw a 1 t2')
+    g.out2('t1', 't2')
     return g
 def tobool(fmt):
-    g = G(); g.unpack('A', fmt, 'b'); g.flag('f_zA', 'A', 0); g.ld('t1', 'f_zA'); g.e('lit t2 1', 'alu_xor t1 t1 t2', 'wr a t1')
+    g = G.newG(); g.unpack('A', fmt, 'b'); g.flag('f_zA', 'A', 0); g.ld('t1', 'f_zA'); g.e('lit t2 1', 'alu_xor t1 t1 t2'); g.out1('t1')
     return g
 def i2w(fmt, signed):
     """slot b: 64 bit tamsayi (isaretli ya da isaretsiz) -> fmt"""
-    g = G(); g.e('rd t1 b')
+    g = G.newG(); g.rd1('t1', 'b')
     if signed: g.e('lit t2 63', 'alu_shr t3 t1 t2', 'un_neg t4 t3', 'alu_xor t1 t1 t4', 'alu_add t1 t1 t3')   # t3 = isaret ; t1 = |x|
     else: g.e('lit t3 0')
     g.st('R_s', 't3'); g.e('lit t5 0'); g.st('R_m', 't5', 0); g.st('R_m', 't1', 1); g.e('lit t6 63'); g.st('R_E', 't6'); g.e('lit t5 0'); g.st('R_st', 't5')
@@ -242,7 +242,7 @@ def i2w(fmt, signed):
     return g
 def i128_2w(fmt, signed):
     """slot b: 128 bit tamsayi (2 sozcuk) -> fmt"""
-    g = G(); g.e('rdw t1 b 0', 'rdw t2 b 1')
+    g = G.newG(); g.rdw('t1', 'b', 0); g.rdw('t2', 'b', 1)
     if signed:
         g.e('lit t3 63', 'alu_shr t3 t2 t3', 'un_neg t4 t3', 'alu_xor t1 t1 t4', 'alu_xor t2 t2 t4', 'alu_add t1 t1 t3', 'cmp_ltu t5 t1 t3', 'alu_add t2 t2 t5')
     else: g.e('lit t3 0')
@@ -253,7 +253,7 @@ def i128_2w(fmt, signed):
     return g
 def w2i(fmt, bits, signed, narrow=None):
     """fmt -> 64 ya da 128 bit tamsayi (kes). gecersiz (NaN/sonsuz/aralik disi): isaretli -> 0x80..0 , isaretsiz -> 0"""
-    g = G(); g.unpack('A', fmt, 'b'); flags(g)
+    g = G.newG(); g.unpack('A', fmt, 'b'); flags(g)
     # tam sayi kismi: M >> (127 - E) , 0 <= E <= 127 ; E < 0 -> 0
     g.ld('t1', 'A_E'); g.e('lit t2 127', 'alu_sub t3 t2 t1', 'lit t4 0', 'cmp_lt t5 t1 t4', 'cmp_gt t6 t1 t2', 'sel t3 t5 t4 t3'); g.st('cnt', 't3'); g.st('e_neg', 't5'); g.st('e_big', 't6')
     g.copy2('V_x', 'A_m'); g.e('lit t1 0'); g.st('st', 't1')
@@ -279,7 +279,22 @@ def w2i(fmt, bits, signed, narrow=None):
     g.ld('t9', 'bad'); g.sel2('Z', 't9', 'V_ind', 'V_i')
     if bits == 64:
         if narrow:   # (genislik, isaretli): once int64'e kes (gecersiz -> 0x80..0 / 0) sonra hedef araligina sar (motor tanimi)
-            nb, ns = narrow; g.ld('t1', 'Z', 0); g.e('%s%d t1 t1' % ('sx' if ns else 'zx', nb), 'wr a t1')
+            nb, ns = narrow; g.ld('t1', 'Z', 0); g.e('%s%d t1 t1' % ('sx' if ns else 'zx', nb)); g.out1('t1')
         else: g.emit_one()
     else: g.emit_wide()
+    return g
+def i128_2narrow(signed, nar, rnd_sem=None):
+    """slot b: 128 bit tamsayi (2 sozcuk) -> dar kayan (f64 / f32 / f16 / bf16; double kabi): f64 dogrudan en yakina-cifte; digerleri tek'e yuvarlayarak f64'e sonra RND_<dar> (tek yuvarlama)"""
+    g = G.newG(); g.rdw('t1', 'b', 0); g.rdw('t2', 'b', 1)
+    if signed:
+        g.e('lit t3 63', 'alu_shr t3 t2 t3', 'un_neg t4 t3', 'alu_xor t1 t1 t4', 'alu_xor t2 t2 t4', 'alu_add t1 t1 t3', 'cmp_ltu t5 t1 t3', 'alu_add t2 t2 t5')
+    else: g.e('lit t3 0')
+    g.st('R_s', 't3'); g.st('R_m', 't1', 0); g.st('R_m', 't2', 1); g.e('lit t6 127'); g.st('R_E', 't6'); g.e('lit t5 0'); g.st('R_st', 't5')
+    g.e('alu_or t7 t1 t2', 'lit t8 0', 'cmp_eq t7 t7 t8'); g.st('f_zA', 't7')
+    g.normalize('R'); g.pack(F64, 'R', 'W', odd=(nar != 'f64')); g.c2('V_z', 0, 0)
+    g.chain('W', [('f_zA', 'V_z')])
+    if nar == 'f64': g.emit_one()
+    else:
+        g.ld('t1', 'Z', 0); g.st('NV', 't1'); ops_ = rnd_sem.split(' ; ')
+        g.e('spld t1 %d' % g.var('NV')); g.e(*ops_[1:-1]); g.out1('t3')
     return g

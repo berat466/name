@@ -158,6 +158,29 @@ for w_ in WF:
         else: o = opid['cv_%s_%s' % (v_[1], w_[1])]; fl = 1 if (v_[1] == 'f80') else 2
         body = [2, v_[0], w_[0], o, fl, 0]; conv.append([len(body)] + body)
 
+# 128 bit tamsayi <-> dar kayan nokta (f16 bf16 f32 f64)
+for i_ in T:
+    if i_[2] != 1 or i_[3] != 128: continue
+    nm = i_[1]
+    for f_ in NARROW:
+        body = [2, i_[0], f_[0], opid['cv_%s_%s' % (nm, f_[1])], 2, 0]; conv.append([len(body)] + body)      # i128 -> kayan: tek yuvarlama (kayipli)
+        body = [2, f_[0], i_[0], opid['cv_f64_' + nm], 2, 0]; conv.append([len(body)] + body)                # kayan -> i128: kes (kayipli)
+# karmasik sayilar (c64 c128 c160): karmasik <-> karmasik, gercek kayan -> karmasik (sanal 0)
+CX = [t for t in T if t[1] in ('c64', 'c128', 'c160')]
+CXP = {'c64': 0, 'c128': 1, 'c160': 2}
+for f_ in CX:
+    for t_ in CX:
+        if f_ is t_: o, fl = -1, 1
+        else: o = opid['cv_%s_%s' % (f_[1], t_[1])]; fl = 1 if CXP[f_[1]] < CXP[t_[1]] else 2
+        body = [2, f_[0], t_[0], o, fl, 0]; conv.append([len(body)] + body)
+    for r_ in NARROW + [byname['f80']]:
+        pass
+for t_ in CX:
+    for r_ in NARROW:
+        o = opid['cv_f64_' + t_[1]]; exact = not (r_[1] == 'f64' and t_[1] == 'c64')
+        body = [2, r_[0], t_[0], o, 1 if exact else 2, 0]; conv.append([len(body)] + body)
+    body = [2, byname['f80'][0], t_[0], opid['cv_f80_' + t_[1]], 1 if t_[1] == 'c160' else 2, 0]; conv.append([len(body)] + body)
+
 # ---- OPSIG (etiket 4) ve HOSTSIG (etiket 5): komutlarin program duzeyi tur imzalari. Alan kodlari (yuva a,b,c = OP bicimindeki operand sirasi):
 #   0 yok/yazmac degil  >0 kesin tur kimligi  -1 INT1 (tamsayi benzeri 1 sozcuk)  -2 FLT1 (kayan 1 sozcuk)  -3 ANY1 (herhangi 1 sozcuk)  -4/-5/-6 a/b/c yuvasiyla AYNI tur
 #   -7 ADDR (i64|u64)  -8 FREE (hedef: bildirilmis tur serbest, 1 sozcuk)  -9 INTDST (hedef tamsayi benzeri; akis izlemede i64)  -10 INT64 (i64|u64)  -11 ANY128 (i128|u128)
@@ -271,6 +294,27 @@ def sig(name, fmt):
     m = re.match(r'^CV_(I128|U128)_(F80|F128)$', n)
     if m: return (I(m.group(2).lower()), I(m.group(1).lower()), NONE, 1)
     m = re.match(r'^CV_(F80|F128)_([IU](8|16|32|64|128))$', n)
+    if m: return (I(m.group(2).lower()), I(m.group(1).lower()), NONE, 1)
+    m = re.match(r'^CV_(I128|U128)_(F64|F32|F16|BF16)$', n)
+    if m: return (I(m.group(2).lower()), I(m.group(1).lower()), NONE, 1)
+    m = re.match(r'^CV_F64_(I128|U128)$', n)
+    if m: return (I(m.group(1).lower()), I('f64'), NONE, 1)
+    CR = {'C64': 'f32', 'C128': 'f64', 'C160': 'f80'}
+    m = re.match(r'^(ADD|SUB|MUL|DIV)_(C64|C128|C160)$', n)
+    if m: ty = I(m.group(2).lower()); return (ty, ty, ty, 0)
+    m = re.match(r'^(NEG|CONJ|MOV)_(C64|C128|C160)$', n)
+    if m: ty = I(m.group(2).lower()); return (ty, ty, NONE, 0)
+    m = re.match(r'^(EQ|NE)_(C64|C128|C160)$', n)
+    if m: ty = I(m.group(2).lower()); return (I('bool'), ty, ty, 0)
+    m = re.match(r'^TOBOOL_(C64|C128|C160)$', n)
+    if m: return (I('bool'), I(m.group(1).lower()), NONE, 1)
+    m = re.match(r'^MK_(C64|C128|C160)$', n)
+    if m: r_ = I(CR[m.group(1)]); return (I(m.group(1).lower()), r_, r_, 0)
+    m = re.match(r'^(REAL|IMAG)_(C64|C128|C160)$', n)
+    if m: return (I(CR[m.group(2)]), I(m.group(2).lower()), NONE, 0)
+    m = re.match(r'^CV_(C64|C128|C160)_(C64|C128|C160)$', n)
+    if m: return (I(m.group(2).lower()), I(m.group(1).lower()), NONE, 1)
+    m = re.match(r'^CV_(F64|F80)_(C64|C128|C160)$', n)
     if m: return (I(m.group(2).lower()), I(m.group(1).lower()), NONE, 1)
     return 'EKSIK'
 sigrec = []; eksik = []

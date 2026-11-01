@@ -296,7 +296,7 @@ g++ -std=c++17 -I $R/src -o $T/anlam_dump gecis/anlam_dump.cpp -lquadmath 2>/dev
 mod gor < $TAB | grep '^sem ' | grep -v -E '^sem (FMIN|U2F|F2U|[A-Z0-9]+_(F32|F16|BF16)|BSWAP[0-9]+) ' | sort > $T/sem_tab.txt
 grep -v -E '^sem (FMIN|U2F|F2U|[A-Z0-9]+_(F32|F16|BF16)|BSWAP[0-9]+) ' $T/sem_cpp.txt > $T/sem_cpp2.txt; mv $T/sem_cpp2.txt $T/sem_cpp.txt
 # C++ tarafinda unsigned __int128 / long double / __float128 ile (dedicated) gerceklenen 128 bit ve genis kayan nokta komutlari da mikro-programla birebir kiyaslanmaz
-grep -E 'w128_dedicated|wfp_dedicated' $T/sem_cpp.txt | awk '{print $2}' > $T/w128ops.txt
+grep -E 'w128_dedicated|wfp_dedicated|wcx_dedicated' $T/sem_cpp.txt | awk '{print $2}' > $T/w128ops.txt
 if [ -s $T/w128ops.txt ]; then grep -v -F -w -f $T/w128ops.txt $T/sem_cpp.txt > $T/sc2.txt; mv $T/sc2.txt $T/sem_cpp.txt; grep -v -E "^sem ($(paste -sd'|' $T/w128ops.txt)) " $T/sem_tab.txt > $T/st2.txt; mv $T/st2.txt $T/sem_tab.txt; fi
 cmp -s $T/sem_cpp.txt $T/sem_tab.txt && pass || fail "tablodaki SEM tanimlari src/anlam.h (C++ referansi) ile ayni degil: $(diff $T/sem_cpp.txt $T/sem_tab.txt | head -3 | tr '\n' '|')"
 mod gor < $TAB | grep -q '^prim 47 sel to,ti,ti,ti ext 1=0$' && pass || fail "prim satiri beklenen bicimde degil"

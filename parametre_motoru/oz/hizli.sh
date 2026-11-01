@@ -30,6 +30,7 @@ yap|oz/yap|dogrula_yap.sh|30 100||39|yapisal dil -> pma
 ikili|oz|dogrula_ikili.sh|30||32|PMB1 kodlayici/cozucu
 komut|oz/komut|dogrula_komut.sh|10||34|komut tablosu (PMK1)
 i128|oz/tur128|dogrula_i128.sh|||30|128 bit tamsayilar + genis operand altyapisi (ELF = svm = C++ pm = __int128 oracle; valid/asm genis operand)
+kayan|oz/kayan|dogrula_kayan.sh|40 5||40|genis kayan nokta f80/f128 + karmasik c64/c128/c160 (ELF = svm = C++ pm = long double/__float128/_Complex oracle; PMB1 kacis kodlamasi)
 tip|oz/tip|dogrula_tip.sh|||20|program duzeyi tur sistemi: PMT1 tur notu + TYPES imzalari -> tipdogr (sayisal PMA araci)
 turler|oz/komut|dogrula_turler.sh|||20|TYPES bolumu: tur ozellikleri, limitler, ABI veri modeli, bayt sirasi (C++ derleyici gercekleriyle)
 valid|oz/dogr|dogrula_valid.sh|8 8||31|PMB1 dogrulayici (guvenlik kapisi)
@@ -55,6 +56,9 @@ yenile|oz/bag|dogrula_yenile.sh|||600|kendini yeniden uretme zinciri
 "
 SABOTAJ="
 cagri|oz/elf2|sabotaj_cagri.sh
+i128|oz/tur128|sabotaj_i128.sh
+tip|oz/tip|sabotaj_tip.sh
+kayan|oz/kayan|sabotaj_kayan.sh
 tur|oz/elf2|sabotaj_tur.sh
 donusum|oz/elf2|sabotaj_donusum.sh
 dar|oz/elf2|sabotaj_dar.sh
@@ -70,7 +74,7 @@ svm|oz/sayisal|sabotaj_svm.sh
 nesne|oz/nesne|sabotaj_nesne.sh
 "
 KRITIK="testler valid mikro arac"
-TUMALAN="elf2 oob yap ikili komut turler tip i128 valid asm kural grafik svm nesne gorunum elf mikro cagri tur dar donusum arac testler ondalik float"
+TUMALAN="elf2 oob yap ikili komut turler tip i128 kayan valid asm kural grafik svm nesne gorunum elf mikro cagri tur dar donusum arac testler ondalik float"
 
 # ---- degisen dosya -> alanlar
 alan_dosya() {
@@ -80,7 +84,8 @@ alan_dosya() {
     oz/komut/dogrula_turler.sh|oz/komut/turler_oracle.cpp) echo "turler" ;;
     oz/tip/*) echo "tip" ;;
     oz/tur128/*) echo "i128" ;;
-    oz/komut/komutlar.pmk) echo "komut turler tip i128 nesne gorunum kural mikro cagri tur dar donusum svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
+    oz/kayan/*) echo "kayan" ;;
+    oz/komut/komutlar.pmk) echo "komut turler tip i128 kayan nesne gorunum kural mikro cagri tur dar donusum svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
     oz/komut/*) echo "komut" ;;                                                  # tablo disi: test/belge/gecis dosyalari
     oz/arac/*.sh|oz/arac/ref/*) echo "arac" ;;
     oz/arac/komut.*) echo "arac komut turler tip nesne gorunum asm valid elf2" ;;         # komut.pmb tum sozlukleri uretir

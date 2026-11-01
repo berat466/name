@@ -159,6 +159,122 @@ template <int F> static void veri(int n) {
   for (size_t i = 0; i < v.size(); i++) { char b[64]; snprintf(b, 64, "%s%lld,%lld", i ? "," : "", (long long)(int64_t)v[i].lo, (long long)(int64_t)v[i].hi); s += b; }
   puts(s.c_str());
 }
+
+// ================= KARMASIK SAYILAR (c64 = float _Complex, c128 = double _Complex, c160 = long double _Complex) : -fcx-limited-range -ffp-contract=off ile derlenir =================
+typedef float _Complex C64; typedef double _Complex C128; typedef long double _Complex C160;
+static std::vector<double> dpool(int kind) {   // kind 0: float degerleri (c64), 1: double
+  std::vector<double> v = {0.0, -0.0, 1.0, -1.5, 3.0e38, -2.5e-38, 0.1, 1234.5678, 7.0e-3, -9.75, 65504.0, 1.0e-20};
+  if (kind == 1) { v.push_back(1.0e300); v.push_back(-4.9e-324); v.push_back(2.2250738585072014e-308); v.push_back(6.02e23); }
+  v.push_back(INFINITY); v.push_back(-INFINITY);
+  for (int i = 0; i < 6; i++) v.push_back((double)(rnd() % 2000001 - 1000000) / 1000.0 * std::pow(10.0, int(rnd() % 20) - 10));
+  if (kind == 0) for (auto& x : v) x = double(float(x));
+  return v;
+}
+static void pd(const char* sep, double d) { printf("%s%lld", sep, (long long)(int64_t)dbits(d)); }
+template <int K> static void cbin(int n) {   // K: 0 c64, 1 c128
+  rng = 0x77AA55ULL + K; auto P = dpool(K); typedef typename std::conditional<K == 0, C64, C128>::type C; typedef typename std::conditional<K == 0, float, double>::type R;
+  std::vector<std::pair<double, double>> vs; for (int i = 0; i < n; i++) vs.push_back({P[rnd() % P.size()], P[rnd() % P.size()]});
+  for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) {
+    C a, b; __real__ a = (R)vs[i].first; __imag__ a = (R)vs[i].second; __real__ b = (R)vs[j].first; __imag__ b = (R)vs[j].second;
+    C r[4] = {a + b, a - b, a * b, a / b}; bool first = true;
+    for (int k = 0; k < 4; k++) { if (!first) printf(" "); first = false; printf("%lld %lld", (long long)(int64_t)dbits((double)__real__ r[k]), (long long)(int64_t)dbits((double)__imag__ r[k])); }
+    printf(" %d %d\n", a == b, a != b);
+  }
+}
+template <int K> static void cun(int n) {
+  rng = 0x77AA55ULL + K; auto P = dpool(K); typedef typename std::conditional<K == 0, C64, C128>::type C; typedef typename std::conditional<K == 0, float, double>::type R;
+  std::vector<std::pair<double, double>> vs; for (int i = 0; i < n; i++) vs.push_back({P[rnd() % P.size()], P[rnd() % P.size()]});
+  for (int i = 0; i < n; i++) {
+    C a; __real__ a = (R)vs[i].first; __imag__ a = (R)vs[i].second; C ng = -a, cj = ~a;
+    printf("%lld %lld %lld %lld %d %lld %lld\n", (long long)(int64_t)dbits((double)__real__ ng), (long long)(int64_t)dbits((double)__imag__ ng), (long long)(int64_t)dbits((double)__real__ cj), (long long)(int64_t)dbits((double)__imag__ cj), a ? 1 : 0,
+           (long long)(int64_t)dbits((double)__real__ a), (long long)(int64_t)dbits((double)__imag__ a));
+  }
+}
+template <int K> static void cveri(int n) {
+  rng = 0x77AA55ULL + K; auto P = dpool(K); std::string s;
+  for (int i = 0; i < n; i++) { double x = P[rnd() % P.size()]; double y = P[rnd() % P.size()]; char b[80]; snprintf(b, 80, "%s%lld,%lld", i ? "," : "", (long long)(int64_t)dbits(x), (long long)(int64_t)dbits(y)); s += b; }
+  puts(s.c_str());
+}
+static std::vector<LD> lpool() {
+  std::vector<LD> v = {0.0L, -0.0L, 1.0L, -1.5L, 3.0e4000L, -2.5e-4000L, 0.1L, 1234.5678L, 7.0e-3L, -9.75L, 1.0e-20L, 4.0e-4940L, INFINITY, -INFINITY, 123456789.0L, 2.0L};
+  for (int i = 0; i < 6; i++) v.push_back((LD)(int64_t)(rnd() % 2000001 - 1000000) / 1000.0L * powl(10.0L, int(rnd() % 80) - 40));
+  return v;
+}
+static void pl(LD x) { W w = fromLD(x); printf(" %lld %lld", (long long)(int64_t)w.lo, (long long)(int64_t)w.hi); }
+static void cbin160(int n) {
+  rng = 0x77AA55ULL + 2; auto P = lpool(); std::vector<std::pair<LD, LD>> vs; for (int i = 0; i < n; i++) vs.push_back({P[rnd() % P.size()], P[rnd() % P.size()]});
+  for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) {
+    C160 a, b; __real__ a = vs[i].first; __imag__ a = vs[i].second; __real__ b = vs[j].first; __imag__ b = vs[j].second;
+    C160 r[4] = {a + b, a - b, a * b, a / b};
+    for (int k = 0; k < 4; k++) { pl(__real__ r[k]); pl(__imag__ r[k]); }
+    printf(" %d %d\n", a == b, a != b);
+  }
+}
+static void cun160(int n) {
+  rng = 0x77AA55ULL + 2; auto P = lpool(); std::vector<std::pair<LD, LD>> vs; for (int i = 0; i < n; i++) vs.push_back({P[rnd() % P.size()], P[rnd() % P.size()]});
+  for (int i = 0; i < n; i++) { C160 a; __real__ a = vs[i].first; __imag__ a = vs[i].second; C160 ng = -a, cj = ~a; pl(__real__ ng); pl(__imag__ ng); pl(__real__ cj); pl(__imag__ cj); printf(" %d", a ? 1 : 0); pl(__real__ a); pl(__imag__ a); printf("\n"); }
+}
+static void cveri160(int n) {
+  rng = 0x77AA55ULL + 2; auto P = lpool(); std::string s;
+  for (int i = 0; i < n; i++) { for (int k = 0; k < 2; k++) { W w = fromLD(P[rnd() % P.size()]); char b[96]; snprintf(b, 96, "%s%lld,%lld", (i || k) ? "," : "", (long long)(int64_t)w.lo, (long long)(int64_t)w.hi); s += b; } }
+  puts(s.c_str());
+}
+// donusumler: n karmasik deger -> her tur cifti (c64<->c128<->c160) ve gercek -> karmasik (f64 kabi, f80)
+static void ccv(int n) {
+  rng = 0x99BB11ULL; auto P = dpool(1); auto L = lpool();
+  for (int i = 0; i < n; i++) {
+    double re = P[rnd() % P.size()], im = P[rnd() % P.size()]; C128 c128; __real__ c128 = re; __imag__ c128 = im;
+    LD lre = L[rnd() % L.size()], lim = L[rnd() % L.size()]; C160 c160; __real__ c160 = lre; __imag__ c160 = lim;
+    C64 a = (C64)c128; C128 b = (C128)c160; C64 c = (C64)c160; C160 d = (C160)c128; C160 e = (C160)a; C128 f = (C128)a;
+    auto o = [&](double x) { printf(" %lld", (long long)(int64_t)dbits(x)); };
+    o((double)__real__ a); o((double)__imag__ a); o((double)__real__ b); o((double)__imag__ b); o((double)__real__ c); o((double)__imag__ c);
+    pl(__real__ d); pl(__imag__ d); pl(__real__ e); pl(__imag__ e); o((double)__real__ f); o((double)__imag__ f);
+    C64 g = (C64)(float)re; C128 h = (C128)re; C160 k = (C160)re; C64 m = (C64)(float)lre; C128 q = (C128)(double)lre; C160 t = (C160)lre;
+    o((double)__real__ g); o((double)__imag__ g); o((double)__real__ h); o((double)__imag__ h); pl(__real__ k); pl(__imag__ k);
+    o((double)__real__ m); o((double)__imag__ m); o((double)__real__ q); o((double)__imag__ q); pl(__real__ t); pl(__imag__ t);
+    printf("\n");
+  }
+}
+static void ccveri(int n) {
+  rng = 0x99BB11ULL; auto P = dpool(1); auto L = lpool(); std::string s;
+  for (int i = 0; i < n; i++) {
+    double re = P[rnd() % P.size()], im = P[rnd() % P.size()]; LD lre = L[rnd() % L.size()], lim = L[rnd() % L.size()];
+    W a = fromLD(lre), b = fromLD(lim); char buf[200]; snprintf(buf, 200, "%s%lld,%lld,%lld,%lld,%lld,%lld", i ? "," : "", (long long)(int64_t)dbits(re), (long long)(int64_t)dbits(im), (long long)(int64_t)a.lo, (long long)(int64_t)a.hi, (long long)(int64_t)b.lo, (long long)(int64_t)b.hi); s += buf;
+  }
+  puts(s.c_str());
+}
+
+// ================= 128 bit tamsayi <-> dar kayan nokta (f64 f32 f16 bf16) =================
+static void ni_veri(int n, std::vector<U>& iv, std::vector<uint64_t>& dv) {
+  rng = 0x5151ULL; iv.clear(); dv.clear();
+  for (int i = 0; i < n; i++) {
+    U x; switch (i) { case 0: x = 0; break; case 1: x = 1; break; case 2: x = ~U(0); break; case 3: x = U(1) << 127; break; case 4: x = (U(1) << 127) - 1; break; case 5: x = (U(1) << 53) + 1; break;
+      case 6: x = (U(1) << 100) + (U(1) << 92) + 1; break; case 7: x = (U(1) << 13) + 4; break;
+      default: x = ((U(rnd()) << 64) | rnd()) >> (rnd() % 128); }
+    uint64_t d; switch (i) { case 0: d = 0; break; case 1: d = 1ULL << 63; break; case 2: d = 0x7FF0000000000000ULL; break; case 3: d = 0x7FF8000000000000ULL; break; case 4: d = 0x47F0000000000000ULL; break;   // 2^127
+      case 5: d = 0xC7E0000000000000ULL; break; case 6: d = 0x4800000000000000ULL; break; case 7: d = 0xBFE0000000000000ULL; break;
+      default: { double v = (double)(int64_t)rnd() * std::pow(2.0, int(rnd() % 140) - 70) ; d = dbits(v); } }
+    iv.push_back(x); dv.push_back(d);
+  }
+}
+static void niveri(int n) {
+  std::vector<U> iv; std::vector<uint64_t> dv; ni_veri(n, iv, dv); std::string s;
+  for (int i = 0; i < n; i++) { char b[120]; snprintf(b, 120, "%s%lld,%lld,%lld", i ? "," : "", (long long)(int64_t)uint64_t(iv[i]), (long long)(int64_t)uint64_t(iv[i] >> 64), (long long)(int64_t)dv[i]); s += b; }
+  puts(s.c_str());
+}
+static void ni(int n) {
+  std::vector<U> iv; std::vector<uint64_t> dv; ni_veri(n, iv, dv);
+  for (int i = 0; i < n; i++) {
+    S sv = S(iv[i]); U uv = iv[i];
+    auto o = [&](double x) { printf(" %lld", (long long)(int64_t)dbits(x)); };
+    o((double)sv); o((double)(float)sv); o((double)(float)(_Float16)sv); o((double)(float)(__bf16)sv);
+    o((double)uv); o((double)(float)uv); o((double)(float)(_Float16)uv); o((double)(float)(__bf16)uv);
+    double d; std::memcpy(&d, &dv[i], 8); U a = 0, b2 = 0; bool oks = false, oku = false;
+    if (d == d && std::fabs(std::trunc(d)) < 1e300) { double t = std::trunc(d); if (t >= -std::ldexp(1.0, 127) && t < std::ldexp(1.0, 127)) { a = U(S(t)); oks = true; } if (t > -1.0 && t < std::ldexp(1.0, 128)) { b2 = U(t); oku = true; } }
+    if (!oks) a = U(1) << 127; if (!oku) b2 = 0;
+    printf(" %lld %lld %lld %lld\n", (long long)(int64_t)uint64_t(a), (long long)(int64_t)uint64_t(a >> 64), (long long)(int64_t)uint64_t(b2), (long long)(int64_t)uint64_t(b2 >> 64));
+  }
+}
 int main(int argc, char** argv) {
   if (argc < 3) return 2; std::string m = argv[1]; int n = atoi(argv[2]);
   if (m == "veri80") veri<0>(n); else if (m == "veri128") veri<1>(n);
@@ -166,6 +282,11 @@ int main(int argc, char** argv) {
   else if (m == "un80") un<0>(n); else if (m == "un128") un<1>(n);
   else if (m == "cd80") cd<0>(n); else if (m == "cd128") cd<1>(n);
   else if (m == "ci80") ci<0>(n); else if (m == "ci128") ci<1>(n);
+  else if (m == "cbin64") cbin<0>(n); else if (m == "cbin128") cbin<1>(n); else if (m == "cbin160") cbin160(n);
+  else if (m == "cun64") cun<0>(n); else if (m == "cun128") cun<1>(n); else if (m == "cun160") cun160(n);
+  else if (m == "cveri64") cveri<0>(n); else if (m == "cveri128") cveri<1>(n); else if (m == "cveri160") cveri160(n);
+  else if (m == "ni") ni(n); else if (m == "niveri") niveri(n);
+  else if (m == "ccv") ccv(n); else if (m == "ccveri") ccveri(n);
   else if (m == "dbl" || m == "int") {   // veri: double bit desenleri / 64 bit tamsayilar (cd / ci ile ayni uretim)
     std::string s; rng = m == "dbl" ? 0x1234567ULL : 0xABCDEF1ULL;
     for (int i = 0; i < n; i++) {

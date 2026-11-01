@@ -6,7 +6,8 @@
 #include <quadmath.h>
 typedef long double PmLD; typedef __float128 PmQ;
 enum WFPK { WFP_ADD, WFP_SUB, WFP_MUL, WFP_DIV, WFP_SQRT, WFP_NEG, WFP_ABS, WFP_MOV, WFP_PACK, WFP_LO, WFP_HI, WFP_EQ, WFP_NE, WFP_LT, WFP_LE, WFP_TOBOOL,
-            WFP_FROM_F64, WFP_TO_F64, WFP_TO_OTHER, WFP_TO_NARROW, WFP_FROM_I64, WFP_FROM_U64, WFP_FROM_I128, WFP_FROM_U128, WFP_TO_INT_S, WFP_TO_INT_U };
+            WFP_FROM_F64, WFP_TO_F64, WFP_TO_OTHER, WFP_TO_NARROW, WFP_FROM_I64, WFP_FROM_U64, WFP_FROM_I128, WFP_FROM_U128, WFP_TO_INT_S, WFP_TO_INT_U,
+            WFP_I128_TO_NARROW_S, WFP_I128_TO_NARROW_U, WFP_F64_TO_I128_S, WFP_F64_TO_I128_U };   // son dort: 128 bit tamsayi <-> dar kayan (double kabi); p2: 0 f32 1 f16 2 bf16 3 f64
 namespace wfp {
 typedef unsigned __int128 U; typedef __int128 S;
 static inline bool isnanw(int f, uint64_t lo, uint64_t hi) {
@@ -149,6 +150,17 @@ template <class T> static inline void run(int code, int p2, uint64_t* R, int a, 
 }
 }  // namespace wfp
 static inline int pm_wfp(int code, int p1, int p2, uint64_t* R, int a, int b, int c) {
+  if (code == WFP_I128_TO_NARROW_S || code == WFP_I128_TO_NARROW_U) {
+    wfp::U v = (wfp::U(R[b + 1]) << 64) | R[b]; bool neg = code == WFP_I128_TO_NARROW_S && wfp::S(v) < 0; wfp::U m = neg ? wfp::U(0) - v : v; double r;
+    if (m == 0) r = 0.0; else if (p2 == 3) r = double(m); else r = pm_round_core(m, 0, PM_FMT[p2]);
+    if (neg) r = -r; uint64_t o; std::memcpy(&o, &r, 8); R[a] = o; return 0;
+  }
+  if (code == WFP_F64_TO_I128_S || code == WFP_F64_TO_I128_U) {
+    double d; std::memcpy(&d, &R[b], 8); bool sg = code == WFP_F64_TO_I128_S; wfp::U v = 0; bool ok = false;
+    if (d == d) { double t = std::trunc(d); if (std::fabs(t) < 1e300) { if (sg) { if (t >= -std::ldexp(1.0, 127) && t < std::ldexp(1.0, 127)) { v = wfp::U(wfp::S(t)); ok = true; } } else if (t > -1.0 && t < std::ldexp(1.0, 128)) { v = wfp::U(t); ok = true; } } }
+    if (!ok) v = sg ? (wfp::U(1) << 127) : wfp::U(0);
+    R[a] = uint64_t(v); R[a + 1] = uint64_t(v >> 64); return 0;
+  }
   if (p1 == 0) wfp::run<PmLD>(code, p2, R, a, b, c); else wfp::run<PmQ>(code, p2, R, a, b, c);
   return 0;
 }
