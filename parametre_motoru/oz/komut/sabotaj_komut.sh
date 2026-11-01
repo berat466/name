@@ -65,7 +65,7 @@ mut gor_hex 's/addi c, d, 55\n    host putc, c/addi c, d, 56\n    host putc, c/'
 # ---- TYPES bolumu (id 10): vtype / limok
 mut types_id_dup 's/jz o, y6\n    ret 143/jmp y6\n    ret 143/'
 mut types_name_dup 's/jz same, y8\n    ret 145/jmp y8\n    ret 145/'
-mut types_tag 's/eqi z, tag, 3\n    jnz z, y19\n    ret 141/eqi z, tag, 3\n    jnz z, y19\n    jmp y19\n    ret 141/'
+mut types_tag 's/eqi z, tag, 5\n    jnz z, y19\n    ret 141/eqi z, tag, 5\n    jnz z, y19\n    jmp y19\n    ret 141/'
 mut types_float_bits 's/ne z, t4, bt\n    jz z, y5\n    ret 148/ne z, t4, bt\n    jmp y5\n    ret 148/'
 mut types_int_limits 's/call ok2, limok, bt, sg, mnlo, mnhi, mxlo, mxhi\n    jnz ok2, y5\n    ret 147/call ok2, limok, bt, sg, mnlo, mnhi, mxlo, mxhi\n    jmp y5\n    ret 147/'
 mut types_conv_tur_kaynak 's/jnz o, y22\n    ret 149/jmp y22\n    ret 149/'

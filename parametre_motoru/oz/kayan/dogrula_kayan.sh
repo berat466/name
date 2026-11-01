@@ -2,7 +2,7 @@
 # PLAN BOLUM 01 -- GENIS KAYAN NOKTA (f80 = x87 genisletilmis long double, f128 = IEEE binary128): add sub mul div sqrt neg abs eq ne lt le tobool, tamsayi/dar kayan/ikili64 <-> genis donusumleri.
 # Komutlar tabloda YALNIZCA OP+SEM'dir (yazilim kayan nokta: rdw/wrw/mulhu/alu/cmp/sel + lpb/lpe dongu + spld/spst kazima alani). Karsilastirma: ELF (gen2) = svm (tablo calisma aninda) = C++ pm (long double / __float128) = BAGIMSIZ C++ oracle (kayan_oracle.cpp).
 # Kullanim: dogrula_kayan.sh [pm] [elf_deger_sayisi] [svm_deger_sayisi]
-PM=${1:-../../pm}; NE=${2:-22}; NS=${3:-5}; D=$(cd "$(dirname "$0")" && pwd); cd "$D"; PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); ok=0; bad=0
+PM=${1:-../../pm}; NE=${2:-70}; NS=${3:-5}; D=$(cd "$(dirname "$0")" && pwd); cd "$D"; PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); ok=0; bad=0
 pass() { ok=$((ok+1)); }; fail() { bad=$((bad+1)); echo "HATA: $1"; }
 lim() { (ulimit -v 4000000; timeout ${LIMS:-300} "$@"); }
 TAB=$R/oz/komut/komutlar.pmk; ASM=$R/oz/asm/asm.pmb; GEN=$R/oz/elf2/gen2.pmb

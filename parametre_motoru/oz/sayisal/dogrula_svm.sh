@@ -13,6 +13,8 @@ kos() {
   $PM liste $pmb > $T/l.txt 2>/dev/null || { fail "$et: liste"; return; }
   { cat $TABLO; [ -n "$fuel" ] && echo "@@YAKIT $fuel"; echo "@@PROGRAM"; cat $T/l.txt; echo "@@GIRDI"; cat $inp; } > $T/in.txt
   lim $PM run $pmb ${fuel:+--fuel $fuel} < $inp > $T/o1 2> $T/e1; r1=$?
+  # varsayilan yakit tukenen (sonsuz dongulu) program: svm ayni programi bu hizda bitiremez; yakit tuzagi KENDI siniriyla (3 000 000 adim) pm ile svm arasinda karsilastirilir (atlanmaz)
+  if [ -z "$fuel" ] && [ $r1 = 2 ] && grep -q "TRAP: FUEL" $T/e1; then kos "$et (yakit 3000000)" $pmb $inp 3000000; return; fi
   if [ $r1 = 124 ]; then skip=$((skip+1)); echo "atlandi (pm kendisi ${LIMS:-120}s icinde bitmedi): $et" >> ${ATLANAN:-/dev/null}; return; fi
   lim $PM run $SVM < $T/in.txt > $T/o2 2> $T/e2; r2=$?
   if [ $r2 = 124 ]; then if [ -n "$HIZLI" ]; then fail "$et: svm zaman asimi"; else skip=$((skip+1)); echo "atlandi (svm ${LIMS:-120}s icinde bitmedi; pm rc=$r1): $et" >> ${ATLANAN:-/dev/null}; fi; return; fi

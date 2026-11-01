@@ -176,8 +176,8 @@ mod tab < $T/ext1 | cmp -s - <(mod tab < $TAB) && pass || fail "kayit uzantisi s
 mod gor < $T/ext1 | mod yaz | cmp -s - <(mod kanon < $T/ext1) && pass || fail "kayit uzantisi/kuyruk gidis-donusta kayboldu"
 # profil: seyrek kimlik (komut 18 -> 60; kural/anlam kayitlari sembolle degil kimlikle bagli olabilir: NEG hicbir kuralin hedefi degil) format olarak gecerli, profil icin gecersiz
 mod gor < $TAB | sed "s/^op 18 NEG /op $((N0+10)) NEG /" | mod yaz > $T/sp; mod kanon < $T/sp | head -1 | grep -q '^1347242801' && pass || fail "seyrek kimlik bicim olarak reddedildi"
-out=$(mod dogrula < $T/sp); [ "${out:0:1}" = "0" ] && pass || fail "seyrek kimlik profil denetimini gecti ($out)"
-mod tab < $T/sp 2>&1 | head -1 | grep -q '^HATA' && pass || fail "seyrek kimlikli tablo sozluk uretti"
+out=$(mod dogrula < $T/sp); [ "$out" = "0 53" ] && pass || fail "seyrek kimlik: beklenen '0 53' (profil: kimlikler yogun degil), bulunan '$out'"
+mod tab < $T/sp 2>/dev/null | head -1 | grep -qx 'HATA: 53' && pass || fail "seyrek kimlikli tablo sozluk uretti"
 # bolum sirasi degisimi: HOST, KIND, OP sirasi -> ayni sozluk
 awk -v l3=$L3 -v oh=$OPH 'NR==1{print;next} NR>=2&&NR<oh{k[++a]=$0;next} NR>=oh&&NR<l3{o[++b]=$0;next} {h[++c]=$0} END{for(i=1;i<=c;i++)print h[i]; for(i=1;i<=a;i++)print k[i]; for(i=1;i<=b;i++)print o[i]}' $TAB > $T/perm
 kab "bolum sirasi degisti" $T/perm

@@ -42,6 +42,9 @@ template <int F> static std::vector<W> values(int n) {
     v.push_back(mk(s, 0, 0)); v.push_back(mk(s, 0x7FFF, 0)); v.push_back(mk(s, 1, 0)); v.push_back(mk(s, 0x7FFE, FM)); v.push_back(mk(s, 16383, 0)); v.push_back(mk(s, 16383, ONE << (KB - 1)));
     v.push_back(mk(s, 0, 1)); v.push_back(mk(s, 0, FM)); v.push_back(mk(s, 16383 + 63, 0)); v.push_back(mk(s, 16383 + 64, 12345)); v.push_back(mk(s, 16383 + 112, 7)); v.push_back(mk(s, 16383 - 1, FM));
   }
+  // tek bit farkli mantisler (karsilastirma/acma maskesi sinamasi) ve hedef bicimlerin (f64 f32 f16 bf16) us siniri/alt normal siniri komsulari
+  for (int p : {0, 1, 31, 32, 47, 48, 62, 63, 64, 65, 95, 96, 110, 111}) if (p < KB) { v.push_back(mk(0, 16383, ONE << p)); v.push_back(mk(1, 16383 - 3, (ONE << p) | 1)); }
+  for (int e : {-14, -15, -24, -25, 15, 16, -126, -127, -149, -150, 127, 128, -1022, -1023, -1074, -1075, 1023, 1024}) { v.push_back(mk(0, 16383 + e, FM)); v.push_back(mk(1, 16383 + e, ONE << (KB - 2))); }
   // es-uzaklik (tie) ureten islenenler: (1+2^-a)(1+2^-b), a+b = KB+1 ; tamsayi sinirlarina yakin rastgele mantisler (2^62..2^64, 2^126..2^128)
   for (int s = 0; s < 2; s++) {
     v.push_back(mk(s, 16383, ONE << (KB - (KB + 1) / 2))); v.push_back(mk(s, 16383, ONE << (KB - (KB + 2) / 2)));
@@ -180,7 +183,7 @@ static std::vector<double> dpool(int kind) {   // kind 0: float degerleri (c64),
 static void pd(const char* sep, double d) { printf("%s%lld", sep, (long long)(int64_t)dbits(d)); }
 static std::vector<std::pair<double, double>> cpairs(int K, int n) {
   rng = 0x77AA55ULL + K; auto P = dpool(K); std::vector<std::pair<double, double>> vs;
-  const double fx[][2] = {{0, 0}, {-0.0, 0}, {0, -0.0}, {1, 0}, {0, 1}, {1, 1}, {-1.5, 2.25}, {INFINITY, 0}, {0, INFINITY}, {INFINITY, INFINITY}};
+  const double fx[][2] = {{0, 0}, {-0.0, 0}, {0, -0.0}, {1, 0}, {0, 1}, {1, 1}, {-1.5, 2.25}, {INFINITY, 0}, {0, INFINITY}, {INFINITY, INFINITY}, {-1, 0}, {0, -1}, {-1, -1}, {-0.0, -1}, {1e-20, 1e-20}};
   for (auto& f : fx) if ((int)vs.size() < n) vs.push_back({f[0], f[1]});
   while ((int)vs.size() < n) { double a = P[rnd() % P.size()]; double b = P[rnd() % P.size()]; vs.push_back({a, b}); }
   return vs;
@@ -217,7 +220,7 @@ static std::vector<LD> lpool() {
 static void pl(LD x) { W w = fromLD(x); printf(" %lld %lld", (long long)(int64_t)w.lo, (long long)(int64_t)w.hi); }
 static std::vector<std::pair<LD, LD>> lpairs(int n) {
   rng = 0x77AA55ULL + 2; auto P = lpool(); std::vector<std::pair<LD, LD>> vs;
-  const LD fx[][2] = {{0, 0}, {-0.0L, 0}, {0, -0.0L}, {1, 0}, {0, 1}, {1, 1}, {-1.5L, 2.25L}, {INFINITY, 0}, {0, INFINITY}, {INFINITY, INFINITY}};
+  const LD fx[][2] = {{0, 0}, {-0.0L, 0}, {0, -0.0L}, {1, 0}, {0, 1}, {1, 1}, {-1.5L, 2.25L}, {INFINITY, 0}, {0, INFINITY}, {INFINITY, INFINITY}, {-1, 0}, {0, -1}, {-1, -1}, {-0.0L, -1}};
   for (auto& f : fx) if ((int)vs.size() < n) vs.push_back({f[0], f[1]});
   while ((int)vs.size() < n) { LD a = P[rnd() % P.size()]; LD b = P[rnd() % P.size()]; vs.push_back({a, b}); }
   return vs;

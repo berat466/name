@@ -31,7 +31,7 @@ ikili|oz|dogrula_ikili.sh|30||32|PMB1 kodlayici/cozucu
 komut|oz/komut|dogrula_komut.sh|10||34|komut tablosu (PMK1)
 i128|oz/tur128|dogrula_i128.sh|||30|128 bit tamsayilar + genis operand altyapisi (ELF = svm = C++ pm = __int128 oracle; valid/asm genis operand)
 uyum|oz/komut|dogrula_uyum.sh|||25|PMB1 geriye uyumluluk: eski pm'in urettigi programlar yeni araclarla bayt-bayt ayni / ayni calisir
-kayan|oz/kayan|dogrula_kayan.sh|40 5||40|genis kayan nokta f80/f128 + karmasik c64/c128/c160 (ELF = svm = C++ pm = long double/__float128/_Complex oracle; PMB1 kacis kodlamasi)
+kayan|oz/kayan|dogrula_kayan.sh|70 5||40|genis kayan nokta f80/f128 + karmasik c64/c128/c160 (ELF = svm = C++ pm = long double/__float128/_Complex oracle; PMB1 kacis kodlamasi)
 tip|oz/tip|dogrula_tip.sh|||20|program duzeyi tur sistemi: PMT1 tur notu + TYPES imzalari -> tipdogr (sayisal PMA araci)
 turler|oz/komut|dogrula_turler.sh|||20|TYPES bolumu: tur ozellikleri, limitler, ABI veri modeli, bayt sirasi (C++ derleyici gercekleriyle)
 valid|oz/dogr|dogrula_valid.sh|8 8||31|PMB1 dogrulayici (guvenlik kapisi)

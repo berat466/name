@@ -6,7 +6,7 @@ PM=${1:-../../pm}; JOBS=${2:-4}; PERK=${3:-4}; D=$(cd "$(dirname "$0")" && pwd);
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
 KM() { { echo "@@$1"; cat; } | $PM run $R/oz/arac/komut.pmb; }
 KM gor < $R/oz/komut/komutlar.pmk > $T/gor.txt
-sonuc() { if (cd $1/oz/kayan && LIMS=200 timeout 600 ./dogrula_kayan.sh $PM 36 4 > $T/log_$2 2>&1); then echo "KACTI: $2"; else echo "yakalandi: $2"; fi; }
+sonuc() { if (cd $1/oz/kayan && LIMS=200 timeout 600 ./dogrula_kayan.sh $PM 70 4 > $T/log_$2 2>&1); then echo "KACTI: $2"; else echo "yakalandi: $2"; fi; }
 mut() {   # etiket komut satir_no_degisimi_python
   ( w=$T/w_$1; taban $w
     python3 - "$2" "$3" "$T/gor.txt" <<'PY' | KM yaz > $w/oz/komut/komutlar.pmk || { echo "SABOTAJ HATASI: $1"; exit 3; }
@@ -44,4 +44,9 @@ for op in ADD_F80 SUB_F128 MUL_F80 MUL_F128 DIV_F80 DIV_F128 SQRT_F80 SQRT_F128 
   for k in $(seq 1 $PERK); do bg mut ${op}_$k $op $((k*7919+${#op}*31)); done
 done
 wait
-rm -rf "$T"
+# ozet: kacanlar sabotaj_kayan_denk.txt'deki gerekceli denk mutantlarla eslesmeli; baska kacan / uygulanamayan varsa basarisiz
+cat $T/sonuc_* > $T/hepsi.txt
+Y=$(grep -c '^yakalandi' $T/hepsi.txt); K=$(grep '^KACTI' $T/hepsi.txt | sed 's/KACTI: //' | sort); H=$(grep -c 'SABOTAJ HATASI\|uretilemedi' $T/hepsi.txt)
+BEK=0; DENK=0; for k in $K; do if grep -q "^$k	" $D/sabotaj_kayan_denk.txt; then DENK=$((DENK+1)); else BEK=$((BEK+1)); echo "BEKLENMEYEN KACAN: $k"; fi; done
+echo "sabotaj(kayan): $Y yakalandi, $((DENK+BEK)) kacti ($DENK gerekceli denk, $BEK beklenmeyen), $H uygulanamadi/uretilemedi"
+rm -rf "$T"; [ $BEK = 0 ] && [ $H = 0 ]

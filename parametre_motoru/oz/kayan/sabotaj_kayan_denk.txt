@@ -1,0 +1,33 @@
+# Kacan mutantlardan DENK (esdeger) oldugu gerekceli gosterilenler: etiket<TAB>gerekce. Her biri elle incelendi; rastgele girdili esdegerlik taramasi (6 binlerce girdi) farkli sonuc vermedi.
+LE_F128_3	sifir isaretinin kullanildigi lt bacagi: le = lt | eq ve -0/+0 icin ikisi de dogru sonuc verir (denk)
+NE_F128_3	ne sonucu lt'yi kullanmaz (olu kod)
+TOBOOL_F80_2	tobool yalniz sinifi okur; acilmis mantisin normallestirilmesi sonucu etkilemez
+TOBOOL_F80_3	tobool yalniz sinifi okur; acilmis mantisin normallestirilmesi sonucu etkilemez
+CV_F80_I64_1	|x| < 1 icin tamsayi 0'dir; alt normal normallestirmesi sonucu etkilemez
+CV_F80_I16_1	|x| < 1 icin tamsayi 0'dir; alt normal normallestirmesi sonucu etkilemez
+CV_F80_I128_2	|x| < 1 icin tamsayi 0'dir; alt normal normallestirmesi sonucu etkilemez
+CV_F80_I64_2	-2^63 sabiti: gecerli sonuc (0x80..0) gecersiz-deger ile ayni desendir
+CV_F80_I16_2	-2^63 sabiti: gecerli sonuc (0x80..0) gecersiz-deger ile ayni desendir (dar hedefte sar -> 0)
+CV_F64_F80_1	double -> f80 asla tasmaz; f80 sonsuz-us sabiti olu yol
+CV_F128_F64_1	NaN yukunde ust bitler zaten us alani/isaret icine tasar ve us alani tamamen 1'dir (maske gereksiz)
+CV_F128_F80_1	NaN yukunde ust bitler tam sayi biti/sessiz bit ile zaten 1'e OR'lanir (maske gereksiz)
+CV_F80_F128_2	f80 -> f128 tam donusum: yuvarlama artisi hic uygulanmaz (olu tasima)
+CV_U64_F128_1	isaretsiz kaynakta isaret hep 0; isaret kaydirma sabiti sonucu etkilemez
+CV_I128_F80_1	tamsayi -> f80 asla tasmaz; sonsuz-sabit olu yol
+CV_I128_F80_4	tamsayi -> f80 alt normal ek kaydirmasi (140 siniri) hic uygulanmaz
+CV_I64_F80_1	64 bit tamsayi -> f80 tam: yuvarlama yok (olu)
+CV_I64_F80_4	64 bit tamsayi acilimi: alt sozcuk hep 0, sozcuklar arasi tasima 0
+CV_F80_I128_4	f80 sabitlerinde alt 32 bit hep 0 (sabit uretecinin maskesi olu)
+CV_F128_U128_4	kesir sifirdan farkli bayragi yalniz NaN/sonsuz ayrimi icin; ikisi de isaretsiz tamsayida gecersiz -> 0 (ayni cikti)
+ADD_C64_2	RND_F32 NaN dali: aritmetik sonucu NaN her zaman sessizdir (sessiz bit zaten 1)
+ADD_C64_4	RND_F32: negatif girdilerde |x| yerine x kullanmak simetrik sihirli sabitle ayni yuvarlamayi verir (rastgele taramada 0 fark)
+MUL_C64_3	RND_F32 NaN yuku kisaltma kaydirmasi: aritmetik NaN'lari yuksuzdur
+MUL_C64_4	RND_F32 NaN dali: sessiz bit zaten 1
+DIV_C64_2	RND_F32: isaret maskesi sabiti 64 -> kaydirma 0 (yalniz en dusuk bit); f32 yuvarlamasinda etkisiz (rastgele taramada 0 fark)
+CV_C160_C64_1	f32'den cok once tasan degerler zaten sonsuza gider; f64 tasma bayrağı sabiti etkisiz
+CV_C160_C64_2	NaN sessiz biti sonraki RND_F32 tarafindan zaten konur
+CV_F80_C128_1	f80 -> f64 NaN yukunde ust sozcuk 0 (kaydirma etkisiz)
+CV_F80_C128_2	f80 -> f64: ust sozcuge tasima hic uygulanmaz (53 bit tek sozcuk)
+MUL_C160_1	carpimin en dusuk kismi (ust 128 bitin altindaki tasima) yalniz yapiskan bit/es-uzaklik icin; test girdilerinde es-uzaklik operandlari olmadan etkisiz (rastgele taramada 0 fark)
+MUL_C160_4	f80 sabit uretecinin alt 32 bit maskesi: f80 sabitlerinde alt 32 bit hep 0
+DIV_C160_3	bolenin NaN sinifi bayragi: bolen kareler toplamidir, test girdilerinde NaN olamaz (NaN islenenli bolme DIV_F80 testinde)
