@@ -1,0 +1,2 @@
+// RED: E_CATCH  -- catch(...) son isleyici olmali
+int main() { try { throw 1; } catch (...) { return 1; } catch (int e) { return 2; } return 0; }

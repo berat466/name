@@ -6,6 +6,7 @@ int nested(int x) {
   try { return pass_through(x); }
   catch (int e) { pi(e); throw; }
 }
+int ret_in_handler() { try { throw 3; } catch (int e) { return e + 1; } return 0; }
 int main() {
   try { pi(depth(5)); pi(99); } catch (int e) { pi(e); pi(-1); }
   // tur secimi
@@ -39,6 +40,13 @@ int main() {
   try { throw 40; } catch (int& r) { r = r + 2; pi(r); }
   // istisna yok: catch calismaz
   try { pi(11); } catch (...) { pi(-1); }
+  // islenen istisna yigini: ic yakalayici break / return ile cikinca dis 'throw;' dis istisnayi yeniden firlatmali
+  try { try { throw 100; } catch (int o) {
+      int j = 0; while (j < 3) { j = j + 1; try { throw j; } catch (int in) { if (in == 2) break; } }
+      pi(ret_in_handler());
+      throw; } } catch (int fin) { pi(fin); }
+  // yakalanan istisnadan sonra normal akis ve yeni istisna
+  try { throw 1; } catch (int a) { pi(a); } try { throw 2; } catch (int b) { pi(b + 10); }
   pi(12);
   return 0;
 }

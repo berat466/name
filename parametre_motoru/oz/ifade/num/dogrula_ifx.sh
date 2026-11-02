@@ -92,6 +92,17 @@ for bt in $T/kbad*.t; do tb=$( { echo '@@IMZA'; cat $IMZ; echo '@@PROGRAM'; cat 
 [ $nb -ge 20 ] && [ $rej -ge 5 ] && pass || fail "bozuk tur notlari tipdogr tarafindan yeterince reddedilmedi ($rej/$nb)"
 # 3) bozuk tablo/PMX1: temiz hata (cokme yok)
 head -c 2000 $TAB > $T/kisa.pmk; cat $T/kisa.pmk $T/k.pmx | lim $T/ifx.elf > /dev/null 2>&1; [ $? -ne 139 ] && pass || fail "kisa tablo: cokme"
+# 4) OZ-BARINDIRMA (sabit nokta): ifx.cx'in PMX1'i -> ifx.elf -> PMA1 -> (asm.elf coz.elf valid.elf tipdogr gen2.elf) -> ifx2.elf ; ifx2.elf ayni girdiyi derler -> PMA2 ; PMA1 == PMA2
+# (pm yok: yalniz PMX1 uretimi isteğe bagli on yuzden; derleyici kendini sayisal zincirle uretip yeniden uretebilir)
+[ -n "$SABOTAJ" ] || {
+  sh=$T/self; mkdir -p $sh; $PM ifade ifx.cx --pmx1 $sh/x.pmx > /dev/null 2>&1; { cat $TAB; cat $IMZ; echo; cat $sh/x.pmx; } > $sh/in
+  LIMS=300 lim $IFXE < $sh/in > $sh/p1.pma 2>/dev/null && ! grep -aq '@@HATA' $sh/p1.pma && pass || fail "oz-barindirma: ifx.elf kendi kaynagini derleyemedi"
+  # not: ifx2'nin PMA'si 1,7 MB; sayisal assembler (asm.elf) kaynak girdisini 1 MiB ile sinirlar -> bu adimda yalniz assembler icin pm asm (bagimsiz referans) kullanilir
+  $PM asm $sh/p1.pma -o $sh/p1.pmb --strip > /dev/null 2>&1 && $BAG/coz.elf < $sh/p1.pmb > $sh/p1.l && pass || fail "oz-barindirma: ifx2 asm/coz"
+  v=$(lim $BAG/valid.elf < $sh/p1.l | head -1); [ "${v%% *}" = 1 ] && pass || fail "oz-barindirma: valid.elf ifx2'yi reddetti: $v"
+  grep -a '^;;PMT1' $sh/p1.pma | sed 's/^;;PMT1 //' > $sh/p1.t; tv=$( { echo '@@IMZA'; cat $IMZ; echo '@@PROGRAM'; cat $sh/p1.l; echo '@@TIPLER'; cat $sh/p1.t; } | LIMS=300 lim $TIPE | head -2 | tr '\n' ' '); [ "${tv%% *}" = 1 ] && pass || fail "oz-barindirma: tipdogr ifx2'yi reddetti: $tv"
+  LIMS=300 lim $BAG/gen2.elf < $sh/p1.l > $sh/ifx2.elf && chmod +x $sh/ifx2.elf && LIMS=300 lim $sh/ifx2.elf < $sh/in > $sh/p2.pma 2>/dev/null; cmp -s $sh/p1.pma $sh/p2.pma && pass || fail "oz-barindirma: sabit nokta bozuk (ifx2 cikisi PMA1'den farkli)"
+}
 ok=$(cat $T/gecen 2>/dev/null | wc -l); bad=$(grep -c . $T/hatalar 2>/dev/null); bad=${bad:-0}
 [ -s $T/hatalar ] && sort $T/hatalar | head -30
 echo "ifx: $ok gecti, $bad basarisiz"; rm -rf $T; [ "$bad" = 0 ]

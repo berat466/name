@@ -1,0 +1,2 @@
+// RED: E_TYPE  -- tamamlanmamis tur catch edilemez
+struct A; int main() { try { throw 1; } catch (A a) { return 1; } return 0; }

@@ -1,0 +1,2 @@
+// RED: E_TYPE  -- catch rvalue referansi gecersiz
+int main() { try { throw 1; } catch (int&& e) { return 1; } return 0; }

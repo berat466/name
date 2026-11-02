@@ -1,0 +1,3 @@
+// RED: E_REINTERP  -- uyumsuz gosterimli isaretci islev argumani olamaz (sessiz yanlis okuma onlenir)
+int f(char* p) { return p[1]; }
+int main() { int a[2] = {1, 2}; return f(reinterpret_cast<char*>(a)); }
