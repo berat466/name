@@ -1,0 +1,2 @@
+// TRAP: OOB
+struct B { virtual int f() { return 1; } }; int main() { B* p = 0; pi(5); return p->f(); }

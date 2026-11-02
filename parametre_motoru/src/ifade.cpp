@@ -232,6 +232,36 @@ vector<int64_t> pmx_encode(const Ast& a, int root) {
   }
   return o;
 }
+// PMX1 yapisal dogrulama: dugum turu araligi, tur basina cocuk sayisi, cocuk turu kisitlari, dongusuzluk ve derinlik siniri
+struct Arity { int k, lo, hi; };
+void pmx_validate(const Ast& a, int root) {
+  static const Arity ar[] = {{N_INT,0,0},{N_FLT,0,0},{N_CHR,0,0},{N_STR,0,0},{N_BOOL,0,0},{N_NULLPTR,0,0},{N_THIS,0,0},{N_ID,0,0},{N_UNARY,1,1},{N_BINARY,2,2},{N_ASSIGN,2,2},{N_COND,3,3},{N_COMMA,2,2},
+    {N_CALL,1,-1},{N_INDEX,2,2},{N_MEMBER,1,1},{N_ARROW,1,1},{N_PREINC,1,1},{N_POSTINC,1,1},{N_SIZEOF_E,1,1},{N_SIZEOF_T,1,1},{N_ALIGNOF,1,1},{N_NOEXCEPT,1,1},{N_TYPEID_E,1,1},{N_TYPEID_T,1,1},
+    {N_CAST,2,2},{N_FCAST,1,2},{N_UDL,0,-1},{N_INITLIST,0,-1},{N_TY,0,0},{N_TPTR,1,1},{N_TREF,1,1},{N_TRREF,1,1},{N_TARR,1,2},{N_BLOCK,0,-1},{N_VAR,1,2},{N_DECLS,0,-1},{N_EXPRSTMT,1,1},{N_IF,2,3},
+    {N_WHILE,2,2},{N_DO,2,2},{N_FOR,4,4},{N_RETURN,0,1},{N_BREAK,0,0},{N_CONTINUE,0,0},{N_EMPTY,0,0},{N_FUNC,2,3},{N_PARAMS,0,-1},{N_CLASS,0,-1},{N_PROG,0,-1},{N_USING,0,-1},{N_NONE,0,0}};
+  for (size_t i = 0; i < a.n.size(); i++) {
+    const Node& x = a.n[i];
+    if (x.k < 0 || x.k > N_NONE) fail("E_PMX", "PMX1 dugum turu gecersiz");
+    const Arity* r = nullptr; for (auto& e : ar) if (e.k == x.k) r = &e;
+    if (!r || int(x.kid.size()) < r->lo || (r->hi >= 0 && int(x.kid.size()) > r->hi)) fail("E_PMX", "PMX1 dugumun cocuk sayisi bu tur icin gecersiz");
+    if (x.k == N_TY && (x.i < 0 || x.i > Y_FUNC)) fail("E_PMX", "PMX1 tur kodu gecersiz");
+    auto need = [&](int c, std::initializer_list<int> kinds) { for (int k : kinds) if (a.n[size_t(c)].k == k) return; fail("E_PMX", "PMX1 cocuk dugum turu bu konumda gecersiz"); };
+    if (x.k == N_PROG) for (int c : x.kid) need(c, {N_CLASS, N_FUNC, N_VAR});
+    if (x.k == N_CLASS) for (int c : x.kid) need(c, {N_VAR, N_FUNC});
+    if (x.k == N_PARAMS) for (int c : x.kid) need(c, {N_VAR});
+    if (x.k == N_DECLS) for (int c : x.kid) need(c, {N_VAR});
+    if (x.k == N_FUNC) { need(x.kid[1], {N_PARAMS}); if (x.kid.size() > 2) need(x.kid[2], {N_BLOCK}); }
+    if (x.k == N_FOR) { need(x.kid[0], {N_NONE, N_DECLS, N_EXPRSTMT}); }
+  }
+  // dongusuzluk + derinlik (yinelemesiz DFS)
+  vector<int> state(a.n.size(), 0), stk; vector<size_t> idx; stk.push_back(root); idx.push_back(0); state[size_t(root)] = 1;
+  while (!stk.empty()) {
+    int u = stk.back(); size_t& i = idx.back();
+    const Node& x = a.n[size_t(u)];
+    if (i < x.kid.size()) { int c = x.kid[i]; i++; if (state[size_t(c)] == 1) fail("E_PMX", "PMX1 dugum grafigi dongulu"); if (state[size_t(c)] == 0) { if (stk.size() > 3000) fail("E_PMX", "PMX1 derinlik siniri asildi"); state[size_t(c)] = 1; stk.push_back(c); idx.push_back(0); } }
+    else { state[size_t(u)] = 2; stk.pop_back(); idx.pop_back(); }
+  }
+}
 Ast pmx_decode(const vector<int64_t>& v, int& root) {
   size_t p = 0; auto next = [&]() -> int64_t { if (p >= v.size()) fail("E_PMX", "PMX1 sayi listesi erken bitti"); return v[p++]; };
   if (next() != PMX_MAGIC) fail("E_PMX", "PMX1 sihirli sayisi yanlis"); if (next() != 1) fail("E_PMX", "PMX1 surumu desteklenmiyor");
@@ -248,6 +278,7 @@ Ast pmx_decode(const vector<int64_t>& v, int& root) {
     for (int64_t k = 0; k < nk; k++) { int64_t c = next(); if (c < 0 || c >= nn) fail("E_PMX", "PMX1 cocuk indeksi gecersiz"); x.kid.push_back(int(c)); }
   }
   if (p != v.size()) fail("E_PMX", "PMX1 sonunda artik sayi var");
+  pmx_validate(a, root);
   return a;
 }
 
@@ -263,7 +294,8 @@ const OpRow kOps[] = {
 const OpRow* opRow(int cls, const string& tok) { for (auto& r : kOps) if (r.cls == cls && tok == r.tok) return &r; return nullptr; }
 
 struct Parser {
-  Ast& a; vector<Tok>& t; size_t p = 0;
+  Ast& a; vector<Tok>& t; size_t p = 0; int depth = 0;
+  struct Dp { Parser& q; Dp(Parser& pq) : q(pq) { if (++q.depth > 300) fail("E_PARSE", "ifade/deyim ic ice gecme siniri asildi (300)", q.cur().line); } ~Dp() { q.depth--; } };
   std::set<string> classes; std::map<string, int> alias;   // ad -> N_TY/N_T* dugumu
   Parser(Ast& ast, vector<Tok>& toks) : a(ast), t(toks) {
     const char* sc[] = {"std::strong_ordering", "std::weak_ordering", "std::partial_ordering", "std::type_info"};
@@ -369,7 +401,7 @@ struct Parser {
     return l;
   }
   int assign() {
-    int l = cond();
+    Dp dp(*this); int l = cond();
     if (cur().k == TK_P && opRow(2, cur().s)) {
       string op = cur().s; int line = cur().line; p++; int r = isP("{") ? initList() : assign();   // sag birlesimli
       int n = a.mk(N_ASSIGN, line); a[n].s = op; a[n].kid = {l, r}; return n;
@@ -396,12 +428,12 @@ struct Parser {
     return l;
   }
   int initList() {
-    int n = mk(N_INITLIST); expect("{");
+    Dp dp(*this); int n = mk(N_INITLIST); expect("{");
     while (!isP("}")) { a[n].kid.push_back(isP("{") ? initList() : assign()); if (!accept(",")) break; }
     expect("}"); return n;
   }
   int unary() {
-    int line = cur().line;
+    Dp dp(*this); int line = cur().line;
     if (cur().k == TK_P) {
       const string& s = cur().s;
       if (opRow(3, s) && s != "++" && s != "--") { string op = s; p++; int e = unary(); int n = a.mk(N_UNARY, line); a[n].s = op; a[n].kid = {e}; return n; }
@@ -519,7 +551,7 @@ struct Parser {
     return true;
   }
   int stmt() {
-    int line = cur().line;
+    Dp dp(*this); int line = cur().line;
     if (isP("{")) return block();
     if (isP(";")) { p++; return a.mk(N_EMPTY, line); }
     if (cur().k == TK_ID) {
@@ -790,7 +822,12 @@ struct Sema {
     return s;
   }
   [[noreturn]] void err(const string& code, const string& msg) { fail(code, msg, curLine); }
-  void trapNow() { E("ld " + R() + ", 0, 0"); }
+  void trapNow() { E("ld " + R() + ", -1, 0"); }   // adres 0 gecerli bir sozcuk (null yalniz kural); sinir disi adres -> TRAP OOB
+  void nullChk(const V& pv) {   // null isaretci dolayli erisimi: TRAP OOB (calisma zamani)
+    if (g->dry) return;
+    if (pv.ci && pv.cval == 0) { trapNow(); return; }
+    string ok = NL(); E("jnz " + immReg(pv.reg) + ", " + ok); trapNow(); LAB(ok);
+  }
 
   // sabit katlama yardimcilari
   int64_t foldNorm(int64_t v, int t) {
@@ -1149,6 +1186,7 @@ struct Sema {
         if (x.kid.size() < 2) { Ty t; t.k = Y_ARR; t.e = e; t.n = -1; return intern(t); }
         int64_t cnt = constIntExpr(x.kid[1]);
         if (cnt <= 0) fail("E_TYPE", "dizi boyutu pozitif olmali", x.line);
+        if (cnt > (int64_t(1) << 24) || cnt * std::max(1, words(e)) > (int64_t(1) << 24)) fail("E_TYPE", "dizi cok buyuk (en fazla 16M sozcuk)", x.line);
         if (!completeObj(e)) fail("E_TYPE", "dizi eleman turu tam degil", x.line);
         if (isRef(e)) fail("E_TYPE", "referans dizisi gecersiz", x.line);
         return arrOf(e, cnt);
@@ -1484,6 +1522,7 @@ struct Sema {
       v = rval(v);
       if (!isPtr(v.ty)) err("E_TYPE", "'*' isaretci operand gerektirir, bulunan " + tyName(v.ty));
       int pt = ty(v.ty).e; if (K(pt) == Y_VOID) err("E_TYPE", "void isaretcisi dolayli erisilemez");
+      nullChk(v);
       V r; r.ty = pt; r.cat = C_LV; r.reg = v.reg; r.viaPtr = true; r.eff = v.eff; return r;
     }
     if (isCls(unq(v.ty))) {
@@ -1541,6 +1580,7 @@ struct Sema {
     if (arrow) {
       if (isCls(unq(o.ty))) { vector<V> ops = {o}; V u = userOp("->", ops, false); if (u.ty >= 0) o = u; }
       o = rval(o); if (!isPtr(o.ty) || !isCls(unq(ty(o.ty).e))) err("E_TYPE", "'->' sinif isaretcisi gerektirir, bulunan " + tyName(o.ty));
+      nullChk(o);
       V l; l.ty = ty(o.ty).e; l.cat = C_LV; l.reg = o.reg; l.viaPtr = true; l.eff = o.eff; o = l;
     }
     clsT = unq(o.ty); if (!isCls(clsT)) err("E_TYPE", "'.' sinif nesnesi gerektirir, bulunan " + tyName(o.ty));
@@ -1562,6 +1602,7 @@ struct Sema {
     if (!isPtr(bp.ty)) err("E_TYPE", "dizi/isaretci olmayan ifade indekslenemez: " + tyName(b.ty));
     if (!isInt(i.ty)) err("E_TYPE", "dizi indeksi tamsayi olmali, bulunan " + tyName(i.ty));
     int et = ty(bp.ty).e; if (!completeObj(et)) err("E_PTRARITH", "tamamlanmamis turde eleman indekslenemez");
+    if (!bArr) nullChk(bp);
     int w = words(et); i = convArith(i, tLong);
     if (bArr) {   // bilinen sinirli dizi: calisma zamani sinir denetimi (bellek guvenligi)
       int64_t cnt = ty(b.ty).n;
@@ -1630,10 +1671,16 @@ struct Sema {
       if (c.k == N_ARROW) {
         if (isCls(unq(o.ty))) { vector<V> ops = {o}; V u = userOp("->", ops, false); if (u.ty >= 0) o = u; }
         o = rval(o); if (!isPtr(o.ty) || !isCls(unq(ty(o.ty).e))) err("E_TYPE", "'->' sinif isaretcisi gerektirir: " + tyName(o.ty));
+        nullChk(o);
         V l; l.ty = ty(o.ty).e; l.cat = C_LV; l.reg = o.reg; l.viaPtr = true; l.eff = o.eff; o = l;
       }
       if (!isCls(unq(o.ty))) err("E_TYPE", "uye islev cagrisi icin sinif nesnesi gerekli: " + tyName(o.ty));
       int ocls = ty(unq(o.ty)).cls; int searchCls = ocls;
+      if (C[size_t(ocls)].builtin == 4) {   // std::type_info::name()
+        if (c.s != "name" || x.kid.size() != 1) err("E_UNDECL", "std::type_info yalniz name() uye islevini destekler");
+        tiNameUsed = true; string id = R(), r = R(); E("ld " + id + ", " + o.reg + ", 0"); E("call " + r + ", tiname, " + id);
+        V v = pr(ptrTo(cv(tChar, true, false)), r); v.eff = o.eff; return v;
+      }
       if (!c.s2.empty()) { auto it = cmap.find(c.s2); if (it == cmap.end() || !derivedFrom(ocls, it->second)) err("E_UNDECL", "niteleyici sinif gecersiz: " + c.s2); searchCls = it->second; allowVirt = false; }
       cands = methodsNamed(searchCls, c.s);
       if (cands.empty()) {
@@ -1741,7 +1788,15 @@ struct Sema {
     if (unq(f) != unq(t)) err("E_CONSTCAST", "const_cast yalniz cv niteleyicilerini degistirir: " + tyName(r.ty) + " -> " + tyName(T));
     V o = pr(T, r.reg); o.eff = r.eff; return o;
   }
-  int typeIdOf(int t) { t = unq(deref(t)); if (isCls(t)) return C[size_t(ty(t).cls)].id; return 1000 + t; }
+  bool tiNameUsed = false;
+  std::map<int, int> tiTypes;   // tur kimligi -> tur (typeid(...).name() icin)
+  int typeIdOf(int t) { t = unq(deref(t)); int id = isCls(t) ? C[size_t(ty(t).cls)].id : 1000 + t; tiTypes[id] = t; return id; }
+  string mangle(int t) {   // Itanium ABI tur adi (std::type_info::name() ile ayni)
+    const Ty& x = ty(t); string q = string(x.v ? "V" : "") + (x.c ? "K" : "");
+    static const char* nm[] = {"v", "b", "c", "a", "h", "s", "t", "i", "j", "l", "m", "x", "y", "f", "d", "e", "Dn"};
+    if (x.k <= Y_NULLPTR) return q + nm[x.k];
+    switch (x.k) { case Y_PTR: return q + "P" + mangle(x.e); case Y_ARR: return q + "A" + std::to_string(x.n) + "_" + mangle(x.e); case Y_CLASS: { const string& n = C[size_t(x.cls)].name; return q + std::to_string(n.size()) + n; } default: return "?"; }
+  }
   std::set<int> isaNeeded;
   V dynamicCast(V v, int T) {
     bool ref = isRef(T); int tgtT = ref ? ty(T).e : (isPtr(T) ? ty(T).e : -1);
@@ -2273,7 +2328,7 @@ struct Sema {
 
   // ============================== ISLEV GOVDESI ==============================
   vector<string> prologueLines() {
-    return {"  mov _spa, __sp", "  ld fp, _spa, 0", "  add _nsp, fp, @FRAME@", "  mov _lma, __lim", "  ld _lim, _lma, 0", "  leu _okc, _nsp, _lim", "  jnz _okc, _stk_ok", "  ld _trp, 0, 0", "_stk_ok: st _nsp, _spa, 0"};
+    return {"  mov _spa, __sp", "  ld fp, _spa, 0", "  add _nsp, fp, @FRAME@", "  mov _lma, __lim", "  ld _lim, _lma, 0", "  leu _okc, _nsp, _lim", "  jnz _okc, _stk_ok", "  ld _trp, -1, 0", "_stk_ok: st _nsp, _spa, 0"};
   }
   void genBody(int fi) {
     Fn* fp_ = &F[size_t(fi)]; if (fp_->generated) return;
@@ -2393,7 +2448,14 @@ struct Sema {
         string call = "  call _r, " + F[size_t(fin)].pma; for (int k = 0; k < np; k++) call += ", p" + std::to_string(k); extraFns.push_back(call); extraFns.push_back("  ret _r");
         extraFns.push_back(nx + ": mov _z, 0");
       }
-      extraFns.push_back("  ld _trp, 0, 0"); extraFns.push_back("  ret 0"); extraFns.push_back("}");
+      extraFns.push_back("  ld _trp, -1, 0"); extraFns.push_back("  ret 0"); extraFns.push_back("}");
+    }
+    if (tiNameUsed) {   // typeid(...).name(): tum siniflar + typeid ile gorulen turler
+      std::map<int, string> names; for (size_t c = 0; c < C.size(); c++) if (C[c].defined && !C[c].builtin) names[C[c].id] = mangle(clsTy(int(c)));
+      for (auto& kv : tiTypes) names[kv.first] = mangle(kv.second);
+      extraFns.push_back("func tiname(p0) {");
+      for (auto& kv : names) { string sym = strData(kv.second); extraFns.push_back("  eq _c, p0, " + num(kv.first)); extraFns.push_back("  jz _c, _nx" + num(kv.first)); extraFns.push_back("  mov _r, " + sym); extraFns.push_back("  ret _r"); extraFns.push_back("_nx" + num(kv.first) + ": mov _z, 0"); }
+      extraFns.push_back("  ret 0"); extraFns.push_back("}");
     }
     // isa<D>(id)
     for (int d : isaNeeded) {

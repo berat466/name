@@ -1,0 +1,2 @@
+// TRAP: OOB
+int main() { int* p = 0; pi(7); pi(*p); return 0; }

@@ -1,0 +1,2 @@
+// TRAP: OOB
+struct S { int a; int b; }; int main() { S* p = 0; pi(1); pi(p->b); return 0; }
