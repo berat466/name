@@ -15,15 +15,22 @@ pass() { echo 1 >> $T/gecen; }; fail() { echo "HATA: $1" >> $T/hatalar; }; expor
 $R/oz/bag/kur.sh $PM $T/bag > /dev/null 2>&1 || { echo "kur.sh basarisiz"; exit 1; }
 $PM liste $IFXB > $T/ifx.l && $T/bag/gen2.elf < $T/ifx.l > $T/ifx.elf && chmod +x $T/ifx.elf && pass || fail "ifx.elf uretilemedi"
 export IFXE=$T/ifx.elf BAG=$T/bag
+imzayap() { { echo "@@imza"; cat $1; } | $T/bag/komut.elf | tr '\n' ' '; echo; }   # OPSIG dokumu (sayisal arac komut.elf); ifx ve tipdogr ayni imzayi okur
+imzayap $TAB > $T/imza.txt; export IMZ=$T/imza.txt
+$PM liste $R/oz/tip/tipdogr.pmb > $T/tip.l && $T/bag/gen2.elf < $T/tip.l > $T/tipdogr.elf && chmod +x $T/tipdogr.elf && pass || fail "tipdogr.elf uretilemedi"
+export TIPE=$T/tipdogr.elf
 one() {
   f=$1; n=$(basename $f .cx); w=$T/t_$n; mkdir -p $w
   g++ -std=c++20 -O0 -w -include $D/../oracle.h -x c++ -o $w/bin $f 2> $w/gpp.err && lim $w/bin > $w/exp || { fail "$n: g++ oracle"; return; }
   $PM ifade $f --pmx1 $w/x.pmx > /dev/null 2> $w/fe.err; [ -s $w/x.pmx ] || { fail "$n: on yuz (PMX1 uretimi): $(head -c 120 $w/fe.err)"; return; }   # on yuz anlam asamasi reddetse de PMX1 yazilmistir
-  cat $TAB $w/x.pmx > $w/in.txt
+  { cat $TAB; cat $IMZ; echo; cat $w/x.pmx; } > $w/in.txt
   lim $IFXE < $w/in.txt > $w/p_elf.pma 2> $w/ifx.err || { fail "$n: ifx.elf basarisiz: $(grep -a HATA $w/p_elf.pma | head -c 150)"; return; }
   lim $PM run $IFXB < $w/in.txt > $w/p_pm.pma 2>/dev/null; cmp -s $w/p_elf.pma $w/p_pm.pma && pass || fail "$n: ifx.elf PMA'si ifx.pmb (pm) PMA'sindan farkli"
   lim $BAG/asm.elf < $w/p_elf.pma > $w/p.pmb 2> $w/asm.err && [ -s $w/p.pmb ] && pass || { fail "$n: asm.elf: $(head -c 120 $w/asm.err)"; return; }
   lim $BAG/coz.elf < $w/p.pmb > $w/p.l && pass || { fail "$n: coz.elf"; return; }
+  # PMT1 tur notu (ifx.elf uretti) -> sayisal tur dogrulayicisi (tipdogr): OPSIG/HOSTSIG/donusum kurallari TABLODAN
+  grep -a '^;;PMT1' $w/p_elf.pma | sed 's/^;;PMT1 //' > $w/p.t; [ -s $w/p.t ] || { fail "$n: PMT1 notu yok"; return; }
+  tv=$( { echo '@@IMZA'; cat $IMZ; echo '@@PROGRAM'; cat $w/p.l; echo '@@TIPLER'; cat $w/p.t; } | lim $TIPE | head -2 | tr '\n' ' '); [ "${tv%% *}" = 1 ] && pass || fail "$n: tipdogr reddetti: $tv"
   v=$(lim $BAG/valid.elf < $w/p.l | head -1); [ "${v%% *}" = 1 ] && pass || fail "$n: sayisal dogrulayici (valid.elf) reddetti: $v"
   lim $BAG/gen2.elf < $w/p.l > $w/p.elf && chmod +x $w/p.elf && lim $w/p.elf > $w/elf.out 2>/dev/null; cmp -s $w/elf.out $w/exp && pass || fail "$n: ELF cikti g++'dan farkli ($(diff $w/elf.out $w/exp 2>&1 | head -3 | tr '\n' '|' | head -c 150))"
   lim $PM run $w/p.pmb > $w/pm.out 2>/dev/null; cmp -s $w/pm.out $w/exp && pass || fail "$n: pm cikti g++'dan farkli"
@@ -37,7 +44,7 @@ red() {
   if [ ! -s $w/x.pmx ]; then   # metin duzeyi (lexer/ayristirici) hatasi: on yuz reddeder, PMX1 hic olusmaz
     [ -n "$code" ] && grep -q "\[$code\]" $w/fe.err && pass || fail "red/$n: on yuz soz dizimi reddi beklenen [$code]: $(head -c 100 $w/fe.err)"; return
   fi
-  cat $TAB $w/x.pmx | lim $IFXE > $w/o.pma 2>/dev/null; rc=$?
+  { cat $TAB; cat $IMZ; echo; cat $w/x.pmx; } | lim $IFXE > $w/o.pma 2>/dev/null; rc=$?
   if [ -n "$code" ]; then [ $rc != 0 ] && grep -aq "@@HATA $code " $w/o.pma && pass || fail "red/$n: sayisal derleyici beklenen [$code], rc=$rc: $(grep -a HATA $w/o.pma | head -c 100)"
   else [ $rc != 0 ] && grep -aq "@@HATA .*$exp" $w/o.pma && pass || fail "red/$n: beklenen ayrik ret '$exp', rc=$rc: $(grep -a HATA $w/o.pma | head -c 100)"; fi
 }
@@ -47,13 +54,29 @@ ls red/*.cx ../red/*.cx | xargs -P $(nproc) -I{} bash -c 'red {}'
 # 2) kural degisikligi: tablo sayilari degisir, hicbir sey yeniden derlenmez
 printf 'int main() { pi(7 + 3); pi(7 - 3); pi(7 * 3); return 0; }\n' > $T/k.cx
 $PM ifade $T/k.cx --pmx1 $T/k.pmx > /dev/null
-run_tab() { cat $1 $T/k.pmx | $T/ifx.elf > $T/k.pma && $T/bag/asm.elf < $T/k.pma > $T/k.pmb && $PM run $T/k.pmb | tr '\n' ' '; }
+run_tab() { { cat $1; imzayap $1; echo; cat $T/k.pmx; } | $T/ifx.elf > $T/k.pma && $T/bag/asm.elf < $T/k.pma > $T/k.pmb && $PM run $T/k.pmb | tr '\n' ' '; }
 a=$(run_tab $TAB)
 python3 $D/kural_degistir.py '+' add sub < $TAB > $T/tab2.pmk && b=$(run_tab $T/tab2.pmk)
 python3 $D/kural_degistir.py '*' mul add < $TAB > $T/tab3.pmk && c=$(run_tab $T/tab3.pmk)
 [ "$a" = "10 4 21 " ] && pass || fail "kural: ana tablo cikti '$a'"
 [ "$b" = "4 4 21 " ] && pass || fail "kural: '+' -> sub degisikligi davranisa yansimadi ('$b')"
 [ "$c" = "10 4 10 " ] && pass || fail "kural: '*' -> add degisikligi davranisa yansimadi ('$c')"
+# 2b) tur notu bozulursa tipdogr reddetmeli (denetimin gercekligi)
+{ cat $TAB; cat $IMZ; echo; cat $T/k.pmx; } | $T/ifx.elf > $T/k2.pma; $T/bag/asm.elf < $T/k2.pma > $T/k2.pmb && $T/bag/coz.elf < $T/k2.pmb > $T/k2.l
+grep -a '^;;PMT1' $T/k2.pma | sed 's/^;;PMT1 //' > $T/k2.t
+# her tur-hucresini (3,4,9,11 = i32,i64,u64,bool) tek tek f64 yap: yapisal olarak gecerli ama tur uyumsuz -> tipdogr cogunu reddetmeli
+python3 - $T/k2.t $T/kbad <<'PYEOF'
+import sys
+v = open(sys.argv[1]).read().split()
+n = 0
+for i in range(5, len(v)):
+    if v[i] in ('3', '4', '9', '11'):
+        w = list(v); w[i] = '24'; open('%s%d.t' % (sys.argv[2], n), 'w').write(' '.join(w)); n += 1
+print(n)
+PYEOF
+nb=$(ls $T/kbad*.t | wc -l); rej=0
+for bt in $T/kbad*.t; do tb=$( { echo '@@IMZA'; cat $IMZ; echo '@@PROGRAM'; cat $T/k2.l; echo '@@TIPLER'; cat $bt; } | lim $TIPE | head -1 ); [ "${tb%% *}" = 0 ] && rej=$((rej+1)); done
+[ $nb -ge 20 ] && [ $rej -ge 5 ] && pass || fail "bozuk tur notlari tipdogr tarafindan yeterince reddedilmedi ($rej/$nb)"
 # 3) bozuk tablo/PMX1: temiz hata (cokme yok)
 head -c 2000 $TAB > $T/kisa.pmk; cat $T/kisa.pmk $T/k.pmx | lim $T/ifx.elf > /dev/null 2>&1; [ $? -ne 139 ] && pass || fail "kisa tablo: cokme"
 ok=$(cat $T/gecen 2>/dev/null | wc -l); bad=$(grep -c . $T/hatalar 2>/dev/null); bad=${bad:-0}
