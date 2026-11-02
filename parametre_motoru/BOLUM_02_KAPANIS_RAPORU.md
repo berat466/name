@@ -1,45 +1,44 @@
-# Bölüm 02 — Kapanış Raporu: İfadeler, Operatörler ve Sabitler
+# Bölüm 02 — Durum Raporu: İfadeler, Operatörler ve Sabitler (**KAPANMADI**)
 
-Dal: `claude/formul-avcisi` · Kapsam: Linux x86-64 (LP64) · 2 Kasım 2026
+Dal: `claude/formul-avcisi` · Linux x86-64 · 2 Kasım 2026
 
-## 1. Sonuç
-Bölüm 02 (02.001–02.034) tamamlandı. Son commit bu raporu içeren commit'tir. PLAN sayımı: **133 🟢 / 42 🔵 / 1224 ❌**. 02.001–003 önceden 🟢'ydi ve bu bölümün testleriyle yeniden uygulanıyor (makine aritmetiği, karşılaştırma, sabit havuzu `pm ifade` çıktısında kullanılır); 02.004–034 bu çalışmada gerçekleştirildi ve doğrulandı.
+## 1. Gerçek durum
+İlk sürümde "02.001–034 tamamlandı" demiştim; bu **doğru değildi**: ifade anlamının tamamı `src/ifade.cpp` (C++) içindeydi, PMX1 yalnız sayı listesiydi. Bu sürümde mimari düzeltildi ve işaretler geri alındı. **PLAN: 116 🟢 / 42 🔵 / 1241 ❌. Bölüm 02: 17 🟢 / 17 ❌ → bölüm AÇIK.** Bölüm 03'e geçilmedi.
 
-## 2. Mimari (sayısal motor açısından) [Kesin]
-- Yeni zorunlu metin dili **yoktur**. `pm ifade kaynak.cx`, C++ alt kümesini okuyan bir **dış dil uyumluluk ön yüzüdür** (`src/ifade.cpp`; C++ referans/geliştirme aracı — motorun kendisi gibi C++ ile yazılmıştır, sayısal PMA aracı olarak yeniden yazılmadı).
-- Akış: metin → lexer → ayrıştırıcı → AST → **PMX1** (kanonik sayısal AST, sayı listesi) → anlam + kod üretimi → PMA → PMB1. **Derleme her zaman PMX1 sayı listesinden çalışır** (`--pmx1` yazar, `--pmx1-oku` okur; aynı PMA çıkar). PMX1 yapısal doğrulanır (tür aralığı, tür başına çocuk sayısı, çocuk türü, döngüsüzlük, derinlik) ve bozma/fuzz ile sınanır.
-- **Operatör öncelik/birleşim tablosu PMK1 bölüm 11'dedir** (`oz/komut/komutlar.pmk`, isteğe bağlı bölüm; eski araçlar olduğu gibi korur). `oz/komut/yenile_ifade.sh` → `src/ifade_ops_gen.h`; ayrıştırıcı bu tablodan beslenir; tablo ↔ derlenmiş tablo (`pm ifade --ops`) ↔ üretilmiş başlık tutarlılığı her koşuda sınanır.
-- Üretilen program, Bölüm 01'in sayısal komutlarını kullanır (`sext/zext8/16/32`, `ltu/leu`, `divu/modu`, `u2f/f2u`, `rnd_f32`, 64 bit aritmetik + açık normalleştirme) ve mevcut yürütücülerde (C++ `pm`, native ELF/gen2, svm) birebir aynı çalışır. Yığın çerçeveleri yazılımsal yığında (`__sp/__lim`), nesneler sözcük düzeninde; `sizeof/alignof` ABI dizilimiyle (Itanium) bildirilir.
+## 2. Sayısal motor olarak artık kaynaktan bağımsız çalışanlar [Kesin]
+- **`oz/ifade/num/ifx.pmb`** — PMX1 sayı listesini okuyup PMA üreten **sayısal program** (kanonik ürün). `ifx.cx` yalnız geliştirme görünümüdür (asm.pma.in gibi); `ifx.pmb`'nin tazeliği testle sınanır. Çalışma anında C++/Python kaynağı ya da derleyicisi gerekmez.
+- **Kural tablosu — `komutlar.pmk` bölüm 12 (IFADE KURAL TABLOSU)** (+ bölüm 11 operatör önceliği): tür özellikleri (bit, işaret, derece, normalleştirme komutu), ikili operatör → komut eşlemesi, karşılaştırma eşlemesi (işaretsizde takas, kayanda terslemeler), dönüşüm komut adları. `ifx.pmb` tabloyu **çalışma anında** okur. Kanıt: tablo sayıları değiştirilince (`+`→`sub`, `*`→`add`) hiçbir kaynak/ikili yeniden üretilmeden çıktı değişir.
+- **pm'siz uçtan uca zincir:** `ifx.elf` (gen2 ile native) → `asm.elf` → `coz.elf` → `valid.elf` (sayısal doğrulayıcı kabul eder) → `gen2.elf` → çalışan ELF. Çıktı = g++ = `ifx.pmb` (pm) PMA'sı bayt-bayt aynı = pm = svm. (pm yalnız bootstrap `kur.sh` ve bağımsız referans olarak kullanılır.)
+- Kapsam (çekirdek): skaler/işaretçi/dizi, tüm tekli/ikili/atama/bileşik atama/`?:` (lvalue dahil)/virgül/`++ --`/`&& ||`, `static_cast` ve C tipi dönüşüm, `sizeof/alignof`, dize sabiti, global değişken, işlev çağrısı/özyineleme, if/while/do/for/break/continue/return, çalışma zamanı sınır ve null denetimi.
+- **Dürüst ret:** sınıf, referans, `auto`, `long double`, `T()`/`T{}`, aşırı yükleme, UDL, typeid, dynamic/const/reinterpret_cast … `@@HATA desteklenmiyor` ile AYRIK ret edilir; sessizce yanlış kod üretilmez (`num/red/*`).
+- **long double:** önceki sürümdeki sessiz f64'e indirgeme **kaldırıldı** (hem C++ referans ön yüzü hem ifx): değer işlemi reddedilir, yalnız tür düzeyi (`sizeof/alignof = 16`) kalır. Gerçek f80 işlem üretimi (Bölüm 01'in f80 komutlarıyla) **yapılmadı**.
 
-## 3. Maddeler → gerçekleştirim → kanıt
-| Madde | Gerçekleştirim | Kanıt (`oz/ifade/`) |
+## 3. Madde durumu (kanıt: `oz/ifade/num/testler`, `oz/ifade/testler`)
+| Madde | Durum | Not |
 |---|---|---|
-| 004 005 | tablo güdümlü öncelik ayrıştırıcısı, parantez | `testler/oncelik.cx` + rastgele ifadeler |
-| 006 | `&&` `||` kısa devre (kontrol akışı + sabit katlama) | `kisa_devre.cx` |
-| 007 | `?:` tür birleştirme, lvalue/sınıf kolları | `kosul.cx` |
-| 008 009 | `=`, 10 bileşik atama, C++17 sağ-önce sırası, daraltma | `atama.cx` |
-| 010 011 | ön/son `++ --`, virgül | `artir.cx`, `virgul.cx` |
-| 012 013 014 | `.`, `->`, `[]` (dizi/işaretçi/`i[a]`), tür ve sınır denetimi | `uye.cx`, `dizi.cx`, `trap/idx_oob.cx` |
-| 015 016 | `sizeof`, `alignof` | `sizeof.cx` |
-| 017 | `noexcept(ifade)` | `noexcept.cx` |
-| 018 | `typeid` (statik/dinamik, `==`, `name()`) | `rtti.cx`, `typeid_ad.cx` |
-| 019 020 021 022 | `static_cast`, `dynamic_cast`, `const_cast`, `reinterpret_cast` | `donusum_acik.cx`, `rtti.cx`, `red/*cast*` |
-| 023 024 | örtük dönüşümler (sıralama), kullanıcı dönüşüm operatörleri | `donusum_ortuk.cx`, `kullanici_donusum.cx` |
-| 025 | UDL | `udl.cx` |
-| 026–030 | karakter/kaçış, ham dize, bitişik dize, ikili/sekizli/onaltılı, ayırıcı, sonekler | `sabitler.cx`, `red/lex_*` |
-| 031 032 | `<=>`, `= default` karşılaştırma, yeniden yazım | `uzay.cx`, `varsayilan_karsilastirma.cx`, `ters_aday.cx` |
-| 033 | lvalue/xvalue/prvalue | `kategori.cx` |
-| 034 | değerlendirme sırası, yan etkiler, sıralanmamış değiştirme tanılaması | `sira.cx`, `red/unseq_*` |
-Bileşik uygulamalar: `uyg_agac.cx` (sanal gönderim + dynamic_cast + typeid + özyineleme), `uyg_vektor.cx` (operatör aşırı yükleme, dönüşüm, `<=>`, UDL), `uyg_metin.cx`.
+| 001 002 003 | 🟢 | motor aritmetiği/karşılaştırma/sabit havuzu; ifx testleri bunları gerçek C++ ifadeleriyle sürer |
+| 004 005 | 🟢 | ifade ağacı semantiği (öncelik/parantez) PMX1'den sayısal olarak işlenir; metin ayrıştırıcı isteğe bağlı C++ uyumluluk ön yüzüdür (öncelik tablosu bölüm 11) |
+| 006–011 | 🟢 | kısa devre, `?:`, atama, bileşik atamalar, `++/--`, virgül: sayısal derleyici + 3 yürütücü |
+| 014 | 🟢 | indeksleme, işaretçi aritmetiği, tür ve sınır denetimi (çekirdek) |
+| 026–030 | 🟢 | sabitlerin değer ve türü PMX1 düğümlerinde, sayısal olarak işlenir (kaçış, ham/bitişik dize, ikili/sekizli/onaltılı, ayırıcı, sonekler); lexer isteğe bağlı ön yüzdedir |
+| 012 013 | ❌ | üye erişimi: sınıf yalnız C++ referans ön yüzünde |
+| 015 016 | ❌ | skaler/dizi sayısal; sınıf ABI dizilimi yalnız C++ yolunda |
+| 017 018 020 021 022 | ❌ | noexcept, typeid, dynamic/const/reinterpret_cast: yalnız C++ yolunda; `reinterpret_cast` bayt temsili yok (motor sözcük adresli) |
+| 019 023 | ❌ | skaler `static_cast`/örtük dönüşüm sayısal; sınıf/işaretçi-hiyerarşi dönüşümleri yalnız C++ yolunda |
+| 024 025 031 032 033 034 | ❌ | kullanıcı dönüşümleri, UDL, `<=>`, varsayılan karşılaştırma, xvalue/başvuru kategorileri, sıralanmamış-değiştirme tanılaması: yalnız C++ yolunda |
 
-## 4. Doğrulama sonuçları
-- **Paket `ifade`** (`oz/ifade/dogrula_ifade.sh`): 25 olumlu program × (PMX1 gidiş-dönüş + C++ `pm` + native ELF + svm; beklenen çıktı **g++ oracle**'dan), 150 rastgele UB'siz ifade programı (UBSan ile elenir, tür izlemeli üreteç), 102 olumsuz test (kesin hata kodu; çoğu g++ ile de reddedilir), 11 çalışma zamanı tuzağı (pm = ELF = svm: tuzak adı + önceki stdout), PMX1 fuzz (120 bozma + döngü) ve operatör tablosu tutarlılığı: **924 kontrol, 0 başarısız** (57 sn duvar).
-- **Tam normal koşu** `HIZLI_YENIDEN=1 oz/hizli.sh --tam --bag`: **31 paket, 0 başarısız, duvar 762 sn (12 dk 42 sn), toplam CPU 2374 sn** (4 çekirdek; ≤ 20 dk hedefi karşılandı). Bölüm 01 paketleri (komut, uyum, arac, turler, tip, tur, svm, elf2, yenile, bag …) tablo değişikliğine (bölüm 11) rağmen geçti: geriye uyumluluk (189/189) ve öz-barındırma zinciri (`yenile` 60/0, `bag`, `pmy2elf`) korunmuştur.
-- **Sabotaj (mutasyon)** `oz/ifade/sabotaj_ifade.sh`: **58 mutant, 56 yakalandı, 2 gerekçeli denk, 0 yakalanmadı** (234–239 sn; ilk koşuda 17 mutant kaçmıştı: gerçek test boşlukları — ushort terfisi, sağ kaydırma işareti, ters aday, aşırı yükleme sırası, sınır/derinlik/dizi sınırı, tuzak çıktısı, PMX1 döngüsü, vb. — testler eklenerek kapatıldı; ardından tam yeniden koşuldu). Gerekçeli denk iki mutant: (a) işaretçi karşılaştırmasında işaretli/işaretsiz sıralama — adresler 2^27 sözcükten küçük pozitiftir, davranış aynı; (b) olağan aritmetik dönüşümde eşit derece dalı — sonraki dal aynı işaretsiz türü verir. Mutantlar `src/ifade.cpp` ve `src/ifade_ops_gen.h` içindeki anlamsal kararları (kısa devre, normalleştirme, ABI dizilimi, sıra, RTTI, null denetimi, PMX1 doğrulama, öncelik tablosu) bozar.
-- Önceki bölümlerin sabotaj kümeleri (Bölüm 01'deki 645 mutant) bu çalışmada **yeniden koşulmadı**: ilgili kaynaklar değişmedi; yalnız `komutlar.pmk`'ya isteğe bağlı bölüm 11 eklendi ve `komut/uyum/arac/turler/tip` paketleri bunu geçti.
+## 4. Test sonuçları
+- Tam normal koşu `HIZLI_YENIDEN=1 oz/hizli.sh --tam --bag`: **32 paket, 0 başarısız, duvar 783 sn (13 dk 03 sn), CPU 2398 sn** (hedef ≤ 20 dk). Paketler: `ifx` 110 kontrol, `ifade` 927 kontrol, Bölüm 01 paketleri (uyum 189/189, yenile 60/0, bag, pmy2elf, komut, tip, turler …) geçti → geriye uyumluluk ve öz-barındırma korunuyor.
+- Sabotaj: `ifx` 35 mutant (15 kural-tablosu + 20 kaynak) **35 yakalandı** (69 sn); C++ referans `ifade` sabotajı SABOTAJ3. Bölüm 01 sabotaj kümeleri bu çalışmada yeniden koşulmadı.
 
-## 5. Sınırlar (dürüst)
-Şablon, ad alanı (yalnız `std::` yerleşik adları), lambda, `new/delete`, kurucu/yok edici çağrıları (yalnız boş yok edici sözdizimi), istisna (başarısız `dynamic_cast<T&>` ve `typeid(*null)` **tuzak** üretir), çoklu/sanal kalıtım, statik üye, `enum`, işlev işaretçisi, `int (*p)[3]` bildirici, `wchar_t/char8_t/char16_t` ve dize ön ekleri, erişim denetimi desteklenmiyor. `long double` f64 ile temsil edilir (UDL parametresi dahil). Motor sözcük adresli: `reinterpret_cast` bayt görünümü vermez (eşit boyutlu skalerler; işaretçi↔`unsigned long` = sözcük adresi × 8). İşlev argümanları soldan sağa değerlendirilir (standart belirsiz bırakır; g++ sağdan sola — testler buna bağlı değil). Null işaretçi dolaylı erişimi derleyici tarafından `TRAP: OOB` yapılır (motorda adres 0 geçerli sözcük); null olmayan geçersiz işaretçiler yalnız bellek sınırı dışındaysa yakalanır. Sıralanmamış değiştirme tanılaması muhafazakârdır (yalnız tam adlı nesneler). **PMT1 tür notu üretilip `tipdogr` ile doğrulanmaz** (kayıtlar ifade başına yeniden kullanıldığı için). Ön yüz C++ ile yazılmıştır, kendi kendini sayısal PMA olarak derleyemez.
+## 5. Kalan zorunlu bağımlılıklar (dürüst)
+1. **Metin → PMX1** yalnız C++ ön yüzünde (`pm ifade`, isteğe bağlı uyumluluk). Sayısal metin ayrıştırıcı yok.
+2. **Sınıf/nesne/RTTI/aşırı yükleme/`<=>`/UDL/kategori/noexcept/ABI düzeni** için sayısal kural ve sayısal derleyici yok; yalnız C++ referansta (bağımsız referans olarak testli, ama "tamamlandı" sayılmaz).
+3. **PMT1/OPSIG/`tipdogr` entegrasyonu yapılmadı:** üretilen programa tür notu eklenemedi (sabit havuzu yazmaçlarının türleri, yazmaç yeniden kullanımı, genel `add` ↔ `i64/u64` imzaları nedeniyle tür duyarlı kod üretimi gerekiyor; denendi, tamamlanmadı). Üretilen PMB1 yalnız yapısal doğrulayıcıdan (`valid.elf`) geçiyor.
+4. **Null erişim:** motorun `ld/st` yolunda adres 0 geçerli sözcük; denetim derleyici üretimli (ifx ve C++ ön yüz). Motor düzeyi tuzak yapılmadı (pm/gen2/svm/valid değişikliği gerektirir).
+5. **İstisna altyapısı yok:** `dynamic_cast<T&>` ve `typeid(*null)` tuzaktır, `std::bad_cast` değil.
+6. **Değerlendirme sırası:** standart garantileri (`&& || ?: ,`, atamada sağ-önce, `<< >>` soldan sağa) uygulanır; belirsiz olanlar (işlev argümanları) iki yolda da soldan sağa seçilmiştir ve garanti olarak sunulmaz.
+7. `ifx.cx` (geliştirme görünümü) C++ alt kümesiyle yazılıp `pm ifade` ile `ifx.pmb`'ye derlenir; bu, `asm.pma.in` → `asm.pmb` ilişkisi gibi kaynak/üretim ilişkisidir, ama üretimin kendisi hâlâ C++ aracıyla yapılıyor (kendi kendini üretme yalnızca `ifx.elf` düzeyinde).
 
 ## 6. Dosyalar
-`src/ifade.cpp`, `src/ifade_ops_gen.h`, `oz/komut/gecis/ifade_ops_{ekle,h}.py`, `oz/komut/yenile_ifade.sh`, `oz/ifade/*` (testler, red, trap, rastgele üreteç, fuzz, sabotaj), `oz/hizli.sh` (paket `ifade`, sabotaj `ifade`), `YAPILANLAR.md`, `PROJE_HARITASI.md`, `PLAN_1399_MADDE.md`.
+`oz/ifade/num/{ifx.pmb,ifx.cx,ifx.sh,dogrula_ifx.sh,sabotaj_ifx.sh,kural_degistir.py,testler/,red/}`, `oz/komut/gecis/ifade_kural_ekle.py`, `oz/komut/yenile_ifade.sh`, `komutlar.pmk` (bölüm 11, 12), `src/ifade.cpp` (C++ referans/uyumluluk ön yüzü; long double düzeltmesi, `__getc`), `oz/hizli.sh` (paket `ifx`, sabotaj `ifx`), belgeler.

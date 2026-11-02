@@ -22,7 +22,7 @@ DURUM İŞARETLERİ
 🔵 Daha yeni rapora göre tamamlandı; depoda doğrula.
 ❌ Yapılmadı veya tam işlevi kanıtlanmadı.
 
-SAYIM: 41 bölüm / 1399 kontrol / 133 🟢 / 42 🔵 / 1224 ❌ (2 Kasım 2026; Bölüm 01 kontrolleri 001–033 ve Bölüm 02 kontrolleri 001–034 tamamlandı, kanıt: YAPILANLAR.md "Bölüm 01" ve "Bölüm 02"; Windows ABI kapsam dışı, Linux x86-64).
+SAYIM: 41 bölüm / 1399 kontrol / 116 🟢 / 42 🔵 / 1241 ❌ (2 Kasım 2026; Bölüm 01 tamamlandı; Bölüm 02 AÇIK: 17/34 madde sayısal yolla doğrulandı, diğerleri yalnız C++ referans/uyumluluk ön yüzünde var — bkz. BOLUM_02_KAPANIS_RAPORU.md; Windows ABI kapsam dışı)..
 
 =======================================================================
 TAM BÖLÜM TABLOSU — EKSİKSİZ
@@ -30,7 +30,7 @@ TAM BÖLÜM TABLOSU — EKSİKSİZ
 
 BÖLÜM ÖZETİ
 01. Temel sayı ve değer türleri: 33 kontrol | 🟢33 🔵0 ❌0
-02. İfadeler, operatörler ve sabitler: 34 kontrol | 🟢34 🔵0 ❌0
+02. İfadeler, operatörler ve sabitler: 34 kontrol | 🟢17 🔵0 ❌17
 03. Denetim akışı: 19 kontrol | 🟢6 🔵1 ❌12
 04. Fonksiyonlar ve çağrı modeli: 33 kontrol | 🟢6 🔵3 ❌24
 05. Yapılar, sınıflar, nesneler: 39 kontrol | 🟢1 🔵0 ❌38
@@ -124,29 +124,29 @@ TÜM KONTROL MADDELERİ
 02.009  🟢  Bileşik atamalar (+=, -= vb.) için genel ifade katmanı
 02.010  🟢  Ön/son artırma ve azaltma ifadeleri
 02.011  🟢  Virgül operatörü
-02.012  🟢  Üye erişim ifadesi (.)
-02.013  🟢  Gösterici üye erişimi (->)
+02.012  ❌  Üye erişim ifadesi (.)
+02.013  ❌  Gösterici üye erişimi (->)
 02.014  🟢  Dizi indeksleme ifadeleri ve tür kontrolü
-02.015  🟢  Genel sizeof kuralları
-02.016  🟢  Genel alignof kuralları
-02.017  🟢  noexcept operatörü
-02.018  🟢  typeid operatörü
-02.019  🟢  static_cast
-02.020  🟢  dynamic_cast
-02.021  🟢  const_cast
-02.022  🟢  reinterpret_cast
-02.023  🟢  Örtük dönüşüm kuralları
-02.024  🟢  Kullanıcı tanımlı dönüşüm operatörleri
-02.025  🟢  Kullanıcı tanımlı sabitler (UDL)
+02.015  ❌  Genel sizeof kuralları
+02.016  ❌  Genel alignof kuralları
+02.017  ❌  noexcept operatörü
+02.018  ❌  typeid operatörü
+02.019  ❌  static_cast
+02.020  ❌  dynamic_cast
+02.021  ❌  const_cast
+02.022  ❌  reinterpret_cast
+02.023  ❌  Örtük dönüşüm kuralları
+02.024  ❌  Kullanıcı tanımlı dönüşüm operatörleri
+02.025  ❌  Kullanıcı tanımlı sabitler (UDL)
 02.026  🟢  Karakter ve kaçış dizisi sabitleri
 02.027  🟢  Ham dizge (raw string) sabitleri
 02.028  🟢  Bitişik dizge sabitlerinin birleştirilmesi
 02.029  🟢  İkili, sekizli, onaltılı kaynak sabit sözdizimi
 02.030  🟢  Basamak ayırıcıları ve tür sonekleri
-02.031  🟢  Üç yönlü karşılaştırma (<=>)
-02.032  🟢  Karşılaştırmaların otomatik türetilmesi
-02.033  🟢  C++ değer kategorileri (lvalue, xvalue, prvalue)
-02.034  🟢  İfade değerlendirme sırası ve yan etki semantiği
+02.031  ❌  Üç yönlü karşılaştırma (<=>)
+02.032  ❌  Karşılaştırmaların otomatik türetilmesi
+02.033  ❌  C++ değer kategorileri (lvalue, xvalue, prvalue)
+02.034  ❌  İfade değerlendirme sırası ve yan etki semantiği
 
 03. DENETIM AKIŞI
 ------------------------------------------------------------------------

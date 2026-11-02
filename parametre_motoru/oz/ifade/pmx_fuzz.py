@@ -15,6 +15,15 @@ if cand:
     w = list(v); w[rp + 8] = str(i0); open(tmp + '/m.pmx', 'w').write(' '.join(w))
     c = subprocess.run([pm, 'ifade', 'x', '--pmx1-oku', tmp + '/m.pmx', '--pma', tmp + '/m.pma'], capture_output=True, timeout=30)
     if c.returncode != 1 or b'dongulu' not in c.stderr: bad += 1; first = first or 'dongu reddedilmedi'
+# aritmi mutasyonu: ikili dugumun cocuk sayisini 1'e dusur; CALL dugumunun tum cocuklarini sil
+for kind, newnk in ((9, 1), (13, 0)):
+    c2 = [i for i, (pp, nk) in enumerate(pos) if int(v[pp]) == kind and nk >= 1]
+    if c2:
+        pp, nk = pos[c2[len(c2) // 2]]
+        w = list(v[:pp + 7]) + [str(newnk)] + list(v[pp + 8:pp + 8 + newnk]) + list(v[pp + 8 + nk:])
+        open(tmp + '/m.pmx', 'w').write(' '.join(w))
+        c = subprocess.run([pm, 'ifade', 'x', '--pmx1-oku', tmp + '/m.pmx', '--pma', tmp + '/m.pma'], capture_output=True, timeout=30)
+        if c.returncode != 1 or b'cocuk sayisi' not in c.stderr: bad += 1; first = first or 'cocuk sayisi bozuklugu reddedilmedi (tur %d)' % kind
 for i in range(n):
     w = list(v); k = r.randrange(3, len(w))
     for _ in range(r.choice([1, 1, 2, 3])):
