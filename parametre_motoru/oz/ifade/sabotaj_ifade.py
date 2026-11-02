@@ -35,7 +35,7 @@ M = [  # (dosya, eski, yeni, aciklama)
  (CPP, 'r.cval = c.cval ? a1.cval : b1.cval; }', 'r.cval = c.cval ? b1.cval : a1.cval; }', '?: sabit katlama'),
  (CPP, 'if (unq(v.ty) != tu && !(isCls(unq(v.ty))', 'if (false && unq(v.ty) != tu && !(isCls(unq(v.ty))', 'referans donus turu denetimi'),
  (CPP, 'bool lv = A0.cat == C_LV && B0.cat == C_LV && ty(A0.ty).c == ty(B0.ty).c;', 'bool lv = false;', '?: sinif lvalue'),
- (CPP, 'if (isCls(t)) return C[size_t(ty(t).cls)].id; return 1000 + t;', 'if (isCls(t)) return C[size_t(ty(t).cls)].id; return 1000;', 'typeid: tur kimligi'),
+ (CPP, 'int id = isCls(t) ? C[size_t(ty(t).cls)].id : 1000 + t;', 'int id = isCls(t) ? C[size_t(ty(t).cls)].id : 1000;', 'typeid: tur kimligi'),
  (CPP, 'E("call " + c + ", isa" + num(dc) + ", " + id); E("jz " + c + ", " + end);', 'E("call " + c + ", isa" + num(dc) + ", " + id); E("jnz " + c + ", " + end);', 'dynamic_cast<T*> kosulu ters'),
  (CPP, 'for (auto& e : xe) for (auto& f : ye) if (!e.key.empty() && e.key == f.key && (e.rw == 2 || f.rw == 2))', 'for (auto& e : xe) for (auto& f : ye) if (false && !e.key.empty() && e.key == f.key && (e.rw == 2 || f.rw == 2))', 'siralanmamis degistirme denetimi'),
  (CPP, 'if (v.ci) { r.reg = num(v.cval); r.ci = true;', 'if (false && v.ci) { r.reg = num(v.cval); r.ci = true;', 'sabit yayilimi'),
@@ -50,7 +50,7 @@ M = [  # (dosya, eski, yeni, aciklama)
  (CPP, 'if (e == "=") ', 'if (e == "=") ', 'sabit'),
  (CPP, 'if (c.ci && a1.ci && b1.ci)', 'if (false && c.ci && a1.ci && b1.ci)', '?: sabit'),
  (CPP, 'case Y_LDOUBLE: return 16; default: return sizeOf(t); }', 'case Y_LDOUBLE: return 8; default: return sizeOf(t); }', 'alignof long double'),
- (CPP, 'case Y_LDOUBLE: return 16; case Y_ARR:', 'case Y_LDOUBLE: return 8; case Y_ARR:', 'sizeof long double'),
+ (CPP, 'case Y_LDOUBLE: return 16;\n      case Y_ARR:', 'case Y_LDOUBLE: return 8;\n      case Y_ARR:', 'sizeof long double'),
  (CPP, 'if (g->dry) return;\n    if (pv.ci && pv.cval == 0) { trapNow(); return; }', 'if (true) return;\n    if (pv.ci && pv.cval == 0) { trapNow(); return; }', 'null isaretci denetimi'),
  (CPP, 'void trapNow() { E("ld " + R() + ", -1, 0"); }', 'void trapNow() { E("ld " + R() + ", 0, 0"); }', 'tuzak komutu sinir disi adres'),
  (CPP, 'if (!r || int(x.kid.size()) < r->lo || (r->hi >= 0 && int(x.kid.size()) > r->hi))', 'if (false)', 'PMX1 cocuk sayisi dogrulamasi'),
@@ -68,11 +68,14 @@ M = [  # (dosya, eski, yeni, aciklama)
  (HDR, 'X(1, 10, 0, "<=>")', 'X(1, 9, 0, "<=>")', 'oncelik: <=> iliskisel ile ayni'),
 ]
 # gerekceli denk mutantlar (davranisi degistirmeyen): acıklama anahtari -> neden
-DENK = {'sabit': 'metni degistirmeyen yer tutucu'}
+DENK = {  # gerekceli denk mutantlar (gozlenebilir davranis ayni)
+ 'isaretci karsilastirmasi isaretli': 'adresler 2^27 sozcukten kucuk pozitif sayilardir: isaretli ve isaretsiz siralama ayni',
+ 'olagan aritmetik donusum: esit derece isaretsiz': 'esit derece (ayni genislik) isaretli/isaretsiz ciftinde sonraki dal da ayni isaretsiz turu verir',
+}
 M = [m for m in M if m[3] != 'sabit']
 T = tempfile.mkdtemp(prefix='sabifade'); S = T + '/src'; shutil.copytree(R + '/src', S)
 names = ['main', 'asm', 'ikili', 'vm', 'dump', 'native_x64', 'sablon', 'yapisal', 'liste']
-def cc(args): return subprocess.run(['g++', '-std=c++17', '-O1', '-w', '-fno-fast-math', '-ffp-contract=off'] + args, capture_output=True, text=True)
+def cc(args, opt='-O1'): return subprocess.run(['g++', '-std=c++17', opt, '-w', '-fno-fast-math', '-ffp-contract=off'] + args, capture_output=True, text=True)
 with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as ex:
     rs = list(ex.map(lambda n: cc(['-c', S + '/%s.cpp' % n, '-o', T + '/%s.o' % n]), names))
 if any(r.returncode for r in rs): print('temel nesneler derlenemedi'); sys.exit(2)
@@ -81,7 +84,7 @@ def mutant(i):
     src = open(R + '/' + f).read()
     if src.count(old) != 1: return (i, 'HATA', 'eski metin %d kez' % src.count(old))
     shutil.copytree(S, w + '/src'); open(w + '/' + f, 'w').write(src.replace(old, new))
-    r = cc(['-I', w + '/src', '-c', w + '/src/ifade.cpp', '-o', w + '/ifade.o'])
+    r = cc(['-I', w + '/src', '-c', w + '/src/ifade.cpp', '-o', w + '/ifade.o'], '-O0')
     if r.returncode: return (i, 'DERLENEMEDI', r.stderr[:200])
     l = subprocess.run(['g++', '-o', w + '/pm'] + [T + '/%s.o' % n for n in names] + [w + '/ifade.o', '-lquadmath'], capture_output=True, text=True)
     if l.returncode: return (i, 'DERLENEMEDI', l.stderr[:200])
@@ -89,9 +92,9 @@ def mutant(i):
     t = subprocess.run(['bash', D + '/dogrula_ifade.sh', w + '/pm', '0'], capture_output=True, text=True, env=env, cwd=D)
     shutil.rmtree(w, ignore_errors=True)
     return (i, 'YAKALANDI' if t.returncode != 0 else 'HAYATTA', '')
-with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, (os.cpu_count() or 2) // 2)) as ex: res = list(ex.map(mutant, range(len(M))))
+with concurrent.futures.ThreadPoolExecutor(max_workers=max(2, os.cpu_count() or 2)) as ex: res = list(ex.map(mutant, range(len(M))))
 shutil.rmtree(T, ignore_errors=True)
-cau = sum(1 for r in res if r[1] == 'YAKALANDI'); bad = [r for r in res if r[1] != 'YAKALANDI']
+cau = sum(1 for r in res if r[1] == 'YAKALANDI'); denk = [r for r in res if r[1] == 'HAYATTA' and M[r[0]][3] in DENK]; bad = [r for r in res if r[1] != 'YAKALANDI' and not (r[1] == 'HAYATTA' and M[r[0]][3] in DENK)]
 for i, st, msg in bad: print('%s: %s -- %s %s' % (st, M[i][3], M[i][1][:70].replace('\n', ' '), msg))
-print('ifade sabotaj: %d mutant, %d yakalandi, %d yakalanmadi' % (len(M), cau, len(bad)))
+print('ifade sabotaj: %d mutant, %d yakalandi, %d gerekceli denk (%s), %d yakalanmadi' % (len(M), cau, len(denk), '; '.join(M[r[0]][3] for r in denk), len(bad)))
 sys.exit(1 if bad else 0)

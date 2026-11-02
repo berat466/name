@@ -37,6 +37,7 @@ trap_() {   # calisma zamani tuzagi testi: // TRAP: AD|AD2  -> pm rc=2 + TRAP ad
   exp=$(head -1 $f | sed -n 's|^// TRAP: *\(.*\)$|\1|p'); [ -n "$exp" ] || { fail "ilk satir '// TRAP: AD' degil"; return; }
   $PM ifade $f --pma $w/p.pma -o $w/p.pmb --strip > /dev/null 2> $w/ifade.err || { fail "pm ifade basarisiz: $(head -c 150 $w/ifade.err)"; return; }
   lim $PM run $w/p.pmb > $w/pm.out 2> $w/pm.err; rc=$?
+  [ -f ${f%.cx}.out ] && { cmp -s $w/pm.out ${f%.cx}.out && pass || fail "pm: tuzaktan once yazilan cikti beklenenden farkli ($(diff $w/pm.out ${f%.cx}.out | head -3 | tr '\n' '|'))"; }
   [ $rc = 2 ] && grep -qE "^TRAP: ($exp)" $w/pm.err && pass || fail "pm: beklenen tuzak $exp, rc=$rc, stderr: $(head -c 100 $w/pm.err)"
   $PM liste $w/p.pmb > $w/p.l 2>/dev/null
   if lim $PM run $GEN < $w/p.l > $w/p.elf 2>/dev/null; then chmod +x $w/p.elf; lim $w/p.elf > $w/elf.out 2>/dev/null; erc=$?; [ $erc != 0 ] && cmp -s $w/elf.out $w/pm.out && pass || fail "ELF: tuzakla bitmeli (rc=$erc) ve ayni stdout"; else fail "ELF uretilemedi"; fi

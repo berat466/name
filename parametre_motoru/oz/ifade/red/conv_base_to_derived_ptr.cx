@@ -1,0 +1,3 @@
+// RED: E_CONV
+// GPP: red
+struct B { int b; }; struct D : B { int d; }; int main() { B b; D* p = &b; return p != 0; }

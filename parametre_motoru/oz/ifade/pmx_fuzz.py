@@ -3,6 +3,18 @@
 import sys, random, subprocess
 pm, f, n, tmp = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
 v = open(f).read().split(); r = random.Random(12345); bad = 0; first = ''
+# dongu mutasyonu: kok dugumun ilk cocugunu kokun kendisine yonlendir (erisilebilir dongu)
+ns = int(v[2]); p = 3
+for _ in range(ns): l = int(v[p]); p += 1 + l
+nn = int(v[p]); root = int(v[p + 1]); p += 2; pos = []
+for i in range(nn):
+    nk = int(v[p + 7]); pos.append((p, nk)); p += 8 + nk
+cand = [i for i, (pp, nk) in enumerate(pos) if int(v[pp]) == 34 and nk >= 1]   # N_BLOCK (ic ice blok kabul eder)
+if cand:
+    i0 = cand[len(cand) // 2]; rp, rk = pos[i0]
+    w = list(v); w[rp + 8] = str(i0); open(tmp + '/m.pmx', 'w').write(' '.join(w))
+    c = subprocess.run([pm, 'ifade', 'x', '--pmx1-oku', tmp + '/m.pmx', '--pma', tmp + '/m.pma'], capture_output=True, timeout=30)
+    if c.returncode != 1 or b'dongulu' not in c.stderr: bad += 1; first = first or 'dongu reddedilmedi'
 for i in range(n):
     w = list(v); k = r.randrange(3, len(w))
     for _ in range(r.choice([1, 1, 2, 3])):

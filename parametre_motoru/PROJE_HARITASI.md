@@ -39,7 +39,7 @@ ELF takımı (oz/bag/*.elf) ──yenile.sh──► yeni ELF takımı   (pm'siz
 ## 4. Dizin haritası (`parametre_motoru/`)
 | Yol | İçerik |
 |---|---|
-| `src/` | **C++ `pm`** (bağımsız referans): yükleyici, doğrulayıcı, VM (`vm.cpp`, `anlam.h`), native x86 (`native_x64.cpp`), `asm.cpp`, `yapisal.cpp`, `liste.cpp`; `ops_gen.h` komut tablosundan üretilir |
+| `src/` | **C++ `pm`** (bağımsız referans): `ifade.cpp` (Bölüm 02 ifade ön yüzü: lexer, ayrıştırıcı, PMX1, anlam, PMA üretimi), yükleyici, doğrulayıcı, VM (`vm.cpp`, `anlam.h`), native x86 (`native_x64.cpp`), `asm.cpp`, `yapisal.cpp`, `liste.cpp`; `ops_gen.h` komut tablosundan üretilir |
 | `tests/` | ana test koşucusu (`run_tests.sh`) ve 28 örnek program (`*.pma`, beklenen çıktı/tuzak) |
 | `uygulamalar/` | örnek uygulamalar (hayat, sahne, pong, şablonlar) |
 | `oz/komut/` | **PMK1 tablosu** (`komutlar.pmk`), belge, test (`dogrula_komut.sh`), sabotaj, rastgele tablo üreteci, geçiş araçları (`gecis/`) |
@@ -52,6 +52,7 @@ ELF takımı (oz/bag/*.elf) ──yenile.sh──► yeni ELF takımı   (pm'siz
 | `oz/sayisal/` | **svm**: SEM'i çalışma anında okuyup yürüten sayısal yürütücü |
 | `oz/nesne/` | **PMO1 nesneleri**, bağlayıcı/görünüm testleri, `duzenle.sh`, Python referansı (`ref/`) |
 | `oz/bag/` | pm'siz zincir: `kur.sh` (önyükleme), `yenile.sh` (kendini yeniden üretme), `*.elf` (git'e girmez), testler |
+| `oz/ifade/` | **Bölüm 02 — ifade/operatör/sabit sistemi testleri:** `testler/*.cx` (olumlu, g++ oracle), `red/*.cx` (reddedilmesi gerekenler), `trap/*.cx` (çalışma zamanı tuzakları), rastgele UB'siz ifade üreteci, PMX1 fuzz, sabotaj. Derleyici: `src/ifade.cpp` (`pm ifade`); operatör tablosu `oz/komut/komutlar.pmk` bölüm 11 → `src/ifade_ops_gen.h` (`oz/komut/yenile_ifade.sh`) |
 | `oz/hizli.sh` | **hızlı test sistemi** (değişen dosyaya göre paketler, `--tam`) |
 | kökte `*_RAPORU.md`, `SARTNAME.md`, `YAPISAL.md` | önceki aşamaların raporları (bkz. §7) |
 | `../formul_avcisi/` | **bu motordan ayrı** önceki çalışma: formül arama ve tek-hamle ağırlık üretimi deneyleri (V1–V81 raporları) |
@@ -73,6 +74,7 @@ Hızlı çalıştırma: `oz/hizli.sh` (ilgili paketler + kritik denetimler), tam
 | komut | `oz/komut/dogrula_komut.sh` | PMK1 biçimi, kayıpsız çevirim, genişletme (yeni komutlar yalnız sayılarla) |
 | turler | `oz/komut/dogrula_turler.sh` | TYPES bölümü: tür özellikleri, limitler, LP64 ABI eşlemesi (C++ derleyici gerçekleriyle), dönüşüm kapsamı |
 | uyum | `oz/komut/dogrula_uyum.sh` | PMB1 geriye uyumluluk (komut kodu ≥ 255 kaçış kodlaması öncesi programlar bayt-bayt aynı) |
+| ifade | `oz/ifade/dogrula_ifade.sh` | C++ ifade/operatör/sabit ön yüzü (`pm ifade`): g++ oracle = C++ `pm` = native ELF = svm; PMX1 sayısal AST (gidiş-dönüş, bozma/fuzz); olumsuz ve tuzak testleri; operatör tablosu tutarlılığı; sabotaj `sabotaj_ifade.sh` |
 | tip | `oz/tip/dogrula_tip.sh` | program düzeyi tür sistemi (PMT1 + TYPES imzaları → tipdogr) |
 | i128, kayan | `oz/tur128/dogrula_i128.sh`, `oz/kayan/dogrula_kayan.sh` | 128 bit tamsayı, f80/f128 yazılım kayan nokta, karmaşık sayılar: ELF = svm = C++ pm = bağımsız oracle (anlam: `oz/kayan/KAYAN_NOKTA.md`) |
 | tur, dar, donusum | `oz/elf2/dogrula_{tur,dar,donusum}.sh` | tamsayı/bool/bswap aileleri, f32/f16/bf16, dönüşüm matrisi: ELF = svm = C++ pm = bağımsız referans (C++ oracle / tam rasyonel Python) |
@@ -95,6 +97,7 @@ Tasarım ilkeleri: sayısal asıl kaynak; güvenlik ayrı, sürümlü katmanlar 
 | `OZ_BARINDIRMA.md` | öz-barındırma: bölüm 3–3n (PMB1 → ELF → kendini üretme → PMK1 → PMO1 → görünüm) ve dürüst sınırlar |
 | `oz/komut/KOMUT_TABLOSU.md` | PMK1 ayrıntısı |
 | `oz/nesne/GORUNUM.md` | PMV biçimi ve hata kodları |
+| `BOLUM_01_KAPANIS_RAPORU.md`, `BOLUM_02_KAPANIS_RAPORU.md` | bölüm kapanış raporları (kanıt, sınırlar, süreler) |
 | `PLAN_1399_MADDE.md` | **ana plan:** 41 bölüm / 1.399 kontrol maddesi ve durumları |
 | `CPP_YOL_HARITASI.md` | yol haritası (aşamalar); `PLAN_1399_MADDE.md` ile birlikte okunur |
 | `YAPILANLAR.md` | günlük: ne, ne zaman, hangi commit, hangi test |

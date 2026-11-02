@@ -5,7 +5,15 @@ void fp(const char* s) { pi(7000 + s[0]); } void fv(void* p) { pi(8000 + (p != 0
 struct Bs { int b; }; struct Dr : Bs { int d; };
 int useb(Bs* p) { return p->b; }
 int useref(const Bs& r) { return r.b; }
+int ov(int) { return 1; } int ov(long) { return 2; } int ov(double) { return 3; } int ov(unsigned) { return 4; }
+int ov2(int) { return 1; } int ov2(double) { return 2; }
+struct Pair { long a; long b; };
 int main() {
+  unsigned short us = 65535; pi(us + 1); pi(us * us); pi(sizeof(us + us)); unsigned short us2 = us; us2++; pi(us2); pi(-us); pi(~us); pi(us << 4);
+  int ng16 = -16; pi(ng16 >> 2); pi(-1 >> 1); pi(-9 >> 1); unsigned int uh = 0xF0000000u; pi(uh >> 4); signed char sc8 = -128; pi(sc8 >> 3); long long nl = -1024; pi(nl >> 4); unsigned long long ulh = 0xF000000000000000ull; pi(ulh >> 8 == 0x00F0000000000000ull);
+  { char ch1 = 1; short sh1 = 1; float fl1 = 1; pi(ov(ch1)); pi(ov(sh1)); pi(ov(fl1)); pi(ov(1u)); pi(ov(1L)); pi(ov(2.5)); pi(ov2(fl1)); pi(ov2(ch1)); }
+  Pair pa[4] = {{1,2},{3,4},{5,6},{7,8}}; Pair* p0 = pa; Pair* p3 = &pa[3]; pi(p3 - p0); pi((p0 + 2)->a); pi(&pa[2] - &pa[1]); pi((p3 - 1)->b);
+  int sz[true ? 3 : 4]; pi(sizeof(sz) / sizeof(int)); int sz2[(1 ? 2 : 9) + (0 ? 7 : 1)]; pi(sizeof(sz2) / sizeof(int));
   char c = 10; short s = 20; unsigned char uc = 200; bool b = true;
   pi(c + s); pi(uc + uc); pi(b + b); pi(c * uc); pi(sizeof(c + c)); pi(sizeof(b + b)); pi(sizeof(s * s));
   pi(-c); pi(~uc); pi(!uc);
