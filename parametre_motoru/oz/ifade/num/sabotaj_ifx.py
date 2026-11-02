@@ -52,14 +52,9 @@ S = [  # kaynak mutantlari (her satir bir mutant)
  ('istisna: sinif kopyasi', 'else if (is_cls(T)) { if (cl_bi[tcl[T]]) copy_n(hv, v, 0, 1); else copy_obj(hv, v, tcl[T], 1); }\n  else { V sv = rval(v);', 'else if (is_cls(T)) { }\n  else { V sv = rval(v);'),
  ('bellek gorunumu: normalize okuma', 'if (pun_on && is_int(r.ty) && tk[r.ty] != Y_BOOL', 'if (0 && is_int(r.ty) && tk[r.ty] != Y_BOOL'),
  ('bellek gorunumu: boyut uyumu', 'size_of(a) == size_of(b)) return 1;', '1) return 1;'),
- ('bellek gorunumu: dolayli erisim reddi', 'if (v.bp) die("E_REINTERP", "bayt gorunumu yok: reinterpret_cast ile uyumsuz gosterimli ture cevrilmis isaretci dolayli erisilemez");', ''),
- ('bellek gorunumu: indeks reddi', 'if (bp.bp) die("E_REINTERP"', 'if (0) die("E_REINTERP"'),
- ('bellek gorunumu: aritmetik reddi', 'if (p.bp) die("E_REINTERP"', 'if (0) die("E_REINTERP"'),
  ('bellek gorunumu: referans uyumu', 'if (view_compat(vt, tgt) == 0) die(', 'if (0) die('),
- ('bellek gorunumu: degisken lekesi', 'tnt = pt_.bp != 0;', 'tnt = 0;'),
  ('tip notu: cagri penceresi', 'if (win_max < 1) win_max = 1; int q = 0; while (q < win_max)', 'if (win_max < 1) win_max = 1; int q = 0; while (q < win_max - 1)'),
  ('tip notu: bildirim turu', 'pm_add(1); pm_add(1); pm_add(1); pm_add(1); pm_add(1); pm_add(3); pm_add(0); pm_add(0);', 'pm_add(1); pm_add(1); pm_add(1); pm_add(1); pm_add(1); pm_add(1); pm_add(0); pm_add(0);'),
- ('bellek: arguman reddi', 'if (a.bp) die("E_REINTERP", "bayt gorunumu yok: reinterpret_cast ile uyumsuz gosterimli ture cevrilmis isaretci islev argumani olamaz");', ''),
  ('bellek: donus reddi', 'if (pb_.bp) die(', 'if (0) die('),
  ('bellek: atama reddi', 'else die("E_REINTERP", "bayt gorunumu yok: uyumsuz gosterimli isaretci yalniz yerel degiskene atanabilir"); }', 'else { } }'),
  ('oz-barindirma: operator adi onegi', 'while (k < 8) { if (chars[s_off[nm] + k] != o[k]) return 0; k = k + 1; }', 'while (k < 8) { k = k + 1; }'),
@@ -73,6 +68,11 @@ S = [  # kaynak mutantlari (her satir bir mutant)
  ('bayt: referans reddi', '  if (is_ref(P)) no_bytelv(a);\n', ''),
  ('bayt: bilesik atama reddi', '  need_modifiable(Lv); no_bytelv(Lv);\n', '  need_modifiable(Lv);\n'),
  ('bayt: adres alma reddi', '    no_bytelv(v);\n', ''),
+ ('bellek gorunumu: dolayli erisim (bayt)', 'if (v.bp) return byte_lv(v, imm(mkt(Y_INT, 0 - 1, 0), 0), te[v.ty]);', 'if (0) return byte_lv(v, imm(mkt(Y_INT, 0 - 1, 0), 0), te[v.ty]);'),
+ ('bellek gorunumu: indeks (bayt)', 'if (bp.bp) return byte_lv(bp, i, et);', 'if (0) return byte_lv(bp, i, et);'),
+ ('bellek gorunumu: aritmetikte leke korunumu', 'V rr = mkv(p.ty, 0, d); rr.bp = p.bp; return rr;', 'V rr = mkv(p.ty, 0, d); rr.bp = 0; return rr;'),
+ ('bellek gorunumu: degisken lekesi', 'tnt = pt_.bp;', 'tnt = 0;'),
+ ('bellek: arguman reddi', 'if (a.bp) die("E_REINTERP", "bayt adresli isaretci islev argumani olamaz (calisan islev sozcuk adresli isaretci bekler)");', ''),
 ]
 def run(tab, ifxcx):
     w = tempfile.mkdtemp(prefix='sabifx'); pm = w + '/ifx.pmb'
@@ -89,6 +89,8 @@ def job(m):
     if SRC.count(m[1]) != 1: return (m[0], 'HATA eski metin %d kez' % SRC.count(m[1]))
     return (m[0], run([int(x) for x in TAB], SRC.replace(m[1], m[2])))
 jobs = [m for m in T] + [(a, b, c) for (a, b, c) in S]
+ONLY = os.environ.get('ONLY')
+if ONLY: jobs = [m for m in jobs if ONLY in m[0]]
 with concurrent.futures.ThreadPoolExecutor(max_workers=max(2, os.cpu_count() or 2)) as ex: res = list(ex.map(job, jobs))
 bad = [r for r in res if r[1] != 'YAKALANDI']
 for n, st in bad: print('%s: %s' % (st, n))
