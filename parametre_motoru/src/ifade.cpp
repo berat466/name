@@ -202,7 +202,7 @@ enum NK {
   // tur dugumleri
   N_TY, N_TPTR, N_TREF, N_TRREF, N_TARR,
   // deyimler / bildirimler
-  N_BLOCK, N_VAR, N_DECLS, N_EXPRSTMT, N_IF, N_WHILE, N_DO, N_FOR, N_RETURN, N_BREAK, N_CONTINUE, N_EMPTY, N_FUNC, N_PARAMS, N_CLASS, N_PROG, N_USING, N_NONE
+  N_BLOCK, N_VAR, N_DECLS, N_EXPRSTMT, N_IF, N_WHILE, N_DO, N_FOR, N_RETURN, N_BREAK, N_CONTINUE, N_EMPTY, N_FUNC, N_PARAMS, N_CLASS, N_PROG, N_USING, N_THROW, N_TRY, N_CATCH, N_NONE
 };
 struct Node {
   int k = N_NONE; int64_t i = 0, j = 0; double d = 0; string s, s2; vector<int> kid; int line = 0;
@@ -238,7 +238,7 @@ void pmx_validate(const Ast& a, int root) {
   static const Arity ar[] = {{N_INT,0,0},{N_FLT,0,0},{N_CHR,0,0},{N_STR,0,0},{N_BOOL,0,0},{N_NULLPTR,0,0},{N_THIS,0,0},{N_ID,0,0},{N_UNARY,1,1},{N_BINARY,2,2},{N_ASSIGN,2,2},{N_COND,3,3},{N_COMMA,2,2},
     {N_CALL,1,-1},{N_INDEX,2,2},{N_MEMBER,1,1},{N_ARROW,1,1},{N_PREINC,1,1},{N_POSTINC,1,1},{N_SIZEOF_E,1,1},{N_SIZEOF_T,1,1},{N_ALIGNOF,1,1},{N_NOEXCEPT,1,1},{N_TYPEID_E,1,1},{N_TYPEID_T,1,1},
     {N_CAST,2,2},{N_FCAST,1,2},{N_UDL,0,-1},{N_INITLIST,0,-1},{N_TY,0,0},{N_TPTR,1,1},{N_TREF,1,1},{N_TRREF,1,1},{N_TARR,1,2},{N_BLOCK,0,-1},{N_VAR,1,2},{N_DECLS,0,-1},{N_EXPRSTMT,1,1},{N_IF,2,3},
-    {N_WHILE,2,2},{N_DO,2,2},{N_FOR,4,4},{N_RETURN,0,1},{N_BREAK,0,0},{N_CONTINUE,0,0},{N_EMPTY,0,0},{N_FUNC,2,3},{N_PARAMS,0,-1},{N_CLASS,0,-1},{N_PROG,0,-1},{N_USING,0,-1},{N_NONE,0,0}};
+    {N_WHILE,2,2},{N_DO,2,2},{N_FOR,4,4},{N_RETURN,0,1},{N_BREAK,0,0},{N_CONTINUE,0,0},{N_EMPTY,0,0},{N_FUNC,2,3},{N_PARAMS,0,-1},{N_CLASS,0,-1},{N_PROG,0,-1},{N_USING,0,-1},{N_THROW,0,1},{N_TRY,2,-1},{N_CATCH,2,2},{N_NONE,0,0}};
   for (size_t i = 0; i < a.n.size(); i++) {
     const Node& x = a.n[i];
     if (x.k < 0 || x.k > N_NONE) fail("E_PMX", "PMX1 dugum turu gecersiz");
@@ -252,6 +252,8 @@ void pmx_validate(const Ast& a, int root) {
     if (x.k == N_DECLS) for (int c : x.kid) need(c, {N_VAR});
     if (x.k == N_FUNC) { need(x.kid[1], {N_PARAMS}); if (x.kid.size() > 2) need(x.kid[2], {N_BLOCK}); }
     if (x.k == N_FOR) { need(x.kid[0], {N_NONE, N_DECLS, N_EXPRSTMT}); }
+    if (x.k == N_TRY) { need(x.kid[0], {N_BLOCK}); for (size_t q = 1; q < x.kid.size(); q++) need(x.kid[q], {N_CATCH}); }
+    if (x.k == N_CATCH) { need(x.kid[0], {N_NONE, N_TY, N_TPTR, N_TREF, N_TRREF, N_TARR}); need(x.kid[1], {N_BLOCK}); }
   }
   // dongusuzluk + derinlik (yinelemesiz DFS)
   vector<int> state(a.n.size(), 0), stk; vector<size_t> idx; stk.push_back(root); idx.push_back(0); state[size_t(root)] = 1;
@@ -579,6 +581,18 @@ struct Parser {
         int body = stmt(); int n = a.mk(N_FOR, line); a[n].kid = {in, c, inc, body}; return n;
       }
       if (s == "return") { p++; int n = a.mk(N_RETURN, line); if (!isP(";")) a[n].kid.push_back(isP("{") ? initList() : expr()); expect(";"); return n; }
+      if (s == "throw") { p++; int n = a.mk(N_THROW, line); if (!isP(";")) a[n].kid.push_back(expr()); expect(";"); return n; }
+      if (s == "try") {
+        p++; int n = a.mk(N_TRY, line); a[n].kid.push_back(block());
+        if (!isId("catch")) fail("E_PARSE", "try blogundan sonra catch bekleniyordu", line);
+        while (isId("catch")) {
+          int cl = cur().line; p++; expect("("); int c = a.mk(N_CATCH, cl);
+          if (isP("...")) { p++; a[c].kid.push_back(a.mk(N_NONE, cl)); }
+          else { int b = typeSpec(); int tt = ptrOps(b); if (cur().k == TK_ID) a[c].s = ident(); a[c].kid.push_back(tt); }
+          expect(")"); a[c].kid.push_back(block()); a[n].kid.push_back(c);
+        }
+        return n;
+      }
       if (s == "break") { p++; expect(";"); return a.mk(N_BREAK, line); }
       if (s == "continue") { p++; expect(";"); return a.mk(N_CONTINUE, line); }
     }
@@ -633,10 +647,10 @@ struct Parser {
   }
   // sinif govdesi
   int classDef(bool isStruct) {
-    int line = cur().line; string name = ident(); classes.insert(name);
+    int line = cur().line; string name = ident(); while (isP("::") && peek().k == TK_ID) { p++; name += "::" + ident(); } classes.insert(name);   // niteleyicili ad yalniz yerlesik (onsoz) siniflar icin
     int c = a.mk(N_CLASS, line); a[c].s = name; a[c].i = isStruct;
     if (isP(";")) { p++; a[c].j = 1; return c; }   // ileri bildirim
-    if (accept(":")) { acceptId("public"); acceptId("private"); acceptId("protected"); if (!classes.count(cur().s)) fail("E_PARSE", "taban sinif bilinmiyor: " + cur().s, cur().line); a[c].s2 = ident(); if (isP(",")) fail("E_PARSE", "coklu kalitim desteklenmiyor", cur().line); }
+    if (accept(":")) { acceptId("public"); acceptId("private"); acceptId("protected"); { size_t z = p; string bn = qname(z); if (!classes.count(bn)) fail("E_PARSE", "taban sinif bilinmiyor: " + bn, cur().line); p = z; a[c].s2 = bn; } if (isP(",")) fail("E_PARSE", "coklu kalitim desteklenmiyor", cur().line); }
     expect("{");
     while (!isP("}")) {
       if (cur().k == TK_EOF) fail("E_PARSE", "sinif '}' eksik", line);
@@ -672,7 +686,7 @@ struct Parser {
       if (isId("struct") || isId("class")) {
         // "struct X {" -> sinif tanimi ; "struct X x;" -> degisken (desteklenmez: elaborated tur kullanimi yalniz tanim)
         bool st = cur().s == "struct";
-        if (peek().k == TK_ID && (isPk(2, "{") || isPk(2, ":") || isPk(2, ";"))) { p++; a[prog].kid.push_back(classDef(st)); continue; }
+        if (peek().k == TK_ID) { size_t z = p + 1; qname(z); if (t[z].k == TK_P && (t[z].s == "{" || t[z].s == ":" || t[z].s == ";")) { p++; a[prog].kid.push_back(classDef(st)); continue; } }
       }
       if (isId("using")) {
         p++; string nm = ident(); expect("="); int ty = fullType(); expect(";");
@@ -2169,6 +2183,7 @@ struct Sema {
       case N_RETURN: stmtReturn(n); g->nreg = base; break;
       case N_BREAK: if (g->loops.empty()) err("E_STMT", "'break' dongu disinda"); E("jmp " + g->loops.back().first); break;
       case N_CONTINUE: if (g->loops.empty()) err("E_STMT", "'continue' dongu disinda"); E("jmp " + g->loops.back().second); break;
+      case N_THROW: case N_TRY: err("E_UNSUPPORTED", "istisna (try/catch/throw) yalniz sayisal derleyicide (ifx.pmb) tanimli; bu C++ referans yolu istisna uretmez");
       default: err("E_INTERNAL", "deyim bekleniyordu");
     }
   }
@@ -2487,6 +2502,9 @@ struct Sema {
 
 const char* kPrelude = "int __getc(); void __puti(long long); void __putc(int); void __putf(double); void pl(long double); void pi(long long x) { __puti(x); __putc(10); } void pc(int c) { __putc(c); } void pd(double d) { __putf(d); __putc(10); } ";
 
+// istisna onsozu: yalniz kaynakta 'try' varsa eklenir (std::exception / bad_cast / bad_typeid gercek sinif tanimlari; sayisal derleyici bunlari siradan sinif olarak derler)
+const char* kPreludeExc = "class std::exception { public: virtual const char* what() const noexcept { return \"std::exception\"; } }; class std::bad_cast : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_cast\"; } }; class std::bad_typeid : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_typeid\"; } }; ";
+bool hasTryWord(const string& src) { for (size_t i = 0; i + 3 < src.size(); i++) if (!src.compare(i, 3, "try") && (i == 0 || !(isalnum((unsigned char)src[i-1]) || src[i-1] == '_')) && !(isalnum((unsigned char)src[i+3]) || src[i+3] == '_')) return true; return false; }
 bool slurp(const string& f, string& out) { FILE* fp = fopen(f.c_str(), "rb"); if (!fp) return false; char b[65536]; size_t n; out.clear(); while ((n = fread(b, 1, sizeof b, fp)) > 0) out.append(b, n); fclose(fp); return true; }
 }  // namespace
 
@@ -2507,7 +2525,7 @@ int ifade_main(int argc, char** argv) {
       ast = pmx_decode(v, root);
     } else {
       string src; if (!slurp(file, src)) fail("E_DOSYA", "kaynak okunamadi: " + file);
-      string full = string(kPrelude) + src;
+      string full = string(kPrelude) + (hasTryWord(src) ? kPreludeExc : "") + src;
       Lexer lx(full); lx.run(); Parser ps(ast, lx.out); root = ps.topLevel();
       vector<int64_t> nums = pmx_encode(ast, root);
       if (!pmxOut.empty()) { FILE* fp = fopen(pmxOut.c_str(), "wb"); if (!fp) fail("E_DOSYA", "yazilamadi: " + pmxOut); for (size_t i = 0; i < nums.size(); i++) fprintf(fp, "%lld%c", (long long)nums[i], i + 1 == nums.size() ? '\n' : ' '); fclose(fp); }

@@ -1,0 +1,2 @@
+// TRAP: OOB
+int main() { pi(1); throw 5; pi(2); return 0; }

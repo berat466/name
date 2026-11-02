@@ -1,0 +1,4 @@
+// TRAP: OOB
+void ic() { throw 7; }
+void dis() noexcept { ic(); }
+int main() { pi(1); try { dis(); pi(2); } catch (...) { pi(3); } pi(4); return 0; }

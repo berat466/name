@@ -1,0 +1,2 @@
+// RED: E_REINTERP  -- f32 <-> tamsayi bit gorunumu motorda yok
+int main() { float f = 1.5f; unsigned& u = reinterpret_cast<unsigned&>(f); return u != 0; }

@@ -36,7 +36,7 @@ one() {
   lim $PM run $w/p.pmb > $w/pm.out 2>/dev/null; cmp -s $w/pm.out $w/exp && pass || fail "$n: pm cikti g++'dan farkli"
   if [ "${SVM:-1}" = 1 ]; then { cat $TAB; echo "@@PROGRAM"; cat $w/p.l; echo "@@GIRDI"; } > $w/sv.in; LIMS=300 lim $PM run $R/oz/sayisal/svm.pmb < $w/sv.in > $w/svm.out 2>/dev/null; cmp -s $w/svm.out $w/exp && pass || fail "$n: svm cikti g++'dan farkli"; fi
   # onceki (C++ yolu) ile ayni davranis
-  case $n in f80_*) ;; *) $PM ifade $f -o $w/c.pmb --strip > /dev/null 2>&1 && lim $PM run $w/c.pmb > $w/cpp.out 2>/dev/null; cmp -s $w/cpp.out $w/exp && pass || fail "$n: C++ yolu cikti g++'dan farkli";; esac
+  case $n in f80_*|istisna_*|bellek_gorunum) ;; *) $PM ifade $f -o $w/c.pmb --strip > /dev/null 2>&1 && lim $PM run $w/c.pmb > $w/cpp.out 2>/dev/null; cmp -s $w/cpp.out $w/exp && pass || fail "$n: C++ yolu cikti g++'dan farkli";; esac
 }
 red() {
   f=$1; grep -q '^// IFX: kabul' $f && return; n=$(basename $f .cx); w=$T/r_$n; mkdir -p $w; exp=$(head -1 $f | sed -n 's|^// HATA: *\(.*\)$|\1|p'); code=$(head -1 $f | sed -n 's|^// RED: *\([A-Z_]*\).*|\1|p')
@@ -48,9 +48,22 @@ red() {
   if [ -n "$code" ]; then [ $rc != 0 ] && grep -aq "@@HATA $code " $w/o.pma && pass || fail "red/$n: sayisal derleyici beklenen [$code], rc=$rc: $(grep -a HATA $w/o.pma | head -c 100)"
   else [ $rc != 0 ] && grep -aq "@@HATA .*$exp" $w/o.pma && pass || fail "red/$n: beklenen ayrik ret '$exp', rc=$rc: $(grep -a HATA $w/o.pma | head -c 100)"; fi
 }
-export -f one red
+trap_n() {   # calisma zamani tuzagi (sayisal yol): // TRAP: AD -> pm rc=2 + stderr TRAP; ELF tuzakla biter; svm @@TRAP; tuzaktan once yazilan cikti .out ile ayni
+  f=$1; n=$(basename $f .cx); w=$T/n_$n; mkdir -p $w; exp=$(head -1 $f | sed -n 's|^// TRAP: *\(.*\)$|\1|p'); [ -n "$exp" ] || { fail "trap/$n: ilk satir '// TRAP: AD' degil"; return; }
+  $PM ifade $f --pmx1 $w/x.pmx > /dev/null 2>&1; [ -s $w/x.pmx ] || { fail "trap/$n: PMX1 yok"; return; }
+  { cat $TAB; cat $IMZ; echo; cat $w/x.pmx; } | lim $IFXE > $w/p.pma 2>/dev/null || { fail "trap/$n: ifx basarisiz: $(grep -a HATA $w/p.pma | head -c 120)"; return; }
+  lim $BAG/asm.elf < $w/p.pma > $w/p.pmb 2>/dev/null && lim $BAG/coz.elf < $w/p.pmb > $w/p.l || { fail "trap/$n: asm/coz"; return; }
+  grep -a '^;;PMT1' $w/p.pma | sed 's/^;;PMT1 //' > $w/p.t; tv=$( { echo '@@IMZA'; cat $IMZ; echo '@@PROGRAM'; cat $w/p.l; echo '@@TIPLER'; cat $w/p.t; } | lim $TIPE | head -1 ); [ "${tv%% *}" = 1 ] && pass || fail "trap/$n: tipdogr reddetti: $tv"
+  lim $PM run $w/p.pmb > $w/pm.out 2> $w/pm.err; rc=$?
+  [ -f ${f%.cx}.out ] && { cmp -s $w/pm.out ${f%.cx}.out && pass || fail "trap/$n: pm: tuzaktan once yazilan cikti beklenenden farkli ($(diff $w/pm.out ${f%.cx}.out | head -3 | tr '\n' '|'))"; }
+  [ $rc = 2 ] && grep -qE "^TRAP: ($exp)" $w/pm.err && pass || fail "trap/$n: pm: beklenen tuzak $exp, rc=$rc, stderr: $(head -c 100 $w/pm.err)"
+  lim $BAG/gen2.elf < $w/p.l > $w/p.elf && chmod +x $w/p.elf && { lim $w/p.elf > $w/elf.out 2>/dev/null; erc=$?; [ $erc != 0 ] && cmp -s $w/elf.out $w/pm.out && pass || fail "trap/$n: ELF: tuzakla bitmeli (rc=$erc) ve ayni stdout"; } || fail "trap/$n: ELF uretilemedi"
+  if [ "${SVM:-1}" = 1 ]; then { cat $TAB; echo "@@PROGRAM"; cat $w/p.l; echo "@@GIRDI"; } > $w/sv.in; LIMS=300 lim $PM run $R/oz/sayisal/svm.pmb < $w/sv.in > $w/svm.out 2>/dev/null; grep -qE "^@@TRAP ($exp)" $w/svm.out && head -c $(stat -c %s $w/pm.out) $w/svm.out | cmp -s - $w/pm.out && pass || fail "trap/$n: svm: @@TRAP ($exp) ve ayni stdout beklenir"; fi
+}
+export -f one red trap_n
 ls testler/*.cx ../testler/*.cx | xargs -P $(nproc) -I{} bash -c 'one {}'
 ls red/*.cx ../red/*.cx | xargs -P $(nproc) -I{} bash -c 'red {}'
+ls trap/*.cx ../trap/*.cx | xargs -P $(nproc) -I{} bash -c 'trap_n {}'
 # 2) kural degisikligi: tablo sayilari degisir, hicbir sey yeniden derlenmez
 printf 'int main() { pi(7 + 3); pi(7 - 3); pi(7 * 3); return 0; }\n' > $T/k.cx
 $PM ifade $T/k.cx --pmx1 $T/k.pmx > /dev/null

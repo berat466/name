@@ -1,0 +1,39 @@
+// istisna: sinif nesneleri, taban referansiyla yakalama (polimorfik), std::exception / bad_cast / bad_typeid, what()
+void say(const char* s) { int n = 0; while (s[n]) { pc(s[n]); n = n + 1; } pc(10); }
+struct Hata { int kod; int ek; };
+struct Dosya : Hata { int satir; };
+struct Taban { virtual int kimlik() const { return 1; } virtual ~Taban() {} };
+struct Tur : Taban { int kimlik() const override { return 2; } };
+struct Diger : Taban { int kimlik() const override { return 3; } };
+struct Ozel : std::exception { int n; const char* what() const noexcept override { return "ozel hata"; } };
+void f(int k) {
+  if (k == 1) { Hata h; h.kod = 11; h.ek = 12; throw h; }
+  if (k == 2) { Dosya d; d.kod = 21; d.ek = 22; d.satir = 23; throw d; }
+  if (k == 3) { Ozel o; o.n = 33; throw o; }
+  if (k == 4) throw std::exception();
+}
+int main() {
+  for (int k = 1; k <= 4; k = k + 1) {
+    try { f(k); }
+    catch (Dosya& d) { pi(d.kod); pi(d.satir); }
+    catch (const Hata& h) { pi(h.kod); pi(h.ek); }
+    catch (const Ozel& o) { pi(o.n); say(o.what()); }
+    catch (std::exception& e) { say(e.what()); }
+  }
+  // taban referansiyla yakalama: dinamik tur, what() sanal
+  try { f(3); } catch (std::exception& e) { say(e.what()); }
+  try { f(2); } catch (Hata h) { pi(h.kod); pi(h.ek); }
+  // dynamic_cast<T&> basarisiz -> std::bad_cast
+  Tur t; Taban& b = t; Diger* dp = nullptr;
+  try { Diger& d = dynamic_cast<Diger&>(b); pi(d.kimlik()); } catch (const std::bad_cast& e) { say(e.what()); pi(-1); }
+  try { Tur& d = dynamic_cast<Tur&>(b); pi(d.kimlik()); } catch (std::bad_cast&) { pi(-2); }
+  try { Diger& d = dynamic_cast<Diger&>(b); pi(d.kimlik()); } catch (std::exception& e) { say(e.what()); }
+  // typeid(*null) -> std::bad_typeid
+  Taban* np = nullptr; Taban* gp = &t;
+  try { pi(typeid(*gp) == typeid(Tur)); const std::type_info& ti = typeid(*np); pi(-5); } catch (const std::bad_typeid& e) { say(e.what()); }
+  // islev sinirini asan sinif istisnasi
+  try { try { f(1); } catch (const Dosya&) { pi(-9); } } catch (const Hata& h) { pi(h.ek); }
+  // yakalama sirasi: ilk uygun
+  try { f(2); } catch (const Hata& h) { pi(h.kod + 1000); } catch (Dosya&) { pi(-1); }
+  return 0;
+}

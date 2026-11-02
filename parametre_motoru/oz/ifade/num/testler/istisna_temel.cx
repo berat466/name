@@ -1,0 +1,44 @@
+// istisna: skaler turler, coklu catch, catch(...), yeniden firlatma, ic ice try, dongu/return ile cikis, islev sinirini asan yayilim
+int depth(int n) { if (n == 0) throw 7; return depth(n - 1) + 1; }
+int risky(int x) { if (x < 0) throw x; if (x == 0) throw 'z'; if (x > 100) throw 1.5; if (x == 50) throw "elli"; return x * 2; }
+int pass_through(int x) { int r = risky(x); pi(1000 + r); return r; }
+int nested(int x) {
+  try { return pass_through(x); }
+  catch (int e) { pi(e); throw; }
+}
+int main() {
+  try { pi(depth(5)); pi(99); } catch (int e) { pi(e); pi(-1); }
+  // tur secimi
+  int t = -3;
+  while (t < 4) {
+    int sel = t == 3 ? 200 : t;
+    try { pi(pass_through(sel)); }
+    catch (int e) { pi(e * 100); }
+    catch (char c) { pc(c); pc(10); }
+    catch (double d) { pi((long long)(d * 10)); }
+    t = t + 1;
+  }
+  try { pass_through(50); } catch (const char* s) { int n = 0; while (s[n]) { pc(s[n]); n = n + 1; } pc(10); }
+  // catch(...)
+  try { pass_through(-9); } catch (...) { pi(555); }
+  // yeniden firlatma
+  try { try { nested(-4); pi(0); } catch (int e) { pi(e + 1000000); throw; } } catch (int e2) { pi(e2); }
+  // ic ice: ic eslesmez, dis yakalar
+  try { try { throw 5; } catch (char c) { pi(-77); } pi(-78); } catch (int e) { pi(e); }
+  // catch icinde firlatma
+  try { try { throw 1; } catch (int a) { throw a + 1; } } catch (int b) { pi(b); }
+  // dongu icinde: break / continue / return ile handler cikisi
+  int i = 0; int sum = 0;
+  while (i < 8) {
+    i = i + 1;
+    try { if (i % 3 == 0) throw i; sum = sum + i; }
+    catch (int e) { if (e == 6) break; continue; }
+  }
+  pi(sum); pi(i);
+  // yakalanan degeri referansla degistirme: kopya, esas nesne degismez
+  try { throw 40; } catch (int& r) { r = r + 2; pi(r); }
+  // istisna yok: catch calismaz
+  try { pi(11); } catch (...) { pi(-1); }
+  pi(12);
+  return 0;
+}

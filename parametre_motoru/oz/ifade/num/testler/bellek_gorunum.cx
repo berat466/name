@@ -1,0 +1,13 @@
+// 02.022: reinterpret_cast bellek gorunumu -- ayni boyutlu tamsayi / double<->int64 punlari, isaretci gidis-donus
+int main() {
+  int i = -1; unsigned& u = reinterpret_cast<unsigned&>(i); pi(u);
+  unsigned w = 4000000000u; int& s = reinterpret_cast<int&>(w); pi(s);
+  u = 4000000000u; pi(i);
+  long long l = 0x3ff0000000000000LL; double& dd = reinterpret_cast<double&>(l); pd(dd);
+  double d2 = 2.0; long long& lb = reinterpret_cast<long long&>(d2); pi(lb);
+  short sh = -2; unsigned short& us = reinterpret_cast<unsigned short&>(sh); pi(us);
+  signed char sc = -3; unsigned char* up = reinterpret_cast<unsigned char*>(&sc); pi(*up);
+  unsigned short* ush = reinterpret_cast<unsigned short*>(&sh); pi(*ush);
+  int arr[2] = {1, 2}; int* p = arr; char* cp = reinterpret_cast<char*>(p); pi(reinterpret_cast<int*>(cp) == p);
+  return 0;
+}
