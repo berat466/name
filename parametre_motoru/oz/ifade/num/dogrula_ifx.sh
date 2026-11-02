@@ -21,7 +21,7 @@ $PM liste $R/oz/tip/tipdogr.pmb > $T/tip.l && $T/bag/gen2.elf < $T/tip.l > $T/ti
 export TIPE=$T/tipdogr.elf
 one() {
   f=$1; n=$(basename $f .cx); w=$T/t_$n; mkdir -p $w
-  g++ -std=c++20 -O0 -w -frounding-math -include $D/../oracle.h -x c++ -o $w/bin $f 2> $w/gpp.err && lim $w/bin > $w/exp || { fail "$n: g++ oracle"; return; }
+  g++ -std=c++20 -O0 -w -frounding-math -fext-numeric-literals -include $D/../oracle.h -x c++ -o $w/bin $f 2> $w/gpp.err && lim $w/bin > $w/exp || { fail "$n: g++ oracle"; return; }
   $PM ifade $f --pmx1 $w/x.pmx > /dev/null 2> $w/fe.err; [ -s $w/x.pmx ] || { fail "$n: on yuz (PMX1 uretimi): $(head -c 120 $w/fe.err)"; return; }   # on yuz anlam asamasi reddetse de PMX1 yazilmistir
   { cat $TAB; cat $IMZ; echo; cat $w/x.pmx; } > $w/in.txt
   lim $IFXE < $w/in.txt > $w/p_elf.pma 2> $w/ifx.err || { fail "$n: ifx.elf basarisiz: $(grep -a HATA $w/p_elf.pma | head -c 150)"; return; }
@@ -36,7 +36,7 @@ one() {
   lim $PM run $w/p.pmb > $w/pm.out 2>/dev/null; cmp -s $w/pm.out $w/exp && pass || fail "$n: pm cikti g++'dan farkli"
   if [ "${SVM:-1}" = 1 ]; then { cat $TAB; echo "@@PROGRAM"; cat $w/p.l; echo "@@GIRDI"; } > $w/sv.in; LIMS=300 lim $PM run $R/oz/sayisal/svm.pmb < $w/sv.in > $w/svm.out 2>/dev/null; cmp -s $w/svm.out $w/exp && pass || fail "$n: svm cikti g++'dan farkli"; fi
   # onceki (C++ yolu) ile ayni davranis
-  case $n in f80_*|istisna_*|bellek_gorunum|bayt_gorunum) ;; *) $PM ifade $f -o $w/c.pmb --strip > /dev/null 2>&1 && lim $PM run $w/c.pmb > $w/cpp.out 2>/dev/null; cmp -s $w/cpp.out $w/exp && pass || fail "$n: C++ yolu cikti g++'dan farkli";; esac
+  case $n in f80_*|f128_*|istisna_*|bellek_gorunum|bayt_gorunum) ;; *) $PM ifade $f -o $w/c.pmb --strip > /dev/null 2>&1 && lim $PM run $w/c.pmb > $w/cpp.out 2>/dev/null; cmp -s $w/cpp.out $w/exp && pass || fail "$n: C++ yolu cikti g++'dan farkli";; esac
 }
 red() {
   f=$1; grep -q '^// IFX: kabul' $f && return; n=$(basename $f .cx); w=$T/r_$n; mkdir -p $w; exp=$(head -1 $f | sed -n 's|^// HATA: *\(.*\)$|\1|p'); code=$(head -1 $f | sed -n 's|^// RED: *\([A-Z_]*\).*|\1|p')
@@ -97,8 +97,7 @@ head -c 2000 $TAB > $T/kisa.pmk; cat $T/kisa.pmk $T/k.pmx | lim $T/ifx.elf > /de
 [ -n "$SABOTAJ" ] || {
   sh=$T/self; mkdir -p $sh; $PM ifade ifx.cx --pmx1 $sh/x.pmx > /dev/null 2>&1; { cat $TAB; cat $IMZ; echo; cat $sh/x.pmx; } > $sh/in
   LIMS=300 lim $IFXE < $sh/in > $sh/p1.pma 2>/dev/null && ! grep -aq '@@HATA' $sh/p1.pma && pass || fail "oz-barindirma: ifx.elf kendi kaynagini derleyemedi"
-  # not: ifx2'nin PMA'si 1,7 MB; sayisal assembler (asm.elf) kaynak girdisini 1 MiB ile sinirlar -> bu adimda yalniz assembler icin pm asm (bagimsiz referans) kullanilir
-  $PM asm $sh/p1.pma -o $sh/p1.pmb --strip > /dev/null 2>&1 && $BAG/coz.elf < $sh/p1.pmb > $sh/p1.l && pass || fail "oz-barindirma: ifx2 asm/coz"
+  lim $BAG/asm.elf < $sh/p1.pma > $sh/p1.pmb 2>/dev/null && $BAG/coz.elf < $sh/p1.pmb > $sh/p1.l && { $PM asm $sh/p1.pma -o $sh/p1r.pmb --strip > /dev/null 2>&1; cmp -s $sh/p1.pmb $sh/p1r.pmb; } && pass || fail "oz-barindirma: ifx2 asm.elf/coz.elf (pm asm ile bayt-bayt ayni olmali)"
   v=$(lim $BAG/valid.elf < $sh/p1.l | head -1); [ "${v%% *}" = 1 ] && pass || fail "oz-barindirma: valid.elf ifx2'yi reddetti: $v"
   grep -a '^;;PMT1' $sh/p1.pma | sed 's/^;;PMT1 //' > $sh/p1.t; tv=$( { echo '@@IMZA'; cat $IMZ; echo '@@PROGRAM'; cat $sh/p1.l; echo '@@TIPLER'; cat $sh/p1.t; } | LIMS=300 lim $TIPE | head -2 | tr '\n' ' '); [ "${tv%% *}" = 1 ] && pass || fail "oz-barindirma: tipdogr ifx2'yi reddetti: $tv"
   LIMS=300 lim $BAG/gen2.elf < $sh/p1.l > $sh/ifx2.elf && chmod +x $sh/ifx2.elf && LIMS=300 lim $sh/ifx2.elf < $sh/in > $sh/p2.pma 2>/dev/null; cmp -s $sh/p1.pma $sh/p2.pma && pass || fail "oz-barindirma: sabit nokta bozuk (ifx2 cikisi PMA1'den farkli)"

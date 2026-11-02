@@ -1,0 +1,2 @@
+// RED: E_NARROW  -- long double -> double liste ilklendirmesi daraltma
+int main() { long double a = 5; double x{a}; return 0; }

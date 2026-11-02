@@ -1,16 +1,16 @@
 ; asm.pma -- .pma metni -> PMB1 (adlar atilmis: `pm asm --strip` ile BAYT-BAYT ayni cikti) ASSEMBLER'I (parametre tablosu).
-; stdin: .pma kaynagi (en cok 1 MiB); stdout: PMB1 baytlari. Hata -> stdout'a "HATA satir N: kod" yazilir ve DIV0 tuzagi (cikis 2).
+; stdin: .pma kaynagi (en cok 4 MiB); stdout: PMB1 baytlari. Hata -> stdout'a "HATA satir N: kod" yazilir ve DIV0 tuzagi (cikis 2).
 ; C++ karsiligi: src/asm.cpp (ayni algoritma: etiket/dogrudan-operand donusumu, sabit yazmaclari, cagri pencereleri, gozetleme deligi).
 ; Ondalik sabitler (2.0, 1e-5, .5 ...) fbits ile (buyuk sayi aritmetigi, en yakin-cifte yuvarlama = strtod). validate_program/analyze_program calistirilmaz
 ; (cikti oz/dogr/valid.pmb ile dogrulanir); yalnizca "veri bellege sigmiyor" ve "giris fonksiyonu parametre almamali" burada da denetlenir.
-memory 12582912
+memory 25165824
 entry main
-space SRC 1200000
-space TOKO 262144
-space TOKL 262144
-space STLN 131072
-space STT0 131072
-space STNT 131072
+space SRC 4194304
+space TOKO 1048576
+space TOKL 1048576
+space STLN 524288
+space STT0 524288
+space STNT 524288
 space FNNO 65536
 space FNNL 65536
 space FNLN 65536
@@ -38,8 +38,8 @@ space IRMN 65536
 space IRS 65536
 space IRN 65536
 space IRLN 65536
-space OPO 262144
-space OPL 262144
+space OPO 1048576
+space OPL 1048576
 space IIOP 65536
 space IIHAS 65536
 space IIDEST 65536
@@ -51,8 +51,8 @@ space IOT2 65536
 space IOV2 65536
 space IAS 65536
 space IAN 65536
-space ARGT 262144
-space ARGV 262144
+space ARGT 1048576
+space ARGV 1048576
 space LITV 65536
 space COP 131072
 space CA 131072
@@ -583,7 +583,7 @@ t10: ret cnt
 
 func addtok(s, e) {
     ld n, G, 2
-    ge z, n, 262144
+    ge z, n, 1048576
     jz z, a1
     call x, err, 81
 a1: add a, n, TOKO
@@ -620,7 +620,7 @@ no: ret -1
 
 func addstmt(ln, t0, nt) {
     ld n, G, 3
-    ge z, n, 131072
+    ge z, n, 524288
     jz z, a1
     call x, err, 82
 a1: add a, n, STLN
@@ -2002,7 +2002,7 @@ st3: ge z, k, nt
     add a, tk, TOKL
     ld l, a, 0
     ld n, G, 23
-    ge z, n, 262144
+    ge z, n, 1048576
     jz z, st3a
     call x, err, 65
 st3a: add a, n, OPO
@@ -3305,7 +3305,7 @@ c9: add ng, ng, m
 ; ---------- ikili kodlama (PMB1, adlar atilmis) ----------
 func outb(v) {
     ld n, G, 15
-    ge z, n, 1048576
+    ge z, n, 4194000
     jz z, o1
     call x, err, 130
 o1: add a, n, OUTB
@@ -3523,7 +3523,7 @@ func main() {
 r1: host ch, getc
     lti z, ch, 0
     jnz z, r2
-    ge z, n, 1048576
+    ge z, n, 4194000
     jz z, r1a
     call x, err, 140
 r1a: add a, n, SRC

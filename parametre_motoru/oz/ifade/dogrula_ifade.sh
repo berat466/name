@@ -13,7 +13,7 @@ export -f lim
 one() {   # olumlu test
   f=$1; n=$(basename $f .cx); w=$T/$n; mkdir -p $w; fail() { echo "HATA: $n: $1" >> $T/hatalar; }; pass() { echo 1 >> $T/gecen; }
   if [ -f ${f%.cx}.out ]; then cp ${f%.cx}.out $w/exp; else
-    g++ -std=c++20 -O0 -w -frounding-math -include $D/oracle.h -x c++ -o $w/bin $f 2> $w/gpp.err || { fail "g++ oracle derlenemedi ($(head -c 150 $w/gpp.err))"; return; }
+    g++ -std=c++20 -O0 -w -frounding-math -fext-numeric-literals -include $D/oracle.h -x c++ -o $w/bin $f 2> $w/gpp.err || { fail "g++ oracle derlenemedi ($(head -c 150 $w/gpp.err))"; return; }
     lim $w/bin > $w/exp 2>/dev/null || { fail "oracle cikis kodu != 0"; return; }
   fi
   $PM ifade $f --pmx1 $w/x.pmx --pma $w/p.pma -o $w/p.pmb --strip > /dev/null 2> $w/ifade.err || { fail "pm ifade basarisiz: $(head -c 200 $w/ifade.err)"; return; }

@@ -75,7 +75,7 @@ Hızlı çalıştırma: `oz/hizli.sh` (ilgili paketler + kritik denetimler), tam
 | komut | `oz/komut/dogrula_komut.sh` | PMK1 biçimi, kayıpsız çevirim, genişletme (yeni komutlar yalnız sayılarla) |
 | turler | `oz/komut/dogrula_turler.sh` | TYPES bölümü: tür özellikleri, limitler, LP64 ABI eşlemesi (C++ derleyici gerçekleriyle), dönüşüm kapsamı |
 | uyum | `oz/komut/dogrula_uyum.sh` | PMB1 geriye uyumluluk (komut kodu ≥ 255 kaçış kodlaması öncesi programlar bayt-bayt aynı) |
-| ifx | `oz/ifade/num/dogrula_ifx.sh` | sayısal PMX1 derleyicisi (Bölüm 02, 34/34): g++ = ifx.elf/pm → asm.elf → coz.elf → valid.elf → tipdogr (PMT1) → gen2.elf ELF = pm = svm; istisna, bayt görünümü, f80, trap, bozuk PMX1 fuzz, öz-barındırma sabit noktası; kural tablosu değişikliği davranışa yansır; dürüst ret; sabotaj `sabotaj_ifx.sh` |
+| ifx | `oz/ifade/num/dogrula_ifx.sh` | sayısal PMX1 derleyicisi (Bölüm 02, 34/34; f80 + f128): g++ = ifx.elf/pm → asm.elf → coz.elf → valid.elf → tipdogr (PMT1) → gen2.elf ELF = pm = svm; istisna, bayt görünümü, f80, trap, bozuk PMX1 fuzz, öz-barındırma sabit noktası; kural tablosu değişikliği davranışa yansır; dürüst ret; sabotaj `sabotaj_ifx.sh` |
 | ifade | `oz/ifade/dogrula_ifade.sh` | C++ ifade/operatör/sabit ön yüzü (`pm ifade`): g++ oracle = C++ `pm` = native ELF = svm; PMX1 sayısal AST (gidiş-dönüş, bozma/fuzz); olumsuz ve tuzak testleri; operatör tablosu tutarlılığı; sabotaj `sabotaj_ifade.sh` |
 | tip | `oz/tip/dogrula_tip.sh` | program düzeyi tür sistemi (PMT1 + TYPES imzaları → tipdogr) |
 | i128, kayan | `oz/tur128/dogrula_i128.sh`, `oz/kayan/dogrula_kayan.sh` | 128 bit tamsayı, f80/f128 yazılım kayan nokta, karmaşık sayılar: ELF = svm = C++ pm = bağımsız oracle (anlam: `oz/kayan/KAYAN_NOKTA.md`) |

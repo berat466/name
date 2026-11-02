@@ -11,6 +11,7 @@ def sw(old, new):   # tablodaki dizge (uzunluk onekli) degistir; tum olusumlar
         else: out.append(v[i]); i += 1
     assert n, old; return out
 T = [  # (ad, tur, ...) tablo mutantlari
+ ('tablo: f128 add->sub', 'tab', 'add_f128', 'sub_f128'), ('tablo: f128 cv_i64->cv_u64', 'tab', 'cv_i64_f128', 'cv_u64_f128'), ('tablo: f128 lt->le', 'tab', 'lt_f128', 'le_f128'), ('tablo: f128 cv_f128_f64->cv_f128_f32', 'tab', 'cv_f128_f64', 'cv_f128_f32'),
  ('tablo: int sext32->zext32', 'tab', 'sext32', 'zext32'), ('tablo: uchar zext8->sext8', 'tab', 'zext8', 'sext8'), ('tablo: >> sar->shr', 'tab', 'sar', 'shr'),
  ('tablo: div->mod', 'tab', 'div', 'mod'), ('tablo: fadd->fsub', 'tab', 'fadd', 'fsub'), ('tablo: lt->le', 'tab', 'lt', 'le'), ('tablo: ltu->leu', 'tab', 'ltu', 'leu'),
  ('tablo: mul->add', 'tab', 'mul', 'add'), ('tablo: xor->and', 'tab', 'xor', 'and'), ('tablo: shl->shr', 'tab', 'shl', 'shr'), ('tablo: divu->div', 'tab', 'divu', 'div'),
@@ -73,6 +74,15 @@ S = [  # kaynak mutantlari (her satir bir mutant)
  ('bellek gorunumu: aritmetikte leke korunumu', 'V rr = mkv(p.ty, 0, d); rr.bp = p.bp; return rr;', 'V rr = mkv(p.ty, 0, d); rr.bp = 0; return rr;'),
  ('bellek gorunumu: degisken lekesi', 'tnt = pt_.bp;', 'tnt = 0;'),
  ('bellek: arguman reddi', 'if (a.bp) die("E_REINTERP", "bayt adresli isaretci islev argumani olamaz (calisan islev sozcuk adresli isaretci bekler)");', ''),
+ ('f128: ad kaymasi', 'long long nmw(int b80, int f) { return names[b80 + f * 20]; }', 'long long nmw(int b80, int f) { return names[b80 + f * 19]; }'),
+ ('f128: cift yazmac PMT1 turu', 'pm_add(pf ? 13 : 11); pm_add(12);', 'pm_add(11); pm_add(12);'),
+ ('f128: ortak tur', 'int f = wfmt(l.ty) || wfmt(r.ty); l = to_ld(l, f);', 'int f = wfmt(l.ty); l = to_ld(l, f);'),
+ ('f128: uac', '  if (tk[x] == 24 || tk[y] == 24) return mkt(24, 0 - 1, 0);\n', ''),
+ ('f128: daraltma sirasi', 'else if (ff && tf) narrow = frank(to) < frank(f);', 'else if (ff && tf) narrow = 0;'),
+ ('f128: f80<->f128 donusumu', 'ins2t(names[tf ? NM_CV80_128 : NM_CV128_80], d, pv);', 'ins2t(names[tf ? NM_CV128_80 : NM_CV80_128], d, pv);'),
+ ('f128: cift yazmac turu', 'int pkind(long long reg) { if (pair_fmt[(reg - 100000) / 2]) return 13; return 11; }', 'int pkind(long long reg) { return 11; }'),
+ ('f128: bit-tam sabit', 'if (is_ld(t)) return ld_const(nk_i[n], nk_d[n], wfmt(t));', 'if (is_ld(t)) return ld_const(nk_i[n], nk_d[n], 0);'),
+ ('f128: yazdirma bicimi', 'int pf = fn_bi[fi] == 6;', 'int pf = 0;'),
 ]
 def run(tab, ifxcx):
     w = tempfile.mkdtemp(prefix='sabifx'); pm = w + '/ifx.pmb'
@@ -94,5 +104,5 @@ if ONLY: jobs = [m for m in jobs if ONLY in m[0]]
 with concurrent.futures.ThreadPoolExecutor(max_workers=max(2, os.cpu_count() or 2)) as ex: res = list(ex.map(job, jobs))
 bad = [r for r in res if r[1] != 'YAKALANDI']
 for n, st in bad: print('%s: %s' % (st, n))
-print('ifx sabotaj: %d mutant (%d tablo + %d kaynak), %d yakalandi, %d yakalanmadi' % (len(res), len(T), len(S), len(res) - len(bad), len(bad)))
+nt = len([m for m in jobs if m[1] == 'tab']); print('ifx sabotaj: %d mutant (%d tablo + %d kaynak), %d yakalandi, %d yakalanmadi' % (len(res), nt, len(res) - nt, len(res) - len(bad), len(bad)))
 sys.exit(1 if bad else 0)

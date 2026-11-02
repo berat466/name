@@ -1,0 +1,2 @@
+// RED: E_NARROW  -- __float128 -> int liste ilklendirmesi daraltma
+int main() { __float128 a = 5; int x{a}; return x; }

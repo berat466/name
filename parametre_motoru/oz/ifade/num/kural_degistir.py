@@ -4,7 +4,7 @@ Yalniz sayilari yeniden yazar; hicbir kaynak/ikili yeniden uretilmez -- ifx.pmb 
 import sys
 tok, old, new = sys.argv[1], sys.argv[2], sys.argv[3]
 v = sys.stdin.read().split(); assert len(old) == len(new)
-pat = [2, 5, len(tok)] + [ord(c) for c in tok] + [len(old)] + [ord(c) for c in old]
+pat = [2, 6, len(tok)] + [ord(c) for c in tok] + [len(old)] + [ord(c) for c in old]
 nums = [int(x) for x in v]
 n = 0
 for i in range(len(nums) - len(pat)):

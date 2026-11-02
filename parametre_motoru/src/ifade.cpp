@@ -2,6 +2,7 @@
 //   metin -> lexer -> ayristirici -> AST -> PMX1 (kanonik SAYISAL AST, sayi listesi) -> [PMX1 cozulur] -> anlam + kod uretimi -> PMA metni -> assemble -> PMB1.
 //   Derleme asamasi her zaman PMX1 sayi listesinden calisir (metin AST'den degil): "pm ifade --pmx1" sayilari yazar, "--pmx1-oku" sayilardan derler.
 // Not [Kesin]: bu dosya C++ referans/gelistirme aracidir (motorun kendisi gibi); uretilen cikti sayisal PMB1'dir ve ELF/svm/pm uzerinde ayni calisir.
+#include <quadmath.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -26,14 +27,14 @@ struct IErr { string code, msg; int line; };
 enum TokK { TK_EOF, TK_ID, TK_INT, TK_FLT, TK_CHR, TK_STR, TK_P };
 struct Tok {
   TokK k = TK_EOF; string s;            // kimlik / noktalama / dize baytlari
-  uint64_t u = 0; double d = 0; long double ld = 0;   // tamsayi degeri / ondalik deger / karakter degeri / tam kesinlikli (x87 80 bit) deger
+  uint64_t u = 0; double d = 0; long double ld = 0; __float128 q128 = 0;   // tamsayi degeri / ondalik deger / karakter degeri / tam kesinlikli (x87 80 bit) deger
   int tcode = 0;                        // sabit turu (TY_* kodu, asagida)
   string udl;                           // kullanici tanimli sonek (_km gibi), bos = yok
   bool decimal = true; int line = 0;
 };
 // tur kodlari (AST'de de kullanilir)
 enum TyK { Y_VOID, Y_BOOL, Y_CHAR, Y_SCHAR, Y_UCHAR, Y_SHORT, Y_USHORT, Y_INT, Y_UINT, Y_LONG, Y_ULONG, Y_LLONG, Y_ULLONG, Y_FLOAT, Y_DOUBLE, Y_LDOUBLE,
-           Y_NULLPTR, Y_PTR, Y_REF, Y_RREF, Y_ARR, Y_CLASS, Y_AUTO, Y_FUNC };
+           Y_NULLPTR, Y_PTR, Y_REF, Y_RREF, Y_ARR, Y_CLASS, Y_AUTO, Y_FUNC, Y_FLOAT128 };
 
 struct Lexer {
   const string& src; size_t p = 0; int line = 1; vector<Tok> out;
@@ -75,9 +76,9 @@ struct Lexer {
         digits.clear(); scan(); f += digits;
       } else if (base == 16) fail("E_LEX", "onaltilik ondalik sabitte p ussu gerekli", line);
       string sf = suffix(i); t.k = TK_FLT; t.tcode = Y_DOUBLE;
-      if (sf == "f" || sf == "F") t.tcode = Y_FLOAT; else if (sf == "l" || sf == "L") t.tcode = Y_LDOUBLE; else if (!sf.empty()) { if (sf[0] != '_') fail("E_LEX", "gecersiz ondalik sabit soneki: " + sf, line); t.udl = sf; }
+      if (sf == "f" || sf == "F") t.tcode = Y_FLOAT; else if (sf == "l" || sf == "L") t.tcode = Y_LDOUBLE; else if (sf == "q" || sf == "Q") t.tcode = Y_FLOAT128; else if (!sf.empty()) { if (sf[0] != '_') fail("E_LEX", "gecersiz ondalik sabit soneki: " + sf, line); t.udl = sf; }
       if (base == 16) f = "0x" + f;
-      t.d = strtod(f.c_str(), nullptr); t.ld = strtold(f.c_str(), nullptr); p = i; out.push_back(t); return;
+      t.d = strtod(f.c_str(), nullptr); t.ld = strtold(f.c_str(), nullptr); t.q128 = strtoflt128(f.c_str(), nullptr); p = i; out.push_back(t); return;
     }
     // tamsayi
     uint64_t v = 0; bool oct = false;
@@ -132,7 +133,7 @@ struct Lexer {
       if (c == '/' && at(p + 1) == '*') { p += 2; while (p < src.size() && !(src[p] == '*' && at(p + 1) == '/')) { if (src[p] == '\n') line++; p++; } if (p >= src.size()) fail("E_LEX", "kapanmamis yorum", line); p += 2; continue; }
       if (c == '#') { while (p < src.size() && src[p] != '\n') p++; continue; }   // on-isleyici satirlari (#include) yok sayilir
       if (isdigit((unsigned char)c) || (c == '.' && isdigit((unsigned char)at(p + 1)))) {
-        if (c == '.') { Tok t; /* .5 gibi */ size_t i = p + 1; string f = "0."; while (isdigit((unsigned char)at(i))) f += at(i++); if (at(i) == 'e' || at(i) == 'E') { f += at(i++); if (at(i) == '+' || at(i) == '-') f += at(i++); while (isdigit((unsigned char)at(i))) f += at(i++); } t.k = TK_FLT; t.line = line; t.tcode = Y_DOUBLE; string sf = suffix(i); if (sf == "f" || sf == "F") t.tcode = Y_FLOAT; else if (sf == "l" || sf == "L") t.tcode = Y_LDOUBLE; else if (!sf.empty()) { if (sf[0] != '_') fail("E_LEX", "gecersiz ondalik sonek", line); t.udl = sf; } t.d = strtod(f.c_str(), nullptr); t.ld = strtold(f.c_str(), nullptr); p = i; out.push_back(t); continue; }
+        if (c == '.') { Tok t; /* .5 gibi */ size_t i = p + 1; string f = "0."; while (isdigit((unsigned char)at(i))) f += at(i++); if (at(i) == 'e' || at(i) == 'E') { f += at(i++); if (at(i) == '+' || at(i) == '-') f += at(i++); while (isdigit((unsigned char)at(i))) f += at(i++); } t.k = TK_FLT; t.line = line; t.tcode = Y_DOUBLE; string sf = suffix(i); if (sf == "f" || sf == "F") t.tcode = Y_FLOAT; else if (sf == "l" || sf == "L") t.tcode = Y_LDOUBLE; else if (sf == "q" || sf == "Q") t.tcode = Y_FLOAT128; else if (!sf.empty()) { if (sf[0] != '_') fail("E_LEX", "gecersiz ondalik sonek", line); t.udl = sf; } t.d = strtod(f.c_str(), nullptr); t.ld = strtold(f.c_str(), nullptr); t.q128 = strtoflt128(f.c_str(), nullptr); p = i; out.push_back(t); continue; }
         number(); continue;
       }
       // dize (ham dize dahil)
@@ -244,7 +245,7 @@ void pmx_validate(const Ast& a, int root) {
     if (x.k < 0 || x.k > N_NONE) fail("E_PMX", "PMX1 dugum turu gecersiz");
     const Arity* r = nullptr; for (auto& e : ar) if (e.k == x.k) r = &e;
     if (!r || int(x.kid.size()) < r->lo || (r->hi >= 0 && int(x.kid.size()) > r->hi)) fail("E_PMX", "PMX1 dugumun cocuk sayisi bu tur icin gecersiz");
-    if (x.k == N_TY && (x.i < 0 || x.i > Y_FUNC)) fail("E_PMX", "PMX1 tur kodu gecersiz");
+    if (x.k == N_TY && (x.i < 0 || x.i > Y_FLOAT128)) fail("E_PMX", "PMX1 tur kodu gecersiz");
     auto need = [&](int c, std::initializer_list<int> kinds) { for (int k : kinds) if (a.n[size_t(c)].k == k) return; fail("E_PMX", "PMX1 cocuk dugum turu bu konumda gecersiz"); };
     if (x.k == N_PROG) for (int c : x.kid) need(c, {N_CLASS, N_FUNC, N_VAR});
     if (x.k == N_CLASS) for (int c : x.kid) need(c, {N_VAR, N_FUNC});
@@ -318,7 +319,7 @@ struct Parser {
   int mk(int k) { return a.mk(k, cur().line); }
 
   static bool isTypeKw(const string& s) {
-    static const char* kw[] = {"void", "bool", "char", "short", "int", "long", "signed", "unsigned", "float", "double", "const", "volatile", "auto", "struct", "class"};
+    static const char* kw[] = {"void", "bool", "char", "short", "int", "long", "signed", "unsigned", "float", "double", "const", "volatile", "auto", "struct", "class", "__float128"};
     for (auto k : kw) if (s == k) return true; return false;
   }
   // niteleyici ad: A::B::C
@@ -350,6 +351,7 @@ struct Parser {
         if (base != -1 || !cls.empty() || aliasNode >= 0) fail("E_PARSE", "cok fazla tur belirtimi", line);
         base = s == "char" ? Y_CHAR : s == "bool" ? Y_BOOL : s == "float" ? Y_FLOAT : s == "double" ? Y_DOUBLE : s == "void" ? Y_VOID : Y_AUTO; p++;
       }
+      else if (s == "__float128") { if (base != -1 || !cls.empty() || aliasNode >= 0 || sg || sh || lg) fail("E_PARSE", "cok fazla tur belirtimi", line); base = Y_FLOAT128; p++; }
       else if (s == "struct" || s == "class") { p++; }
       else if (base == -1 && sg == 0 && sh == 0 && lg == 0 && cls.empty() && aliasNode < 0 && (classes.count(s) || alias.count(s) || (s == "std" && isPk(1, "::")))) {
         size_t z = p; string n = qname(z); p = z;
@@ -371,6 +373,7 @@ struct Parser {
         bool u = sg == 2;
         ty = sh ? (u ? Y_USHORT : Y_SHORT) : lg == 1 ? (u ? Y_ULONG : Y_LONG) : lg == 2 ? (u ? Y_ULLONG : Y_LLONG) : (u ? Y_UINT : Y_INT);
       }
+      if (base == Y_FLOAT128) ty = Y_FLOAT128;
       n = a.mk(N_TY, line); a[n].i = ty;
     }
     a[n].j |= cv;
@@ -477,6 +480,10 @@ struct Parser {
         if (k.tcode == Y_LDOUBLE || !k.udl.empty()) {   // tam kesinlikli deger: i = ham mantis, d'nin ham bitleri = (isaret<<15)|us
           unsigned char raw[16] = {0}; long double v = k.ld; memcpy(raw, &v, 10); uint64_t m; memcpy(&m, raw, 8); uint64_t se = raw[8] | (uint64_t(raw[9]) << 8);
           a[n].i = int64_t(m); double dd; memcpy(&dd, &se, 8); a[n].d = dd;
+        }
+        if (k.tcode == Y_FLOAT128) {   // tam kesinlikli binary128: i = dusuk 64 bit, d'nin ham bitleri = yuksek 64 bit (isaret|us15|mantis ust 48)
+          unsigned char raw[16]; __float128 v = k.q128; memcpy(raw, &v, 16); uint64_t lo, hi; memcpy(&lo, raw, 8); memcpy(&hi, raw + 8, 8);
+          a[n].i = int64_t(lo); double dd; memcpy(&dd, &hi, 8); a[n].d = dd;
         }
         p++; return n; }
       case TK_CHR: { int n = a.mk(N_CHR, line); a[n].i = int64_t(k.u); a[n].j = k.tcode; a[n].s2 = k.udl; p++; return n; }
@@ -1196,6 +1203,7 @@ struct Sema {
     const Node& x = a[n];
     switch (x.k) {
       case N_TY: {
+        if (x.i == Y_FLOAT128) fail("E_UNSUPPORTED", "__float128 yalniz sayisal derleyicide (ifx.pmb) tanimli; bu C++ referans yolu f128 degeri uretmez", x.line);
         Ty t; t.k = int(x.i); t.c = x.j & 1; t.v = x.j & 2;
         if (t.k == Y_CLASS) { auto it = cmap.find(x.s); if (it == cmap.end()) fail("E_TYPE", "bilinmeyen sinif: " + x.s, x.line); t.cls = it->second; }
         return intern(t);
@@ -1923,6 +1931,7 @@ struct Sema {
     switch (x.k) {
       case N_INT: { if (!x.s2.empty()) return genUDL(n); V v = constInt(litTy(int(x.j)), x.i); v.nullLit = x.i == 0; return v; }
       case N_FLT: {
+        if (x.j == Y_FLOAT128) fail("E_UNSUPPORTED", "__float128 sabiti yalniz sayisal derleyicide tanimli", x.line);
         if (!x.s2.empty()) return genUDL(n);
         int t = litTy(int(x.j)); double d = x.d; if (K(t) == Y_FLOAT) d = double(float(d));
         if (K(t) == Y_LDOUBLE && !g->dry) err("E_UNSUPPORTED", "long double sabiti desteklenmiyor (f64'e sessizce indirilmez)");
@@ -2504,6 +2513,7 @@ const char* kPrelude = "int __getc(); void __puti(long long); void __putc(int); 
 
 // istisna onsozu: yalniz kaynakta 'try' varsa eklenir (std::exception / bad_cast / bad_typeid gercek sinif tanimlari; sayisal derleyici bunlari siradan sinif olarak derler)
 const char* kPreludeExc = "class std::exception { public: virtual const char* what() const noexcept { return \"std::exception\"; } }; class std::bad_cast : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_cast\"; } }; class std::bad_typeid : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_typeid\"; } }; ";
+bool usesF128(const string& src) { Lexer l0(src); l0.run(); for (auto& tk : l0.out) if (tk.k == TK_ID && tk.s == "__float128") return true; return false; }
 bool hasTryWord(const string& src) { for (size_t i = 0; i + 3 < src.size(); i++) if (!src.compare(i, 3, "try") && (i == 0 || !(isalnum((unsigned char)src[i-1]) || src[i-1] == '_')) && !(isalnum((unsigned char)src[i+3]) || src[i+3] == '_')) return true; return false; }
 bool slurp(const string& f, string& out) { FILE* fp = fopen(f.c_str(), "rb"); if (!fp) return false; char b[65536]; size_t n; out.clear(); while ((n = fread(b, 1, sizeof b, fp)) > 0) out.append(b, n); fclose(fp); return true; }
 }  // namespace
@@ -2525,7 +2535,7 @@ int ifade_main(int argc, char** argv) {
       ast = pmx_decode(v, root);
     } else {
       string src; if (!slurp(file, src)) fail("E_DOSYA", "kaynak okunamadi: " + file);
-      string full = string(kPrelude) + (hasTryWord(src) ? kPreludeExc : "") + src;
+      string full = string(kPrelude) + (usesF128(src) ? "void pq(__float128); " : "") + (hasTryWord(src) ? kPreludeExc : "") + src;
       Lexer lx(full); lx.run(); Parser ps(ast, lx.out); root = ps.topLevel();
       vector<int64_t> nums = pmx_encode(ast, root);
       if (!pmxOut.empty()) { FILE* fp = fopen(pmxOut.c_str(), "wb"); if (!fp) fail("E_DOSYA", "yazilamadi: " + pmxOut); for (size_t i = 0; i < nums.size(); i++) fprintf(fp, "%lld%c", (long long)nums[i], i + 1 == nums.size() ? '\n' : ' '); fclose(fp); }
