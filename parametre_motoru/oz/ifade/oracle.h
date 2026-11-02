@@ -8,3 +8,4 @@
 static void pi(long long x) { printf("%lld\n", x); }
 static void pc(int c) { putchar(c); }
 static void pd(double d) { printf("%.15g\n", d); }
+static void pl(long double x) { unsigned long long m; unsigned short e; memcpy(&m, &x, 8); memcpy(&e, (char*)&x + 8, 2); printf("%lld %d\n", (long long)m, (int)e); }

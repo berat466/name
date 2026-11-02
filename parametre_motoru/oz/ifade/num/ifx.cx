@@ -9,22 +9,40 @@ const int NC = 120000;
 const int NR = 20000;
 long long RT[NR]; int nrt = 0;
 // ---- PMX1 ----
-int nk_k[NN]; long long nk_i[NN], nk_j[NN], nk_d[NN]; int nk_s1[NN], nk_s2[NN], nk_n[NN], nk_ks[NN]; int kids[NK]; int nkids = 0;
+int nk_line[NN]; int nk_k[NN]; long long nk_i[NN], nk_j[NN], nk_d[NN]; int nk_s1[NN], nk_s2[NN], nk_n[NN], nk_ks[NN]; int kids[NK]; int nkids = 0;
 int s_off[4000], s_len[4000]; char chars[NC]; int nchars = 0; int nstr = 0; int nnodes = 0; int root = 0;
-// ---- yardimci G/C ----
+// ---- dizge havuzu: PMX1 dizgeleri + derleyicinin kendi adlari ayni havuzda, esitlik = kimlik esitligi ----
+int intern_n(const char* t, int n) {
+  int i = 0;
+  while (i < nstr) { if (s_len[i] == n) { int j = 0; while (j < n && chars[s_off[i] + j] == t[j]) j = j + 1; if (j == n) return i; } i = i + 1; }
+  s_off[nstr] = nchars; s_len[nstr] = n; int j = 0; while (j < n) { chars[nchars] = t[j]; nchars = nchars + 1; j = j + 1; }
+  nstr = nstr + 1; return nstr - 1;
+}
+int intern_c(const char* t) { int n = 0; while (t[n]) n = n + 1; return intern_n(t, n); }
+char tmpb[256];
+int intern_buf(int n) { return intern_n(tmpb, n); }
+// ---- temel cikti ----
 int dry = 0; int nreg = 0; int nlab = 0; int foff = 0;
 void wc(int c) { if (dry == 0) __putc(c); }
 void w(const char* s) { while (*s) { wc(*s); s++; } }
 void wn(long long v) { if (dry == 0) __puti(v); }
-void wr(long long r) { w("t"); wn(r); }
+int npair = 0;
+void wr(long long r) {
+  if (r >= 100000) { long long k = (r - 100000) / 2; w("q"); wn(k); if ((r - 100000) % 2) w("h"); return; }
+  w("t"); wn(r);
+}
 void wl(long long l) { w("L"); wn(l); }
-void die(const char* m) { dry = 0; w("@@HATA "); w(m); wc(10); long long* p = 0; p = p - 1; long long z = *p; wn(z); }
+void wstr(int sid) { int i = 0; while (i < s_len[sid]) { wc(chars[s_off[sid] + i]); i = i + 1; } }
+int curline = 0;
+void die(const char* kod, const char* m) { dry = 0; w("@@HATA "); w(kod); w(" satir "); wn(curline); w(": "); w(m); wc(10); long long* p = 0; p = p - 1; long long z = *p; wn(z); }
+
+void die1(const char* m) { die("E_GIRDI", m); }
 // ---- girdi ----
 int rdc() { return __getc(); }
 long long rd() {
   int c = rdc();
   while (c == ' ' || c == 10 || c == 9 || c == 13) c = rdc();
-  if (c < 0) { die("girdi erken bitti"); }
+  if (c < 0) { die1("girdi erken bitti"); }
   int neg = 0;
   if (c == '-') { neg = 1; c = rdc(); }
   long long v = 0;
@@ -36,7 +54,7 @@ long long rd() {
 // yuk: nrec ; kayit: sinif nstr (len chars...)*nstr nnum nums*nnum   (sinif 1 TUR, 2 IKILI, 3 KARSILASTIRMA, 4 AD)
 int rec_off[400]; int nrec = 0;
 long long ty_bits[32], ty_sg[32], ty_cls[32], ty_rank[32]; long long ty_norm[32]; int ty_ok[32];
-long long names[32];
+long long names[64];
 int rstr_pos(int r, int idx) {   // kaydin idx. dizgesinin RT'deki konumu (uzunluk sozcugu)
   int p = rec_off[r]; p = p + 1; int ns = RT[p]; p = p + 1;
   int i = 0;
@@ -84,39 +102,208 @@ void load_rules() {
       ty_ok[tc] = 1; ty_bits[tc] = rnum(r, 1); ty_sg[tc] = rnum(r, 2); ty_cls[tc] = rnum(r, 3); ty_rank[tc] = rnum(r, 4);
       ty_norm[tc] = rstr_pos(r, 1);
     }
-    if (cls == 4) { int i = 0; while (i < 16) { names[i] = rstr_pos(r, i); i = i + 1; } }
+    if (cls == 4) { int i = 0; while (i < 40) { names[i] = rstr_pos(r, i); i = i + 1; } }
     r = r + 1;
   }
 }
+const int NM_ADD80 = 9; const int NM_SUB80 = 10; const int NM_MUL80 = 11; const int NM_DIV80 = 12; const int NM_NEG80 = 13; const int NM_EQ80 = 14; const int NM_LT80 = 15; const int NM_LE80 = 16; const int NM_NE80 = 17; const int NM_TOB80 = 18; const int NM_F64TO80 = 19; const int NM_80TOF64 = 20; const int NM_80TOF32 = 21; const int NM_I64TO80 = 22; const int NM_U64TO80 = 23; const int NM_80TOI64 = 24; const int NM_80TOU64 = 25; const int NM_PACK80 = 26; const int NM_LO80 = 27; const int NM_HI80 = 28;
 const int NM_I2F = 0; const int NM_U2F = 1; const int NM_F2I = 2; const int NM_F2U = 3; const int NM_RND = 4; const int NM_NEG = 5; const int NM_FNEG = 6; const int NM_NOT = 7; const int NM_FEQ = 8;
-// ---- turler ----
-int tk[400]; int te[400]; long long tn[400]; int nty = 0;
-const int Y_BOOL = 1; const int Y_CHAR = 2; const int Y_INT = 7; const int Y_UINT = 8; const int Y_LONG = 9; const int Y_ULONG = 10; const int Y_FLOAT = 13; const int Y_DOUBLE = 14; const int Y_PTR = 17; const int Y_ARR = 20; const int Y_VOID = 0;
-int mkt(int k, int e, long long n) {
+
+// ============================ TURLER ============================
+const int Y_VOID = 0; const int Y_BOOL = 1; const int Y_CHAR = 2; const int Y_UCHAR = 4; const int Y_INT = 7; const int Y_UINT = 8; const int Y_LONG = 9; const int Y_ULONG = 10; const int Y_ULLONG = 12;
+const int Y_FLOAT = 13; const int Y_DOUBLE = 14; const int Y_LDOUBLE = 15; const int Y_NULLPTR = 16; const int Y_PTR = 17; const int Y_REF = 18; const int Y_RREF = 19; const int Y_ARR = 20; const int Y_CLASS = 21; const int Y_AUTO = 22;
+int tk[1500]; int te[1500]; long long tn[1500]; int tcl[1500]; int tcv[1500]; int nty = 0;
+int mk2(int k, int e, long long n, int cls, int c) {
   int i = 0;
-  while (i < nty) { if (tk[i] == k && te[i] == e && tn[i] == n) return i; i = i + 1; }
-  tk[nty] = k; te[nty] = e; tn[nty] = n; nty = nty + 1; return nty - 1;
+  while (i < nty) { if (tk[i] == k && te[i] == e && tn[i] == n && tcl[i] == cls && tcv[i] == c) return i; i = i + 1; }
+  if (nty >= 1500) die("E_SINIR", "cok fazla tur");
+  tk[nty] = k; te[nty] = e; tn[nty] = n; tcl[nty] = cls; tcv[nty] = c; nty = nty + 1; return nty - 1;
 }
+int mkt(int k, int e, long long n) { return mk2(k, e, n, 0 - 1, 0); }
+int unq(int t) { if (tcv[t] == 0) return t; return mk2(tk[t], te[t], tn[t], tcl[t], 0); }
+int withc(int t, int c) { return mk2(tk[t], te[t], tn[t], tcl[t], c); }
+int ptrto(int t) { return mk2(Y_PTR, t, 0, 0 - 1, 0); }
+int lref(int t) { return mk2(Y_REF, t, 0, 0 - 1, 0); }
+int rref(int t) { return mk2(Y_RREF, t, 0, 0 - 1, 0); }
+int arrof(int t, long long n) { return mk2(Y_ARR, t, n, 0 - 1, 0); }
+int clsty(int c) { return mk2(Y_CLASS, 0 - 1, 0, c, 0); }
 int is_int(int t) { return tk[t] >= 1 && tk[t] <= 12; }
 int is_flt(int t) { return tk[t] == 13 || tk[t] == 14; }
 int is_ptr(int t) { return tk[t] == 17; }
 int is_arr(int t) { return tk[t] == 20; }
-int is_sc(int t) { return is_int(t) || is_flt(t) || is_ptr(t); }
+int is_cls(int t) { return tk[t] == 21; }
+int is_ref(int t) { return tk[t] == 18 || tk[t] == 19; }
+int is_ld(int t) { return tk[t] == 15; }
+int is_arith(int t) { return is_int(t) || is_flt(t) || tk[t] == 15; }
+int is_sc(int t) { return is_int(t) || is_flt(t) || is_ptr(t) || tk[t] == 15; }
+int is_void(int t) { return tk[t] == 0; }
+int deref(int t) { if (is_ref(t)) return te[t]; return t; }
 int bits_of(int t) { if (is_ptr(t)) return 64; return ty_bits[tk[t]]; }
 int sg_of(int t) { if (is_ptr(t)) return 0; return ty_sg[tk[t]]; }
 int rank_of(int t) { return ty_rank[tk[t]]; }
+int uns64(int t) { return is_int(t) && sg_of(t) == 0 && bits_of(t) == 64; }
+// ============================ SINIFLAR ============================
+const int NCL = 200;
+int cl_name[NCL]; int cl_base[NCL]; int cl_poly[NCL]; int cl_def[NCL]; int cl_id[NCL]; long long cl_words[NCL]; long long cl_size[NCL]; long long cl_align[NCL]; long long cl_dsize[NCL]; int cl_pod[NCL]; int cl_bi[NCL];
+int cl_f0[NCL]; int cl_nf[NCL]; int ncl = 0;
+int fl_name[4000]; int fl_ty[4000]; long long fl_woff[4000]; long long fl_boff[4000]; int nfl = 0;
+int newclass(int name) {
+  cl_name[ncl] = name; cl_base[ncl] = 0 - 1; cl_poly[ncl] = 0; cl_def[ncl] = 0; cl_id[ncl] = ncl + 1; cl_words[ncl] = 0; cl_size[ncl] = 1; cl_align[ncl] = 1; cl_dsize[ncl] = 0; cl_pod[ncl] = 1; cl_bi[ncl] = 0;
+  cl_f0[ncl] = nfl; cl_nf[ncl] = 0; ncl = ncl + 1; return ncl - 1;
+}
+int find_class(int name) { int i = 0; while (i < ncl) { if (cl_name[i] == name) return i; i = i + 1; } return 0 - 1; }
+int derived_from(int d, int b) { int c = d; while (c >= 0) { if (c == b) return 1; c = cl_base[c]; } return 0; }
+long long size_of(int t);
+long long align_of(int t);
+long long words_of(int t) {
+  if (is_arr(t)) return tn[t] * words_of(te[t]);
+  if (is_cls(t)) return cl_words[tcl[t]];
+  if (is_void(t)) return 0;
+  if (tk[t] == 15) return 2;
+  return 1;
+}
 long long size_of(int t) {
+  if (is_ref(t)) return size_of(te[t]);
   if (is_arr(t)) return tn[t] * size_of(te[t]);
-  if (is_ptr(t)) return 8;
-  if (tk[t] == Y_VOID) die("void boyutu yok");
+  if (is_ptr(t) || tk[t] == Y_NULLPTR) return 8;
+  if (is_cls(t)) return cl_size[tcl[t]];
+  if (is_void(t)) die("E_SIZEOF", "void boyutu yok");
   return ty_bits[tk[t]] / 8;
 }
-long long words_of(int t) { if (is_arr(t)) return tn[t] * words_of(te[t]); return 1; }
-int promote(int t) { if (is_int(t) && rank_of(t) < 4) return mkt(Y_INT, -1, 0); return t; }
+long long align_of(int t) {
+  if (is_ref(t)) return align_of(te[t]);
+  if (is_arr(t)) return align_of(te[t]);
+  if (is_cls(t)) return cl_align[tcl[t]];
+  if (tk[t] == Y_LDOUBLE) return 16;
+  return size_of(t);
+}
+int complete_obj(int t) {
+  if (is_void(t)) return 0;
+  if (is_cls(t)) return cl_def[tcl[t]];
+  if (is_arr(t)) return complete_obj(te[t]);
+  return 1;
+}
+// Itanium ABI sinif dizilimi (alan dizilimi + vptr + taban + EBO + kuyruk dolgusu)
+void layout_class(int ci) {
+  long long off = 0; long long al = 1; long long wd = 0; int b = cl_base[ci];
+  if (b >= 0) {
+    if (cl_poly[b]) cl_poly[ci] = 1;
+    int bempty = cl_poly[b] == 0 && cl_base[b] < 0 && cl_nf[b] == 0;
+    if (bempty == 0) { if (cl_pod[b]) off = cl_size[b]; else off = cl_dsize[b]; al = cl_align[b]; wd = cl_words[b]; }
+  }
+  if (cl_poly[ci] && (b < 0 || cl_poly[b] == 0)) {
+    if (b >= 0 && wd > 0) die("E_SINIF", "polimorfik olmayan tabani olan sinifa sanal islev eklenemez");
+    off = 8; al = 8; wd = 1;
+  }
+  int i = cl_f0[ci]; int e = cl_f0[ci] + cl_nf[ci];
+  while (i < e) {
+    int ft = fl_ty[i];
+    if (is_ref(ft)) die("E_TYPE", "referans uye desteklenmiyor");
+    if (complete_obj(ft) == 0) die("E_TYPE", "uye turu tam degil");
+    long long fa = align_of(ft); off = (off + fa - 1) / fa * fa; fl_boff[i] = off; off = off + size_of(ft);
+    fl_woff[i] = wd; wd = wd + words_of(ft); if (fa > al) al = fa; i = i + 1;
+  }
+  cl_dsize[ci] = off; cl_align[ci] = al; long long sz = (off + al - 1) / al * al; if (sz < 1) sz = 1; cl_size[ci] = sz;
+  if (b >= 0 && cl_poly[ci] == 0 && cl_nf[ci] == 0 && cl_poly[b] == 0 && cl_nf[b] == 0 && cl_size[b] == 1) cl_size[ci] = 1;
+  cl_words[ci] = wd; cl_pod[ci] = 0; if (b < 0 && cl_poly[ci] == 0) cl_pod[ci] = 1; cl_def[ci] = 1;
+}
+// alan arama (taban zinciri dahil): sinif idx, woff, ty doner (-1 yok)
+long long fq_woff = 0; int fq_ty = 0; long long fq_boff = 0;
+int find_field(int ci, int name) {
+  int c = ci;
+  while (c >= 0) {
+    int i = cl_f0[c]; int e = cl_f0[c] + cl_nf[c];
+    while (i < e) { if (fl_name[i] == name) { fq_woff = fl_woff[i]; fq_ty = fl_ty[i]; fq_boff = fl_boff[i]; return c; } i = i + 1; }
+    c = cl_base[c];
+  }
+  return 0 - 1;
+}
+int is_ord(int t) { t = unq(deref(t)); if (!is_cls(t)) return 0; int b = cl_bi[tcl[t]]; return b >= 1 && b <= 3; }
+int ord_conv_ok(int from, int to) { int a = cl_bi[tcl[unq(from)]]; int b = cl_bi[tcl[unq(to)]]; return a >= 1 && a <= 3 && b >= 1 && b <= 3 && a <= b; }
+// ============================ ISLEVLER ============================
+const int NF = 800;
+int fn_name[NF]; int fn_cls[NF]; int fn_ret[NF]; int fn_np[NF]; int fn_pt[NF * 8]; int fn_fl[NF]; int fn_node[NF]; int fn_bi[NF]; int fn_vroot[NF]; int fn_used[NF]; int fn_gen[NF]; int nfn = 0; int fn_line[NF];
+const int F_CONST = 1; const int F_VIRT = 2; const int F_NOEX = 4; const int F_DEFAULT = 16; const int F_OVR = 32; const int F_DELETE = 64; const int F_EXPL = 128; const int F_PURE = 256;
+int fn_has(int f, int bit) { return (fn_fl[f] & bit) != 0; }
+// ============================ DEGER / UretIM ============================
+const int NEF = 8;
+struct V { long long ty; long long cat; long long reg; long long ci; long long cv; long long key; long long nl; long long vp; long long ne; long long ek[8]; long long er[8]; };
+V mkv(long long ty, long long cat, long long reg) { V v; v.ty = ty; v.cat = cat; v.reg = reg; v.ci = 0; v.cv = 0; v.key = 0; v.nl = 0; v.vp = 0; v.ne = 0; return v; }
+V imm(long long ty, long long val) { V v = mkv(ty, 0, 0 - 1); v.ci = 1; v.cv = val; return v; }
+V novalue() { return mkv(Y_VOID, 0, 0 - 2); }
+void add_eff(V& v, long long key, long long rw) { if (key == 0) return; if (v.ne < NEF) { v.ek[v.ne] = key; v.er[v.ne] = rw; v.ne = v.ne + 1; } }
+void merge_eff(V& v, V& o) { int i = 0; while (i < o.ne) { add_eff(v, o.ek[i], o.er[i]); i = i + 1; } }
+int unseq_bad(V& a, V& b) {
+  int i = 0;
+  while (i < a.ne + 1) {
+    long long ka = 0; long long ra = 0;
+    if (i < a.ne) { ka = a.ek[i]; ra = a.er[i]; } else if (a.cat == 1 && a.key != 0 && a.ty >= 0) { ka = a.key; ra = 1; }
+    int j = 0;
+    while (ka != 0 && j < b.ne + 1) {
+      long long kb = 0; long long rb = 0;
+      if (j < b.ne) { kb = b.ek[j]; rb = b.er[j]; } else if (b.cat == 1 && b.key != 0 && b.ty >= 0) { kb = b.key; rb = 1; }
+      if (kb == ka && (ra == 2 || rb == 2)) return 1;
+      j = j + 1;
+    }
+    i = i + 1;
+  }
+  return 0;
+}
+long long newreg() { nreg = nreg + 1; return nreg - 1; }
+void opr(V v) { if (v.reg < 0) wn(v.cv); else wr(v.reg); }
+void ins2(const char* op, long long d, V a) { w("  "); w(op); w(" "); wr(d); w(", "); opr(a); wc(10); }
+void ins3(const char* op, long long d, V a, V b) { w("  "); w(op); w(" "); wr(d); w(", "); opr(a); w(", "); opr(b); wc(10); }
+void ins2t(int nm, long long d, V a) { w("  "); wrt(nm); w(" "); wr(d); w(", "); opr(a); wc(10); }
+void ins3t(int nm, long long d, V a, V b) { w("  "); wrt(nm); w(" "); wr(d); w(", "); opr(a); w(", "); opr(b); wc(10); }
+V mat(V v) { if (v.reg >= 0) return v; long long r = newreg(); w("  mov "); wr(r); w(", "); wn(v.cv); wc(10); V o = v; o.reg = r; o.ci = 0; return o; }
+long long ndat = 0; long long dat[2000];
+V fconst(int ty, long long bits) {
+  dat[ndat] = bits; ndat = ndat + 1; long long a = newreg(); long long r = newreg();
+  w("  mov "); wr(a); w(", d"); wn(ndat - 1); wc(10); w("  ld "); wr(r); w(", "); wr(a); w(", 0\n"); return mkv(ty, 0, r);
+}
+void trapnow() { long long r = newreg(); w("  ld "); wr(r); w(", -1, 0\n"); }
+int newlab() { nlab = nlab + 1; return nlab - 1; }
+void nullchk(V p) {
+  if (dry) return;
+  if (p.ci && p.cv == 0) { trapnow(); return; }
+  int ok = newlab(); V m = mat(p); w("  jnz "); wr(m.reg); w(", "); wl(ok); wc(10); trapnow(); wl(ok); w(":\n");
+}
+int slot(long long wd) { int o = foff; foff = foff + wd; if (wd < 1) foff = o + 1; return o; }
+V slotaddr(int off) { long long r = newreg(); w("  add "); wr(r); w(", fp, "); wn(off); wc(10); return mkv(0, 1, r); }
+void zero_n(V dst, long long n) {
+  long long i = 0;
+  if (n <= 8) { while (i < n) { w("  st 0, "); opr(dst); w(", "); wn(i); wc(10); i = i + 1; } return; }
+  long long ri = newreg(); long long rp = newreg(); long long rc = newreg(); int top = newlab(); int end = newlab();
+  w("  mov "); wr(ri); w(", 0\n  mov "); wr(rp); w(", "); opr(dst); wc(10); wl(top); w(":\n  lt "); wr(rc); w(", "); wr(ri); w(", "); wn(n); wc(10);
+  w("  jz "); wr(rc); w(", "); wl(end); w("\n  st 0, "); wr(rp); w(", 0\n  add "); wr(rp); w(", "); wr(rp); w(", 1\n  add "); wr(ri); w(", "); wr(ri); w(", 1\n  jmp "); wl(top); wc(10); wl(end); w(":\n");
+}
+void copy_n(V dst, V src, long long from, long long n) {
+  if (n - from <= 8) { long long i = from; while (i < n) { long long t = newreg(); w("  ld "); wr(t); w(", "); opr(src); w(", "); wn(i); wc(10); w("  st "); wr(t); w(", "); opr(dst); w(", "); wn(i); wc(10); i = i + 1; } return; }
+  long long i = newreg(); long long c = newreg(); int top = newlab(); int end = newlab(); long long pa = newreg(); long long pb = newreg(); long long t = newreg();
+  w("  add "); wr(pa); w(", "); opr(dst); w(", "); wn(from); wc(10); w("  add "); wr(pb); w(", "); opr(src); w(", "); wn(from); wc(10); w("  mov "); wr(i); w(", "); wn(from); wc(10);
+  wl(top); w(":\n  lt "); wr(c); w(", "); wr(i); w(", "); wn(n); w("\n  jz "); wr(c); w(", "); wl(end); w("\n  ld "); wr(t); w(", "); wr(pb); w(", 0\n  st "); wr(t); w(", "); wr(pa); w(", 0\n");
+  w("  add "); wr(pa); w(", "); wr(pa); w(", 1\n  add "); wr(pb); w(", "); wr(pb); w(", 1\n  add "); wr(i); w(", "); wr(i); w(", 1\n  jmp "); wl(top); wc(10); wl(end); w(":\n");
+}
+void set_vptr(V addr, int ci) { if (cl_poly[ci]) { w("  st "); wn(cl_id[ci]); w(", "); opr(addr); w(", 0\n"); } }
+void copy_obj(V dst, V src, int dc, int construct) {
+  long long from = 0; if (cl_poly[dc]) from = 1;
+  copy_n(dst, src, from, cl_words[dc]); if (construct) set_vptr(dst, dc);
+}
+V tempobj(int clsT) { int ci = tcl[clsT]; int off = slot(cl_words[ci]); V a = slotaddr(off); set_vptr(a, ci); V v = mkv(unq(clsT), 0, a.reg); return v; }
+V tempscalar(int t, V val) { int off = slot(1); V a = slotaddr(off); V m = mat(val); w("  st "); opr(m); w(", "); opr(a); w(", 0\n"); V v = mkv(t, 1, a.reg); return v; }
+long long fold(long long x, int t) {
+  if (tk[t] == Y_BOOL) { if (x != 0) return 1; return 0; }
+  if (is_ptr(t) || bits_of(t) >= 64) return x;
+  int sh = 64 - bits_of(t);
+  if (sg_of(t)) return (x << sh) >> sh;
+  return (x << sh) >> sh & ((1LL << bits_of(t)) - 1);
+}
+int promote(int t) { t = unq(t); if (is_int(t) && rank_of(t) < 4) return mkt(Y_INT, 0 - 1, 0); return t; }
 int uac(int x, int y) {
-  if (tk[x] == 15 || tk[y] == 15) die("desteklenmiyor: long double");
-  if (tk[x] == Y_DOUBLE || tk[y] == Y_DOUBLE) return mkt(Y_DOUBLE, -1, 0);
-  if (tk[x] == Y_FLOAT || tk[y] == Y_FLOAT) return mkt(Y_FLOAT, -1, 0);
+  x = unq(x); y = unq(y);
+  if (tk[x] == Y_LDOUBLE || tk[y] == Y_LDOUBLE) return mkt(Y_LDOUBLE, 0 - 1, 0);
+  if (tk[x] == Y_DOUBLE || tk[y] == Y_DOUBLE) return mkt(Y_DOUBLE, 0 - 1, 0);
+  if (tk[x] == Y_FLOAT || tk[y] == Y_FLOAT) return mkt(Y_FLOAT, 0 - 1, 0);
   x = promote(x); y = promote(y);
   if (x == y) return x;
   int sx = sg_of(x); int sy = sg_of(y);
@@ -124,66 +311,78 @@ int uac(int x, int y) {
   int u = x; int s = y; if (sx) { u = y; s = x; }
   if (rank_of(u) >= rank_of(s)) return u;
   if (bits_of(s) > bits_of(u)) return s;
-  if (tk[s] == 9) return mkt(10, -1, 0);
-  if (tk[s] == 11) return mkt(12, -1, 0);
-  return mkt(Y_UINT, -1, 0);
+  if (tk[s] == 9) return mkt(10, 0 - 1, 0);
+  if (tk[s] == 11) return mkt(12, 0 - 1, 0);
+  return mkt(Y_UINT, 0 - 1, 0);
 }
-int uns64(int t) { return is_int(t) && sg_of(t) == 0 && bits_of(t) == 64; }
-// ---- deger ----
-struct V { long long ty; long long cat; long long reg; long long ci; long long cv; };
-V mkv(long long ty, long long cat, long long reg) { V v; v.ty = ty; v.cat = cat; v.reg = reg; v.ci = 0; v.cv = 0; return v; }
-V imm(long long ty, long long val) { V v; v.ty = ty; v.cat = 0; v.reg = 0 - 1; v.ci = 1; v.cv = val; return v; }
-long long newreg() { nreg = nreg + 1; return nreg - 1; }
-void opr(V v) { if (v.reg < 0) wn(v.cv); else wr(v.reg); }
-void ins2(const char* op, long long d, V a) { w("  "); w(op); w(" "); wr(d); w(", "); opr(a); wc(10); }
-void ins3(const char* op, long long d, V a, V b) { w("  "); w(op); w(" "); wr(d); w(", "); opr(a); w(", "); opr(b); wc(10); }
-void ins2t(int nm, long long d, V a) { w("  "); wrt(nm); w(" "); wr(d); w(", "); opr(a); wc(10); }
-void ins3t(int nm, long long d, V a, V b) { w("  "); wrt(nm); w(" "); wr(d); w(", "); opr(a); w(", "); opr(b); wc(10); }
-V mat(V v) {   // anlik -> yazmac
-  if (v.reg >= 0) return v;
-  long long r = newreg(); w("  mov "); wr(r); w(", "); wn(v.cv); wc(10);
-  V o = v; o.reg = r; o.ci = 0; return o;
+// ---- f80 (long double): 2 sozcuklu bellek degeri; yazmac cifti ardisik numarali, Bolum 01 f80 komutlariyla ----
+long long newreg2() { long long r = 100000 + 2 * npair; npair = npair + 1; w("  mov "); wr(r); w(", 0\n  mov "); wr(r + 1); w(", 0\n"); return r; }
+int ldty() { return mkt(Y_LDOUBLE, 0 - 1, 0); }
+long long ld_load(V a) {   // a: bellekteki f80'in adresi (lvalue ya da gecici) -> yazmac cifti
+  V m = mat(a); long long p = newreg2(); w("  ld "); wr(p); w(", "); opr(m); w(", 0\n  ld "); wr(p + 1); w(", "); opr(m); w(", 1\n"); return p;
 }
-long long ndat = 0; long long dat[2000];
-V fconst(int ty, long long bits) {
-  dat[ndat] = bits; ndat = ndat + 1;
-  long long a = newreg(); long long r = newreg();
-  w("  mov "); wr(a); w(", d"); wn(ndat - 1); wc(10);
-  w("  ld "); wr(r); w(", "); wr(a); w(", 0\n");
-  return mkv(ty, 0, r);
+V ld_new(long long p) {   // yazmac cifti -> yeni gecici bellek degeri (prvalue, adres)
+  int off = slot(2); V ad = slotaddr(off); w("  st "); wr(p); w(", "); opr(ad); w(", 0\n  st "); wr(p + 1); w(", "); opr(ad); w(", 1\n");
+  return mkv(ldty(), 0, ad.reg);
 }
-void trapnow() { long long r = newreg(); w("  ld "); wr(r); w(", -1, 0\n"); }
-void nullchk(V p) {
-  if (dry) return;
-  long long ok = nlab; nlab = nlab + 1;
-  V m = mat(p);
-  w("  jnz "); wr(m.reg); w(", "); wl(ok); wc(10); trapnow(); wl(ok); w(":\n");
+V to_ld(V v) { v = rval(v); if (is_ld(v.ty)) return v; if (is_arith(v.ty) == 0) die("E_CONV", "long double donusumu yok"); return convert_arith(v, ldty()); }
+V ld_binop(const char* tok, V l, V r) {
+  l = to_ld(l); r = to_ld(r);
+  int cr = find_rule(3, tok); long long pa = ld_load(l); long long pb = ld_load(r);
+  if (cr >= 0) {
+    int nmp = rstr_pos(cr, 4); long long d = newreg(); int swapw = rnum(cr, 3);
+    if (rt_len(nmp) == 0) die("E_OP", "long double karsilastirmasi tabloda yok");
+    if (swapw) ins3t(nmp, d, mkv(0, 0, pb), mkv(0, 0, pa)); else ins3t(nmp, d, mkv(0, 0, pa), mkv(0, 0, pb));
+    V o = mkv(bool_t(), 0, d); merge_eff(o, l); merge_eff(o, r); return o;
+  }
+  int ar = find_rule(2, tok); if (ar < 0) die("E_OP", "bilinmeyen ikili islec");
+  int nmp = rstr_pos(ar, 4); if (rt_len(nmp) == 0) die("E_TYPE", "islec long double turunde tanimli degil");
+  long long d = newreg2(); ins3t(nmp, d, mkv(0, 0, pa), mkv(0, 0, pb));
+  V o = ld_new(d); merge_eff(o, l); merge_eff(o, r); return o;
 }
-// normallestirme: tablo (ty_norm) bos degilse o komut; bool icin ne
+V ld_const(long long lo, long long hi) {
+  long long a = newreg(); long long b = newreg(); w("  mov "); wr(a); w(", "); wn(lo); w("\n  mov "); wr(b); w(", "); wn(hi); wc(10);
+  long long p = newreg2(); w("  "); wrt(names[NM_PACK80]); w(" "); wr(p); w(", "); wr(a); w(", "); wr(b); wc(10); return ld_new(p);
+}
+void ld_copy(V dst, V src) { long long p = ld_load(src); V m = mat(dst); w("  st "); wr(p); w(", "); opr(m); w(", 0\n  st "); wr(p + 1); w(", "); opr(m); w(", 1\n"); }
+int is_mem(int t) { return is_cls(t) || is_ld(t); }
+V to_mem_value(V v, int T) { T = unq(T); if (is_ld(T)) return to_ld(v); return to_class_value(v, T); }
+V tempmem(int T) { T = unq(T); if (is_ld(T)) { int off = slot(2); V a = slotaddr(off); V o = mkv(T, 0, a.reg); return o; } return tempobj(T); }
 V norm(V v, int t) {
+  if (is_ld(t)) { v.ty = t; return v; }
   if (is_flt(t)) { if (tk[t] == Y_FLOAT) { V m = mat(v); long long d = newreg(); ins2t(names[NM_RND], d, m); return mkv(t, 0, d); } v.ty = t; return v; }
   if (tk[t] == Y_BOOL) { V m = mat(v); long long d = newreg(); ins3("ne", d, m, imm(t, 0)); return mkv(t, 0, d); }
   if (is_ptr(t) || bits_of(t) == 64) { v.ty = t; return v; }
   V m = mat(v); long long d = newreg(); ins2t(ty_norm[tk[t]], d, m); return mkv(t, 0, d);
 }
 V rval(V v) {
-  if (is_arr(v.ty)) { V r = v; r.ty = mkt(Y_PTR, te[v.ty], 0); r.cat = 0; return r; }
-  if (v.cat == 0) return v;
-  long long d = newreg(); w("  ld "); wr(d); w(", "); opr(v); w(", 0\n");
-  return mkv(v.ty, 0, d);
+  if (is_arr(v.ty)) { V r = v; r.ty = ptrto(te[v.ty]); r.cat = 0; return r; }
+  if (v.cat == 0 || is_cls(v.ty) || is_void(v.ty)) { V r = v; r.ty = unq(v.ty); if (is_cls(v.ty) == 0) r.cat = 0; return r; }
+  if (is_ld(v.ty)) { long long p = ld_load(v); V o = ld_new(p); o.ne = v.ne; int q = 0; while (q < v.ne) { o.ek[q] = v.ek[q]; o.er[q] = v.er[q]; q = q + 1; } add_eff(o, v.key, 1); return o; }
+  V r = mkv(unq(v.ty), 0, 0); r.ne = v.ne; int i = 0; while (i < v.ne) { r.ek[i] = v.ek[i]; r.er[i] = v.er[i]; i = i + 1; }
+  r.reg = newreg(); w("  ld "); wr(r.reg); w(", "); opr(v); w(", 0\n");
+  add_eff(r, v.key, 1);
+  return r;
 }
-long long fold(long long x, int t) {   // sabit normallestirme (tablodaki bit/isaret ozelliklerinden)
-  if (tk[t] == Y_BOOL) { if (x != 0) return 1; return 0; }
-  if (is_ptr(t) || bits_of(t) >= 64) return x;
-  int sh = 64 - bits_of(t);
-  if (sg_of(t)) return (x << sh) >> sh;
-  return (x << sh) >> sh & ((1LL << bits_of(t)) - 1);
-}
-V convert(V v, int to) {   // v rvalue skaler -> to
-  int from = v.ty;
+V convert_arith(V v, int to) {
+  int from = v.ty; to = unq(to);
   if (from == to) return v;
+  if (is_ld(to) && is_ld(from) == 0) {
+    long long p = newreg2();
+    if (is_int(from)) { V m = mat(v); if (uns64(from)) ins2t(names[NM_U64TO80], p, m); else ins2t(names[NM_I64TO80], p, m); }
+    else { V m = mat(v); ins2t(names[NM_F64TO80], p, m); }
+    V o = ld_new(p); o.ne = v.ne; return o;
+  }
+  if (is_ld(from) && is_ld(to) == 0) {
+    long long p = ld_load(v); V pv = mkv(from, 0, p); long long d = newreg();
+    if (tk[to] == Y_BOOL) { ins2t(names[NM_TOB80], d, pv); return mkv(to, 0, d); }
+    if (tk[to] == Y_DOUBLE) { ins2t(names[NM_80TOF64], d, pv); return mkv(to, 0, d); }
+    if (tk[to] == Y_FLOAT) { ins2t(names[NM_80TOF32], d, pv); return mkv(to, 0, d); }
+    if (uns64(to)) ins2t(names[NM_80TOU64], d, pv); else ins2t(names[NM_80TOI64], d, pv);
+    V o = mkv(to, 0, d); if (bits_of(to) < 64) return norm(o, to); return o;
+  }
   if (is_int(from) && is_int(to)) {
-    if (v.ci) return imm(to, fold(v.cv, to));
+    if (v.ci) { V o = imm(to, fold(v.cv, to)); o.ne = v.ne; return o; }
     int need = 1;
     if (tk[to] != Y_BOOL) {
       if (tk[from] == Y_BOOL) need = 0;
@@ -191,7 +390,7 @@ V convert(V v, int to) {   // v rvalue skaler -> to
       else if (sg_of(from) == 0 && sg_of(to) == 1 && bits_of(to) > bits_of(from)) need = 0;
       else if (bits_of(to) == 64) need = 0;
     }
-    if (!need) { v.ty = to; return v; }
+    if (need == 0) { v.ty = to; return v; }
     return norm(v, to);
   }
   if (is_int(from) && is_flt(to)) {
@@ -206,61 +405,274 @@ V convert(V v, int to) {   // v rvalue skaler -> to
     V o = mkv(to, 0, d); if (bits_of(to) < 64) return norm(o, to); return o;
   }
   if (is_flt(from) && is_flt(to)) { if (tk[to] == Y_FLOAT) return norm(v, to); v.ty = to; return v; }
-  if (is_ptr(to)) {
-    if (is_ptr(from)) { v.ty = to; return v; }
-    if (is_int(from) && v.ci && v.cv == 0) { return imm(to, 0); }
-    die("ortuk donusum yok: isaretciye");
-  }
-  if (is_int(from) && is_ptr(from) == 0 && tk[to] == Y_BOOL && is_ptr(from)) { }
-  if (is_ptr(from) && tk[to] == Y_BOOL) { V m = mat(v); long long d = newreg(); ins3("ne", d, m, imm(from, 0)); return mkv(to, 0, d); }
-  die("ortuk donusum yok"); return v;
+  die("E_DONUSUM", "sayisal donusum yok"); return v;
 }
-V condbool(V v) {
+// ============================ DONUSUM SIRALARI / ASIRI YUKLEME ============================
+int N_CONV = 0; int N_CALLOP = 0; int N_EQ = 0; int N_NE = 0; int N_LT = 0; int N_GT = 0; int N_LE = 0; int N_GE = 0; int N_SS = 0; int N_ASG = 0; int N_NEG = 0; int N_NOT = 0; int N_DEREF = 0; int N_ADDR = 0; int N_IDX = 0; int N_ARW = 0; int N_INC = 0; int N_DEC = 0; int N_TILDE = 0; int N_PLUS = 0;
+int std_rank(int from, V* v, int to) {   // -1 yok, 0 tam, 1 terfi, 2 donusum
+  from = unq(from); to = unq(to);
+  if (from == to) return 0;
+  int fk = tk[from]; int tkk = tk[to];
+  if (is_arith(from) && is_arith(to)) {
+    if (tkk == Y_BOOL) return 2;
+    if (tkk == Y_INT && fk >= Y_BOOL && fk <= 6) return 1;
+    if (tkk == Y_DOUBLE && fk == Y_FLOAT) return 1;
+    return 2;
+  }
+  if (tkk == Y_PTR) {
+    if (fk == Y_NULLPTR) return 2;
+    if (v != 0 && is_int(from) && v->ci && v->cv == 0 && v->nl) return 2;
+    if (fk == Y_PTR) {
+      int fe = te[from]; int tee = te[to];
+      if (unq(fe) == unq(tee)) { if ((tcv[fe] == 0 || tcv[tee]) ) return 0; return 0 - 1; }
+      if (tk[tee] == Y_VOID) { if (tcv[fe] == 0 || tcv[tee]) return 2; return 0 - 1; }
+      if (is_cls(fe) && is_cls(tee) && derived_from(tcl[fe], tcl[tee]) && (tcv[fe] == 0 || tcv[tee])) return 2;
+      return 0 - 1;
+    }
+    return 0 - 1;
+  }
+  if (tkk == Y_BOOL && (fk == Y_PTR || fk == Y_NULLPTR)) return 2;
+  if (tkk == Y_NULLPTR && v != 0 && is_int(from) && v->ci && v->cv == 0 && v->nl) return 2;
+  return 0 - 1;
+}
+int meth_cand[64]; int nmeth_cand = 0;
+void methods_named(int ci, int name) {   // ad gizleme: ilk adi tasiyan sinifin yontemleri
+  nmeth_cand = 0; int c = ci;
+  while (c >= 0) {
+    int f = 0;
+    while (f < nfn) { if (fn_cls[f] == c && fn_name[f] == name && nmeth_cand < 64) { meth_cand[nmeth_cand] = f; nmeth_cand = nmeth_cand + 1; } f = f + 1; }
+    if (nmeth_cand > 0) return;
+    c = cl_base[c];
+  }
+}
+int conv_cands[32]; int nconv = 0;
+void conv_funcs_of(int ci) {
+  nconv = 0; int c = ci;
+  while (c >= 0) {
+    int f = 0;
+    while (f < nfn) {
+      if (fn_cls[f] == c && fn_name[f] == N_CONV) {
+        int hidden = 0; int k = 0; while (k < nconv) { if (unq(deref(fn_ret[conv_cands[k]])) == unq(deref(fn_ret[f]))) hidden = 1; k = k + 1; }
+        if (hidden == 0 && nconv < 32) { conv_cands[nconv] = f; nconv = nconv + 1; }
+      }
+      f = f + 1;
+    }
+    c = cl_base[c];
+  }
+}
+int pick_sub = 0;
+int pick_user_conv(int clsT, int to, int allow_expl) {   // donusum islevi ya da -1; belirsizse hata
+  to = unq(deref(to)); int best = 0 - 1; int bestr = 99; int amb = 0;
+  conv_funcs_of(tcl[unq(clsT)]);
+  int n = nconv; int cs[32]; int i = 0; while (i < n) { cs[i] = conv_cands[i]; i = i + 1; }
+  i = 0;
+  while (i < n) {
+    int m = cs[i]; i = i + 1;
+    if (fn_has(m, F_EXPL) && allow_expl == 0) continue;
+    int rt = unq(deref(fn_ret[m])); int r;
+    if (is_cls(rt) || is_cls(to)) { r = 0 - 1; if (rt == to) r = 0; else if (is_cls(rt) && is_cls(to) && derived_from(tcl[rt], tcl[to])) r = 2; }
+    else r = std_rank(rt, 0, to);
+    if (r < 0) continue;
+    if (r < bestr) { best = m; bestr = r; amb = 0; } else if (r == bestr) amb = 1;
+  }
+  if (amb) die("E_AMBIG", "belirsiz kullanici donusumu");
+  pick_sub = bestr; return best;
+}
+long long arg_rank(V& a, int P) {   // r*16+t ; -1 gecersiz
+  int aty = a.ty; int lv = a.cat == 1;
+  if (is_ref(P)) {
+    int rr = tk[P] == Y_RREF; int tgt = te[P]; int tu = unq(tgt); int tc = tcv[tgt]; int au = unq(aty); int ac = tcv[aty];
+    int exactish = au == tu;
+    if (is_cls(au) && is_cls(tu) && derived_from(tcl[au], tcl[tu])) exactish = 1;
+    if (is_arr(au) && is_arr(tu) && tn[au] == tn[tu] && unq(te[au]) == unq(te[tu])) exactish = 1;
+    if (exactish) {
+      if (ac && tc == 0) return 0 - 1;
+      long long r0 = 2; if (au == tu) r0 = 0;
+      if (rr == 0) {
+        if (tc == 0 && lv == 0) return 0 - 1;
+        long long t0 = 0; if (tc) t0 = 1; if (lv == 0) t0 = t0 + 2; return r0 * 16 + t0;
+      }
+      if (lv) return 0 - 1;
+      long long t1 = 0; if (tc) t1 = 1; return r0 * 16 + t1;
+    }
+    if (tc == 0 && rr == 0) return 0 - 1;
+    long long r;
+    if (is_cls(au)) { int m = pick_user_conv(au, tu, 0); if (m < 0) return 0 - 1; r = 4; }
+    else if (is_cls(tu)) return 0 - 1;
+    else {
+      int src = au; if (is_arr(au)) src = ptrto(te[au]);
+      int sr = std_rank(src, &a, tu); if (sr < 0) return 0 - 1; r = sr; if (r < 1) r = 1;
+    }
+    long long tt = 3; if (rr) { tt = 0; if (tc) tt = 1; }
+    return r * 16 + tt;
+  }
+  int pu = unq(P); int au = unq(aty); if (is_arr(au)) au = ptrto(te[au]);
+  if (is_cls(pu)) {
+    if (au == pu) return 0;
+    if (is_cls(au) && derived_from(tcl[au], tcl[pu])) return 32;
+    if (is_cls(au)) { int m = pick_user_conv(au, pu, 0); if (m >= 0) return 64; }
+    return 0 - 1;
+  }
+  if (is_cls(au)) { int m = pick_user_conv(au, pu, 0); if (m >= 0) return (4 + pick_sub) * 16; return 0 - 1; }
+  int r = std_rank(au, &a, pu); if (r < 0) return 0 - 1; return r * 16;
+}
+int res_ok[64]; long long res_rk[64 * 9]; int nres_ok = 0;
+// aday secimi. self: ortuk nesne (uye) ; dondurur islev, -1 yok, -2 belirsiz
+int resolve(int* cands, int nc, V* self, V* args, int na) {
+  nres_ok = 0; int ci = 0;
+  while (ci < nc) {
+    int f = cands[ci]; ci = ci + 1;
+    if (fn_np[f] != na) continue;
+    int good = 1; long long rk[9]; int nr = 0;
+    if (self != 0 && fn_cls[f] >= 0) {
+      int objc = tcv[self->ty]; if (objc && fn_has(f, F_CONST) == 0) continue;
+      int su = unq(self->ty); long long r;
+      if (is_cls(su) && derived_from(tcl[su], fn_cls[f])) { if (su == clsty(fn_cls[f])) r = 0; else r = 2; } else continue;
+      long long t0 = 0; if ((objc != 0) != (fn_has(f, F_CONST) != 0)) t0 = 1;
+      rk[nr] = r * 16 + t0; nr = nr + 1;
+    } else if (self == 0 && fn_cls[f] >= 0) continue;
+    int i = 0;
+    while (i < na && good) { long long a = arg_rank(args[i], fn_pt[f * 8 + i]); if (a < 0) good = 0; else { rk[nr] = a; nr = nr + 1; } i = i + 1; }
+    if (good && nres_ok < 64) { res_ok[nres_ok] = f; int k = 0; while (k < nr) { res_rk[nres_ok * 9 + k] = rk[k]; k = k + 1; } res_rk[nres_ok * 9 + 8] = nr; nres_ok = nres_ok + 1; }
+  }
+  if (nres_ok == 0) return 0 - 1;
+  int i = 0;
+  while (i < nres_ok) {
+    int isbest = 1; int j = 0;
+    while (j < nres_ok && isbest) {
+      if (i != j) {
+        int allle = 1; int anylt = 0; int k = 0; int n = res_rk[i * 9 + 8];
+        while (k < n) { long long x = res_rk[i * 9 + k]; long long y = res_rk[j * 9 + k]; if (x > y) allle = 0; if (x < y) anylt = 1; k = k + 1; }
+        if (allle == 0 || anylt == 0) isbest = 0;
+      }
+      j = j + 1;
+    }
+    if (isbest) return res_ok[i];
+    i = i + 1;
+  }
+  return 0 - 2;
+}
+// ============================ CAGRI / DONUSUM UYGULAMASI ============================
+int may_throw = 0; int tiname_used = 0;
+V callfn(int fi, V* self, V* args, int na, int allowvirt);
+int is_void_v(V& v) { return is_void(v.ty); }
+V bool_of(V v) {   // skaler rvalue -> bool
+  int bt = mkt(Y_BOOL, 0 - 1, 0);
+  if (tk[v.ty] == Y_NULLPTR) { return imm(bt, 0); }
+  if (is_arith(v.ty)) return convert_arith(v, bt);
+  if (v.ci) { return imm(bt, v.cv != 0); }
+  V m = mat(v); long long d = newreg(); ins3("ne", d, m, imm(v.ty, 0)); return mkv(bt, 0, d);
+}
+V to_scalar(V v, int to, int allow_expl) {
+  to = unq(to);
+  if (is_cls(unq(v.ty))) {
+    int m = pick_user_conv(v.ty, to, allow_expl); if (m < 0) die("E_CONV", "donusum yok");
+    V r = callfn(m, &v, 0, 0, 0); v = r;
+  }
   v = rval(v);
-  if (!is_sc(v.ty)) die("kosul skaler olmali");
-  return convert(v, mkt(Y_BOOL, -1, 0));
+  if (v.ty == to) return v;
+  if (is_void(v.ty)) die("E_CONV", "void deger kullanilamaz");
+  int r = std_rank(v.ty, &v, to); if (r < 0) die("E_CONV", "ortuk donusum yok");
+  if (is_arith(v.ty) && is_arith(to)) return convert_arith(v, to);
+  if (tk[to] == Y_BOOL) return bool_of(v);
+  if (tk[v.ty] == Y_NULLPTR || (is_int(v.ty) && v.ci)) { V z = imm(to, 0); z.ne = v.ne; return z; }
+  v.ty = to; return v;
 }
-// ---- sembol/islev tablolari ----
-int vname[2000]; int vty[2000]; int voff[2000]; int nvars = 0;
-int fn_name[400]; int fn_ret[400]; int fn_np[400]; int fn_pt[3200]; int fn_node[400]; int fn_bi[400]; int nfn = 0; int cur_fn = 0;
-int kid(int n, int i) { return kids[nk_ks[n] + i]; }
-int slot(long long w) { int o = foff; foff = foff + w; if (w < 1) foff = o + 1; return o; }
-int nodek(int n) { return nk_k[n]; }
-const int N_INT = 0; const int N_FLT = 1; const int N_CHR = 2; const int N_BOOL = 4; const int N_NULLPTR = 5; const int N_ID = 7; const int N_UNARY = 8; const int N_BINARY = 9; const int N_ASSIGN = 10;
-const int N_COND = 11; const int N_COMMA = 12; const int N_CALL = 13; const int N_INDEX = 14; const int N_PREINC = 17; const int N_POSTINC = 18; const int N_SIZEOF_E = 19; const int N_SIZEOF_T = 20;
-const int N_STR = 3; const int N_CAST = 25; const int N_FCAST = 26; const int N_INITLIST = 28; const int N_TY = 29; const int N_TPTR = 30; const int N_TARR = 33; const int N_BLOCK = 34; const int N_VAR = 35; const int N_DECLS = 36;
-const int N_EXPRSTMT = 37; const int N_IF = 38; const int N_WHILE = 39; const int N_DO = 40; const int N_FOR = 41; const int N_RETURN = 42; const int N_BREAK = 43; const int N_CONTINUE = 44; const int N_EMPTY = 45;
-const int N_FUNC = 46; const int N_PARAMS = 47; const int N_PROG = 49; const int N_NONE = 51;
-V gen(int n);
-int gname[400]; int gty[400]; int gnode[400]; int ngl = 0;
-int str_node[400]; int nstrn = 0;
-int findgl(int sid) { int i = 0; while (i < ngl) { if (gname[i] == sid) return i; i = i + 1; } return -1; }
-long long ceval(int n) {
-  int k = nodek(n);
-  if (k == N_INT || k == N_CHR || k == N_BOOL) return nk_i[n];
-  if (k == N_SIZEOF_T || k == N_SIZEOF_E) { dry = dry + 1; V v = gen(n); dry = dry - 1; if (v.ci == 0) die("sabit ifade gerekli"); return v.cv; }
-  if (k == N_UNARY && seqc(nk_s1[n], "-")) return 0 - ceval(kid(n, 0));
-  if (k == N_ID) { int gi = findgl(nk_s1[n]); if (gi >= 0) { int f = gnode[gi]; if (nk_n[f] > 1 && (nk_j[kid(f, 0)] & 1)) return ceval(kid(f, 1)); } }
-  if (k == N_COND) { if (ceval(kid(n, 0))) return ceval(kid(n, 1)); return ceval(kid(n, 2)); }
-  if (k == N_BINARY) {
-    long long a = ceval(kid(n, 0)); long long b = ceval(kid(n, 1)); int s = nk_s1[n];
-    if (seqc(s, "+")) return a + b; if (seqc(s, "-")) return a - b; if (seqc(s, "*")) return a * b;
-    if (seqc(s, "/") && b != 0) return a / b; if (seqc(s, "%") && b != 0) return a % b; if (seqc(s, "<<")) return a << b; if (seqc(s, ">>")) return a >> b;
+V cond_bool(V v) {
+  if (is_cls(unq(v.ty))) return to_scalar(v, mkt(Y_BOOL, 0 - 1, 0), 1);
+  v = rval(v);
+  if (is_sc(v.ty) == 0 && tk[v.ty] != Y_NULLPTR) die("E_TYPE", "kosul ifadesi skaler tur olmali");
+  return bool_of(v);
+}
+V to_class_value(V v, int to) {
+  to = unq(to); int tc = tcl[to];
+  if (is_cls(unq(v.ty))) {
+    int vc = tcl[unq(v.ty)];
+    if (vc != tc && is_ord(v.ty) && is_ord(to) && ord_conv_ok(v.ty, to)) { V t = tempobj(to); long long wr_ = newreg(); w("  ld "); wr(wr_); w(", "); opr(v); w(", 0\n  st "); wr(wr_); w(", "); opr(t); w(", 0\n"); return t; }
+    if (vc == tc) {
+      if (v.cat == 0) return v;
+      V t = tempobj(to); if (cl_bi[tc]) copy_n(t, v, 0, 1); else copy_obj(t, v, tc, 1); merge_eff(t, v); return t;
+    }
+    if (derived_from(vc, tc)) { V t = tempobj(to); copy_obj(t, v, tc, 1); merge_eff(t, v); return t; }
+    int m = pick_user_conv(v.ty, to, 0);
+    if (m >= 0) { V r = callfn(m, &v, 0, 0, 0); return to_class_value(r, to); }
   }
-  die("sabit ifade gerekli"); return 0;
+  die("E_CONV", "sinif donusumu yok"); return v;
 }
-int typeof_(int n) {
-  int k = nodek(n);
-  if (k == N_TY) {
-    int c = nk_i[n];
-    if (c == 21 || c == 22) die("desteklenmiyor: sinif/auto turu (ifx cekirdegi)");
-    return mkt(c, -1, 0);
+V bind_arg(V a, int P) {
+  if (is_ref(P)) {
+    int rr = tk[P] == Y_RREF; int tgt = te[P]; int tu = unq(tgt); int au = unq(a.ty); int tc = tcv[tgt];
+    int direct = au == tu;
+    if (is_cls(au) && is_cls(tu) && derived_from(tcl[au], tcl[tu])) direct = 1;
+    if (is_arr(au) && is_arr(tu) && tn[au] == tn[tu] && unq(te[au]) == unq(te[tu])) direct = 1;
+    if (direct && (tcv[a.ty] == 0 || tc)) {
+      if (a.cat == 1 && rr) die("E_BIND", "rvalue referansi lvalue'ya baglanamaz");
+      if (a.cat != 1 && tc == 0 && rr == 0) die("E_BIND", "const olmayan lvalue referansi rvalue'ya baglanamaz");
+      if (a.cat == 0 && is_mem(au) == 0) { V t = tempscalar(au, a); return t; }
+      return a;
+    }
+    if (tc == 0 && rr == 0) die("E_BIND", "const olmayan lvalue referansi icin tur uyumsuz");
+    if (is_mem(tu)) { V c = to_mem_value(a, tu); return c; }
+    V s = to_scalar(a, tu, 0); return tempscalar(tu, s);
   }
-  if (k == N_TPTR) return mkt(Y_PTR, typeof_(kid(n, 0)), 0);
-  if (k == N_TARR) { int e = typeof_(kid(n, 0)); long long c = ceval(kid(n, 1)); if (c <= 0) die("dizi boyutu pozitif olmali"); return mkt(Y_ARR, e, c); }
-  die("desteklenmiyor: referans turu"); return 0;
+  int pu = unq(P);
+  if (is_mem(pu)) { V c = to_mem_value(a, pu); return c; }
+  return to_scalar(a, pu, 0);
 }
-int findvar(int sid) { int i = nvars - 1; while (i >= 0) { if (vname[i] == sid) return i; i = i - 1; } return -1; }
+V callfn(int fi, V* self, V* args, int na, int allowvirt) {
+  if (fn_has(fi, F_DELETE)) die("E_DELETED", "silinmis islev cagrildi");
+  if (fn_has(fi, F_PURE) && allowvirt == 0) die("E_PURE", "saf sanal islev dogrudan cagrilamaz");
+  fn_used[fi] = 1;
+  int rt = fn_ret[fi]; int sret = is_mem(unq(rt)) && is_ref(rt) == 0;
+  V ops[12]; int no = 0; V out = mkv(0, 0, 0);
+  if (sret) { out = tempmem(unq(rt)); ops[no] = out; no = no + 1; }
+  if (fn_cls[fi] >= 0) { if (self == 0) die("E_THIS", "uye islev nesnesiz cagrildi"); ops[no] = *self; no = no + 1; }
+  int i = 0; while (i < na) { ops[no] = bind_arg(args[i], fn_pt[fi * 8 + i]); no = no + 1; i = i + 1; }
+  if (fn_has(fi, F_NOEX) == 0) may_throw = 1;
+  long long d = newreg(); int isv = is_void(rt);
+  if (fn_bi[fi] != 0) {
+    if (fn_bi[fi] == 4) { w("  host "); wr(d); w(", getc\n"); return mkv(mkt(Y_INT, 0 - 1, 0), 0, d); }
+    if (fn_bi[fi] == 5) { long long p = ld_load(ops[0]); long long lo = newreg(); long long hi = newreg(); w("  "); wrt(names[NM_LO80]); w(" "); wr(lo); w(", "); wr(p); w("\n  "); wrt(names[NM_HI80]); w(" "); wr(hi); w(", "); wr(p); w("\n  host puti, "); wr(lo); w("\n  host putc, 32\n  host puti, "); wr(hi); w("\n  host putc, 10\n"); return novalue(); }
+    V a0 = mat(ops[0]);
+    if (fn_bi[fi] == 1) w("  host puti, "); if (fn_bi[fi] == 2) w("  host putc, "); if (fn_bi[fi] == 3) w("  host putf, ");
+    opr(a0); wc(10); return novalue();
+  }
+  int virt = fn_has(fi, F_VIRT) && allowvirt && self != 0 && fn_cls[fi] >= 0;
+  w("  call "); if (isv == 0 && sret == 0) { wr(d); w(", "); }
+  if (virt) { w("vd"); wn(fn_vroot[fi]); } else { w("f"); wn(fi); }
+  i = 0; while (i < no) { w(", "); opr(ops[i]); i = i + 1; }
+  wc(10);
+  V res = mkv(0, 0, 0);
+  i = 0; while (i < na) { merge_eff(res, args[i]); i = i + 1; }
+  if (self != 0) merge_eff(res, *self);
+  if (isv) { res.ty = Y_VOID; res.reg = 0 - 2; return res; }
+  if (sret) { out.ne = res.ne; i = 0; while (i < res.ne) { out.ek[i] = res.ek[i]; out.er[i] = res.er[i]; i = i + 1; } return out; }
+  if (is_ref(rt)) { res.ty = te[rt]; res.cat = 1; if (tk[rt] == Y_RREF) res.cat = 2; res.reg = d; res.vp = 1; return res; }
+  res.ty = unq(rt); res.cat = 0; res.reg = d;
+  return res;
+}
+// kullanici operatoru: ops[0..no); sonuc.ty = -1 ise yok
+V noV() { V v = mkv(0 - 1, 0, 0); return v; }
+V attempt_op(int name, V* o, int no) {
+  int mc[64]; int nmc = 0; int fc[64]; int nfc = 0;
+  if (is_cls(unq(o[0].ty))) { methods_named(tcl[unq(o[0].ty)], name); nmc = nmeth_cand; int k = 0; while (k < nmc) { mc[k] = meth_cand[k]; k = k + 1; } }
+  int f = 0; while (f < nfn) { if (fn_cls[f] < 0 && fn_name[f] == name && nfc < 64) { fc[nfc] = f; nfc = nfc + 1; } f = f + 1; }
+  int mr = 0 - 1; int fr = 0 - 1;
+  if (nmc > 0) mr = resolve(mc, nmc, &o[0], &o[1], no - 1);
+  if (nfc > 0) fr = resolve(fc, nfc, 0, o, no);
+  if (mr == 0 - 2 || fr == 0 - 2) die("E_AMBIG", "belirsiz operator cagrisi");
+  if (mr >= 0 && fr >= 0) die("E_AMBIG", "uye ve serbest operator ayni derecede uygun");
+  if (mr >= 0) return callfn(mr, &o[0], &o[1], no - 1, 1);
+  if (fr >= 0) return callfn(fr, 0, o, no, 0);
+  return noV();
+}
+V user_op(int name, V* o, int no, int allow_rev) {
+  V r = attempt_op(name, o, no);
+  if (r.ty >= 0) return r;
+  if (allow_rev && no == 2) { V rv[2]; rv[0] = o[1]; rv[1] = o[0]; return attempt_op(name, rv, 2); }
+  return noV();
+}
+// ============================ OPERATORLER (kurallar tablodan) ============================
 int seq_rt_c(int p, const char* t) {
   int n = 0; while (t[n]) n = n + 1;
   if (n != rt_len(p)) return 0;
@@ -271,19 +683,16 @@ int streq(const char* a, const char* b) { int i = 0; while (a[i] && b[i] && a[i]
 int find_rule(int cls, const char* tok) {
   int r = 0;
   while (r < nrec) { if (RT[rec_off[r]] == cls && seq_rt_c(rstr_pos(r, 0), tok)) return r; r = r + 1; }
-  return -1;
+  return 0 - 1;
 }
 char tokbuf[64];
 void settok(int sid) { int i = 0; while (i < s_len[sid] && i < 62) { tokbuf[i] = chars[s_off[sid] + i]; i = i + 1; } tokbuf[i] = 0; }
-// ---- ikili operatorler (kurallar tablodan) ----
+int bool_t() { return mkt(Y_BOOL, 0 - 1, 0); }
 V arith(int rule, V l, V r, int t) {
   int kind = rnum(rule, 0); int when = rnum(rule, 1); int needn = rnum(rule, 2);
   int pi_ = rstr_pos(rule, 1); int pu = rstr_pos(rule, 2); int pf = rstr_pos(rule, 3);
   long long d = newreg();
-  if (is_flt(t)) {
-    if (rt_len(pf) == 0) die("operator kayan nokta turunde tanimli degil");
-    ins3t(pf, d, l, r); return norm(mkv(t, 0, d), t);
-  }
+  if (is_flt(t)) { if (rt_len(pf) == 0) die("E_TYPE", "operator kayan nokta turunde tanimli degil"); ins3t(pf, d, l, r); return norm(mkv(t, 0, d), t); }
   int p = pi_;
   if (when == 1 && uns64(t)) p = pu;
   if (when == 2 && sg_of(t) == 0) p = pu;
@@ -295,7 +704,7 @@ V arith(int rule, V l, V r, int t) {
 }
 V compare(int rule, V l, V r, int t) {
   int sw_u = rnum(rule, 0); int sw_f = rnum(rule, 1); int inv_f = rnum(rule, 2);
-  long long d = newreg(); int bt = mkt(Y_BOOL, -1, 0);
+  long long d = newreg(); int bt = bool_t();
   if (is_flt(t)) {
     if (sw_f) { V x = l; l = r; r = x; }
     if (inv_f) { long long t1 = newreg(); ins3t(rstr_pos(rule, 3), t1, l, r); ins3("eq", d, mkv(t, 0, t1), imm(bt, 0)); return mkv(bt, 0, d); }
@@ -308,347 +717,1148 @@ V compare(int rule, V l, V r, int t) {
   return mkv(bt, 0, d);
 }
 V ptradd(V p, V i, int neg) {
-  int et = te[p.ty]; if (tk[et] == Y_VOID) die("void isaretcisinde aritmetik yok");
-  i = convert(rval(i), mkt(Y_LONG, -1, 0));
-  long long w = words_of(et); V off = i;
-  if (w != 1) { long long t1 = newreg(); ins3("mul", t1, mat(i), imm(i.ty, w)); off = mkv(i.ty, 0, t1); }
+  int et = te[p.ty]; if (complete_obj(et) == 0) die("E_PTRARITH", "tamamlanmamis/void turde isaretci aritmetigi");
+  i = convert_arith(rval(i), mkt(Y_LONG, 0 - 1, 0));
+  long long wd = words_of(et); V off = i;
+  if (wd != 1) { long long t1 = newreg(); ins3("mul", t1, mat(i), imm(i.ty, wd)); off = mkv(i.ty, 0, t1); }
   long long d = newreg(); if (neg) ins3("sub", d, mat(p), off); else ins3("add", d, mat(p), off);
   return mkv(p.ty, 0, d);
 }
-V binop(const char* tok, V l, V r) {
-  l = rval(l); r = rval(r);
-  if (!is_sc(l.ty) || !is_sc(r.ty)) die("ikili islec skaler operand gerektirir");
-  int cr = find_rule(3, tok);
-  if (cr >= 0) {
-    int t;
-    if (is_ptr(l.ty) || is_ptr(r.ty)) {
-      if (is_ptr(l.ty)) t = l.ty; else t = r.ty;
-      l = convert(l, t); r = convert(r, t);
-    } else t = uac(l.ty, r.ty);
-    if (is_flt(l.ty) || is_flt(r.ty)) { l = convert(l, t); r = convert(r, t); } else { l = convert(l, t); r = convert(r, t); }
-    return compare(cr, mat(l), mat(r), t);
+V ord_obj(int kind, V val) { int c = find_class(intern_c(kind == 1 ? "std::strong_ordering" : kind == 2 ? "std::weak_ordering" : "std::partial_ordering")); V t = tempobj(clsty(c)); V m = mat(val); w("  st "); opr(m); w(", "); opr(t); w(", 0\n"); return t; }
+V ord_cmp_zero(const char* op, V ord) {
+  long long v = newreg(); w("  ld "); wr(v); w(", "); opr(ord); w(", 0\n"); long long d = newreg(); V vv = mkv(0, 0, v);
+  if (streq(op, "<")) ins3("eq", d, vv, imm(0, 0 - 1)); else if (streq(op, "<=")) ins3("le", d, vv, imm(0, 0));
+  else if (streq(op, ">")) ins3("eq", d, vv, imm(0, 1)); else if (streq(op, ">=")) ins3("ltu", d, vv, imm(0, 2));
+  else if (streq(op, "==")) ins3("eq", d, vv, imm(0, 0)); else if (streq(op, "!=")) ins3("ne", d, vv, imm(0, 0));
+  else die("E_OP", "siralama nesnesi icin gecersiz islec");
+  V r = mkv(bool_t(), 0, d); merge_eff(r, ord); return r;
+}
+V builtin_spaceship(V l, V r) {
+  int t;
+  if (is_arith(l.ty) && is_arith(r.ty)) t = uac(l.ty, r.ty);
+  else if (is_ptr(l.ty) || is_ptr(r.ty) || tk[l.ty] == Y_NULLPTR || tk[r.ty] == Y_NULLPTR) {
+    if (is_ptr(l.ty) && is_ptr(r.ty) && unq(l.ty) != unq(r.ty)) { if (std_rank(r.ty, &r, l.ty) >= 0) t = unq(l.ty); else if (std_rank(l.ty, &l, r.ty) >= 0) t = unq(r.ty); else { die("E_TYPE", "<=> farkli isaretci turleri"); t = 0; } }
+    else { if (is_ptr(l.ty)) t = unq(l.ty); else t = unq(r.ty); }
+  } else { die("E_TYPE", "<=> bu turler icin tanimli degil"); t = 0; }
+  l = to_scalar(l, t, 0); r = to_scalar(r, t, 0);
+  if (is_ld(t)) {
+    long long pa = ld_load(l); long long pb = ld_load(r); long long lt1 = newreg(); long long gt1 = newreg(); long long e1 = newreg(); long long r0 = newreg(); long long z = newreg(); long long nz = newreg(); long long un = newreg(); long long u2 = newreg(); long long res2 = newreg();
+    ins3t(names[NM_LT80], lt1, mkv(0, 0, pa), mkv(0, 0, pb)); ins3t(names[NM_LT80], gt1, mkv(0, 0, pb), mkv(0, 0, pa)); ins3t(names[NM_EQ80], e1, mkv(0, 0, pa), mkv(0, 0, pb));
+    ins3("sub", r0, mkv(0, 0, gt1), mkv(0, 0, lt1)); ins3("eq", z, mkv(0, 0, r0), imm(0, 0)); ins3("eq", nz, mkv(0, 0, e1), imm(0, 0)); ins3("and", un, mkv(0, 0, z), mkv(0, 0, nz)); ins3("mul", u2, mkv(0, 0, un), imm(0, 2)); ins3("add", res2, mkv(0, 0, r0), mkv(0, 0, u2));
+    V o2 = ord_obj(3, mkv(0, 0, res2)); merge_eff(o2, l); merge_eff(o2, r); return o2;
   }
-  int ar = find_rule(2, tok);
-  if (ar < 0) die("bilinmeyen ikili islec");
-  int kind = rnum(ar, 0);
-  if (is_ptr(l.ty) || is_ptr(r.ty)) {
+  int flt = is_flt(t); long long res = newreg();
+  if (flt == 0) {
+    int u = uns64(t) || is_ptr(t); long long g1 = newreg(); long long l1 = newreg();
+    if (u) ins3("ltu", g1, mat(r), l); else ins3("gt", g1, mat(l), r);
+    ins3(u ? "ltu" : "lt", l1, mat(l), r); ins3("sub", res, mkv(0, 0, g1), mkv(0, 0, l1));
+  } else {
+    long long g1 = newreg(); long long l1 = newreg(); long long r0 = newreg(); long long e = newreg(); long long z = newreg(); long long nz = newreg(); long long un = newreg(); long long u2 = newreg();
+    ins3("fgt", g1, mat(l), r); ins3("flt", l1, mat(l), r); ins3("sub", r0, mkv(0, 0, g1), mkv(0, 0, l1));
+    ins3("feq", e, mat(l), r); ins3("eq", z, mkv(0, 0, r0), imm(0, 0)); ins3("eq", nz, mkv(0, 0, e), imm(0, 0)); ins3("and", un, mkv(0, 0, z), mkv(0, 0, nz)); ins3("mul", u2, mkv(0, 0, un), imm(0, 2)); ins3("add", res, mkv(0, 0, r0), mkv(0, 0, u2));
+  }
+  V o = ord_obj(flt ? 3 : 1, mkv(0, 0, res)); merge_eff(o, l); merge_eff(o, r); return o;
+}
+V binop(const char* tok, V l, V r) {   // iki rvalue skaler
+  l = rval(l); r = rval(r);
+  if (is_void(l.ty) || is_void(r.ty)) die("E_TYPE", "void deger islecte kullanilamaz");
+  if (streq(tok, "<=>")) return builtin_spaceship(l, r);
+  if ((is_ld(l.ty) || is_ld(r.ty)) && is_arith(l.ty) && is_arith(r.ty)) return ld_binop(tok, l, r);
+  int lp = is_ptr(l.ty) || tk[l.ty] == Y_NULLPTR; int rp = is_ptr(r.ty) || tk[r.ty] == Y_NULLPTR;
+  int cr = find_rule(3, tok);
+  int rel = cr >= 0 && !(streq(tok, "==") || streq(tok, "!="));
+  if (lp || rp) {
+    if (cr >= 0) {
+      int t;
+      if (is_ptr(l.ty) && is_ptr(r.ty)) { if (unq(l.ty) == unq(r.ty)) t = unq(l.ty); else if (std_rank(r.ty, &r, l.ty) >= 0) t = unq(l.ty); else if (std_rank(l.ty, &l, r.ty) >= 0) t = unq(r.ty); else { die("E_TYPE", "isaretci turleri uyumsuz"); t = 0; } }
+      else if (is_ptr(l.ty)) { if (rel && tk[r.ty] != Y_NULLPTR) die("E_TYPE", "isaretci ile tamsayi siralanamaz"); if (std_rank(r.ty, &r, l.ty) < 0) die("E_TYPE", "isaretci ile karsilastirilamaz"); t = unq(l.ty); }
+      else if (is_ptr(r.ty)) { if (rel && tk[l.ty] != Y_NULLPTR) die("E_TYPE", "isaretci ile tamsayi siralanamaz"); if (std_rank(l.ty, &l, r.ty) < 0) die("E_TYPE", "isaretci ile karsilastirilamaz"); t = unq(r.ty); }
+      else t = mkt(Y_LONG, 0 - 1, 0);
+      if (tk[l.ty] == Y_NULLPTR) l = imm(t, 0); if (tk[r.ty] == Y_NULLPTR) r = imm(t, 0);
+      l = to_scalar(l, t, 0); r = to_scalar(r, t, 0);
+      return compare(cr, mat(l), mat(r), t);
+    }
     if (streq(tok, "+") && is_ptr(l.ty) && is_int(r.ty)) return ptradd(l, r, 0);
     if (streq(tok, "+") && is_ptr(r.ty) && is_int(l.ty)) return ptradd(r, l, 0);
     if (streq(tok, "-") && is_ptr(l.ty) && is_int(r.ty)) return ptradd(l, r, 1);
     if (streq(tok, "-") && is_ptr(l.ty) && is_ptr(r.ty)) {
-      long long w = words_of(te[l.ty]); long long d = newreg(); ins3("sub", d, mat(l), mat(r));
-      if (w != 1) { long long q = newreg(); ins3("div", q, mkv(0, 0, d), imm(0, w)); d = q; }
-      return mkv(mkt(Y_LONG, -1, 0), 0, d);
+      if (unq(te[l.ty]) != unq(te[r.ty])) die("E_TYPE", "isaretci farki: farkli turler");
+      if (complete_obj(te[l.ty]) == 0) die("E_PTRARITH", "tamamlanmamis/void turde isaretci aritmetigi");
+      long long wd = words_of(te[l.ty]); long long d = newreg(); ins3("sub", d, mat(l), r);
+      if (wd != 1) { long long q = newreg(); ins3("div", q, mkv(0, 0, d), imm(0, wd)); d = q; }
+      return mkv(mkt(Y_LONG, 0 - 1, 0), 0, d);
     }
-    die("isaretci operandli gecersiz islec");
+    die("E_TYPE", "isaretci operandli gecersiz islec");
   }
-  if (kind != 1 && kind != 2 || 1) { }
-  if (kind == 4) {   // kaydirma: sonuc turu terfi etmis sol operand
-    int lt = promote(l.ty); int rt = promote(r.ty);
-    if (!is_int(lt) || !is_int(rt)) die("kaydirma tamsayi gerektirir");
-    l = convert(l, lt); r = convert(r, rt);
-    if (r.ci) { if (r.cv < 0) die("negatif kaydirma miktari"); if (r.cv >= bits_of(lt)) die("kaydirma miktari tur genisligini asiyor"); }
+  if (is_arith(l.ty) == 0 || is_arith(r.ty) == 0) die("E_TYPE", "islec icin gecersiz operand turleri");
+  int ar = find_rule(2, tok);
+  if (cr < 0 && ar < 0) die("E_OP", "bilinmeyen ikili islec");
+  int kind = 0; if (ar >= 0) kind = rnum(ar, 0);
+  int intonly = ar >= 0 && (kind == 3 || kind == 4 || streq(tok, "%"));
+  if (intonly && (is_int(l.ty) == 0 || is_int(r.ty) == 0)) die("E_TYPE", "islec yalniz tamsayi operandlarla kullanilir");
+  if (ar >= 0 && kind == 4) {
+    int lt = promote(l.ty); int rt = promote(r.ty); l = convert_arith(l, lt); r = convert_arith(r, rt);
+    if (r.ci) { if (r.cv < 0) die("E_SHIFT", "negatif kaydirma miktari"); if (r.cv >= bits_of(lt)) die("E_SHIFT", "kaydirma miktari tur genisligini asiyor"); }
     return arith(ar, l, r, lt);
   }
-  int t = uac(l.ty, r.ty);
-  if ((kind == 3 || streq(tok, "%")) && is_flt(t)) die("operator yalniz tamsayi operandlarla kullanilir");
-  l = convert(l, t); r = convert(r, t);
+  int t = uac(l.ty, r.ty); l = convert_arith(l, t); r = convert_arith(r, t);
+  if (cr >= 0) return compare(cr, mat(l), mat(r), t);
   return arith(ar, mat(l), mat(r), t);
 }
-// ---- ifadeler ----
-int bool_t() { return mkt(Y_BOOL, -1, 0); }
-V lval_check(V v, const char* what) { if (v.cat != 1) die("sol operand degistirilebilir lvalue olmali"); if (is_arr(v.ty)) die("diziye atanamaz"); return v; }
-V store(V lv, V val) { V mv = mat(val); w("  st "); opr(mv); w(", "); opr(lv); w(", 0\n"); return lv; }
+// ============================ SEMBOLLER ============================
+
+int kid(int n, int i) { return kids[nk_ks[n] + i]; }
+int vname[3000]; int vty[3000]; int voff[3000]; int vref[3000]; int vci[3000]; long long vcv[3000]; int vuid[3000]; int nvars = 0; int uidn = 0;
+int gname[600]; int gty[600]; int gnode[600]; int gci[600]; long long gcv[600]; int guid[600]; int ngl = 0;
+int str_node[600]; int nstrn = 0;
+int cur_fn = 0 - 1; int cur_cls = 0 - 1;
+int findvar(int sid) { int i = nvars - 1; while (i >= 0) { if (vname[i] == sid) return i; i = i - 1; } return 0 - 1; }
+int findgl(int sid) { int i = 0; while (i < ngl) { if (gname[i] == sid) return i; i = i + 1; } return 0 - 1; }
+const int N_INT = 0; const int N_FLT = 1; const int N_CHR = 2; const int N_STR = 3; const int N_BOOL = 4; const int N_NULLPTR = 5; const int N_THIS = 6; const int N_ID = 7; const int N_UNARY = 8; const int N_BINARY = 9; const int N_ASSIGN = 10;
+const int N_COND = 11; const int N_COMMA = 12; const int N_CALL = 13; const int N_INDEX = 14; const int N_MEMBER = 15; const int N_ARROW = 16; const int N_PREINC = 17; const int N_POSTINC = 18; const int N_SIZEOF_E = 19; const int N_SIZEOF_T = 20; const int N_ALIGNOF = 21;
+const int N_NOEXCEPT = 22; const int N_TYPEID_E = 23; const int N_TYPEID_T = 24; const int N_CAST = 25; const int N_FCAST = 26; const int N_UDL = 27; const int N_INITLIST = 28; const int N_TY = 29; const int N_TPTR = 30; const int N_TREF = 31; const int N_TRREF = 32; const int N_TARR = 33;
+const int N_BLOCK = 34; const int N_VAR = 35; const int N_DECLS = 36; const int N_EXPRSTMT = 37; const int N_IF = 38; const int N_WHILE = 39; const int N_DO = 40; const int N_FOR = 41; const int N_RETURN = 42; const int N_BREAK = 43; const int N_CONTINUE = 44; const int N_EMPTY = 45;
+const int N_FUNC = 46; const int N_PARAMS = 47; const int N_CLASS = 48; const int N_PROG = 49; const int N_NONE = 51;
+V gen(int n);
+void init_obj(V addr, int T, int init, int style);
+long long ceval(int n) {
+  int k = nk_k[n];
+  if (k == N_INT || k == N_CHR || k == N_BOOL) return nk_i[n];
+  if (k == N_SIZEOF_T || k == N_SIZEOF_E || k == N_ALIGNOF) { dry = dry + 1; V v = gen(n); dry = dry - 1; if (v.ci == 0) die("E_CONST", "sabit ifade gerekli"); return v.cv; }
+  if (k == N_UNARY && seqc(nk_s1[n], "-")) return 0 - ceval(kid(n, 0));
+  if (k == N_ID) { int gi = findgl(nk_s1[n]); if (gi >= 0 && gci[gi]) return gcv[gi]; }
+  if (k == N_COND) { if (ceval(kid(n, 0))) return ceval(kid(n, 1)); return ceval(kid(n, 2)); }
+  if (k == N_BINARY) {
+    long long a = ceval(kid(n, 0)); long long b = ceval(kid(n, 1)); int s = nk_s1[n];
+    if (seqc(s, "+")) return a + b; if (seqc(s, "-")) return a - b; if (seqc(s, "*")) return a * b;
+    if (seqc(s, "/") && b != 0) return a / b; if (seqc(s, "%") && b != 0) return a % b; if (seqc(s, "<<")) return a << b; if (seqc(s, ">>")) return a >> b;
+  }
+  die("E_CONST", "sabit ifade gerekli"); return 0;
+}
+int typeof_(int n) {
+  int k = nk_k[n];
+  if (k == N_TY) {
+    int c = nk_i[n]; int cv = 0; if (nk_j[n] & 1) cv = 1;
+    if (c == Y_CLASS) { int ci = find_class(nk_s1[n]); if (ci < 0) die("E_TYPE", "bilinmeyen sinif"); return mk2(Y_CLASS, 0 - 1, 0, ci, cv); }
+    return mk2(c, 0 - 1, 0, 0 - 1, cv);
+  }
+  if (k == N_TPTR) { int cv = 0; if (nk_j[n] & 1) cv = 1; return mk2(Y_PTR, typeof_(kid(n, 0)), 0, 0 - 1, cv); }
+  if (k == N_TREF) return lref(typeof_(kid(n, 0)));
+  if (k == N_TRREF) return rref(typeof_(kid(n, 0)));
+  if (k == N_TARR) {
+    int e = typeof_(kid(n, 0)); if (nk_n[n] < 2) return arrof(e, 0 - 1);
+    long long c = ceval(kid(n, 1)); if (c <= 0) die("E_TYPE", "dizi boyutu pozitif olmali");
+    if (c > 16777216 || c * words_of(e) > 16777216) die("E_TYPE", "dizi cok buyuk");
+    if (complete_obj(e) == 0) die("E_TYPE", "dizi eleman turu tam degil");
+    return arrof(e, c);
+  }
+  die("E_TYPE", "tur dugumu bekleniyordu"); return 0;
+}
+V var_ref(int vi) {
+  long long r = newreg(); V v = mkv(vty[vi], 1, r); v.key = vuid[vi] * 1000 + 1;
+  if (vref[vi]) { w("  ld "); wr(r); w(", fp, "); wn(voff[vi]); wc(10); v.vp = 1; v.key = 0; }
+  else { w("  add "); wr(r); w(", fp, "); wn(voff[vi]); wc(10); }
+  if (vci[vi]) { v.ci = 1; v.cv = vcv[vi]; }
+  return v;
+}
+int N_THISV = 0;
+V this_value() {
+  int vi = findvar(N_THISV); if (vi < 0) die("E_THIS", "'this' uye islev disinda kullanilamaz");
+  V a = var_ref(vi); return rval(a);
+}
+V gen_id(int n) {
+  int nm = nk_s1[n]; curline = nk_line[n];
+  int p = s_len[nm]; int i = 0; int has = 0;
+  while (i + 1 < p) { if (chars[s_off[nm] + i] == ':' && chars[s_off[nm] + i + 1] == ':') has = 1; i = i + 1; }
+  if (has) {   // std::strong_ordering::less ...
+    int cut = p - 1; while (cut > 0 && chars[s_off[nm] + cut] != ':') cut = cut - 1;
+    int cn = intern_n(&chars[s_off[nm]], cut - 1); int mem = intern_n(&chars[s_off[nm] + cut + 1], p - cut - 1);
+    int ci = find_class(cn);
+    if (ci >= 0 && cl_bi[ci] >= 1 && cl_bi[ci] <= 3) {
+      int kind = cl_bi[ci]; long long val = 0;
+      if (seqc(mem, "less")) val = 0 - 1; else if (seqc(mem, "greater")) val = 1; else if (seqc(mem, "equal") && kind == 1) val = 0; else if (seqc(mem, "equivalent") && kind != 1) val = 0; else if (seqc(mem, "unordered") && kind == 3) val = 2;
+      else die("E_UNDECL", "bilinmeyen siralama sabiti");
+      return ord_obj(kind, imm(0, val));
+    }
+    die("E_UNDECL", "bilinmeyen niteleyici ad");
+  }
+  int vi = findvar(nm);
+  if (vi >= 0) return var_ref(vi);
+  if (cur_cls >= 0) {
+    int oc = find_field(cur_cls, nm);
+    if (oc >= 0) {
+      V th = this_value(); long long woff = fq_woff; int fty = fq_ty;
+      V r = mkv(fty, 1, 0); r.vp = 1;
+      if (woff != 0) { r.reg = newreg(); w("  add "); wr(r.reg); w(", "); opr(th); w(", "); wn(woff); wc(10); } else r.reg = th.reg;
+      int thv = findvar(N_THISV); if (tcv[te[vty[thv]]]) r.ty = withc(fty, 1);
+      return r;
+    }
+  }
+  int gi = findgl(nm);
+  if (gi >= 0) { long long gr = newreg(); w("  mov "); wr(gr); w(", g"); wn(gi); wc(10); V g = mkv(gty[gi], 1, gr); g.key = guid[gi] * 1000 + 1; if (gci[gi]) { g.ci = 1; g.cv = gcv[gi]; } return g; }
+  die("E_UNDECL", "tanimsiz ad"); return novalue();
+}
+V gen_member(int n) {
+  int arrow = nk_k[n] == N_ARROW; curline = nk_line[n]; V o = gen(kid(n, 0));
+  if (arrow) {
+    if (is_cls(unq(o.ty))) { V ops[1]; ops[0] = o; V u = user_op(N_ARW, ops, 1, 0); if (u.ty >= 0) o = u; }
+    o = rval(o); if (is_ptr(o.ty) == 0 || is_cls(unq(te[o.ty])) == 0) die("E_TYPE", "'->' sinif isaretcisi gerektirir");
+    nullchk(o); V l = mkv(te[o.ty], 1, o.reg); l.vp = 1; if (o.reg < 0) { l = mat(o); l.ty = te[o.ty]; l.cat = 1; l.vp = 1; } l.ne = o.ne; int k = 0; while (k < o.ne) { l.ek[k] = o.ek[k]; l.er[k] = o.er[k]; k = k + 1; } o = l;
+  }
+  int clsT = unq(o.ty); if (is_cls(clsT) == 0) die("E_TYPE", "'.' sinif nesnesi gerektirir");
+  int oc = find_field(tcl[clsT], nk_s1[n]); if (oc < 0) die("E_UNDECL", "sinifta boyle bir uye yok");
+  long long woff = fq_woff; int fty = fq_ty;
+  V r = mkv(fty, 1, 0); if (tcv[o.ty]) r.ty = withc(fty, 1); r.cat = 1; if (o.cat != 1) r.cat = 2; r.vp = o.vp; r.ne = o.ne; int k = 0; while (k < o.ne) { r.ek[k] = o.ek[k]; r.er[k] = o.er[k]; k = k + 1; }
+  if (woff != 0) { r.reg = newreg(); w("  add "); wr(r.reg); w(", "); opr(o); w(", "); wn(woff); wc(10); } else r.reg = o.reg;
+  if (o.key != 0) r.key = o.key + nk_s1[n] * 7 + 3;
+  return r;
+}
+V gen_index(int n) {
+  curline = nk_line[n]; V b = gen(kid(n, 0)); V i = gen(kid(n, 1));
+  if (is_cls(unq(b.ty))) { V ops[2]; ops[0] = b; ops[1] = i; V u = user_op(N_IDX, ops, 2, 0); if (u.ty >= 0) return u; b = unwrap_conv(b); }
+  if (is_cls(unq(i.ty))) i = unwrap_conv(i);
+  int barr = is_arr(b.ty);
+  V bp = rval(b); i = rval(i);
+  if (is_ptr(bp.ty) == 0 && is_ptr(i.ty)) { V x = bp; bp = i; i = x; barr = 0; }
+  if (is_ptr(bp.ty) == 0) die("E_TYPE", "dizi/isaretci olmayan ifade indekslenemez");
+  if (is_int(i.ty) == 0) die("E_TYPE", "dizi indeksi tamsayi olmali");
+  int et = te[bp.ty]; if (complete_obj(et) == 0) die("E_PTRARITH", "tamamlanmamis turde eleman indekslenemez");
+  if (barr == 0) nullchk(bp);
+  i = convert_arith(i, mkt(Y_LONG, 0 - 1, 0));
+  if (barr) {
+    long long cnt = tn[b.ty];
+    if (i.ci && (i.cv < 0 || i.cv >= cnt)) die("E_BOUNDS", "sabit dizi indeksi sinir disi");
+    if (i.ci == 0) { long long c = newreg(); int ok = newlab(); ins3("ltu", c, i, imm(0, cnt)); w("  jnz "); wr(c); w(", "); wl(ok); wc(10); trapnow(); wl(ok); w(":\n"); }
+  }
+  long long wd = words_of(et); V off = i;
+  if (wd != 1) { long long t1 = newreg(); ins3("mul", t1, mat(i), imm(i.ty, wd)); off = mkv(i.ty, 0, t1); }
+  long long d = newreg(); ins3("add", d, mat(bp), off);
+  V r = mkv(et, 1, d); r.vp = 1; if (barr && tcv[b.ty]) r.ty = withc(et, 1); merge_eff(r, b); merge_eff(r, i); return r;
+}
+// ============================ IFADELER ============================
+V unwrap_conv(V v) {   // sinif -> skaler (yerlesik operator icin): tek acik olmayan donusum
+  conv_funcs_of(tcl[unq(v.ty)]); int cs[32]; int nc = 0; int i = 0;
+  while (i < nconv) { int m = conv_cands[i]; if (fn_has(m, F_EXPL) == 0 && is_sc(unq(deref(fn_ret[m])))) { cs[nc] = m; nc = nc + 1; } i = i + 1; }
+  if (nc == 0) die("E_NOVIABLE", "operator icin uygun operand yok (kullanici donusumu yok)");
+  if (nc > 1) die("E_AMBIG", "belirsiz kullanici donusumu");
+  V r = callfn(cs[0], &v, 0, 0, 0); return rval(r);
+}
+void need_modifiable(V& v) {
+  if (v.cat != 1) die("E_LVALUE", "sol operand degistirilebilir lvalue olmali");
+  if (tcv[v.ty]) die("E_CONST", "const nesneye atama");
+  if (is_arr(v.ty)) die("E_LVALUE", "diziye atanamaz");
+}
+V store(V lv, V val) {
+  if (is_ld(lv.ty)) { ld_copy(lv, val); V r0 = lv; merge_eff(r0, val); add_eff(r0, lv.key, 2); return r0; }
+  V mv = mat(val); w("  st "); opr(mv); w(", "); opr(lv); w(", 0\n");
+  V r = lv; merge_eff(r, val); add_eff(r, lv.key, 2); r.ci = 0; return r;
+}
 V gen_logical(int n, int isand) {
-  V a = condbool(gen(kid(n, 0))); long long res = newreg(); long long end = nlab; nlab = nlab + 1;
+  V a = cond_bool(gen(kid(n, 0))); long long res = newreg(); int end = newlab();
   w("  mov "); wr(res); w(", "); opr(a); wc(10);
   if (isand) w("  jz "); else w("  jnz ");
   wr(res); w(", "); wl(end); wc(10);
-  V b = condbool(gen(kid(n, 1)));
+  V b = cond_bool(gen(kid(n, 1)));
   w("  mov "); wr(res); w(", "); opr(b); wc(10); wl(end); w(":\n");
-  return mkv(bool_t(), 0, res);
+  V o = mkv(bool_t(), 0, res); merge_eff(o, a); merge_eff(o, b); return o;
 }
-V gen_incdec(int n) {
-  int post = nodek(n) == N_POSTINC; int inc = seqc(nk_s1[n], "++");
-  V lv = lval_check(gen(kid(n, 0)), "++");
-  int t = lv.ty; if (tk[t] == Y_BOOL) die("bool uzerinde ++/-- gecersiz");
-  if (!is_int(t) && !is_flt(t) && !is_ptr(t)) die("++/-- yalniz aritmetik/isaretci");
-  long long o = newreg(); w("  ld "); wr(o); w(", "); opr(lv); w(", 0\n");
-  V old = mkv(t, 0, o); V nv;
-  if (is_ptr(t)) nv = ptradd(old, imm(mkt(Y_INT, -1, 0), 1), !inc);
-  else if (is_flt(t)) { V one = fconst(t, 4607182418800017408LL); if (inc) nv = binop("+", old, one); else nv = binop("-", old, one); nv = convert(nv, t); }
-  else { V one = imm(mkt(Y_INT, -1, 0), 1); if (inc) nv = binop("+", old, one); else nv = binop("-", old, one); nv = convert(nv, t); }
-  store(lv, nv);
-  if (post) return old;
-  return lv;
-}
-V gen_call(int n);
-V gen_unary(int n) {
-  int s = nk_s1[n]; V v = gen(kid(n, 0));
-  if (seqc(s, "&")) { if (v.cat != 1) die("adresi alinamaz: lvalue gerekli"); return mkv(mkt(Y_PTR, v.ty, 0), 0, v.reg); }
-  if (seqc(s, "*")) {
-    v = rval(v); if (!is_ptr(v.ty)) die("'*' isaretci gerektirir");
-    if (tk[te[v.ty]] == Y_VOID) die("void isaretcisi dolayli erisilemez");
-    nullchk(v); v = mat(v); return mkv(te[v.ty], 1, v.reg);
+int op_name(const char* t) { return intern_c(t); }
+V gen_binary(int n) {
+  curline = nk_line[n]; int s = nk_s1[n];
+  if (seqc(s, "&&")) return gen_logical(n, 1);
+  if (seqc(s, "||")) return gen_logical(n, 0);
+  V L = gen(kid(n, 0)); V R = gen(kid(n, 1)); settok(s);
+  char tok[64]; int ti = 0; while (tokbuf[ti]) { tok[ti] = tokbuf[ti]; ti = ti + 1; } tok[ti] = 0;
+  if (streq(tok, "<<") == 0 && streq(tok, ">>") == 0) { if (unseq_bad(L, R)) die("E_UNSEQ", "ayni nesne siralanmamis iki degerlendirmede degistiriliyor/okunuyor (tanimsiz davranis)"); }
+  int lc = is_cls(unq(L.ty)); int rc = is_cls(unq(R.ty));
+  if (lc || rc) {
+    int zl = R.nl && R.ci; int zr = L.nl && L.ci;
+    if (lc && is_ord(L.ty) && zl) return ord_cmp_zero(tok, L);
+    if (rc && is_ord(R.ty) && zr) { const char* sw = tok; if (streq(tok, "<")) sw = ">"; else if (streq(tok, ">")) sw = "<"; else if (streq(tok, "<=")) sw = ">="; else if (streq(tok, ">=")) sw = "<="; return ord_cmp_zero(sw, R); }
+    if (lc && rc && unq(L.ty) == unq(R.ty) && (is_ord(L.ty) || cl_bi[tcl[unq(L.ty)]] == 4) && (streq(tok, "==") || streq(tok, "!="))) {
+      long long p1 = newreg(); long long p2 = newreg(); long long d = newreg(); w("  ld "); wr(p1); w(", "); opr(L); w(", 0\n  ld "); wr(p2); w(", "); opr(R); w(", 0\n");
+      ins3(streq(tok, "==") ? "eq" : "ne", d, mkv(0, 0, p1), mkv(0, 0, p2)); V o = mkv(bool_t(), 0, d); merge_eff(o, L); merge_eff(o, R); return o;
+    }
+    V ops[2]; ops[0] = L; ops[1] = R; int nm = op_name(tok);
+    int rev = streq(tok, "==") || streq(tok, "!=");
+    V r = noV();
+    { char nb[80]; int k = 0; const char* pre = "operator"; while (pre[k]) { nb[k] = pre[k]; k = k + 1; } int j = 0; while (tok[j]) { nb[k] = tok[j]; k = k + 1; j = j + 1; } nb[k] = 0; nm = intern_c(nb); }
+    r = user_op(nm, ops, 2, rev);
+    if (r.ty >= 0) return r;
+    if (streq(tok, "!=")) { V e = user_op(intern_c("operator=="), ops, 2, 1); if (e.ty >= 0) { V b = cond_bool(e); long long d = newreg(); ins3("eq", d, mat(b), imm(bool_t(), 0)); V o = mkv(bool_t(), 0, d); merge_eff(o, b); return o; } }
+    if (streq(tok, "<") || streq(tok, ">") || streq(tok, "<=") || streq(tok, ">=")) {
+      V sp = user_op(intern_c("operator<=>"), ops, 2, 0);
+      if (sp.ty >= 0) { if (is_ord(sp.ty) == 0) die("E_TYPE", "<=> sonucu siralama turu degil"); return ord_cmp_zero(tok, sp); }
+      V rv[2]; rv[0] = R; rv[1] = L; V s2 = user_op(intern_c("operator<=>"), rv, 2, 0);
+      if (s2.ty >= 0) { const char* sw = "<="; if (streq(tok, "<")) sw = ">"; else if (streq(tok, ">")) sw = "<"; else if (streq(tok, "<=")) sw = ">="; return ord_cmp_zero(sw, s2); }
+    }
+    if (lc) L = unwrap_conv(L); if (rc) R = unwrap_conv(R);
+    return binop(tok, rval(L), rval(R));
   }
-  if (seqc(s, "!")) { V b = condbool(v); long long d = newreg(); ins3("eq", d, mat(b), imm(bool_t(), 0)); return mkv(bool_t(), 0, d); }
-  v = rval(v);
-  if (!is_int(v.ty) && !is_flt(v.ty)) die("tekli islec aritmetik operand gerektirir");
-  if (seqc(s, "+")) { if (is_int(v.ty)) return convert(v, promote(v.ty)); return v; }
-  if (seqc(s, "-")) {
-    if (is_flt(v.ty)) { long long d = newreg(); ins2t(names[NM_FNEG], d, v); return mkv(v.ty, 0, d); }
-    int t = promote(v.ty); v = convert(v, t); long long d = newreg(); ins2t(names[NM_NEG], d, mat(v)); return norm(mkv(t, 0, d), t);
-  }
-  if (seqc(s, "~")) {
-    if (!is_int(v.ty)) die("'~' tamsayi gerektirir");
-    int t = promote(v.ty); v = convert(v, t); long long d = newreg(); ins2t(names[NM_NOT], d, mat(v)); return norm(mkv(t, 0, d), t);
-  }
-  die("bilinmeyen tekli islec"); return v;
-}
-V gen_index(int n) {
-  V b = gen(kid(n, 0)); V i = gen(kid(n, 1));
-  int barr = is_arr(b.ty);
-  V bp = rval(b); i = rval(i);
-  if (!is_ptr(bp.ty) && is_ptr(i.ty)) { V x = bp; bp = i; i = x; barr = 0; }
-  if (!is_ptr(bp.ty)) die("dizi/isaretci olmayan ifade indekslenemez");
-  if (!is_int(i.ty)) die("dizi indeksi tamsayi olmali");
-  int et = te[bp.ty];
-  if (!barr) nullchk(bp);
-  i = convert(i, mkt(Y_LONG, -1, 0));
-  if (barr) {
-    long long cnt = tn[b.ty];
-    if (i.ci && (i.cv < 0 || i.cv >= cnt)) die("sabit dizi indeksi sinir disi");
-    if (i.ci == 0) { long long c = newreg(); long long ok = nlab; nlab = nlab + 1; ins3("ltu", c, i, imm(0, cnt)); w("  jnz "); wr(c); w(", "); wl(ok); wc(10); trapnow(); wl(ok); w(":\n"); }
-  }
-  long long w1 = words_of(et); V off = i;
-  if (w1 != 1) { long long t1 = newreg(); ins3("mul", t1, mat(i), imm(i.ty, w1)); off = mkv(i.ty, 0, t1); }
-  long long d = newreg(); ins3("add", d, mat(bp), off);
-  return mkv(et, 1, d);
+  return binop(tok, L, R);
 }
 V gen_assign(int n) {
-  int s = nk_s1[n];
-  V r = gen(kid(n, 1)); V lv = lval_check(gen(kid(n, 0)), "=");
-  if (!is_sc(lv.ty)) die("desteklenmiyor: sinif atamasi");
-  if (seqc(s, "=")) { r = rval(r); if (!is_sc(r.ty)) die("atama sag operandi skaler olmali"); return store(lv, convert(r, lv.ty)); }
+  curline = nk_line[n]; int s = nk_s1[n];
+  if (nk_k[kid(n, 1)] == N_INITLIST) {
+    V Lh = gen(kid(n, 0)); need_modifiable(Lh);
+    if (is_cls(unq(Lh.ty))) { V t = tempobj(unq(Lh.ty)); init_obj(t, unq(Lh.ty), kid(n, 1), 3); int c = tcl[unq(Lh.ty)]; long long fr = 0; if (cl_poly[c]) fr = 1; copy_n(Lh, t, fr, cl_words[c]); return Lh; }
+    if (is_sc(Lh.ty)) { init_obj(Lh, unq(Lh.ty), kid(n, 1), 3); return Lh; }
+    die("E_TYPE", "bu hedefe {..} atanamaz");
+  }
+  V R = gen(kid(n, 1)); V Lv = gen(kid(n, 0));
+  if (seqc(s, "=")) {
+    if (is_cls(unq(Lv.ty))) {
+      if (Lv.cat != 1) die("E_LVALUE", "atama: sol operand lvalue olmali");
+      V ops[2]; ops[0] = Lv; ops[1] = R; V u = user_op(N_ASG, ops, 2, 0); if (u.ty >= 0) return Lv;
+      if (tcv[Lv.ty]) die("E_CONST", "const nesneye atama");
+      int dc = tcl[unq(Lv.ty)]; V rc = R;
+      if (is_cls(unq(R.ty)) == 0 || !(tcl[unq(R.ty)] == dc || derived_from(tcl[unq(R.ty)], dc))) rc = to_class_value(R, unq(Lv.ty));
+      if (cl_bi[dc]) copy_n(Lv, rc, 0, 1); else { long long fr = 0; if (cl_poly[dc]) fr = 1; copy_n(Lv, rc, fr, cl_words[dc]); }
+      V r = Lv; merge_eff(r, R); return r;
+    }
+    need_modifiable(Lv);
+    V val = to_scalar(R, unq(Lv.ty), 0); return store(Lv, val);
+  }
   settok(s); int l = 0; while (tokbuf[l]) l = l + 1; tokbuf[l - 1] = 0;
-  r = rval(r);
-  long long o = newreg(); w("  ld "); wr(o); w(", "); opr(lv); w(", 0\n");
-  V cur = mkv(lv.ty, 0, o);
-  V res = binop(tokbuf, cur, r);
-  if (is_ptr(lv.ty)) { } else res = convert(res, lv.ty);
-  return store(lv, res);
+  if (is_cls(unq(Lv.ty))) {
+    V ops[2]; ops[0] = Lv; ops[1] = R; char nb[80]; int k = 0; const char* pre = "operator"; while (pre[k]) { nb[k] = pre[k]; k = k + 1; } int j = 0; while (s_off[s] + j < s_off[s] + s_len[s]) { nb[k] = chars[s_off[s] + j]; k = k + 1; j = j + 1; } nb[k] = 0;
+    V u = user_op(intern_c(nb), ops, 2, 0); if (u.ty >= 0) return u; die("E_NOVIABLE", "operator bu sinif icin tanimli degil");
+  }
+  need_modifiable(Lv);
+  if (is_cls(unq(R.ty))) R = unwrap_conv(R); else R = rval(R);
+  V cur; if (is_ld(Lv.ty)) { cur = rval(Lv); } else { cur = mkv(unq(Lv.ty), 0, newreg()); w("  ld "); wr(cur.reg); w(", "); opr(Lv); w(", 0\n"); merge_eff(cur, Lv); add_eff(cur, Lv.key, 1); }
+  if (is_ptr(Lv.ty) && !(streq(tokbuf, "+") || streq(tokbuf, "-"))) die("E_TYPE", "isaretciye bu islec uygulanamaz");
+  char tok[64]; int ti = 0; while (tokbuf[ti]) { tok[ti] = tokbuf[ti]; ti = ti + 1; } tok[ti] = 0;
+  V res = binop(tok, cur, R);
+  if (tk[Lv.ty] == Y_BOOL || is_ptr(Lv.ty)) res = to_scalar(res, unq(Lv.ty), 0); else res = convert_arith(res, unq(Lv.ty));
+  return store(Lv, res);
+}
+V gen_incdec(int n) {
+  curline = nk_line[n]; int post = nk_k[n] == N_POSTINC; int inc = seqc(nk_s1[n], "++");
+  V lv = gen(kid(n, 0));
+  if (is_cls(unq(lv.ty))) { V ops[2]; ops[0] = lv; int no = 1; if (post) { ops[1] = imm(mkt(Y_INT, 0 - 1, 0), 0); no = 2; } V u = user_op(inc ? N_INC : N_DEC, ops, no, 0); if (u.ty >= 0) return u; die("E_NOVIABLE", "++/-- bu sinif icin tanimli degil"); }
+  need_modifiable(lv); int t = unq(lv.ty);
+  if (tk[t] == Y_BOOL) die("E_TYPE", "bool uzerinde ++/-- gecersiz");
+  if (is_arith(t) == 0 && is_ptr(t) == 0) die("E_TYPE", "++/-- yalniz aritmetik/isaretci");
+  V old; if (is_ld(t)) old = rval(lv); else { old = mkv(t, 0, newreg()); w("  ld "); wr(old.reg); w(", "); opr(lv); w(", 0\n"); } V nv;
+  if (is_ptr(t)) nv = ptradd(old, imm(mkt(Y_INT, 0 - 1, 0), 1), inc == 0);
+  else if (is_flt(t)) { V one = fconst(t, 4607182418800017408LL); nv = binop(inc ? "+" : "-", old, one); nv = convert_arith(nv, t); }
+  else { V one = imm(mkt(Y_INT, 0 - 1, 0), 1); nv = binop(inc ? "+" : "-", old, one); nv = convert_arith(nv, t); }
+  if (is_ld(t)) ld_copy(lv, nv); else { w("  st "); opr(mat(nv)); w(", "); opr(lv); w(", 0\n"); }
+  V res;
+  if (post) { res = old; res.cat = 0; res.ne = 0; merge_eff(res, lv); add_eff(res, lv.key, 2); res.key = 0; }
+  else { res = lv; add_eff(res, lv.key, 2); }
+  return res;
+}
+V gen_unary(int n) {
+  curline = nk_line[n]; int s = nk_s1[n]; V v = gen(kid(n, 0));
+  if (seqc(s, "&")) {
+    if (is_cls(unq(v.ty))) { V ops[1]; ops[0] = v; V u = user_op(N_ADDR, ops, 1, 0); if (u.ty >= 0) return u; }
+    if (v.cat != 1) die("E_ADDR", "adresi alinamaz: lvalue gerekli");
+    V r = mkv(ptrto(v.ty), 0, v.reg); merge_eff(r, v); return r;
+  }
+  if (seqc(s, "*")) {
+    if (is_cls(unq(v.ty))) { V ops[1]; ops[0] = v; V u = user_op(N_DEREF, ops, 1, 0); if (u.ty >= 0) return u; v = unwrap_conv(v); }
+    v = rval(v); if (is_ptr(v.ty) == 0) die("E_TYPE", "'*' isaretci gerektirir");
+    if (is_void(te[v.ty])) die("E_TYPE", "void isaretcisi dolayli erisilemez");
+    nullchk(v); V m = mat(v); V r = mkv(te[v.ty], 1, m.reg); r.vp = 1; merge_eff(r, v); return r;
+  }
+  if (is_cls(unq(v.ty))) {
+    V ops[1]; ops[0] = v; char nb[80]; int k = 0; const char* pre = "operator"; while (pre[k]) { nb[k] = pre[k]; k = k + 1; } int j = 0; while (j < s_len[s]) { nb[k] = chars[s_off[s] + j]; k = k + 1; j = j + 1; } nb[k] = 0;
+    V u = user_op(intern_c(nb), ops, 1, 0); if (u.ty >= 0) return u;
+    if (seqc(s, "!")) { V b = cond_bool(v); long long d = newreg(); ins3("eq", d, mat(b), imm(bool_t(), 0)); V o = mkv(bool_t(), 0, d); merge_eff(o, b); return o; }
+    v = unwrap_conv(v);
+  }
+  v = rval(v);
+  if (seqc(s, "!")) { V b = cond_bool(v); if (b.ci) { V o = imm(bool_t(), b.cv == 0); o.ne = b.ne; return o; } long long d = newreg(); ins3("eq", d, mat(b), imm(bool_t(), 0)); V o = mkv(bool_t(), 0, d); merge_eff(o, v); return o; }
+  if (is_arith(v.ty) == 0) die("E_TYPE", "tekli islec aritmetik operand gerektirir");
+  if (seqc(s, "+")) { if (is_int(v.ty)) return convert_arith(v, promote(v.ty)); return v; }
+  if (seqc(s, "-")) {
+    if (is_ld(v.ty)) { long long p = ld_load(v); long long d = newreg2(); ins2t(names[NM_NEG80], d, mkv(0, 0, p)); V o = ld_new(d); merge_eff(o, v); return o; }
+    if (is_flt(v.ty)) { long long d = newreg(); ins2t(names[NM_FNEG], d, v); return mkv(v.ty, 0, d); }
+    int t = promote(v.ty); v = convert_arith(v, t);
+    if (v.ci) { V o = imm(t, fold(0 - v.cv, t)); o.ne = v.ne; return o; }
+    long long d = newreg(); ins2t(names[NM_NEG], d, mat(v)); V o = norm(mkv(t, 0, d), t); merge_eff(o, v); return o;
+  }
+  if (seqc(s, "~")) {
+    if (is_int(v.ty) == 0) die("E_TYPE", "'~' tamsayi gerektirir");
+    int t = promote(v.ty); v = convert_arith(v, t);
+    if (v.ci) { V o = imm(t, fold(~v.cv, t)); o.ne = v.ne; return o; }
+    long long d = newreg(); ins2t(names[NM_NOT], d, mat(v)); V o = norm(mkv(t, 0, d), t); merge_eff(o, v); return o;
+  }
+  die("E_OP", "bilinmeyen tekli islec"); return v;
 }
 V gen_cond(int n) {
-  V c = condbool(gen(kid(n, 0)));
-  dry = dry + 1; V a0r = gen(kid(n, 1)); V b0r = gen(kid(n, 2)); dry = dry - 1;
-  if (a0r.cat == 1 && b0r.cat == 1 && a0r.ty == b0r.ty && !is_arr(a0r.ty)) {
-    long long lres = newreg(); long long lels = nlab; nlab = nlab + 1; long long lend = nlab; nlab = nlab + 1;
-    w("  jz "); opr(c); w(", "); wl(lels); wc(10);
-    V la = gen(kid(n, 1)); w("  mov "); wr(lres); w(", "); opr(la); wc(10); w("  jmp "); wl(lend); wc(10); wl(lels); w(":\n");
-    V lb = gen(kid(n, 2)); w("  mov "); wr(lres); w(", "); opr(lb); wc(10); wl(lend); w(":\n");
-    return mkv(a0r.ty, 1, lres);
+  curline = nk_line[n]; V c = cond_bool(gen(kid(n, 0)));
+  int save_throw = may_throw;
+  dry = dry + 1; V a0 = gen(kid(n, 1)); V b0 = gen(kid(n, 2)); dry = dry - 1; may_throw = save_throw;
+  int at = unq(a0.ty); int bt = unq(b0.ty); long long res = newreg(); int els = newlab(); int end = newlab();
+  int va = is_void(at); int vb = is_void(bt);
+  if (va || vb) { if (!(va && vb)) die("E_TYPE", "?: kollarindan biri void, digeri degil"); w("  jz "); opr(c); w(", "); wl(els); wc(10); gen(kid(n, 1)); w("  jmp "); wl(end); wc(10); wl(els); w(":\n"); gen(kid(n, 2)); wl(end); w(":\n"); return novalue(); }
+  if (is_cls(at) && at == bt) {
+    int lv = a0.cat == 1 && b0.cat == 1 && tcv[a0.ty] == tcv[b0.ty];
+    w("  jz "); opr(c); w(", "); wl(els); wc(10); V a1 = gen(kid(n, 1));
+    if (lv == 0) a1 = to_class_value(a1, at);
+    w("  mov "); wr(res); w(", "); opr(a1); wc(10); w("  jmp "); wl(end); wc(10); wl(els); w(":\n");
+    V b1 = gen(kid(n, 2)); if (lv == 0) b1 = to_class_value(b1, at);
+    w("  mov "); wr(res); w(", "); opr(b1); wc(10); wl(end); w(":\n");
+    V r = mkv(a0.ty, 0, res); if (lv) r.cat = 1; else if (a0.cat == 2 && b0.cat == 2) r.cat = 2; r.vp = 1; merge_eff(r, c); return r;
   }
-  dry = dry + 1; V a0 = rval(a0r); V b0 = rval(b0r); dry = dry - 1;
-  int rt;
-  if (a0.ty == b0.ty) rt = a0.ty;
-  else if (is_ptr(a0.ty) || is_ptr(b0.ty)) { if (is_ptr(a0.ty)) rt = a0.ty; else rt = b0.ty; }
-  else rt = uac(a0.ty, b0.ty);
-  if (!is_sc(rt)) die("?: kollari skaler olmali");
-  long long res = newreg(); long long els = nlab; nlab = nlab + 1; long long end = nlab; nlab = nlab + 1;
-  w("  jz "); opr(c); w(", "); wl(els); wc(10);
-  V a1 = convert(rval(gen(kid(n, 1))), rt); w("  mov "); wr(res); w(", "); opr(a1); wc(10);
-  w("  jmp "); wl(end); wc(10); wl(els); w(":\n");
-  V b1 = convert(rval(gen(kid(n, 2))), rt); w("  mov "); wr(res); w(", "); opr(b1); wc(10); wl(end); w(":\n");
-  return mkv(rt, 0, res);
+  if (is_cls(at) || is_cls(bt)) die("E_TYPE", "?: kollari uyumsuz sinif turleri");
+  if (a0.cat == 1 && b0.cat == 1 && at == bt && is_arr(at) == 0 && tcv[a0.ty] == tcv[b0.ty]) {
+    w("  jz "); opr(c); w(", "); wl(els); wc(10); V a1 = gen(kid(n, 1)); w("  mov "); wr(res); w(", "); opr(a1); wc(10); w("  jmp "); wl(end); wc(10); wl(els); w(":\n");
+    V b1 = gen(kid(n, 2)); w("  mov "); wr(res); w(", "); opr(b1); wc(10); wl(end); w(":\n");
+    V r = mkv(a0.ty, 1, res); r.vp = 1; merge_eff(r, c); return r;
+  }
+  dry = dry + 1; V ar = rval(a0); V br = rval(b0); dry = dry - 1; int rt;
+  if (is_arith(ar.ty) && is_arith(br.ty)) { if (ar.ty == br.ty) rt = ar.ty; else rt = uac(ar.ty, br.ty); }
+  else if (is_ptr(ar.ty) && is_ptr(br.ty)) { if (ar.ty == br.ty) rt = ar.ty; else if (std_rank(br.ty, &br, ar.ty) >= 0) rt = ar.ty; else if (std_rank(ar.ty, &ar, br.ty) >= 0) rt = br.ty; else { die("E_TYPE", "?: isaretci turleri uyumsuz"); rt = 0; } }
+  else if (is_ptr(ar.ty) && (tk[br.ty] == Y_NULLPTR || (b0.nl && b0.ci))) rt = ar.ty;
+  else if (is_ptr(br.ty) && (tk[ar.ty] == Y_NULLPTR || (a0.nl && a0.ci))) rt = br.ty;
+  else if (tk[ar.ty] == Y_NULLPTR && tk[br.ty] == Y_NULLPTR) rt = ar.ty;
+  else { die("E_TYPE", "?: kollari uyumsuz"); rt = 0; }
+  w("  jz "); opr(c); w(", "); wl(els); wc(10); V a1 = to_scalar(gen(kid(n, 1)), rt, 0); w("  mov "); wr(res); w(", "); opr(a1); wc(10); w("  jmp "); wl(end); wc(10); wl(els); w(":\n");
+  V b1 = to_scalar(gen(kid(n, 2)), rt, 0); w("  mov "); wr(res); w(", "); opr(b1); wc(10); wl(end); w(":\n");
+  V r = mkv(rt, 0, res); merge_eff(r, c); merge_eff(r, a1); merge_eff(r, b1);
+  if (c.ci && a1.ci && b1.ci) { r.ci = 1; r.cv = b1.cv; if (c.cv) r.cv = a1.cv; }
+  return r;
+}
+// ---- cagri ----
+int c_cands[64]; int c_nc = 0;
+V gen_call(int n) {
+  curline = nk_line[n]; int cn = kid(n, 0); int ck = nk_k[cn];
+  V self = mkv(0, 0, 0); int haveself = 0; int allowvirt = 1; V calleeobj = mkv(0, 0, 0); int opcall = 0; c_nc = 0;
+  if (ck == N_ID) {
+    int vi = findvar(nk_s1[cn]);
+    if (vi >= 0) { V v = var_ref(vi); if (is_cls(unq(v.ty))) { calleeobj = v; opcall = 1; } else die("E_TYPE", "cagrilabilir degil"); }
+    else {
+      if (cur_cls >= 0) { methods_named(cur_cls, nk_s1[cn]); if (nmeth_cand > 0) { int k = 0; while (k < nmeth_cand) { c_cands[k] = meth_cand[k]; k = k + 1; } c_nc = nmeth_cand; V t = this_value(); self = mkv(te[t.ty], 1, t.reg); self.vp = 1; if (t.reg < 0) { t = mat(t); self.reg = t.reg; } haveself = 1; int thv = findvar(N_THISV); if (tcv[te[vty[thv]]]) self.ty = withc(self.ty, 1); } }
+      if (c_nc == 0) { int f = 0; while (f < nfn) { if (fn_cls[f] < 0 && fn_name[f] == nk_s1[cn] && c_nc < 64) { c_cands[c_nc] = f; c_nc = c_nc + 1; } f = f + 1; } }
+      if (c_nc == 0) die("E_UNDECL", "tanimsiz islev");
+    }
+  } else if (ck == N_MEMBER || ck == N_ARROW) {
+    V o = gen(kid(cn, 0));
+    if (ck == N_ARROW) {
+      if (is_cls(unq(o.ty))) { V ops[1]; ops[0] = o; V u = user_op(N_ARW, ops, 1, 0); if (u.ty >= 0) o = u; }
+      o = rval(o); if (is_ptr(o.ty) == 0 || is_cls(unq(te[o.ty])) == 0) die("E_TYPE", "'->' sinif isaretcisi gerektirir");
+      nullchk(o); V l = mat(o); l.ty = te[o.ty]; l.cat = 1; l.vp = 1; o = l;
+    }
+    if (is_cls(unq(o.ty)) == 0) die("E_TYPE", "uye islev cagrisi icin sinif nesnesi gerekli");
+    int ocls = tcl[unq(o.ty)]; int search = ocls;
+    if (nk_s2[cn] >= 0) { int qc = find_class(nk_s2[cn]); if (qc < 0 || derived_from(ocls, qc) == 0) die("E_UNDECL", "niteleyici sinif gecersiz"); search = qc; allowvirt = 0; }
+    if (cl_bi[ocls] == 4) {
+      if (seqc(nk_s1[cn], "name") == 0 || nk_n[n] != 1) die("E_UNDECL", "std::type_info yalniz name() destekler");
+      tiname_used = 1; long long id = newreg(); long long r = newreg(); w("  ld "); wr(id); w(", "); opr(o); w(", 0\n  call "); wr(r); w(", tiname, "); wr(id); wc(10);
+      V v = mkv(ptrto(withc(mkt(Y_CHAR, 0 - 1, 0), 1)), 0, r); merge_eff(v, o); return v;
+    }
+    methods_named(search, nk_s1[cn]);
+    if (nmeth_cand == 0) {
+      int oc = find_field(ocls, nk_s1[cn]);
+      if (oc >= 0 && is_cls(unq(fq_ty))) { V f = mkv(fq_ty, 1, 0); if (fq_woff) { f.reg = newreg(); w("  add "); wr(f.reg); w(", "); opr(o); w(", "); wn(fq_woff); wc(10); } else f.reg = o.reg; f.vp = o.vp; calleeobj = f; opcall = 1; }
+      else die("E_UNDECL", "sinifta boyle bir islev yok");
+    } else { int k = 0; while (k < nmeth_cand) { c_cands[k] = meth_cand[k]; k = k + 1; } c_nc = nmeth_cand; self = o; haveself = 1; if (o.vp == 0) allowvirt = 0; }
+  } else {
+    V o = gen(cn); if (is_cls(unq(o.ty))) { calleeobj = o; opcall = 1; } else die("E_TYPE", "cagrilabilir olmayan ifade");
+  }
+  if (opcall) {
+    methods_named(tcl[unq(calleeobj.ty)], N_CALLOP); if (nmeth_cand == 0) die("E_NOVIABLE", "operator() yok");
+    int k = 0; while (k < nmeth_cand) { c_cands[k] = meth_cand[k]; k = k + 1; } c_nc = nmeth_cand; self = calleeobj; haveself = 1; allowvirt = calleeobj.vp;
+  }
+  int cc[64]; int ncc = c_nc; int i = 0; while (i < ncc) { cc[i] = c_cands[i]; i = i + 1; }
+  int na = nk_n[n] - 1; V av[8]; if (na > 8) die("E_SINIR", "cok fazla arguman");
+  i = 0; while (i < na) { if (nk_k[kid(n, i + 1)] == N_INITLIST) die("E_ARG", "suslu parantez listesi arguman olamaz"); av[i] = gen(kid(n, i + 1)); i = i + 1; }
+  int fi;
+  if (haveself) fi = resolve(cc, ncc, &self, av, na); else fi = resolve(cc, ncc, 0, av, na);
+  if (fi == 0 - 1) die("E_NOVIABLE", "uygun asiri yuklenmis islev yok");
+  if (fi == 0 - 2) die("E_AMBIG", "belirsiz islev cagrisi");
+  V r; if (haveself) r = callfn(fi, &self, av, na, allowvirt); else r = callfn(fi, 0, av, na, allowvirt);
+  return r;
+}
+// ---- donusumler ----
+int casts_away(int from, int to) {
+  while (1) {
+    if (tk[from] != Y_PTR || tk[to] != Y_PTR) return 0;
+    int fe = te[from]; int tee = te[to];
+    if (tcv[fe] && tcv[tee] == 0) return 1;
+    from = fe; to = tee; if (tk[from] != Y_PTR) return 0;
+  }
+  return 0;
+}
+V static_cast_(V v, int T) {
+  if (is_void(T)) { V o = novalue(); o.ne = v.ne; return o; }
+  if (is_ref(T)) {
+    int rr = tk[T] == Y_RREF; int tgt = te[T]; int tu = unq(tgt); int au = unq(v.ty);
+    int rel = au == tu || (is_cls(au) && is_cls(tu) && (derived_from(tcl[au], tcl[tu]) || derived_from(tcl[tu], tcl[au])));
+    if (rel) {
+      if (tcv[v.ty] && tcv[tgt] == 0) die("E_CONSTCAST", "static_cast const'i kaldiramaz");
+      if (rr == 0 && v.cat != 1 && tcv[tgt] == 0) die("E_BIND", "static_cast<T&>: lvalue gerekli");
+      if (rr && v.cat == 1) { V o = v; o.cat = 2; o.ty = tgt; return o; }
+      if (v.cat == 0 && is_cls(au) == 0) { V t = tempscalar(au, v); t.cat = 1; if (rr) t.cat = 2; t.ty = tgt; return t; }
+      V o = v; o.ty = tgt; o.cat = 1; if (rr) o.cat = 2; return o;
+    }
+    if (rr == 0 && tcv[tgt] == 0) die("E_BIND", "static_cast<T&>: uyumsuz tur");
+    if (is_cls(tu)) { V s = to_class_value(v, tu); s.cat = 1; if (rr) s.cat = 2; s.ty = tgt; return s; }
+    V s = to_scalar(v, tu, 0); V t = tempscalar(tu, s); t.cat = 1; if (rr) t.cat = 2; t.ty = tgt; return t;
+  }
+  if (is_cls(unq(T))) return to_class_value(v, T);
+  if (is_arith(T)) { if (is_cls(unq(v.ty))) return to_scalar(v, T, 1); V r = rval(v); if (is_arith(r.ty) == 0) die("E_CAST", "static_cast gecersiz"); return convert_arith(r, T); }
+  if (is_ptr(T)) {
+    if (is_cls(unq(v.ty))) return to_scalar(v, T, 1);
+    V r = rval(v);
+    if (tk[r.ty] == Y_NULLPTR || (is_int(r.ty) && r.ci && r.cv == 0 && r.nl)) { V o = imm(unq(T), 0); o.ne = r.ne; return o; }
+    if (is_ptr(r.ty) == 0) die("E_CAST", "static_cast: reinterpret_cast gerekir");
+    int fe = te[r.ty]; int tee = te[T];
+    if (casts_away(r.ty, T)) die("E_CONSTCAST", "static_cast const'i kaldiramaz");
+    int ok = unq(fe) == unq(tee) || is_void(tee) || is_void(fe) || (is_cls(fe) && is_cls(tee) && (derived_from(tcl[fe], tcl[tee]) || derived_from(tcl[tee], tcl[fe])));
+    if (ok == 0) die("E_CAST", "static_cast: iliskisiz isaretci turleri");
+    V o = r; o.ty = unq(T); return o;
+  }
+  if (tk[T] == Y_NULLPTR) { V r = rval(v); if (tk[r.ty] != Y_NULLPTR) die("E_CAST", "nullptr_t'ye donusum yok"); return r; }
+  die("E_CAST", "static_cast hedef turu desteklenmiyor"); return v;
+}
+V reinterpret_cast_(V v, int T) {
+  if (is_ref(T)) {
+    if (v.cat != 1 && tk[T] != Y_RREF) die("E_LVALUE", "reinterpret_cast<T&>: lvalue gerekli");
+    int tgt = te[T]; int vt = v.ty;
+    if (tcv[vt] && tcv[tgt] == 0) die("E_CONSTCAST", "reinterpret_cast const'i kaldiramaz");
+    if (is_sc(unq(vt)) && is_sc(unq(tgt)) && size_of(vt) != size_of(tgt)) die("E_REINTERP", "boyutlar farkli -- motor sozcuk modelinde bayt gorunumu yok");
+    V o = v; o.ty = tgt; o.cat = 1; if (tk[T] == Y_RREF) o.cat = 2; return o;
+  }
+  V r = rval(v); T = unq(T);
+  if (r.ty == T && (is_int(T) || is_ptr(T) || is_flt(T))) return r;
+  if (is_ptr(T)) {
+    if (is_ptr(r.ty)) { if (casts_away(r.ty, T)) die("E_CONSTCAST", "reinterpret_cast const'i kaldiramaz"); V o = r; o.ty = T; return o; }
+    if (is_int(r.ty)) {
+      if (size_of(r.ty) != 8) die("E_REINTERP", "tamsayidan isaretciye yalniz 64 bit tamsayi");
+      if (r.ci && r.cv == 0) { V z = imm(T, 0); return z; }
+      V o = mkv(T, 0, newreg()); w("  sar "); wr(o.reg); w(", "); opr(r); w(", 3\n"); merge_eff(o, r); return o;
+    }
+    die("E_REINTERP", "reinterpret_cast gecersiz");
+  }
+  if (is_int(T) && is_ptr(r.ty)) {
+    if (tk[T] == Y_BOOL || size_of(T) != 8) die("E_REINTERP", "isaretciden tamsayiya yalniz 64 bit tamsayi");
+    V o = mkv(T, 0, newreg()); w("  shl "); wr(o.reg); w(", "); opr(r); w(", 3\n"); merge_eff(o, r); return o;
+  }
+  die("E_REINTERP", "reinterpret_cast gecersiz"); return v;
+}
+V const_cast_(V v, int T) {
+  if (is_ref(T)) {
+    if (v.cat != 1 && tk[T] != Y_RREF) die("E_LVALUE", "const_cast<T&>: lvalue gerekli");
+    if (unq(v.ty) != unq(te[T])) die("E_CONSTCAST", "const_cast yalniz cv niteleyicilerini degistirir");
+    V o = v; o.ty = te[T]; if (tk[T] == Y_RREF) o.cat = 2; return o;
+  }
+  V r = rval(v); T = unq(T);
+  if (is_ptr(T) == 0 || is_ptr(r.ty) == 0) die("E_CONSTCAST", "const_cast yalniz isaretci/referans");
+  int f = r.ty; int t = T;
+  while (is_ptr(f) && is_ptr(t)) { f = te[f]; t = te[t]; if (unq(f) == unq(t)) break; }
+  if (unq(f) != unq(t)) die("E_CONSTCAST", "const_cast yalniz cv niteleyicilerini degistirir");
+  V o = r; o.ty = T; return o;
+}
+int type_id_of(int t) { t = unq(deref(t)); if (is_cls(t)) return cl_id[tcl[t]]; return 1000 + t; }
+int isa_need[200]; int nisa = 0; int ti_seen[600]; int nti_seen = 0;
+void note_typeid(int id, int t) { int i = 0; while (i < nti_seen) { if (ti_seen[i] == id) return; i = i + 1; } if (nti_seen < 600) { ti_seen[nti_seen] = id; nti_seen = nti_seen + 1; ti_types[id % 600] = t; } }
+int ti_types[600];
+V dynamic_cast_(V v, int T) {
+  int ref = is_ref(T); int tgtT = 0 - 1;
+  if (ref) tgtT = te[T]; else if (is_ptr(T)) tgtT = te[T];
+  if (tgtT < 0) die("E_DYNCAST", "dynamic_cast hedefi sinif isaretcisi/referansi olmali");
+  int tovoid = ref == 0 && is_void(tgtT);
+  if (tovoid == 0 && is_cls(unq(tgtT)) == 0) die("E_DYNCAST", "dynamic_cast hedef sinif turu degil");
+  V objaddr; int srcc; V base = mkv(0, 0, 0);
+  if (ref) {
+    if (is_cls(unq(v.ty)) == 0) die("E_DYNCAST", "dynamic_cast<T&> sinif nesnesi gerektirir");
+    if (tk[T] == Y_REF && v.cat != 1 && tcv[tgtT] == 0) die("E_LVALUE", "dynamic_cast<T&>: lvalue gerekli");
+    srcc = tcl[unq(v.ty)]; objaddr = v; if (tcv[v.ty] && tcv[tgtT] == 0) die("E_CONSTCAST", "dynamic_cast const'i kaldiramaz");
+  } else {
+    base = rval(v); if (is_ptr(base.ty) == 0 || is_cls(unq(te[base.ty])) == 0) die("E_DYNCAST", "dynamic_cast kaynak sinif isaretcisi olmali");
+    srcc = tcl[unq(te[base.ty])]; objaddr = mat(base); if (tcv[te[base.ty]] && tcv[tgtT] == 0) die("E_CONSTCAST", "dynamic_cast const'i kaldiramaz");
+  }
+  if (cl_poly[srcc] == 0 && !(tovoid == 0 && derived_from(srcc, tcl[unq(tgtT)]))) die("E_DYNCAST", "dynamic_cast kaynak sinifi polimorfik degil");
+  if (tovoid) { if (cl_poly[srcc] == 0) die("E_DYNCAST", "dynamic_cast<void*> polimorfik sinif gerektirir"); V o = objaddr; o.ty = unq(T); o.cat = 0; return o; }
+  int dc = tcl[unq(tgtT)];
+  if (derived_from(srcc, dc)) { if (ref) { V o = v; o.ty = tgtT; if (tk[T] == Y_RREF) o.cat = 2; return o; } V o = objaddr; o.ty = unq(T); o.cat = 0; return o; }
+  int k = 0; int found = 0; while (k < nisa) { if (isa_need[k] == dc) found = 1; k = k + 1; } if (found == 0) { isa_need[nisa] = dc; nisa = nisa + 1; }
+  long long id = newreg(); long long c = newreg(); int ok = newlab();
+  if (ref) {
+    may_throw = 1;
+    w("  ld "); wr(id); w(", "); opr(objaddr); w(", 0\n  call "); wr(c); w(", isa"); wn(dc); w(", "); wr(id); w("\n  jnz "); wr(c); w(", "); wl(ok); wc(10); trapnow(); wl(ok); w(":\n");
+    V o = v; o.ty = tgtT; o.cat = 1; if (tk[T] == Y_RREF) o.cat = 2; o.vp = 1; return o;
+  }
+  long long res = newreg(); int end = newlab();
+  w("  mov "); wr(res); w(", 0\n  jz "); opr(objaddr); w(", "); wl(end); w("\n  ld "); wr(id); w(", "); opr(objaddr); w(", 0\n  call "); wr(c); w(", isa"); wn(dc); w(", "); wr(id); w("\n  jz "); wr(c); w(", "); wl(end); w("\n  mov "); wr(res); w(", "); opr(objaddr); wc(10); wl(end); w(":\n");
+  V o = mkv(unq(T), 0, res); merge_eff(o, base); return o;
+}
+V c_style_cast(V v, int T) {   // C tipi donusum: const_cast, static_cast, reinterpret_cast sirasi (onceden kosullarla secilir)
+  if (is_ref(T)) {
+    int tu = unq(te[T]); int au = unq(v.ty);
+    if (au == tu && tcv[v.ty] != tcv[te[T]]) return const_cast_(v, T);
+    if (au == tu || (is_cls(au) && is_cls(tu) && (derived_from(tcl[au], tcl[tu]) || derived_from(tcl[tu], tcl[au])))) return static_cast_(v, T);
+    return reinterpret_cast_(v, T);
+  }
+  if (is_ptr(T)) {
+    V r = rval(v);
+    if (is_ptr(r.ty)) {
+      int fe = te[r.ty]; int tee = te[T];
+      if (unq(fe) == unq(tee) && tcv[fe] != tcv[tee]) return const_cast_(r, T);
+      if (unq(fe) == unq(tee) || is_void(fe) || is_void(tee) || (is_cls(fe) && is_cls(tee) && (derived_from(tcl[fe], tcl[tee]) || derived_from(tcl[tee], tcl[fe])))) return static_cast_(r, T);
+      return reinterpret_cast_(r, T);
+    }
+    if (is_int(r.ty) && r.ci && r.cv == 0) return static_cast_(r, T);
+    if (tk[r.ty] == Y_NULLPTR) return static_cast_(r, T);
+    return reinterpret_cast_(r, T);
+  }
+  if (is_int(T) && tk[T] != Y_BOOL) { V r = rval(v); if (is_ptr(r.ty)) return reinterpret_cast_(r, T); }
+  return static_cast_(v, T);
 }
 V gen_cast(int n) {
-  int T = typeof_(kid(n, 0)); V v = rval(gen(kid(n, 1)));
-  if (nk_k[n] == N_CAST) { if (!(seqc(nk_s1[n], "static_cast") || seqc(nk_s1[n], "c"))) die("desteklenmiyor: bu donusum turu (ifx cekirdegi: static_cast ve C tipi)"); }
-  if (tk[T] == Y_VOID) { return mkv(Y_VOID, 0, 0 - 2); }
-  if (!is_sc(T) || !is_sc(v.ty)) die("donusum skaler turler arasinda olmali");
-  if (is_ptr(T) && is_int(v.ty) && !(v.ci && v.cv == 0)) die("desteklenmiyor: tamsayidan isaretciye (reinterpret_cast gerekir)");
-  if (is_int(T) && is_ptr(v.ty) && tk[T] != Y_BOOL) die("desteklenmiyor: isaretciden tamsayiya");
-  if (is_flt(T) && is_ptr(v.ty)) die("gecersiz donusum");
-  return convert(v, T);
+  curline = nk_line[n]; int T = typeof_(kid(n, 0));
+  if (tk[T] == Y_AUTO) die("E_TYPE", "auto donusum hedefi olamaz");
+  V v = gen(kid(n, 1)); int s = nk_s1[n];
+  if (seqc(s, "static_cast")) return static_cast_(v, T);
+  if (seqc(s, "dynamic_cast")) return dynamic_cast_(v, T);
+  if (seqc(s, "const_cast")) return const_cast_(v, T);
+  if (seqc(s, "reinterpret_cast")) return reinterpret_cast_(v, T);
+  // C tipi: once static, olmazsa const_cast / reinterpret_cast (hata tuzagi ile degil: on-deneme)
+  return c_style_cast(v, T);
+}
+// ---- typeid / sizeof / noexcept / UDL ----
+int type_name_buf = 0;
+void mangle_into(int t, int pos_unused);
+char mgb[300]; int mgn = 0;
+void mg_c(const char* s) { while (*s) { mgb[mgn] = *s; mgn = mgn + 1; s++; } }
+void mg_n(long long v) { if (v >= 10) mg_n(v / 10); mgb[mgn] = '0' + (v % 10); mgn = mgn + 1; }
+void mangle_rec(int t) {
+  if (tcv[t]) mg_c("K");
+  int k = tk[t];
+  if (k == Y_VOID) mg_c("v"); else if (k == 1) mg_c("b"); else if (k == 2) mg_c("c"); else if (k == 3) mg_c("a"); else if (k == 4) mg_c("h"); else if (k == 5) mg_c("s"); else if (k == 6) mg_c("t");
+  else if (k == 7) mg_c("i"); else if (k == 8) mg_c("j"); else if (k == 9) mg_c("l"); else if (k == 10) mg_c("m"); else if (k == 11) mg_c("x"); else if (k == 12) mg_c("y"); else if (k == 13) mg_c("f");
+  else if (k == 14) mg_c("d"); else if (k == 15) mg_c("e"); else if (k == 16) mg_c("Dn");
+  else if (k == Y_PTR) { mg_c("P"); mangle_rec(te[t]); }
+  else if (k == Y_ARR) { mg_c("A"); mg_n(tn[t]); mg_c("_"); mangle_rec(te[t]); }
+  else if (k == Y_CLASS) { int nm = cl_name[tcl[t]]; mg_n(s_len[nm]); int i = 0; while (i < s_len[nm]) { mgb[mgn] = chars[s_off[nm] + i]; mgn = mgn + 1; i = i + 1; } }
+}
+int mangle(int t) { mgn = 0; mangle_rec(t); mgb[mgn] = 0; return intern_n(mgb, mgn); }
+V typeid_v(int id) {
+  int ti = find_class(intern_c("std::type_info")); V t = tempobj(withc(clsty(ti), 1)); w("  st "); wn(id); w(", "); opr(t); w(", 0\n"); t.cat = 1; return t;
+}
+V gen_typeid(int n) {
+  curline = nk_line[n];
+  if (nk_k[n] == N_TYPEID_T) { int t = typeof_(kid(n, 0)); int id = type_id_of(t); note_typeid(id, unq(deref(t))); return typeid_v(id); }
+  int sv = may_throw; dry = dry + 1; V probe = gen(kid(n, 0)); dry = dry - 1; may_throw = sv;
+  int pt = unq(probe.ty);
+  if (is_cls(pt) && cl_poly[tcl[pt]] && probe.cat != 0) {
+    V o = gen(kid(n, 0)); may_throw = 1; long long id = newreg(); w("  ld "); wr(id); w(", "); opr(o); w(", 0\n");
+    int ti = find_class(intern_c("std::type_info")); V t = tempobj(withc(clsty(ti), 1)); w("  st "); wr(id); w(", "); opr(t); w(", 0\n"); t.cat = 1; return t;
+  }
+  int id = type_id_of(probe.ty); note_typeid(id, unq(deref(probe.ty))); return typeid_v(id);
+}
+V gen_sizeof(int n) {
+  curline = nk_line[n]; int t;
+  if (nk_k[n] == N_SIZEOF_E) { int sv = may_throw; dry = dry + 1; V v = gen(kid(n, 0)); dry = dry - 1; may_throw = sv; if (is_void(v.ty)) die("E_SIZEOF", "void ifadenin boyutu alinamaz"); t = v.ty; }
+  else t = typeof_(kid(n, 0));
+  t = deref(t);
+  if (is_void(t) || complete_obj(t) == 0) die("E_SIZEOF", "tamamlanmamis/void turun boyutu alinamaz");
+  if (is_arr(t) && tn[t] < 0) die("E_SIZEOF", "boyutsuz dizi");
+  long long val = size_of(t); if (nk_k[n] == N_ALIGNOF) val = align_of(t);
+  return imm(mkt(Y_ULONG, 0 - 1, 0), val);
+}
+V gen_udl(int n) {
+  curline = nk_line[n]; int kind = nk_k[n]; int suf = nk_s2[n];
+  char nb[100]; int k = 0; const char* pre = "operator\"\""; while (pre[k]) { nb[k] = pre[k]; k = k + 1; } int j = 0; while (j < s_len[suf]) { nb[k] = chars[s_off[suf] + j]; k = k + 1; j = j + 1; } nb[k] = 0;
+  int nm = intern_c(nb); V args[2]; int na; int want = 0;
+  if (kind == N_INT) { na = 1; want = mkt(Y_ULLONG, 0 - 1, 0); args[0] = imm(want, nk_i[n]); }
+  else if (kind == N_FLT) { na = 1; want = ldty(); args[0] = ld_const(nk_i[n], nk_d[n]); }
+  else if (kind == N_CHR) { na = 1; want = mkt(Y_CHAR, 0 - 1, 0); args[0] = imm(want, fold(nk_i[n], want)); }
+  else {
+    na = 2; str_node[nstrn] = n; nstrn = nstrn + 1; long long p = newreg(); w("  mov "); wr(p); w(", s"); wn(nstrn - 1); wc(10);
+    args[0] = mkv(ptrto(withc(mkt(Y_CHAR, 0 - 1, 0), 1)), 0, p); args[1] = imm(mkt(Y_ULONG, 0 - 1, 0), slen(nk_s1[n]));
+  }
+  int found = 0 - 1; int f = 0; int cnt = 0;
+  while (f < nfn) {
+    if (fn_cls[f] < 0 && fn_name[f] == nm && fn_np[f] == na) {
+      int ok = 0;
+      if (kind == N_STR) ok = is_ptr(fn_pt[f * 8]) && unq(fn_pt[f * 8 + 1]) == mkt(Y_ULONG, 0 - 1, 0); else ok = unq(fn_pt[f * 8]) == want;
+      if (ok) { found = f; cnt = cnt + 1; }
+    }
+    f = f + 1;
+  }
+  if (cnt == 0) die("E_UDL", "uygun kullanici tanimli sabit isleci yok");
+  if (cnt > 1) die("E_AMBIG", "birden fazla uygun sabit isleci");
+  return callfn(found, 0, args, na, 0);
 }
 V gen(int n) {
-  int k = nodek(n);
-  if (k == N_INT) { V v = imm(mkt(nk_j[n], -1, 0), nk_i[n]); return v; }
-  if (k == N_CHR) return imm(mkt(Y_CHAR, -1, 0), fold(nk_i[n], mkt(Y_CHAR, -1, 0)));
+  int k = nk_k[n]; curline = nk_line[n];
+  if (k == N_INT) { if (nk_s2[n] >= 0) return gen_udl(n); V v = imm(mkt(nk_j[n], 0 - 1, 0), nk_i[n]); if (nk_i[n] == 0) v.nl = 1; return v; }
+  if (k == N_CHR) { if (nk_s2[n] >= 0) return gen_udl(n); return imm(mkt(Y_CHAR, 0 - 1, 0), fold(nk_i[n], mkt(Y_CHAR, 0 - 1, 0))); }
   if (k == N_BOOL) return imm(bool_t(), nk_i[n]);
-  if (k == N_NULLPTR) return imm(mkt(Y_PTR, mkt(Y_VOID, -1, 0), 0), 0);
-  if (k == N_FLT) { int t = mkt(nk_j[n], -1, 0); if (tk[t] == 15) { if (dry == 0) die("desteklenmiyor: long double sabiti (f80 komutlari bu cekirdekte yok; f64'e sessizce indirilmez)"); return mkv(t, 0, 0 - 2); } V f = fconst(t, nk_d[n]); return norm(f, t); }
-  if (k == N_ID) {
-    int vi = findvar(nk_s1[n]);
-    if (vi < 0) { int gi = findgl(nk_s1[n]); if (gi < 0) die("tanimsiz ad"); long long gr = newreg(); w("  mov "); wr(gr); w(", g"); wn(gi); wc(10); return mkv(gty[gi], 1, gr); }
-    long long r = newreg(); w("  add "); wr(r); w(", fp, "); wn(voff[vi]); wc(10); return mkv(vty[vi], 1, r);
+  if (k == N_NULLPTR) return imm(mkt(Y_NULLPTR, 0 - 1, 0), 0);
+  if (k == N_FLT) {
+    if (nk_s2[n] >= 0) return gen_udl(n);
+    int t = mkt(nk_j[n], 0 - 1, 0);
+    if (tk[t] == Y_LDOUBLE) return ld_const(nk_i[n], nk_d[n]);
+    V f = fconst(t, nk_d[n]); return norm(f, t);
   }
   if (k == N_STR) {
-    str_node[nstrn] = n; nstrn = nstrn + 1; long long sr = newreg(); w("  mov "); wr(sr); w(", s"); wn(nstrn - 1); wc(10);
-    return mkv(mkt(Y_ARR, mkt(Y_CHAR, -1, 0), slen(nk_s1[n]) + 1), 1, sr);
+    if (nk_s2[n] >= 0) return gen_udl(n);
+    str_node[nstrn] = n; nstrn = nstrn + 1; V v = mkv(arrof(withc(mkt(Y_CHAR, 0 - 1, 0), 1), slen(nk_s1[n]) + 1), 1, newreg()); w("  mov "); wr(v.reg); w(", s"); wn(nstrn - 1); wc(10); return v;
   }
+  if (k == N_THIS) return this_value();
+  if (k == N_ID) return gen_id(n);
   if (k == N_UNARY) return gen_unary(n);
-  if (k == N_BINARY) {
-    if (seqc(nk_s1[n], "&&")) return gen_logical(n, 1);
-    if (seqc(nk_s1[n], "||")) return gen_logical(n, 0);
-    V l = gen(kid(n, 0)); V r = gen(kid(n, 1)); settok(nk_s1[n]); return binop(tokbuf, l, r);
-  }
+  if (k == N_BINARY) return gen_binary(n);
   if (k == N_ASSIGN) return gen_assign(n);
   if (k == N_PREINC || k == N_POSTINC) return gen_incdec(n);
   if (k == N_COND) return gen_cond(n);
-  if (k == N_COMMA) { gen(kid(n, 0)); return gen(kid(n, 1)); }
+  if (k == N_COMMA) { V l = gen(kid(n, 0)); V r = gen(kid(n, 1)); int i = 0; V r2 = r; r2.ne = 0; while (i < l.ne) { add_eff(r2, l.ek[i], l.er[i]); i = i + 1; } i = 0; while (i < r.ne) { add_eff(r2, r.ek[i], r.er[i]); i = i + 1; } return r2; }
   if (k == N_CALL) return gen_call(n);
   if (k == N_INDEX) return gen_index(n);
-  if (k == N_SIZEOF_T) { int t = typeof_(kid(n, 0)); return imm(mkt(Y_ULONG, -1, 0), size_of(t)); }
-  if (k == 21) { int t = typeof_(kid(n, 0)); while (is_arr(t)) t = te[t]; return imm(mkt(Y_ULONG, -1, 0), size_of(t)); }
-  if (k == N_SIZEOF_E) { dry = dry + 1; V v = gen(kid(n, 0)); dry = dry - 1; return imm(mkt(Y_ULONG, -1, 0), size_of(v.ty)); }
-  if (k == N_CAST || k == N_FCAST) {
-    if (k == N_FCAST && nk_n[n] != 2) die("desteklenmiyor: T() / T{} (ifx cekirdegi)");
-    return gen_cast(n);
-  }
-  die("desteklenmiyor: bu ifade dugumu (sinif/dize/UDL/typeid/... ifx cekirdeginde yok)"); return imm(0, 0);
-}
-V gen_call(int n) {
-  int callee = kid(n, 0); if (nodek(callee) != N_ID) die("desteklenmiyor: yalniz islev adi cagrilabilir");
-  int na = nk_n[n] - 1; int f = -1; int i = 0;
-  while (i < nfn) { if (fn_name[i] == nk_s1[callee] && fn_np[i] == na) { if (f >= 0) die("desteklenmiyor: asiri yukleme"); f = i; } i = i + 1; }
-  if (f < 0) die("tanimsiz islev ya da arguman sayisi uyumsuz");
-  V av[8]; if (na > 8) die("cok fazla arguman");
-  i = 0; while (i < na) { V a = rval(gen(kid(n, i + 1))); if (!is_sc(a.ty)) die("arguman skaler olmali"); av[i] = convert(a, fn_pt[f * 8 + i]); i = i + 1; }
-  int rt = fn_ret[f]; long long d = newreg();
-  if (fn_bi[f] == 4) { w("  host "); wr(d); w(", getc\n"); return mkv(mkt(Y_INT, -1, 0), 0, d); }
-  if (fn_bi[f] >= 1) {
-    V a0 = mat(av[0]);
-    if (fn_bi[f] == 1) w("  host puti, "); if (fn_bi[f] == 2) w("  host putc, "); if (fn_bi[f] == 3) w("  host putf, ");
-    opr(a0); wc(10); return mkv(Y_VOID, 0, 0 - 2);
-  }
-  w("  call "); if (tk[rt] != Y_VOID) { wr(d); w(", "); } w("f"); wn(f);
-  i = 0; while (i < na) { w(", "); opr(av[i]); i = i + 1; }
-  wc(10);
-  if (tk[rt] == Y_VOID) return mkv(Y_VOID, 0, 0 - 2);
-  return mkv(rt, 0, d);
-}
-// ---- deyimler ----
-int loop_brk[64]; int loop_cont[64]; int nloop = 0;
-void emit_ret(V v) { long long t = newreg(); w("  mov "); wr(t); w(", __sp\n  st fp, "); wr(t); w(", 0\n  ret "); opr(v); wc(10); }
-void zero_fill(long long addr, long long n) {
-  long long i = 0;
-  if (n <= 8) { while (i < n) { w("  st 0, "); wr(addr); w(", "); wn(i); wc(10); i = i + 1; } return; }
-  long long ri = newreg(); long long rp = newreg(); long long rc = newreg(); long long top = nlab; nlab = nlab + 1; long long end = nlab; nlab = nlab + 1;
-  w("  mov "); wr(ri); w(", 0\n  mov "); wr(rp); w(", "); wr(addr); wc(10); wl(top); w(":\n  lt "); wr(rc); w(", "); wr(ri); w(", "); wn(n); wc(10);
-  w("  jz "); wr(rc); w(", "); wl(end); w("\n  st 0, "); wr(rp); w(", 0\n  add "); wr(rp); w(", "); wr(rp); w(", 1\n  add "); wr(ri); w(", "); wr(ri); w(", 1\n  jmp "); wl(top); wc(10); wl(end); w(":\n");
-}
-void init_obj(long long addr, int T, int init);
-void init_scalar(long long addr, int T, int e) {
-  if (nodek(e) == N_INITLIST) { if (nk_n[e] > 1) die("skaler tek degerle ilklendirilir"); if (nk_n[e] == 0) { w("  st 0, "); wr(addr); w(", 0\n"); return; } e = kid(e, 0); }
-  V v = rval(gen(e)); if (!is_sc(v.ty)) die("ilklendirici skaler olmali");
-  V cv_ = mat(convert(v, T)); w("  st "); opr(cv_); w(", "); wr(addr); w(", 0\n");
-}
-void init_obj(long long addr, int T, int init) {
-  if (is_arr(T)) {
-    if (nodek(init) == N_STR && tk[te[T]] == Y_CHAR) {
-      int sid = nk_s1[init]; if (slen(sid) + 1 > tn[T]) die("dize sabiti diziye sigmiyor");
-      zero_fill(addr, words_of(T)); int i = 0;
-      while (i < slen(sid)) { w("  st "); wn(chars[soff(sid) + i]); w(", "); wr(addr); w(", "); wn(i); wc(10); i = i + 1; }
-      return;
+  if (k == N_MEMBER || k == N_ARROW) return gen_member(n);
+  if (k == N_SIZEOF_E || k == N_SIZEOF_T || k == N_ALIGNOF) return gen_sizeof(n);
+  if (k == N_NOEXCEPT) { int sv = may_throw; may_throw = 0; dry = dry + 1; gen(kid(n, 0)); dry = dry - 1; int thr = may_throw; may_throw = sv; return imm(bool_t(), thr == 0); }
+  if (k == N_TYPEID_E || k == N_TYPEID_T) return gen_typeid(n);
+  if (k == N_CAST) return gen_cast(n);
+  if (k == N_FCAST) {
+    int T = typeof_(kid(n, 0)); if (tk[T] == Y_AUTO) die("E_TYPE", "auto islevsel donusum hedefi olamaz");
+    if (nk_i[n] == 1) {
+      if (is_cls(T)) { V t = tempobj(unq(T)); init_obj(t, unq(T), kid(n, 1), 3); return t; }
+      if (is_sc(T) == 0) die("E_TYPE", "bu tur {..} ile olusturulamaz");
+      int off = slot(1); V ad = slotaddr(off); init_obj(ad, unq(T), kid(n, 1), 3); V v = mkv(unq(T), 0, newreg()); w("  ld "); wr(v.reg); w(", "); opr(ad); w(", 0\n"); return v;
     }
-    if (nodek(init) != N_INITLIST) die("dizi {..} listesiyle ilklendirilir");
-    if (nk_n[init] > tn[T]) die("ilklendirici listesinde fazla eleman");
-    if (!is_sc(te[T]) && !is_arr(te[T])) die("desteklenmiyor: dizi elemani skaler/dizi degil");
-    zero_fill(addr, words_of(T));
-    int i = 0; while (i < nk_n[init]) { long long ea = newreg(); w("  add "); wr(ea); w(", "); wr(addr); w(", "); wn(i * words_of(te[T])); wc(10); init_obj(ea, te[T], kid(init, i)); i = i + 1; }
-  } else if (is_sc(T)) init_scalar(addr, T, init);
-  else die("desteklenmiyor: bu turde degisken");
+    if (nk_n[n] < 2) {
+      if (is_cls(T)) { V t = tempobj(unq(T)); zero_n(t, cl_words[tcl[T]]); set_vptr(t, tcl[T]); return t; }
+      if (is_void(T)) return novalue();
+      if (is_flt(T)) return fconst(unq(T), 0);
+      return imm(unq(T), 0);
+    }
+    V v = gen(kid(n, 1)); return c_style_cast(v, T);
+  }
+  die("E_INTERNAL", "ifade dugumu bekleniyordu"); return novalue();
 }
+// ============================ BASLATMA ============================
+int final_overrider(int k_, int root) {
+  int c = k_;
+  while (c >= 0) {
+    int m = 0;
+    while (m < nfn) {
+      if (fn_cls[m] == c && fn_has(m, F_VIRT) && fn_vroot[m] == fn_vroot[root] && fn_name[m] == fn_name[root]) {
+        int same = fn_np[m] == fn_np[root]; int i = 0; while (same && i < fn_np[m]) { if (fn_pt[m * 8 + i] != fn_pt[root * 8 + i]) same = 0; i = i + 1; }
+        if (same && (fn_has(m, F_CONST) == fn_has(root, F_CONST))) return m;
+      }
+      m = m + 1;
+    }
+    c = cl_base[c];
+  }
+  return root;
+}
+int is_abstract(int ci) {
+  int c = ci;
+  while (c >= 0) {
+    int m = 0;
+    while (m < nfn) { if (fn_cls[m] == c && fn_has(m, F_PURE)) { int fin = final_overrider(ci, m); if (fn_has(fin, F_PURE)) return 1; } m = m + 1; }
+    c = cl_base[c];
+  }
+  return 0;
+}
+void fill_default(V addr, int t) {
+  if (is_cls(t)) {
+    int ci = tcl[t]; set_vptr(addr, ci);
+    int i = cl_f0[ci]; int e = cl_f0[ci] + cl_nf[ci];
+    while (i < e) { int ft = unq(fl_ty[i]); if (is_cls(ft) || is_arr(ft)) { if (fl_woff[i] >= 0) { long long fa = newreg(); w("  add "); wr(fa); w(", "); opr(addr); w(", "); wn(fl_woff[i]); wc(10); fill_default(mkv(0, 0, fa), ft); } } i = i + 1; }
+  } else if (is_arr(t) && is_cls(unq(te[t])) && cl_poly[tcl[unq(te[t])]]) {
+    long long wd = words_of(te[t]); long long i = 0;
+    while (i < tn[t]) { long long fa = newreg(); w("  add "); wr(fa); w(", "); opr(addr); w(", "); wn(i * wd); wc(10); fill_default(mkv(0, 0, fa), unq(te[t])); i = i + 1; }
+  }
+}
+void check_narrow(V& v, int to) {
+  int f = unq(v.ty); to = unq(to);
+  if (is_arith(f) == 0 || is_arith(to) == 0) return;
+  int narrow = 0;
+  if (is_flt(f) && is_int(to)) narrow = 1;
+  else if (is_int(f) && is_flt(to)) narrow = v.ci == 0;
+  else if (is_flt(f) && is_flt(to)) narrow = tk[to] == Y_FLOAT && tk[f] != Y_FLOAT;
+  else if (is_int(f) && is_int(to) && tk[to] != Y_BOOL) {
+    int fs = sg_of(f); int ts = sg_of(to); int fb = bits_of(f); int tb = bits_of(to);
+    int fits = (fs == ts && tb >= fb) || (fs == 0 && ts == 1 && tb > fb);
+    if (fits == 0) {
+      if (v.ci) { long long c = v.cv; int inr; if (ts) inr = tb == 64 || (c >= 0 - (1LL << (tb - 1)) && c < (1LL << (tb - 1))); else inr = c >= 0 && (tb == 64 || c < (1LL << tb)); if (fs == 0 && fb == 64 && c < 0) inr = tb == 64 && ts == 0; narrow = inr == 0; }
+      else narrow = 1;
+    }
+  }
+  else if (is_int(f) && tk[to] == Y_BOOL) narrow = (v.ci && (v.cv == 0 || v.cv == 1)) == 0;
+  if (narrow) die("E_NARROW", "daraltici donusum {..} icinde yasak");
+}
+V addr_plus(V addr, long long woff) { if (woff == 0) return addr; long long r = newreg(); w("  add "); wr(r); w(", "); opr(addr); w(", "); wn(woff); wc(10); return mkv(0, 1, r); }
+void init_obj(V addr, int T, int init, int style) {
+  T = unq(T); int brace = style == 3;
+  if (is_cls(T)) {
+    int ci = tcl[T];
+    if (is_abstract(ci)) die("E_ABSTRACT", "soyut sinif ornegi olusturulamaz");
+    if (init < 0 || (nk_k[init] == N_INITLIST && nk_n[init] == 0 && style != 2)) { zero_n(addr, cl_words[ci]); fill_default(addr, T); return; }
+    if (nk_k[init] == N_INITLIST) {
+      if (cl_bi[ci]) die("E_INIT", "bu sinif {..} ile baslatilamaz");
+      if (style == 2 && nk_n[init] == 1) { init_obj(addr, T, kid(init, 0), 1); return; }
+      if (cl_poly[ci]) die("E_INIT", "sinif kume (aggregate) degil: sanal islevi var");
+      zero_n(addr, cl_words[ci]); int idx = 0;
+      if (cl_base[ci] >= 0 && idx < nk_n[init]) {
+        int bt = clsty(cl_base[ci]);
+        if (nk_k[kid(init, idx)] == N_INITLIST) { init_obj(addr, bt, kid(init, idx), 3); idx = idx + 1; }
+        else { dry = dry + 1; V probe = gen(kid(init, idx)); dry = dry - 1; if (is_cls(unq(probe.ty)) && derived_from(tcl[unq(probe.ty)], cl_base[ci])) { V v = gen(kid(init, idx)); copy_n(addr, v, 0, cl_words[cl_base[ci]]); idx = idx + 1; } }
+      }
+      int i = cl_f0[ci]; int e = cl_f0[ci] + cl_nf[ci];
+      while (i < e && idx < nk_n[init]) { V fa = addr_plus(addr, fl_woff[i]); init_obj(fa, unq(fl_ty[i]), kid(init, idx), 3); idx = idx + 1; i = i + 1; }
+      if (idx < nk_n[init]) die("E_INIT", "ilklendirici listesinde fazla eleman");
+      fill_default(addr, T); return;
+    }
+    V v = gen(init);
+    if (brace && is_cls(unq(v.ty)) == 0) die("E_INIT", "sinif nesnesi bu degerle {..} ile baslatilamaz");
+    V s = to_class_value(v, T);
+    if (cl_bi[ci]) copy_n(addr, s, 0, 1); else copy_obj(addr, s, ci, 1);
+    return;
+  }
+  if (is_arr(T)) {
+    int et = unq(te[T]); long long cnt = tn[T]; long long wd = words_of(et);
+    if (init >= 0 && nk_k[init] == N_STR && tk[et] == Y_CHAR) {
+      int sid = nk_s1[init]; if (slen(sid) + 1 > cnt) die("E_INIT", "dize sabiti diziye sigmiyor"); zero_n(addr, cnt);
+      int i = 0; while (i < slen(sid)) { w("  st "); wn(chars[soff(sid) + i]); w(", "); opr(addr); w(", "); wn(i); wc(10); i = i + 1; } return;
+    }
+    if (init < 0) { fill_default(addr, T); return; }
+    if (nk_k[init] != N_INITLIST) die("E_INIT", "dizi {..} listesiyle baslatilmali");
+    if (nk_n[init] > cnt) die("E_INIT", "ilklendirici listesinde fazla eleman");
+    zero_n(addr, cnt * wd);
+    int i = 0; while (i < nk_n[init]) { V ea = addr_plus(addr, i * wd); init_obj(ea, et, kid(init, i), 3); i = i + 1; }
+    fill_default(addr, T); return;
+  }
+  if (init < 0) return;
+  int e = init;
+  if (nk_k[init] == N_INITLIST) {
+    if (nk_n[init] > 1) die("E_INIT", "skaler tek degerle ilklendirilir");
+    if (nk_n[init] == 0) { zero_n(addr, words_of(T)); return; }
+    e = kid(init, 0);
+  }
+  V v = gen(e);
+  if (brace) { V r = v; if (is_cls(unq(v.ty)) == 0) r = rval(v); check_narrow(r, T); }
+  V s = to_scalar(v, T, 0); if (is_ld(T)) { ld_copy(addr, s); return; }
+  V ms = mat(s); w("  st "); opr(ms); w(", "); opr(addr); w(", 0\n");
+}
+// ============================ BILDIRIMLER / DEYIMLER ============================
+int deduce_auto(int T, V& probe, int lvinit) {
+  if (tk[T] == Y_AUTO) {
+    int base = unq(probe.ty); if (is_arr(probe.ty)) base = ptrto(te[probe.ty]);
+    if (is_void(base)) die("E_TYPE", "auto void'den cikarilamaz");
+    if (tcv[T]) return withc(base, 1); return base;
+  }
+  if (is_ref(T) && tk[te[T]] == Y_AUTO) {
+    int c = tcv[te[T]]; int bt = probe.ty;
+    if (tk[T] == Y_REF) { if (lvinit == 0 && c == 0 && tcv[bt] == 0) die("E_BIND", "auto& rvalue'ya baglanamaz"); int r = bt; if (c) r = withc(bt, 1); return lref(r); }
+    if (lvinit) { int r = probe.ty; if (c) r = withc(r, 1); return lref(r); }
+    int r = unq(probe.ty); if (c) r = withc(r, 1); return rref(r);
+  }
+  return T;
+}
+void emit_ret(V v) { long long t = newreg(); w("  mov "); wr(t); w(", __sp\n  st fp, "); wr(t); w(", 0\n  ret "); opr(v); wc(10); }
 void declvar(int vn) {
-  int tn_ = kid(vn, 0); int init = -1; if (nk_n[vn] > 1) init = kid(vn, 1);
-  int T;
-  if (nodek(tn_) == N_TARR && nk_n[tn_] < 2) {
-    if (init >= 0 && nodek(init) == N_INITLIST) T = mkt(Y_ARR, typeof_(kid(tn_, 0)), nk_n[init]);
-    else if (init >= 0 && nodek(init) == N_STR) T = mkt(Y_ARR, typeof_(kid(tn_, 0)), slen(nk_s1[init]) + 1);
-    else { die("boyutsuz dizi ilklendirici gerektirir"); T = 0; }
-  } else T = typeof_(tn_);
-  if (tk[T] == Y_VOID) die("void degisken");
-  int off = slot(words_of(T)); long long addr = newreg(); w("  add "); wr(addr); w(", fp, "); wn(off); wc(10);
-  if (init >= 0) init_obj(addr, T, init);
-  vname[nvars] = nk_s1[vn]; vty[nvars] = T; voff[nvars] = off; nvars = nvars + 1;
+  curline = nk_line[vn]; { int q = scope_lo; while (q < nvars) { if (vname[q] == nk_s1[vn] && nk_s1[vn] >= 0) die("E_REDECL", "degisken ayni kapsamda yeniden tanimlandi"); q = q + 1; } } int T = typeof_(kid(vn, 0)); int init = 0 - 1; if (nk_n[vn] > 1) init = kid(vn, 1); int style = nk_i[vn];
+  int ie = init; if (init >= 0 && nk_k[init] == N_INITLIST && nk_n[init] == 1 && (tk[T] == Y_AUTO || is_ref(T))) ie = kid(init, 0);
+  int hasauto = tk[T] == Y_AUTO || (is_ref(T) && tk[te[T]] == Y_AUTO);
+  if (hasauto) { if (init < 0) die("E_TYPE", "auto bildirimi ilklendirici gerektirir"); int sv = may_throw; dry = dry + 1; V pb = gen(ie); dry = dry - 1; may_throw = sv; T = deduce_auto(T, pb, pb.cat == 1); }
+  if (is_arr(T) && tn[T] < 0) {
+    if (init < 0) die("E_TYPE", "boyutsuz dizi ilklendirici gerektirir");
+    long long cnt; if (nk_k[init] == N_STR) cnt = slen(nk_s1[init]) + 1; else if (nk_k[init] == N_INITLIST) cnt = nk_n[init]; else { die("E_TYPE", "boyutsuz dizi {..} ya da dize gerektirir"); cnt = 0; }
+    if (cnt == 0) die("E_TYPE", "bos dizi"); T = arrof(te[T], cnt);
+  }
+  if (is_void(T)) die("E_TYPE", "void turunde degisken");
+  if (tk[T] == Y_AUTO) die("E_TYPE", "auto cikarilamadi");
+  if (is_ref(T)) {
+    if (init < 0) die("E_INIT", "referans ilklendirici gerektirir");
+    V iv = gen(ie); V ad = bind_arg(iv, T); ad = mat(ad); int off = slot(1);
+    w("  st "); opr(ad); w(", fp, "); wn(off); wc(10);
+    vname[nvars] = nk_s1[vn]; vty[nvars] = te[T]; voff[nvars] = off; vref[nvars] = 1; vci[nvars] = 0; vuid[nvars] = 0; nvars = nvars + 1; return;
+  }
+  if (complete_obj(T) == 0) die("E_TYPE", "tamamlanmamis tur");
+  if (is_cls(unq(T)) && is_abstract(tcl[unq(T)])) die("E_ABSTRACT", "soyut sinif ornegi olusturulamaz");
+  int off = slot(words_of(T)); V ad = slotaddr(off); int isci = 0; long long cvv = 0;
+  if (tcv[T] && is_int(T) && ie >= 0 && nk_k[ie] != N_INITLIST) { int sv = may_throw; dry = dry + 1; V pc = gen(ie); dry = dry - 1; may_throw = sv; if (pc.ci) { isci = 1; cvv = fold(pc.cv, unq(T)); } }
+  if (init >= 0 && nk_k[init] == N_INITLIST && style == 2 && is_sc(T) && nk_n[init] == 1) { init = kid(init, 0); style = 1; }
+  init_obj(ad, T, init, style);
+  vname[nvars] = nk_s1[vn]; vty[nvars] = T; voff[nvars] = off; vref[nvars] = 0; vci[nvars] = isci; vcv[nvars] = cvv; uidn = uidn + 1; vuid[nvars] = uidn; nvars = nvars + 1;
+}
+int scope_lo = 0;
+int loop_brk[64]; int loop_cont[64]; int nloop = 0; int N_SRET = 0;
+void stmt_return(int n) {
+  curline = nk_line[n]; int rt = fn_ret[cur_fn];
+  if (nk_n[n] == 0) { if (is_void(rt) == 0) die("E_RETURN", "deger donduren islevde 'return' degersiz"); emit_ret(imm(0, 0)); return; }
+  int e = kid(n, 0);
+  if (is_void(rt)) { if (nk_k[e] == N_INITLIST) die("E_RETURN", "void islevden deger donduruluyor"); V v = gen(e); if (is_void(v.ty) == 0) die("E_RETURN", "void islevden deger donduruluyor"); emit_ret(imm(0, 0)); return; }
+  if (is_ref(rt)) {
+    V v = gen(e); int rr = tk[rt] == Y_RREF; int tu = unq(te[rt]);
+    if (unq(v.ty) != tu && !(is_cls(unq(v.ty)) && is_cls(tu) && derived_from(tcl[unq(v.ty)], tcl[tu]))) die("E_RETURN", "referans donusu: tur uyumsuz");
+    if (rr == 0 && v.cat != 1 && tcv[te[rt]] == 0) die("E_BIND", "lvalue referans rvalue'ya baglanamaz");
+    if (rr && v.cat == 1) die("E_BIND", "rvalue referans lvalue'ya baglanamaz");
+    if (tcv[v.ty] && tcv[te[rt]] == 0) die("E_CONST", "const nesne const olmayan referansla donduruluyor");
+    V ad = v; if (v.cat == 0 && is_cls(tu) == 0) ad = tempscalar(tu, v);
+    emit_ret(mat(ad)); return;
+  }
+  if (is_ld(unq(rt))) { V v = gen(e); V c = to_ld(v); int sv = findvar(N_SRET); V sp = rval(var_ref(sv)); ld_copy(sp, c); emit_ret(imm(0, 0)); return; }
+  if (is_cls(unq(rt))) {
+    V v; if (nk_k[e] == N_INITLIST) { v = tempobj(unq(rt)); init_obj(v, unq(rt), e, 3); } else v = gen(e);
+    V c = to_class_value(v, unq(rt)); int sv = findvar(N_SRET); if (sv < 0) { emit_ret(imm(0, 0)); return; }
+    V sp = rval(var_ref(sv));
+    if (cl_bi[tcl[unq(rt)]]) copy_n(sp, c, 0, 1); else copy_obj(sp, c, tcl[unq(rt)], 1);
+    emit_ret(imm(0, 0)); return;
+  }
+  V v;
+  if (nk_k[e] == N_INITLIST) { int off = slot(1); V ad = slotaddr(off); init_obj(ad, unq(rt), e, 3); v = mkv(unq(rt), 0, newreg()); w("  ld "); wr(v.reg); w(", "); opr(ad); w(", 0\n"); }
+  else v = gen(e);
+  V s = to_scalar(v, unq(rt), 0); emit_ret(s);
 }
 void stmt(int n) {
-  int k = nodek(n); int base = nreg;
+  int k = nk_k[n]; int base = nreg; curline = nk_line[n];
   if (k == N_EMPTY) return;
-  if (k == N_BLOCK) { int mark = nvars; int i = 0; while (i < nk_n[n]) { stmt(kid(n, i)); i = i + 1; } nvars = mark; return; }
+  if (k == N_BLOCK) { int mark = nvars; int sl = scope_lo; scope_lo = nvars; int i = 0; while (i < nk_n[n]) { stmt(kid(n, i)); i = i + 1; } nvars = mark; scope_lo = sl; return; }
   if (k == N_DECLS) { int i = 0; while (i < nk_n[n]) { declvar(kid(n, i)); nreg = base; i = i + 1; } return; }
   if (k == N_EXPRSTMT) { gen(kid(n, 0)); nreg = base; return; }
   if (k == N_IF) {
-    V c = condbool(gen(kid(n, 0))); long long els = nlab; nlab = nlab + 1; long long end = nlab; nlab = nlab + 1;
+    V c = cond_bool(gen(kid(n, 0))); int els = newlab(); int end = newlab();
     w("  jz "); opr(c); w(", "); wl(els); wc(10); nreg = base;
     int mark = nvars; stmt(kid(n, 1)); nvars = mark;
     if (nk_n[n] > 2) { w("  jmp "); wl(end); wc(10); wl(els); w(":\n"); stmt(kid(n, 2)); nvars = mark; wl(end); w(":\n"); } else { wl(els); w(":\n"); }
     return;
   }
   if (k == N_WHILE) {
-    long long top = nlab; nlab = nlab + 1; long long end = nlab; nlab = nlab + 1; wl(top); w(":\n");
-    V c = condbool(gen(kid(n, 0))); w("  jz "); opr(c); w(", "); wl(end); wc(10); nreg = base;
+    int top = newlab(); int end = newlab(); wl(top); w(":\n");
+    V c = cond_bool(gen(kid(n, 0))); w("  jz "); opr(c); w(", "); wl(end); wc(10); nreg = base;
     loop_brk[nloop] = end; loop_cont[nloop] = top; nloop = nloop + 1; int mark = nvars; stmt(kid(n, 1)); nvars = mark; nloop = nloop - 1;
     w("  jmp "); wl(top); wc(10); wl(end); w(":\n"); return;
   }
   if (k == N_DO) {
-    long long top = nlab; nlab = nlab + 1; long long cont = nlab; nlab = nlab + 1; long long end = nlab; nlab = nlab + 1; wl(top); w(":\n");
+    int top = newlab(); int cont = newlab(); int end = newlab(); wl(top); w(":\n");
     loop_brk[nloop] = end; loop_cont[nloop] = cont; nloop = nloop + 1; int mark = nvars; stmt(kid(n, 0)); nvars = mark; nloop = nloop - 1;
-    wl(cont); w(":\n"); V c = condbool(gen(kid(n, 1))); w("  jnz "); opr(c); w(", "); wl(top); wc(10); nreg = base; wl(end); w(":\n"); return;
+    wl(cont); w(":\n"); V c = cond_bool(gen(kid(n, 1))); w("  jnz "); opr(c); w(", "); wl(top); wc(10); nreg = base; wl(end); w(":\n"); return;
   }
   if (k == N_FOR) {
-    int mark = nvars; if (nodek(kid(n, 0)) != N_NONE) stmt(kid(n, 0));
-    long long top = nlab; nlab = nlab + 1; long long cont = nlab; nlab = nlab + 1; long long end = nlab; nlab = nlab + 1; wl(top); w(":\n");
-    int base2 = nreg;
-    if (nodek(kid(n, 1)) != N_NONE) { V c = condbool(gen(kid(n, 1))); w("  jz "); opr(c); w(", "); wl(end); wc(10); nreg = base2; }
+    int mark = nvars; int sl = scope_lo; scope_lo = nvars; if (nk_k[kid(n, 0)] != N_NONE) stmt(kid(n, 0));
+    int top = newlab(); int cont = newlab(); int end = newlab(); wl(top); w(":\n"); int base2 = nreg;
+    if (nk_k[kid(n, 1)] != N_NONE) { V c = cond_bool(gen(kid(n, 1))); w("  jz "); opr(c); w(", "); wl(end); wc(10); nreg = base2; }
     loop_brk[nloop] = end; loop_cont[nloop] = cont; nloop = nloop + 1; int m2 = nvars; stmt(kid(n, 3)); nvars = m2; nloop = nloop - 1;
-    wl(cont); w(":\n"); if (nodek(kid(n, 2)) != N_NONE) { gen(kid(n, 2)); nreg = base2; }
-    w("  jmp "); wl(top); wc(10); wl(end); w(":\n"); nvars = mark; return;
+    wl(cont); w(":\n"); if (nk_k[kid(n, 2)] != N_NONE) { gen(kid(n, 2)); nreg = base2; }
+    w("  jmp "); wl(top); wc(10); wl(end); w(":\n"); nvars = mark; scope_lo = sl; return;
   }
-  if (k == N_RETURN) {
-    int rt = fn_ret[cur_fn];
-    if (nk_n[n] == 0) { if (tk[rt] != Y_VOID) die("deger donduren islevde 'return' degersiz"); emit_ret(imm(0, 0)); return; }
-    if (tk[rt] == Y_VOID) die("void islevden deger donduruluyor");
-    V v = rval(gen(kid(n, 0))); if (!is_sc(v.ty)) die("donus degeri skaler olmali");
-    emit_ret(convert(v, rt)); nreg = base; return;
-  }
-  if (k == N_BREAK) { if (nloop == 0) die("'break' dongu disinda"); w("  jmp "); wl(loop_brk[nloop - 1]); wc(10); return; }
-  if (k == N_CONTINUE) { if (nloop == 0) die("'continue' dongu disinda"); w("  jmp "); wl(loop_cont[nloop - 1]); wc(10); return; }
-  die("desteklenmiyor: bu deyim dugumu");
+  if (k == N_RETURN) { stmt_return(n); nreg = base; return; }
+  if (k == N_BREAK) { if (nloop == 0) die("E_STMT", "'break' dongu disinda"); w("  jmp "); wl(loop_brk[nloop - 1]); wc(10); return; }
+  if (k == N_CONTINUE) { if (nloop == 0) die("E_STMT", "'continue' dongu disinda"); w("  jmp "); wl(loop_cont[nloop - 1]); wc(10); return; }
+  die("E_INTERNAL", "deyim bekleniyordu");
 }
-// ---- islev ----
+// ============================ VARSAYILAN KARSILASTIRMA (= default) ============================
+int cmp_kind(int t) {
+  t = unq(t);
+  if (is_flt(t)) return 3; if (is_int(t) || is_ptr(t)) return 1;
+  if (is_cls(t)) {
+    methods_named(tcl[t], N_SS);
+    if (nmeth_cand > 0) { int m = meth_cand[0]; if (is_ord(fn_ret[m])) return cl_bi[tcl[unq(deref(fn_ret[m]))]]; }
+    die("E_DEFAULT", "uye sinifi icin <=> tanimli degil: varsayilan karsilastirma silinmis");
+  }
+  die("E_DEFAULT", "bu uye turu karsilastirilamaz"); return 1;
+}
+V member_view(int ci_cls, V th, int i_field) { return th; }
+void default_members(int ci, int* tys, long long* woffs, int* nm) {
+  int n = 0;
+  if (cl_base[ci] >= 0) { tys[n] = clsty(cl_base[ci]); woffs[n] = 0; n = n + 1; }
+  int i = cl_f0[ci]; int e = cl_f0[ci] + cl_nf[ci];
+  while (i < e) { if (is_arr(fl_ty[i])) die("E_DEFAULT", "dizi uyeli varsayilan karsilastirma desteklenmiyor"); tys[n] = fl_ty[i]; woffs[n] = fl_woff[i]; n = n + 1; i = i + 1; }
+  *nm = n;
+}
+int default_cmp_kind(int ci) {
+  int tys[64]; long long wo[64]; int n; default_members(ci, tys, wo, &n); int kind = 1; int i = 0;
+  while (i < n) { int k = cmp_kind(tys[i]); if (k > kind) kind = k; i = i + 1; }
+  return kind;
+}
+int N_ONAME = 0;
+void default_body(int fi) {
+  int ci = fn_cls[fi]; V th = this_value(); th = mat(th); int vo = findvar(N_ONAME); V ov = var_ref(vo); ov = mat(ov);
+  int tys[64]; long long wo[64]; int n; default_members(ci, tys, wo, &n);
+  int iseq = fn_name[fi] == N_EQ; int i = 0;
+  if (iseq) {
+    long long res = newreg(); int fl_ = newlab(); int end = newlab();
+    while (i < n) {
+      V A = mkv(tys[i], 1, th.reg); V B = mkv(tys[i], 1, ov.reg);
+      if (wo[i] != 0) { A = addr_plus(th, wo[i]); A.ty = tys[i]; B = addr_plus(ov, wo[i]); B.ty = tys[i]; }
+      V r;
+      if (is_cls(unq(tys[i]))) { V ops[2]; ops[0] = A; ops[1] = B; r = user_op(N_EQ, ops, 2, 1); if (r.ty < 0) die("E_DEFAULT", "uye sinifi icin == tanimli degil"); }
+      else r = binop("==", rval(A), rval(B));
+      V b = cond_bool(r); w("  jz "); opr(b); w(", "); wl(fl_); wc(10); i = i + 1;
+    }
+    w("  mov "); wr(res); w(", 1\n  jmp "); wl(end); wc(10); wl(fl_); w(":\n  mov "); wr(res); w(", 0\n"); wl(end); w(":\n");
+    emit_ret(mkv(0, 0, res)); return;
+  }
+  int rt = unq(fn_ret[fi]);
+  while (i < n) {
+    V A = mkv(tys[i], 1, th.reg); V B = mkv(tys[i], 1, ov.reg);
+    if (wo[i] != 0) { A = addr_plus(th, wo[i]); A.ty = tys[i]; B = addr_plus(ov, wo[i]); B.ty = tys[i]; }
+    V o;
+    if (is_cls(unq(tys[i]))) { V ops[2]; ops[0] = A; ops[1] = B; o = user_op(N_SS, ops, 2, 0); if (o.ty < 0) die("E_DEFAULT", "uye sinifi icin <=> tanimli degil"); }
+    else o = builtin_spaceship(rval(A), rval(B));
+    V z = ord_cmp_zero("!=", o); int nx = newlab(); w("  jz "); opr(z); w(", "); wl(nx); wc(10);
+    V c = to_class_value(o, rt); int sv = findvar(N_SRET); V sp = rval(var_ref(sv)); copy_n(sp, c, 0, 1); emit_ret(imm(0, 0)); wl(nx); w(":\n");
+    i = i + 1;
+  }
+  int kind = cl_bi[tcl[rt]]; V eq = ord_obj(kind, imm(0, 0)); V c = to_class_value(eq, rt); int sv = findvar(N_SRET); V sp = rval(var_ref(sv)); copy_n(sp, c, 0, 1); emit_ret(imm(0, 0));
+}
+// ============================ ISLEV GOVDESI ============================
+int fn_body_node(int fi) { int fnode = fn_node[fi]; if (nk_n[fnode] > 2) return kid(fnode, 2); return 0 - 1; }
 int body_pass(int fi, int real, int frame) {
-  int fnode = fn_node[fi]; int params = kid(fnode, 1); int body = kid(fnode, 2);
+  int fnode = fn_node[fi]; int params = kid(fnode, 1);
   int saved_lab = nlab; long long saved_dat = ndat; int saved_s = nstrn;
-  nvars = 0; nreg = 0; foff = 0; nloop = 0; cur_fn = fi;
+  nvars = 0; nreg = 0; npair = 0; foff = 0; nloop = 0; scope_lo = 0; cur_fn = fi; cur_cls = fn_cls[fi]; may_throw = 0; curline = nk_line[fnode];
+  int rt = fn_ret[fi]; int sret = is_mem(unq(rt)) && is_ref(rt) == 0; int np = fn_np[fi];
+  int total = np + sret + (fn_cls[fi] >= 0); int pi_ = 0;
   if (real) {
     w("func f"); wn(fi); w("(");
-    int i = 0; while (i < fn_np[fi]) { if (i) w(", "); w("p"); wn(i); i = i + 1; }
+    int i = 0; while (i < total) { if (i) w(", "); w("p"); wn(i); i = i + 1; }
     w(") {\n  mov _spa, __sp\n  ld fp, _spa, 0\n  add _nsp, fp, "); wn(frame); w("\n  mov _lma, __lim\n  ld _lim, _lma, 0\n  leu _okc, _nsp, _lim\n  jnz _okc, _stk_ok\n  ld _trp, -1, 0\n_stk_ok: st _nsp, _spa, 0\n");
   }
-  int i = 0;
-  while (i < fn_np[fi]) {
-    int pv = kid(params, i); int off = slot(1);
-    if (real) { w("  st p"); wn(i); w(", fp, "); wn(off); wc(10); }
-    vname[nvars] = nk_s1[pv]; vty[nvars] = fn_pt[fi * 8 + i]; voff[nvars] = off; nvars = nvars + 1; i = i + 1;
+  if (sret) { int off = slot(1); if (real) { w("  st p"); wn(pi_); w(", fp, "); wn(off); wc(10); } pi_ = pi_ + 1; vname[nvars] = N_SRET; vty[nvars] = ptrto(unq(rt)); voff[nvars] = off; vref[nvars] = 0; vci[nvars] = 0; vuid[nvars] = 0; nvars = nvars + 1; }
+  if (fn_cls[fi] >= 0) {
+    int off = slot(1); if (real) { w("  st p"); wn(pi_); w(", fp, "); wn(off); wc(10); } pi_ = pi_ + 1;
+    int ct = clsty(fn_cls[fi]); if (fn_has(fi, F_CONST)) ct = withc(ct, 1);
+    vname[nvars] = N_THISV; vty[nvars] = ptrto(ct); voff[nvars] = off; vref[nvars] = 0; vci[nvars] = 0; vuid[nvars] = 0; nvars = nvars + 1;
   }
-  stmt(body);
+  int i = 0;
+  while (i < np) {
+    int pt = fn_pt[fi * 8 + i]; int off = slot(1); int nm = 0 - 1; if (nk_n[params] > i) nm = nk_s1[kid(params, i)];
+    if (fn_has(fi, F_DEFAULT)) nm = N_ONAME;
+    if (real) { w("  st p"); wn(pi_); w(", fp, "); wn(off); wc(10); } pi_ = pi_ + 1;
+    vname[nvars] = nm; voff[nvars] = off; vci[nvars] = 0; vuid[nvars] = 0;
+    if (is_ref(pt)) { vty[nvars] = te[pt]; vref[nvars] = 1; } else if (is_mem(unq(pt))) { vty[nvars] = pt; vref[nvars] = 1; } else { vty[nvars] = pt; vref[nvars] = 0; }
+    nvars = nvars + 1; i = i + 1;
+  }
+  if (fn_has(fi, F_DEFAULT)) default_body(fi);
+  else stmt(fn_body_node(fi));
   if (real) { emit_ret(imm(0, 0)); w("}\n"); }
   int used = foff; if (used < 1) used = 1;
   if (real == 0) { nlab = saved_lab; ndat = saved_dat; nstrn = saved_s; }
   return used;
+}
+// ============================ BILDIRIM ASAMASI ============================
+int same_params(int a, int b) { if (fn_np[a] != fn_np[b]) return 0; int i = 0; while (i < fn_np[a]) { if (fn_pt[a * 8 + i] != fn_pt[b * 8 + i]) return 0; i = i + 1; } return 1; }
+int declare_func(int node, int cls) {
+  curline = nk_line[node]; int f = nfn; if (nfn >= NF) die("E_SINIR", "cok fazla islev");
+  fn_name[f] = nk_s1[node]; fn_cls[f] = cls; fn_node[f] = node; fn_fl[f] = nk_i[node]; fn_bi[f] = 0; fn_vroot[f] = 0 - 1; fn_used[f] = 0; fn_line[f] = nk_line[node];
+  int params = kid(node, 1); int np = nk_n[params]; if (np > 8) die("E_SINIR", "cok fazla parametre"); fn_np[f] = np;
+  fn_ret[f] = typeof_(kid(node, 0));
+  int i = 0;
+  while (i < np) {
+    int pt = typeof_(kid(kid(params, i), 0)); if (is_arr(pt)) pt = ptrto(te[pt]);
+    if (is_void(pt)) die("E_TYPE", "void parametre");
+    if (is_ref(pt) == 0) pt = unq(pt);
+    fn_pt[f * 8 + i] = pt; i = i + 1;
+  }
+  if (fn_name[f] == N_CONV && np != 0) die("E_OP", "donusum islecinin parametresi olamaz");
+  if (cls < 0 && fn_has(f, F_CONST)) die("E_OP", "uye olmayan islev const olamaz");
+  int nm = fn_name[f];
+  if (cls < 0 && s_len[nm] > 8 && chars[s_off[nm]] == 'o' && chars[s_off[nm] + 1] == 'p' && chars[s_off[nm] + 8] != '"' && nm != N_CONV) {
+    int hascls = 0; int k = 0; while (k < np) { if (is_cls(unq(deref(fn_pt[f * 8 + k])))) hascls = 1; k = k + 1; }
+    if (hascls == 0) die("E_OP", "operator en az bir sinif turlu parametre gerektirir");
+  }
+  if (cls < 0 && s_len[nm] > 10 && chars[s_off[nm]] == 'o' && chars[s_off[nm] + 8] == '"') {   // UDL
+    int ok = 0;
+    if (np == 1 && (unq(fn_pt[f * 8]) == mkt(Y_ULLONG, 0 - 1, 0) || unq(fn_pt[f * 8]) == mkt(Y_LDOUBLE, 0 - 1, 0) || unq(fn_pt[f * 8]) == mkt(Y_CHAR, 0 - 1, 0))) ok = 1;
+    if (np == 2 && is_ptr(fn_pt[f * 8]) && unq(fn_pt[f * 8 + 1]) == mkt(Y_ULONG, 0 - 1, 0)) ok = 1;
+    if (ok == 0) die("E_UDL", "gecersiz literal operator parametre listesi");
+  }
+  if (cls >= 0) {   // yeniden bildirim
+    int m = 0; while (m < nfn) { if (fn_cls[m] == cls && fn_name[m] == fn_name[f] && same_params(m, f) && fn_has(m, F_CONST) == fn_has(f, F_CONST) && (fn_name[f] != N_CONV || fn_ret[m] == fn_ret[f])) die("E_REDECL", "uye islev yeniden tanimlandi"); m = m + 1; }
+  } else {
+    int m = 0;
+    while (m < nfn) {
+      if (fn_cls[m] < 0 && fn_name[m] == fn_name[f] && same_params(m, f)) {
+        int hb = nk_n[fn_node[m]] > 2; int nb = nk_n[node] > 2;
+        if (hb && nb) die("E_REDEF", "islev iki kez tanimlandi");
+        if (nb) fn_node[m] = node;
+        return m;
+      }
+      m = m + 1;
+    }
+  }
+  if (seqc(fn_name[f], "__puti")) fn_bi[f] = 1; if (seqc(fn_name[f], "__putc")) fn_bi[f] = 2; if (seqc(fn_name[f], "__putf")) fn_bi[f] = 3; if (seqc(fn_name[f], "__getc")) fn_bi[f] = 4; if (seqc(fn_name[f], "pl") && nk_n[node] < 3) fn_bi[f] = 5;
+  if (cls >= 0) {
+    int c = cl_base[cls]; int found = 0;
+    while (c >= 0 && found == 0) {
+      int m = 0;
+      while (m < nfn && found == 0) {
+        if (fn_cls[m] == c && fn_has(m, F_VIRT) && fn_name[m] == fn_name[f] && same_params(m, f) && fn_has(m, F_CONST) == fn_has(f, F_CONST)) {
+          if (fn_ret[m] != fn_ret[f] && tk[fn_ret[f]] != Y_AUTO) die("E_OVERRIDE", "gecersiz kilan islev farkli donus turu");
+          fn_fl[f] = fn_fl[f] | F_VIRT; fn_vroot[f] = fn_vroot[m]; found = 1;
+        }
+        m = m + 1;
+      }
+      c = cl_base[c];
+    }
+    if (fn_has(f, F_OVR) && !(fn_has(f, F_VIRT) && fn_vroot[f] >= 0)) die("E_OVERRIDE", "'override' ama tabanda eslesen sanal islev yok");
+    if (fn_has(f, F_VIRT)) { cl_poly[cls] = 1; if (fn_vroot[f] < 0) fn_vroot[f] = f; }
+    if (fn_has(f, F_PURE) && fn_has(f, F_VIRT) == 0) die("E_OVERRIDE", "saf belirtici yalniz sanal islevde");
+    if (fn_has(f, F_DEFAULT) && fn_name[f] != N_SS && fn_name[f] != N_EQ) die("E_DEFAULT", "yalniz karsilastirma operatorleri = default olabilir");
+  } else if (fn_has(f, F_VIRT)) die("E_OVERRIDE", "'virtual' yalniz uye islevde");
+  nfn = nfn + 1; return f;
+}
+void finish_defaulted(int ci) {   // layout sonrasi: <=> donus turunu cikar, ortuk == ekle
+  int f = 0; int hasEq = 0; int defCmp = 0 - 1; int n0 = nfn;
+  while (f < n0) { if (fn_cls[f] == ci && fn_name[f] == N_EQ) hasEq = 1; if (fn_cls[f] == ci && fn_name[f] == N_SS && fn_has(f, F_DEFAULT)) defCmp = f; f = f + 1; }
+  f = 0;
+  while (f < n0) {
+    if (fn_cls[f] == ci && fn_has(f, F_DEFAULT)) {
+      int p = fn_pt[f * 8]; if (fn_np[f] != 1 || is_ref(p) == 0 || tcv[te[p]] == 0 || unq(te[p]) != clsty(ci) || fn_has(f, F_CONST) == 0) die("E_DEFAULT", "varsayilan karsilastirma 'const S&' parametreli const uye islev olmali");
+      if (fn_name[f] == N_EQ) fn_ret[f] = bool_t();
+      else {
+        int kind = default_cmp_kind(ci); int ocls = find_class(intern_c(kind == 1 ? "std::strong_ordering" : kind == 2 ? "std::weak_ordering" : "std::partial_ordering"));
+        if (tk[fn_ret[f]] == Y_AUTO) fn_ret[f] = clsty(ocls);
+        else { if (is_ord(fn_ret[f]) == 0 || cl_bi[tcl[unq(fn_ret[f])]] < kind) die("E_DEFAULT", "bildirilen donus turu uyelerin ortak karsilastirma kategorisini karsilamiyor"); }
+      }
+    }
+    f = f + 1;
+  }
+  if (defCmp >= 0 && hasEq == 0) {   // ortuk varsayilan ==
+    int e = nfn; fn_name[e] = N_EQ; fn_cls[e] = ci; fn_node[e] = fn_node[defCmp]; fn_fl[e] = F_CONST | F_DEFAULT; fn_bi[e] = 0; fn_vroot[e] = 0 - 1; fn_used[e] = 0; fn_line[e] = fn_line[defCmp];
+    fn_np[e] = 1; fn_pt[e * 8] = fn_pt[defCmp * 8]; fn_ret[e] = bool_t(); nfn = nfn + 1;
+  }
+}
+void declare_class(int node) {
+  curline = nk_line[node]; int nm = nk_s1[node]; int ci = find_class(nm);
+  if (nk_j[node] == 1) { if (ci < 0) newclass(nm); return; }
+  if (ci >= 0) { if (cl_def[ci]) die("E_REDEF", "sinif iki kez tanimlandi"); } else ci = newclass(nm);
+  if (nk_s2[node] >= 0) { int b = find_class(nk_s2[node]); if (b < 0 || cl_def[b] == 0) die("E_SINIF", "taban sinif tanimli degil"); cl_base[ci] = b; }
+  cl_f0[ci] = nfl; cl_nf[ci] = 0;
+  int i = 0; while (i < nk_n[node]) {
+    int m = kid(node, i); i = i + 1;
+    if (nk_k[m] == N_VAR) {
+      int ft = typeof_(kid(m, 0)); if (nk_n[m] > 1) die("E_SINIF", "sinif ici uye ilklendiricisi desteklenmiyor");
+      if (tk[ft] == Y_AUTO) die("E_TYPE", "uye auto olamaz"); if (is_arr(ft) && tn[ft] < 0) die("E_TYPE", "boyutsuz dizi uye");
+      int j = cl_f0[ci]; while (j < nfl) { if (fl_name[j] == nk_s1[m]) die("E_REDECL", "uye yeniden tanimlandi"); j = j + 1; }
+      fl_name[nfl] = nk_s1[m]; fl_ty[nfl] = ft; fl_woff[nfl] = 0; fl_boff[nfl] = 0; nfl = nfl + 1; cl_nf[ci] = cl_nf[ci] + 1;
+    }
+  }
+  i = 0; while (i < nk_n[node]) { int m = kid(node, i); i = i + 1; if (nk_k[m] == N_FUNC) declare_func(m, ci); }
+  layout_class(ci); finish_defaulted(ci);
+}
+void declare_global(int vn) {
+  curline = nk_line[vn]; int T = typeof_(kid(vn, 0)); int init = 0 - 1; if (nk_n[vn] > 1) init = kid(vn, 1);
+  if (tk[T] == Y_AUTO) die("E_TYPE", "global auto desteklenmiyor"); if (is_ref(T)) die("E_TYPE", "global referans desteklenmiyor");
+  if (is_arr(T) && tn[T] < 0) {
+    if (init >= 0 && nk_k[init] == N_INITLIST) T = arrof(te[T], nk_n[init]); else if (init >= 0 && nk_k[init] == N_STR) T = arrof(te[T], slen(nk_s1[init]) + 1); else die("E_TYPE", "boyutsuz global dizi");
+  }
+  if (complete_obj(T) == 0) die("E_TYPE", "tamamlanmamis tur");
+  if (findgl(nk_s1[vn]) >= 0) die("E_REDECL", "global yeniden tanimlandi");
+  gname[ngl] = nk_s1[vn]; gty[ngl] = T; gnode[ngl] = vn; gci[ngl] = 0; uidn = uidn + 1; guid[ngl] = uidn;
+  if (tcv[T] && is_int(T) && init >= 0 && nk_k[init] != N_INITLIST) { dry = dry + 1; V pc = gen(init); dry = dry - 1; if (pc.ci) { gci[ngl] = 1; gcv[ngl] = fold(pc.cv, unq(T)); } }
+  ngl = ngl + 1;
 }
 int init_pass(int real, int frame) {
   int saved_lab = nlab; long long saved_dat = ndat; int saved_s = nstrn;
-  nvars = 0; nreg = 0; foff = 0; nloop = 0;
-  if (real) {
-    w("func __init() {\n  mov _spa, __sp\n  ld fp, _spa, 0\n  add _nsp, fp, "); wn(frame); w("\n  mov _lma, __lim\n  ld _lim, _lma, 0\n  leu _okc, _nsp, _lim\n  jnz _okc, _stk_ok\n  ld _trp, -1, 0\n_stk_ok: st _nsp, _spa, 0\n");
-  }
+  nvars = 0; nreg = 0; npair = 0; foff = 0; nloop = 0; cur_cls = 0 - 1; cur_fn = 0 - 1;
+  if (real) w("func __init() {\n  mov _spa, __sp\n  ld fp, _spa, 0\n  add _nsp, fp, "), wn(frame), w("\n  mov _lma, __lim\n  ld _lim, _lma, 0\n  leu _okc, _nsp, _lim\n  jnz _okc, _stk_ok\n  ld _trp, -1, 0\n_stk_ok: st _nsp, _spa, 0\n");
   int i = 0;
   while (i < ngl) {
-    int f = gnode[i]; int init = -1; if (nk_n[f] > 1) init = kid(f, 1);
-    if (init >= 0) { int base = nreg; long long a = newreg(); w("  mov "); wr(a); w(", g"); wn(i); wc(10); init_obj(a, gty[i], init); nreg = base; }
+    int f = gnode[i]; int init = 0 - 1; if (nk_n[f] > 1) init = kid(f, 1); curline = nk_line[f];
+    if (init >= 0 || is_cls(unq(gty[i])) || is_arr(gty[i])) { int base = nreg; long long a = newreg(); w("  mov "); wr(a); w(", g"); wn(i); wc(10); init_obj(mkv(0, 1, a), gty[i], init, nk_i[f]); nreg = base; }
     i = i + 1;
   }
   if (real) { emit_ret(imm(0, 0)); w("}\n"); }
@@ -656,62 +1866,88 @@ int init_pass(int real, int frame) {
   if (real == 0) { nlab = saved_lab; ndat = saved_dat; nstrn = saved_s; }
   return used;
 }
-void declare_funcs(int prog) {
-  int i = 0;
-  while (i < nk_n[prog]) {
-    int f = kid(prog, i);
-    if (nodek(f) == N_FUNC) {
-      int params = kid(f, 1); int np = nk_n[params];
-      if (np > 8) die("cok fazla parametre");
-      fn_name[nfn] = nk_s1[f]; fn_ret[nfn] = typeof_(kid(f, 0)); fn_np[nfn] = np; fn_node[nfn] = f; fn_bi[nfn] = 0;
-      int j = 0; while (j < np) { int pt = typeof_(kid(kid(params, j), 0)); if (is_arr(pt)) pt = mkt(Y_PTR, te[pt], 0); if (!is_sc(pt)) die("parametre skaler olmali"); fn_pt[nfn * 8 + j] = pt; j = j + 1; }
-      if (seqc(nk_s1[f], "__puti")) fn_bi[nfn] = 1; if (seqc(nk_s1[f], "__putc")) fn_bi[nfn] = 2; if (seqc(nk_s1[f], "__putf")) fn_bi[nfn] = 3; if (seqc(nk_s1[f], "__getc")) fn_bi[nfn] = 4;
-      nfn = nfn + 1;
-    } else if (nodek(f) == N_VAR) {
-      int tn_ = kid(f, 0); int T;
-      int init = -1; if (nk_n[f] > 1) init = kid(f, 1);
-      if (nodek(tn_) == N_TARR && nk_n[tn_] < 2) {
-        if (init >= 0 && nodek(init) == N_INITLIST) T = mkt(Y_ARR, typeof_(kid(tn_, 0)), nk_n[init]);
-        else if (init >= 0 && nodek(init) == N_STR) T = mkt(Y_ARR, typeof_(kid(tn_, 0)), slen(nk_s1[init]) + 1);
-        else { die("boyutsuz global dizi"); T = 0; }
-      } else T = typeof_(tn_);
-      gname[ngl] = nk_s1[f]; gty[ngl] = T; gnode[ngl] = f; ngl = ngl + 1;
+// ============================ ANA PROGRAM ============================
+void gen_dispatchers() {
+  int f = 0;
+  while (f < nfn) {
+    if (fn_has(f, F_VIRT) && fn_vroot[f] == f) {
+      int rt = fn_ret[f]; int sret = is_mem(unq(rt)) && is_ref(rt) == 0; int np = fn_np[f] + 1 + sret; int i = 0;
+      w("func vd"); wn(f); w("("); while (i < np) { if (i) w(", "); w("p"); wn(i); i = i + 1; } w(") {\n  ld _id, p"); wn(sret); w(", 0\n");
+      int c = 0; int lab = 0;
+      while (c < ncl) {
+        if (cl_def[c] && cl_bi[c] == 0 && derived_from(c, fn_cls[f])) {
+          int fin = final_overrider(c, f);
+          if (fn_has(fin, F_PURE) == 0) {
+            fn_used[fin] = 1; w("  eq _c, _id, "); wn(cl_id[c]); w("\n  jz _c, _n"); wn(lab); w("\n  call _r, f"); wn(fin); i = 0; while (i < np) { w(", p"); wn(i); i = i + 1; } w("\n  ret _r\n_n"); wn(lab); w(": mov _z, 0\n"); lab = lab + 1;
+          }
+        }
+        c = c + 1;
+      }
+      w("  ld _trp, -1, 0\n  ret 0\n}\n");
     }
-    else die("desteklenmiyor: sinif tanimi (ifx cekirdegi)");
-    i = i + 1;
+    f = f + 1;
+  }
+  int k = 0;
+  while (k < nisa) {
+    int d = isa_need[k]; w("func isa"); wn(d); w("(p0) {\n"); int c = 0;
+    while (c < ncl) { if (cl_def[c] && cl_poly[c] && derived_from(c, d)) { w("  eq _c, p0, "); wn(cl_id[c]); w("\n  jnz _c, _yes\n"); } c = c + 1; }
+    w("  ret 0\n_yes: ret 1\n}\n"); k = k + 1;
+  }
+  if (tiname_used) {
+    w("func tiname(p0) {\n"); int c = 0; int sn = 0;
+    while (c < ncl) { if (cl_def[c] && cl_bi[c] == 0) { int nm = mangle(clsty(c)); str_node[nstrn] = 0 - 1 - nm; nstrn = nstrn + 1; w("  eq _c, p0, "); wn(cl_id[c]); w("\n  jz _c, _nx"); wn(cl_id[c]); w("\n  mov _r, s"); wn(nstrn - 1); w("\n  ret _r\n_nx"); wn(cl_id[c]); w(": mov _z, 0\n"); } c = c + 1; }
+    int q = 0; while (q < nti_seen) { int id = ti_seen[q]; int t = ti_types[id % 600]; if (id >= 1000) { int nm = mangle(t); str_node[nstrn] = 0 - 1 - nm; nstrn = nstrn + 1; w("  eq _c, p0, "); wn(id); w("\n  jz _c, _ny"); wn(id); w("\n  mov _r, s"); wn(nstrn - 1); w("\n  ret _r\n_ny"); wn(id); w(": mov _z, 0\n"); } q = q + 1; }
+    w("  ret 0\n}\n");
   }
 }
 int main() {
-  int i = 0; while (i <= 16) { mkt(i, -1, 0); i = i + 1; }
-  // PMK1 (komut/kural tablosu)
-  long long magic = rd(); if (magic != 1347242801) die("PMK1 sihirli sayisi yanlis");
+  int i = 0; while (i <= 16) { mkt(i, 0 - 1, 0); i = i + 1; }
+  long long magic = rd(); if (magic != 1347242801) die1("PMK1 sihirli sayisi yanlis");
   rd(); rd(); long long nb = rd(); int found = 0; long long b = 0;
   while (b < nb) {
     long long id = rd(); rd(); rd(); long long len = rd(); long long j = 0;
-    if (id == 12) { found = 1; if (len > NR) die("kural tablosu cok buyuk"); while (j < len) { RT[j] = rd(); j = j + 1; } nrt = len; }
+    if (id == 12) { found = 1; if (len > NR) die1("kural tablosu cok buyuk"); while (j < len) { RT[j] = rd(); j = j + 1; } nrt = len; }
     else while (j < len) { rd(); j = j + 1; }
     b = b + 1;
   }
-  if (!found) die("PMK1 bolum 12 (IFADE KURAL TABLOSU) yok");
+  if (!found) die1("PMK1 bolum 12 (IFADE KURAL TABLOSU) yok");
   load_rules();
-  // PMX1
-  if (rd() != 1347246129) die("PMX1 sihirli sayisi yanlis"); if (rd() != 1) die("PMX1 surumu desteklenmiyor");
-  nstr = rd(); if (nstr > 4000) die("cok fazla dizge");
-  i = 0; while (i < nstr) { long long l = rd(); s_off[i] = nchars; s_len[i] = l; long long j = 0; while (j < l) { chars[nchars] = rd(); nchars = nchars + 1; j = j + 1; } i = i + 1; }
-  nnodes = rd(); root = rd(); if (nnodes > NN) die("cok fazla dugum");
+  if (rd() != 1347246129) die1("PMX1 sihirli sayisi yanlis"); if (rd() != 1) die1("PMX1 surumu desteklenmiyor");
+  int ns = rd(); if (ns > 8000) die1("cok fazla dizge");
+  i = 0; while (i < ns) { long long l = rd(); s_off[i] = nchars; s_len[i] = l; long long j = 0; while (j < l) { chars[nchars] = rd(); nchars = nchars + 1; j = j + 1; } i = i + 1; }
+  nstr = ns;
+  nnodes = rd(); root = rd(); if (nnodes > NN) die1("cok fazla dugum");
   i = 0;
   while (i < nnodes) {
-    nk_k[i] = rd(); nk_i[i] = rd(); nk_j[i] = rd(); nk_d[i] = rd(); nk_s1[i] = rd(); nk_s2[i] = rd(); rd(); nk_n[i] = rd();
+    nk_k[i] = rd(); nk_i[i] = rd(); nk_j[i] = rd(); nk_d[i] = rd(); nk_s1[i] = rd(); nk_s2[i] = rd(); nk_line[i] = rd(); nk_n[i] = rd();
     nk_ks[i] = nkids; long long j = 0; while (j < nk_n[i]) { kids[nkids] = rd(); nkids = nkids + 1; j = j + 1; } i = i + 1;
   }
+  N_CONV = intern_c("operator conv"); N_CALLOP = intern_c("operator()"); N_EQ = intern_c("operator=="); N_NE = intern_c("operator!="); N_SS = intern_c("operator<=>"); N_ASG = intern_c("operator=");
+  N_DEREF = intern_c("operator*"); N_ADDR = intern_c("operator&"); N_IDX = intern_c("operator[]"); N_ARW = intern_c("operator->"); N_INC = intern_c("operator++"); N_DEC = intern_c("operator--");
+  N_THISV = intern_c("this"); N_SRET = intern_c("__sret"); N_ONAME = intern_c("__o");
+  { int bi = 0; while (bi < 4) { const char* nmx = "std::strong_ordering"; if (bi == 1) nmx = "std::weak_ordering"; if (bi == 2) nmx = "std::partial_ordering"; if (bi == 3) nmx = "std::type_info";
+      int c = newclass(intern_c(nmx)); cl_def[c] = 1; cl_words[c] = 1; cl_bi[c] = bi + 1; cl_size[c] = 1; cl_align[c] = 1; if (bi == 3) { cl_size[c] = 16; cl_align[c] = 8; }
+      fl_name[nfl] = intern_c("__v"); fl_ty[nfl] = mkt(Y_INT, 0 - 1, 0); fl_woff[nfl] = 0; fl_boff[nfl] = 0; cl_f0[c] = nfl; cl_nf[c] = 1; nfl = nfl + 1; bi = bi + 1; } }
+  int prog = root; i = 0;
+  while (i < nk_n[prog]) {
+    int k = kid(prog, i); i = i + 1;
+    if (nk_k[k] == N_CLASS) declare_class(k); else if (nk_k[k] == N_FUNC) declare_func(k, 0 - 1); else if (nk_k[k] == N_VAR) declare_global(k);
+  }
   w("memory 2097152\ndata __sp = 0\ndata __lim = 0\n");
-  declare_funcs(root);
   { dry = 1; int fr = init_pass(0, 0); dry = 0; init_pass(1, fr); }
-  i = 0; while (i < nfn) { if (nk_n[fn_node[i]] > 2) { dry = 1; int fr = body_pass(i, 0, 0); dry = 0; body_pass(i, 1, fr); } i = i + 1; }
-  int mainf = -1; i = 0; while (i < nfn) { if (seqc(fn_name[i], "main") && fn_np[i] == 0) mainf = i; i = i + 1; }
-  if (mainf < 0) die("int main() bulunamadi");
+  int f = 0;
+  while (f < nfn) { if (fn_body_node(f) >= 0 || fn_has(f, F_DEFAULT)) { dry = 1; int fr = body_pass(f, 0, 0); dry = 0; body_pass(f, 1, fr); } f = f + 1; }
+  int mainf = 0 - 1; f = 0; while (f < nfn) { if (fn_cls[f] < 0 && seqc(fn_name[f], "main") && fn_np[f] == 0) mainf = f; f = f + 1; }
+  if (mainf < 0) die("E_MAIN", "int main() bulunamadi");
+  if (unq(fn_ret[mainf]) != mkt(Y_INT, 0 - 1, 0)) die("E_MAIN", "main() int dondurmeli");
+  fn_used[mainf] = 1;
+  gen_dispatchers();
+  f = 0; while (f < nfn) { if (fn_used[f] && fn_body_node(f) < 0 && fn_has(f, F_DEFAULT) == 0 && fn_bi[f] == 0) { curline = fn_line[f]; die("E_UNDEF", "tanimsiz islev kullanildi"); } f = f + 1; }
   i = 0; while (i < ngl) { w("space g"); wn(i); w(" "); long long wd = words_of(gty[i]); if (wd < 1) wd = 1; wn(wd); wc(10); i = i + 1; }
-  i = 0; while (i < nstrn) { int sid = nk_s1[str_node[i]]; w("data s"); wn(i); w(" = "); int j = 0; while (j < slen(sid)) { wn(chars[soff(sid) + j]); w(", "); j = j + 1; } w("0\n"); i = i + 1; }
+  i = 0; while (i < nstrn) {
+    int sid; if (str_node[i] < 0) sid = 0 - 1 - str_node[i]; else sid = nk_s1[str_node[i]];
+    w("data s"); wn(i); w(" = "); int j = 0; while (j < slen(sid)) { wn(chars[soff(sid) + j]); w(", "); j = j + 1; } w("0\n"); i = i + 1;
+  }
   i = 0; while (i < ndat) { w("data d"); wn(i); w(" = "); wn(dat[i]); wc(10); i = i + 1; }
   w("func __start() {\n  alloc _base, 262144\n  mov _spa, __sp\n  st _base, _spa, 0\n  add _top, _base, 262128\n  mov _lma, __lim\n  st _top, _lma, 0\n  call __init\n  call _r, f"); wn(mainf); w("\n  ret _r\n}\nentry __start\n");
   return 0;

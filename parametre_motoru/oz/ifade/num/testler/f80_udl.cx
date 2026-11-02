@@ -1,0 +1,12 @@
+// ondalik UDL (long double parametreli) ve f80 degerli donusum operatorleri
+struct Len { long double m; };
+Len operator""_km(long double x) { Len l; l.m = x * 1000; return l; }
+long double operator""_deg(long double x) { return x * 3.14159265358979323846L / 180.0L; }
+Len operator+(Len a, Len b) { Len r; r.m = a.m + b.m; return r; }
+struct W { long double v; operator long double() const { return v; } };
+int main() {
+  Len a = 1.5_km; pl(a.m); Len b = a + 0.001_km; pl(b.m);
+  pl(180.0_deg); pl(0.1_deg);
+  W w = {2.5L}; long double q = w; pl(q); pl(w + 1.0L); pi(w > 2.0L);
+  return 0;
+}

@@ -1,2 +1,2 @@
-// HATA: kaydirma tamsayi
+// HATA: tamsayi operand
 int main() { double d = 1; return d << 1; }

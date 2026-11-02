@@ -18,7 +18,7 @@ export IFXE=$T/ifx.elf BAG=$T/bag
 one() {
   f=$1; n=$(basename $f .cx); w=$T/t_$n; mkdir -p $w
   g++ -std=c++20 -O0 -w -include $D/../oracle.h -x c++ -o $w/bin $f 2> $w/gpp.err && lim $w/bin > $w/exp || { fail "$n: g++ oracle"; return; }
-  $PM ifade $f --pmx1 $w/x.pmx > /dev/null 2> $w/fe.err || { fail "$n: on yuz (PMX1 uretimi): $(head -c 120 $w/fe.err)"; return; }
+  $PM ifade $f --pmx1 $w/x.pmx > /dev/null 2> $w/fe.err; [ -s $w/x.pmx ] || { fail "$n: on yuz (PMX1 uretimi): $(head -c 120 $w/fe.err)"; return; }   # on yuz anlam asamasi reddetse de PMX1 yazilmistir
   cat $TAB $w/x.pmx > $w/in.txt
   lim $IFXE < $w/in.txt > $w/p_elf.pma 2> $w/ifx.err || { fail "$n: ifx.elf basarisiz: $(grep -a HATA $w/p_elf.pma | head -c 150)"; return; }
   lim $PM run $IFXB < $w/in.txt > $w/p_pm.pma 2>/dev/null; cmp -s $w/p_elf.pma $w/p_pm.pma && pass || fail "$n: ifx.elf PMA'si ifx.pmb (pm) PMA'sindan farkli"
@@ -29,17 +29,21 @@ one() {
   lim $PM run $w/p.pmb > $w/pm.out 2>/dev/null; cmp -s $w/pm.out $w/exp && pass || fail "$n: pm cikti g++'dan farkli"
   if [ "${SVM:-1}" = 1 ]; then { cat $TAB; echo "@@PROGRAM"; cat $w/p.l; echo "@@GIRDI"; } > $w/sv.in; LIMS=300 lim $PM run $R/oz/sayisal/svm.pmb < $w/sv.in > $w/svm.out 2>/dev/null; cmp -s $w/svm.out $w/exp && pass || fail "$n: svm cikti g++'dan farkli"; fi
   # onceki (C++ yolu) ile ayni davranis
-  $PM ifade $f -o $w/c.pmb --strip > /dev/null 2>&1 && lim $PM run $w/c.pmb > $w/cpp.out 2>/dev/null; cmp -s $w/cpp.out $w/exp && pass || fail "$n: C++ yolu cikti g++'dan farkli"
+  case $n in f80_*) ;; *) $PM ifade $f -o $w/c.pmb --strip > /dev/null 2>&1 && lim $PM run $w/c.pmb > $w/cpp.out 2>/dev/null; cmp -s $w/cpp.out $w/exp && pass || fail "$n: C++ yolu cikti g++'dan farkli";; esac
 }
 red() {
-  f=$1; n=$(basename $f .cx); w=$T/r_$n; mkdir -p $w; exp=$(head -1 $f | sed -n 's|^// HATA: *\(.*\)$|\1|p')
-  $PM ifade $f --pmx1 $w/x.pmx > /dev/null 2>&1; [ -s $w/x.pmx ] || { fail "red/$n: PMX1 uretilemedi (soz dizimi hatasi)"; return; }   # on yuz anlam denetimi basarisiz olsa da PMX1 yazilmistir
+  f=$1; grep -q '^// IFX: kabul' $f && return; n=$(basename $f .cx); w=$T/r_$n; mkdir -p $w; exp=$(head -1 $f | sed -n 's|^// HATA: *\(.*\)$|\1|p'); code=$(head -1 $f | sed -n 's|^// RED: *\([A-Z_]*\).*|\1|p')
+  $PM ifade $f --pmx1 $w/x.pmx > /dev/null 2> $w/fe.err
+  if [ ! -s $w/x.pmx ]; then   # metin duzeyi (lexer/ayristirici) hatasi: on yuz reddeder, PMX1 hic olusmaz
+    [ -n "$code" ] && grep -q "\[$code\]" $w/fe.err && pass || fail "red/$n: on yuz soz dizimi reddi beklenen [$code]: $(head -c 100 $w/fe.err)"; return
+  fi
   cat $TAB $w/x.pmx | lim $IFXE > $w/o.pma 2>/dev/null; rc=$?
-  [ $rc != 0 ] && grep -aq "@@HATA .*$exp" $w/o.pma && pass || fail "red/$n: beklenen ayrik ret '$exp', rc=$rc: $(grep -a HATA $w/o.pma | head -c 100)"
+  if [ -n "$code" ]; then [ $rc != 0 ] && grep -aq "@@HATA $code " $w/o.pma && pass || fail "red/$n: sayisal derleyici beklenen [$code], rc=$rc: $(grep -a HATA $w/o.pma | head -c 100)"
+  else [ $rc != 0 ] && grep -aq "@@HATA .*$exp" $w/o.pma && pass || fail "red/$n: beklenen ayrik ret '$exp', rc=$rc: $(grep -a HATA $w/o.pma | head -c 100)"; fi
 }
 export -f one red
-ls testler/*.cx | xargs -P $(nproc) -I{} bash -c 'one {}'
-ls red/*.cx | xargs -P $(nproc) -I{} bash -c 'red {}'
+ls testler/*.cx ../testler/*.cx | xargs -P $(nproc) -I{} bash -c 'one {}'
+ls red/*.cx ../red/*.cx | xargs -P $(nproc) -I{} bash -c 'red {}'
 # 2) kural degisikligi: tablo sayilari degisir, hicbir sey yeniden derlenmez
 printf 'int main() { pi(7 + 3); pi(7 - 3); pi(7 * 3); return 0; }\n' > $T/k.cx
 $PM ifade $T/k.cx --pmx1 $T/k.pmx > /dev/null

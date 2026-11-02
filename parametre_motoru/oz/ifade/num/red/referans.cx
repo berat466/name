@@ -1,2 +1,0 @@
-// HATA: referans
-int main() { int a = 1; int& r = a; return r; }

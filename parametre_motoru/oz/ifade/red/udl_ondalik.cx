@@ -1,4 +1,5 @@
 // RED: E_UNSUPPORTED
+// IFX: kabul (sayisal derleyici long double destekler; bu ret C++ referans on yuze ozgu)
 struct L { double m; };
 L operator""_km(long double x) { L l; l.m = 1; return l; }
 int main() { L a = 1.5_km; return 0; }

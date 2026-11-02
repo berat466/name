@@ -26,7 +26,7 @@ struct IErr { string code, msg; int line; };
 enum TokK { TK_EOF, TK_ID, TK_INT, TK_FLT, TK_CHR, TK_STR, TK_P };
 struct Tok {
   TokK k = TK_EOF; string s;            // kimlik / noktalama / dize baytlari
-  uint64_t u = 0; double d = 0;         // tamsayi degeri / ondalik deger / karakter degeri
+  uint64_t u = 0; double d = 0; long double ld = 0;   // tamsayi degeri / ondalik deger / karakter degeri / tam kesinlikli (x87 80 bit) deger
   int tcode = 0;                        // sabit turu (TY_* kodu, asagida)
   string udl;                           // kullanici tanimli sonek (_km gibi), bos = yok
   bool decimal = true; int line = 0;
@@ -77,7 +77,7 @@ struct Lexer {
       string sf = suffix(i); t.k = TK_FLT; t.tcode = Y_DOUBLE;
       if (sf == "f" || sf == "F") t.tcode = Y_FLOAT; else if (sf == "l" || sf == "L") t.tcode = Y_LDOUBLE; else if (!sf.empty()) { if (sf[0] != '_') fail("E_LEX", "gecersiz ondalik sabit soneki: " + sf, line); t.udl = sf; }
       if (base == 16) f = "0x" + f;
-      t.d = strtod(f.c_str(), nullptr); p = i; out.push_back(t); return;
+      t.d = strtod(f.c_str(), nullptr); t.ld = strtold(f.c_str(), nullptr); p = i; out.push_back(t); return;
     }
     // tamsayi
     uint64_t v = 0; bool oct = false;
@@ -132,7 +132,7 @@ struct Lexer {
       if (c == '/' && at(p + 1) == '*') { p += 2; while (p < src.size() && !(src[p] == '*' && at(p + 1) == '/')) { if (src[p] == '\n') line++; p++; } if (p >= src.size()) fail("E_LEX", "kapanmamis yorum", line); p += 2; continue; }
       if (c == '#') { while (p < src.size() && src[p] != '\n') p++; continue; }   // on-isleyici satirlari (#include) yok sayilir
       if (isdigit((unsigned char)c) || (c == '.' && isdigit((unsigned char)at(p + 1)))) {
-        if (c == '.') { Tok t; /* .5 gibi */ size_t i = p + 1; string f = "0."; while (isdigit((unsigned char)at(i))) f += at(i++); if (at(i) == 'e' || at(i) == 'E') { f += at(i++); if (at(i) == '+' || at(i) == '-') f += at(i++); while (isdigit((unsigned char)at(i))) f += at(i++); } t.k = TK_FLT; t.line = line; t.tcode = Y_DOUBLE; string sf = suffix(i); if (sf == "f" || sf == "F") t.tcode = Y_FLOAT; else if (sf == "l" || sf == "L") t.tcode = Y_LDOUBLE; else if (!sf.empty()) { if (sf[0] != '_') fail("E_LEX", "gecersiz ondalik sonek", line); t.udl = sf; } t.d = strtod(f.c_str(), nullptr); p = i; out.push_back(t); continue; }
+        if (c == '.') { Tok t; /* .5 gibi */ size_t i = p + 1; string f = "0."; while (isdigit((unsigned char)at(i))) f += at(i++); if (at(i) == 'e' || at(i) == 'E') { f += at(i++); if (at(i) == '+' || at(i) == '-') f += at(i++); while (isdigit((unsigned char)at(i))) f += at(i++); } t.k = TK_FLT; t.line = line; t.tcode = Y_DOUBLE; string sf = suffix(i); if (sf == "f" || sf == "F") t.tcode = Y_FLOAT; else if (sf == "l" || sf == "L") t.tcode = Y_LDOUBLE; else if (!sf.empty()) { if (sf[0] != '_') fail("E_LEX", "gecersiz ondalik sonek", line); t.udl = sf; } t.d = strtod(f.c_str(), nullptr); t.ld = strtold(f.c_str(), nullptr); p = i; out.push_back(t); continue; }
         number(); continue;
       }
       // dize (ham dize dahil)
@@ -470,7 +470,13 @@ struct Parser {
     const Tok& k = cur(); int line = k.line;
     switch (k.k) {
       case TK_INT: { int n = a.mk(N_INT, line); a[n].i = int64_t(k.u); a[n].j = k.tcode; a[n].s2 = k.udl; p++; return n; }
-      case TK_FLT: { int n = a.mk(N_FLT, line); a[n].d = k.d; a[n].j = k.tcode; a[n].s2 = k.udl; p++; return n; }
+      case TK_FLT: {
+        int n = a.mk(N_FLT, line); a[n].d = k.d; a[n].j = k.tcode; a[n].s2 = k.udl;
+        if (k.tcode == Y_LDOUBLE || !k.udl.empty()) {   // tam kesinlikli deger: i = ham mantis, d'nin ham bitleri = (isaret<<15)|us
+          unsigned char raw[16] = {0}; long double v = k.ld; memcpy(raw, &v, 10); uint64_t m; memcpy(&m, raw, 8); uint64_t se = raw[8] | (uint64_t(raw[9]) << 8);
+          a[n].i = int64_t(m); double dd; memcpy(&dd, &se, 8); a[n].d = dd;
+        }
+        p++; return n; }
       case TK_CHR: { int n = a.mk(N_CHR, line); a[n].i = int64_t(k.u); a[n].j = k.tcode; a[n].s2 = k.udl; p++; return n; }
       case TK_STR: { int n = a.mk(N_STR, line); a[n].s = k.s; a[n].s2 = k.udl; p++; return n; }
       case TK_P:
@@ -2479,7 +2485,7 @@ struct Sema {
   int initFrame = 1; int64_t stackWords = 1 << 18;
 };
 
-const char* kPrelude = "int __getc(); void __puti(long long); void __putc(int); void __putf(double); void pi(long long x) { __puti(x); __putc(10); } void pc(int c) { __putc(c); } void pd(double d) { __putf(d); __putc(10); } ";
+const char* kPrelude = "int __getc(); void __puti(long long); void __putc(int); void __putf(double); void pl(long double); void pi(long long x) { __puti(x); __putc(10); } void pc(int c) { __putc(c); } void pd(double d) { __putf(d); __putc(10); } ";
 
 bool slurp(const string& f, string& out) { FILE* fp = fopen(f.c_str(), "rb"); if (!fp) return false; char b[65536]; size_t n; out.clear(); while ((n = fread(b, 1, sizeof b, fp)) > 0) out.append(b, n); fclose(fp); return true; }
 }  // namespace
