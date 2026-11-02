@@ -1,0 +1,2 @@
+// HATA: desteklenmiyor
+int main() { long double d = 1; pi((long long)d); return 0; }

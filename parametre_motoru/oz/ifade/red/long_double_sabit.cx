@@ -1,0 +1,2 @@
+// RED: E_UNSUPPORTED
+int main() { double d = 1.5l; return 0; }

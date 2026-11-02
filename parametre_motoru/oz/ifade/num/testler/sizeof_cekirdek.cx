@@ -1,0 +1,16 @@
+// cekirdek: sizeof / alignof (skaler, dizi, isaretci, ifade), sabit ifadeli dizi boyutlari
+const int N = 4;
+int main() {
+  pi(sizeof(char)); pi(sizeof(short)); pi(sizeof(int)); pi(sizeof(long)); pi(sizeof(long long)); pi(sizeof(float)); pi(sizeof(double));
+  pi(sizeof(bool)); pi(sizeof(void*)); pi(sizeof(unsigned char)); pi(sizeof(unsigned long long));
+  pi(alignof(char)); pi(alignof(int)); pi(alignof(double)); pi(alignof(short)); pi(alignof(int[5])); pi(alignof(char*));
+  int arr[N * 2 + 1]; pi(sizeof(arr)); pi(sizeof(arr) / sizeof(arr[0]));
+  int x = 5; pi(sizeof x); pi(sizeof(x + 1.0)); pi(sizeof(x++)); pi(x);
+  pi(sizeof(int[10])); pi(sizeof(int*[3])); pi(sizeof(char[4][5]));
+  pi(sizeof('a')); pi(sizeof(1L)); pi(sizeof(1.0f)); pi(sizeof("abc")); 
+  pi(sizeof(sizeof(int)) == 8);
+  unsigned long long big = sizeof(arr) * 1000000000ull; pi(big);
+  int* pb = &x; pi(sizeof(pb)); pi(sizeof(*pb));
+  int sz[true ? 3 : 4]; pi(sizeof(sz) / sizeof(int)); int sz2[(1 ? 2 : 9) + (0 ? 7 : 1)]; pi(sizeof(sz2) / sizeof(int));
+  return 0;
+}

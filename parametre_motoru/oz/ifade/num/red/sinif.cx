@@ -1,0 +1,3 @@
+// HATA: sinif
+struct S { int x; };
+int main() { S s; s.x = 1; return s.x; }

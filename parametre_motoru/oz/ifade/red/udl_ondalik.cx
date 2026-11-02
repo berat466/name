@@ -1,0 +1,4 @@
+// RED: E_UNSUPPORTED
+struct L { double m; };
+L operator""_km(long double x) { L l; l.m = 1; return l; }
+int main() { L a = 1.5_km; return 0; }

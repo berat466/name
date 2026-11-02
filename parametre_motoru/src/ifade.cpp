@@ -873,6 +873,7 @@ struct Sema {
   // ---- sayisal donusumler ----
   V convArith(V v, int to) {   // v prvalue arit/bool; to arit/bool
     int from = v.ty; to = unq(to);
+    if ((K(from) == Y_LDOUBLE || K(to) == Y_LDOUBLE) && from != to && !g->dry) err("E_UNSUPPORTED", "long double donusumu desteklenmiyor (f64'e sessizce indirilmez)");
     if (from == to) return v;
     V r = pr(to, v.reg); r.eff = v.eff;
     if (isInt(from) && isInt(to)) {
@@ -1154,7 +1155,8 @@ struct Sema {
     string target = f.pma; bool virt = f.isVirt && allowVirt && self && f.cls >= 0;
     if (virt) target = "vd" + std::to_string(f.vroot);
     if (!f.builtin.empty()) {
-      if (f.builtin == "puti" || f.builtin == "putc" || f.builtin == "putf") E("host " + f.builtin + ", " + regs[0]);
+      if (f.builtin == "getc") { E("host " + d + ", getc"); return pr(tInt, d); }
+      E("host " + f.builtin + ", " + regs[0]);
       V v; v.ty = tVoid; v.isVoid = true; return v;
     }
     string line = "call " + (isVoid || sret ? string() : d + ", ") + target; for (auto& r : regs) line += ", " + r;
@@ -1216,7 +1218,7 @@ struct Sema {
   int promote(int t) { t = unq(t); int k = K(t); if (k >= Y_BOOL && k <= Y_USHORT) return tInt; return t; }
   int uac(int x, int y) {   // olagan aritmetik donusumler
     x = unq(x); y = unq(y);
-    if (K(x) == Y_LDOUBLE || K(y) == Y_LDOUBLE) return tLDouble; if (K(x) == Y_DOUBLE || K(y) == Y_DOUBLE) return tDouble; if (K(x) == Y_FLOAT || K(y) == Y_FLOAT) return tFloat;
+    if (K(x) == Y_LDOUBLE || K(y) == Y_LDOUBLE) { if (!g->dry) err("E_UNSUPPORTED", "long double aritmetigi desteklenmiyor (f80 komutlariyla gercek 80 bit islem bu on yuzde yok; f64'e sessizce indirilmez)"); return tLDouble; } if (K(x) == Y_DOUBLE || K(y) == Y_DOUBLE) return tDouble; if (K(x) == Y_FLOAT || K(y) == Y_FLOAT) return tFloat;
     x = promote(x); y = promote(y);
     if (x == y) return x;
     bool sx = isSigned(x), sy = isSigned(y); int rx = rankOf(x), ry = rankOf(y);
@@ -1854,7 +1856,7 @@ struct Sema {
     auto it = fmap.find(nm); if (it == fmap.end()) err("E_UDL", "kullanici tanimli sabit isleci yok: " + nm);
     vector<V> args; int wantTy;
     if (x.k == N_INT) { wantTy = tULLong; args.push_back(constInt(tULLong, x.i)); }
-    else if (x.k == N_FLT) { wantTy = tLDouble; args.push_back(pr(tLDouble, fnum(x.d))); }
+    else if (x.k == N_FLT) { err("E_UNSUPPORTED", "ondalik UDL sabiti long double parametresi gerektirir; long double desteklenmiyor (f64'e sessizce indirilmez)"); wantTy = tLDouble; }
     else if (x.k == N_CHR) { wantTy = tChar; args.push_back(constInt(tChar, x.i)); }
     else {   // dize: (const char*, size_t)
       string sym = strData(x.s); V p = pr(ptrTo(cv(tChar, true, false)), R()); E("mov " + p.reg + ", " + sym); args.push_back(p); args.push_back(constInt(tULong, int64_t(x.s.size()))); wantTy = -1;
@@ -1903,6 +1905,7 @@ struct Sema {
       case N_FLT: {
         if (!x.s2.empty()) return genUDL(n);
         int t = litTy(int(x.j)); double d = x.d; if (K(t) == Y_FLOAT) d = double(float(d));
+        if (K(t) == Y_LDOUBLE && !g->dry) err("E_UNSUPPORTED", "long double sabiti desteklenmiyor (f64'e sessizce indirilmez)");
         if (std::isinf(d)) err("E_CONST", "ondalik sabit tur araligini asiyor"); return pr(t, fnum(d)); }
       case N_CHR: { if (!x.s2.empty()) return genUDL(n); return constInt(tChar, x.i); }
       case N_BOOL: return constInt(tBool, x.i);
@@ -2210,7 +2213,7 @@ struct Sema {
     if (f.hasBody) f.body = n.kid[2];
     int idx = int(F.size()); string san; for (char ch : f.name) san += isalnum((unsigned char)ch) ? ch : '_';
     f.pma = "f" + std::to_string(idx) + "_" + san;
-    if (f.name == "__puti" || f.name == "__putc" || f.name == "__putf") f.builtin = f.name.substr(2);
+    if (f.name == "__puti" || f.name == "__putc" || f.name == "__putf" || f.name == "__getc") f.builtin = f.name.substr(2);
     if (cls >= 0) {
       Cls& c = C[size_t(cls)]; f.vroot = -1;
       // sanal islev gecersiz kilma
@@ -2476,7 +2479,7 @@ struct Sema {
   int initFrame = 1; int64_t stackWords = 1 << 18;
 };
 
-const char* kPrelude = "void __puti(long long); void __putc(int); void __putf(double); void pi(long long x) { __puti(x); __putc(10); } void pc(int c) { __putc(c); } void pd(double d) { __putf(d); __putc(10); } ";
+const char* kPrelude = "int __getc(); void __puti(long long); void __putc(int); void __putf(double); void pi(long long x) { __puti(x); __putc(10); } void pc(int c) { __putc(c); } void pd(double d) { __putf(d); __putc(10); } ";
 
 bool slurp(const string& f, string& out) { FILE* fp = fopen(f.c_str(), "rb"); if (!fp) return false; char b[65536]; size_t n; out.clear(); while ((n = fread(b, 1, sizeof b, fp)) > 0) out.append(b, n); fclose(fp); return true; }
 }  // namespace

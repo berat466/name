@@ -1,0 +1,2 @@
+// HATA: kaydirma tamsayi
+int main() { double d = 1; return d << 1; }
