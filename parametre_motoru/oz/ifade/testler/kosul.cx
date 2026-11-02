@@ -1,0 +1,31 @@
+// 02.007: ?: turleri, kategori, ic ice
+struct S { int v; };
+int sel(bool c, int a, int b) { return c ? a : b; }
+int main() {
+  int a = 1, b = 2;
+  pi(a < b ? 10 : 20);
+  pi(a > b ? 10 : a == 1 ? 30 : 40);
+  (a < b ? a : b) = 99; pi(a); pi(b);
+  (a > b ? a : b) += 5; pi(a); pi(b);
+  double d = a > 0 ? 1 : 2.5; pd(d);
+  pd(a < 0 ? 1 : 2.5);
+  unsigned u = 3; int i = -1;
+  pi(true ? i : u);                 // unsigned'a
+  pi((true ? i : u) > 0);
+  char c = 'x'; short s = 5;
+  pi(sizeof(true ? c : s));
+  pi(sizeof(true ? c : c));
+  int *p = &a; int *q = 0;
+  pi((p ? p : q) == p);
+  pi((q ? p : q) == 0);
+  const int *cp = true ? p : (const int*)0; pi(*cp);
+  S x{1}, y{2};
+  (b > 0 ? x : y).v = 7; pi(x.v); pi(y.v);
+  S z = a ? x : y; pi(z.v);
+  pi(sel(a != 0, 3, 4) + sel(b == 0, 3, 4));
+  pi(true ? 1 : 0.5 > 0);
+  int arr[3] = {7, 8, 9};
+  pi((b ? arr : arr + 1)[2]);
+  pi(sizeof(a ? 1 : 2L));
+  return 0;
+}

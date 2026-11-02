@@ -1,6 +1,6 @@
 CXX ?= g++
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -fno-fast-math -ffp-contract=off
-SRC := src/main.cpp src/asm.cpp src/ikili.cpp src/vm.cpp src/dump.cpp src/native_x64.cpp src/sablon.cpp src/yapisal.cpp src/liste.cpp
+SRC := src/main.cpp src/asm.cpp src/ikili.cpp src/vm.cpp src/dump.cpp src/native_x64.cpp src/sablon.cpp src/yapisal.cpp src/liste.cpp src/ifade.cpp
 
 pm: $(SRC) src/ops.h src/ops_gen.h src/program.h src/anlam.h src/anlam_wfp.h src/anlam_wfp_gen.h src/anlam_wcx.h src/anlam_wcx_gen.h src/anlam_wi_gen.h src/host.h
 	$(CXX) $(CXXFLAGS) -o $@ $(SRC) -lquadmath

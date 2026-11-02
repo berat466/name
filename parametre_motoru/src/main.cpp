@@ -51,8 +51,10 @@ static int usage() {
   return 1;
 }
 
+int ifade_main(int argc, char** argv);
 int main(int argc, char** argv) {
   if (argc < 3) return usage();
+  if (std::string(argv[1]) == "ifade") return ifade_main(argc, argv);
   std::string cmd = argv[1], file = argv[2];
   try {
     if (cmd == "asm") {

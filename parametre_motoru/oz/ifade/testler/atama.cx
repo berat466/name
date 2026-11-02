@@ -1,0 +1,33 @@
+// 02.008 / 02.009: atama, birlesik atama, zincir, daraltma
+struct P { int x; int y; };
+int main() {
+  int a, b, c;
+  a = b = c = 7;
+  pi(a + b + c);
+  (a = 3) = 4;
+  pi(a);
+  int v = 100;
+  v += 5; pi(v); v -= 7; pi(v); v *= 3; pi(v); v /= 4; pi(v); v %= 7; pi(v);
+  v <<= 3; pi(v); v >>= 1; pi(v); v &= 0x1E; pi(v); v |= 0x101; pi(v); v ^= 0xFF; pi(v);
+  char ch = 120; ch += 10; pi(ch);
+  unsigned char uc = 250; uc += 10; pi(uc);
+  short sh = 32767; sh += 1; pi(sh);
+  unsigned u = 0; u -= 1; pi(u);
+  unsigned long long ull = 5; ull -= 6; pi(ull == 18446744073709551615ULL);
+  int i2 = 7; i2 *= 2.5; pi(i2);
+  double d = 10; d /= 4; pd(d); d += 1; pd(d); d -= 0.25; pd(d); d *= d; pd(d);
+  float f = 1.1f; f += 1; pd(f);
+  bool bl = false; bl += 3; pi(bl);
+  bool b2 = true; b2 &= false; pi(b2);
+  int arr[4] = {1, 2, 3, 4};
+  arr[1] += arr[2] * 10; pi(arr[1]);
+  int k = 0; arr[k++] += 5; pi(arr[0]); pi(k);
+  P pt = {1, 2}; pt.x += pt.y; pi(pt.x);
+  P* pp = &pt; pp->y *= 9; pi(pt.y);
+  int* q = arr; q += 2; pi(*q); q -= 1; pi(*q);
+  long l = 5; l = a; pi(l);
+  int n = 1; n = n + 1; n += n; pi(n);
+  int m = 5; m = m++ + 1; pi(m);
+  int s = 2; s <<= s; pi(s);
+  return 0;
+}

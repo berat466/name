@@ -1,0 +1,31 @@
+// 02.019 / 02.021 / 02.022: static_cast, const_cast, reinterpret_cast
+struct Base { int b; };
+struct Der : Base { int d; };
+void setc(const int* p) { *const_cast<int*>(p) = 42; }
+int main() {
+  double d = 3.99; pi(static_cast<int>(d)); pi(static_cast<int>(-d)); pi(static_cast<unsigned char>(300)); pi(static_cast<char>(200)); pi(static_cast<bool>(5));
+  pd(static_cast<double>(7) / 2); pd(static_cast<float>(1) / 3); pi(static_cast<long long>(1) << 40);
+  pi(static_cast<unsigned>(-1)); pi(static_cast<short>(70000));
+  Der dd; dd.b = 1; dd.d = 2; Base* bp = static_cast<Base*>(&dd); pi(bp->b);
+  Der* dp = static_cast<Der*>(bp); pi(dp->d);
+  Base& br = static_cast<Base&>(dd); pi(br.b);
+  void* vp = static_cast<void*>(&dd); Der* back = static_cast<Der*>(vp); pi(back->d);
+  int i = 5; int&& rr = static_cast<int&&>(i); rr = 8; pi(i);
+  pi(static_cast<int>(3.0 + 4) * 2);
+  int ci_ = 10; const int* cp = &ci_; setc(cp); pi(ci_);
+  const int k = 5; const int& kr = k; pi(const_cast<int&>(kr) == 5);
+  int v = 3; const int* pcv = &v; int* pv = const_cast<int*>(pcv); *pv = 9; pi(v);
+  volatile int vv = 4; pi(const_cast<int&>(vv));
+  const Base cb = {7}; pi(const_cast<Base&>(cb).b);
+  double dv = 2.5; long long bits = reinterpret_cast<long long&>(dv); pi(bits == 4612811918334230528LL);
+  unsigned long long ub = reinterpret_cast<unsigned long long&>(dv); pi(ub >> 52);
+  long long lb = 4611686018427387904LL; pd(reinterpret_cast<double&>(lb));
+  int arr[4] = {1, 2, 3, 4}; int* p1 = arr + 2;
+  unsigned long up = reinterpret_cast<unsigned long>(p1); int* p2 = reinterpret_cast<int*>(up); pi(p2 == p1); pi(*p2);
+  Base* b2 = reinterpret_cast<Base*>(&dd); pi(b2->b);
+  char* cptr = reinterpret_cast<char*>(arr); pi(reinterpret_cast<int*>(cptr) == arr);
+  pi(reinterpret_cast<unsigned long>(&arr[1]) > reinterpret_cast<unsigned long>(&arr[0]));
+  pi((int)3.7 + (int)'a'); pi((double)1 / 4); pi((unsigned char)-1); pi((Base*)&dd == &dd);
+  pi(int(3.9) + int('b')); pd(double(2) / 4); pi(bool(0.0)); pi(long(1) << 33);
+  return 0;
+}

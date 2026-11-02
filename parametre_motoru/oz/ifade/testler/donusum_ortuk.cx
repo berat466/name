@@ -1,0 +1,33 @@
+// 02.023: ortuk donusumler, terfi, olagan aritmetik donusumler
+void fi(int x) { pi(1000 + x); } void fl(long x) { pi(2000 + x); } void fd(double x) { pi(3000); pd(x); }
+void fu(unsigned x) { pi(4000 + x); } void fb(bool x) { pi(5000 + x); } void fc(char x) { pi(6000 + x); }
+void fp(const char* s) { pi(7000 + s[0]); } void fv(void* p) { pi(8000 + (p != 0)); } void fn(int* p) { pi(9000 + (p == 0)); }
+struct Bs { int b; }; struct Dr : Bs { int d; };
+int useb(Bs* p) { return p->b; }
+int useref(const Bs& r) { return r.b; }
+int main() {
+  char c = 10; short s = 20; unsigned char uc = 200; bool b = true;
+  pi(c + s); pi(uc + uc); pi(b + b); pi(c * uc); pi(sizeof(c + c)); pi(sizeof(b + b)); pi(sizeof(s * s));
+  pi(-c); pi(~uc); pi(!uc);
+  unsigned u = 1; int i = -2;
+  pi(i < u); pi(i + u == 4294967295u); pi(sizeof(i + u));
+  long l = -1; unsigned long ul = 1; pi(l < ul); pi(sizeof(l + ul));
+  long long ll = 1; unsigned int ui = 1; pi(sizeof(ll + ui)); pi(ll + ui);
+  pd(i + 0.5); pd(c / 4); pd(c / 4.0f); pi(sizeof(1.0f + 1)); pi(sizeof(1.0f + 1.0));
+  float f = 16777217; pd(f); double d = 0.1f; pd(d);
+  int fromD = 2.99; pi(fromD); int neg = -2.99; pi(neg);
+  unsigned char w = 257; pi(w); signed char sc = 255; pi(sc); short sh = 40000; pi(sh);
+  unsigned big = 4294967296ull + 5; pi(big);
+  bool bb = 0.5; pi(bb); bool b3 = 7; pi(b3); int* np = 0; bool b4 = np; pi(b4);
+  fi(c); fl(c); fd(c); fu(c); fb(c); fc(300); fi(true); fd(3); fd(1.5f);
+  fp("abc"); fv(&i); fv(0); fn(0); fn(nullptr);
+  Dr dr; dr.b = 5; dr.d = 6; pi(useb(&dr)); pi(useref(dr)); Bs* bp = &dr; pi(bp->b);
+  Bs sliced = dr; pi(sliced.b);
+  const int ci = 3; int copy = ci; pi(copy); const int* cp = &copy; pi(*cp);
+  int arr[3] = {1, 2, 3}; int* ap = arr; const int* cap = arr; pi(*ap + *cap);
+  char buf[4] = "ab"; const char* cs = buf; pi(cs[1]);
+  void* vp = ap; int* back = static_cast<int*>(vp); pi(*back);
+  pi(1 + 'a'); pi('a' + 'b'); pi(sizeof('a' + 'b'));
+  long long m = 2147483647; m = m + 1; pi(m); int ov = 2147483647; long long m2 = ov + 0LL + 1; pi(m2);
+  return 0;
+}

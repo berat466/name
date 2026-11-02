@@ -1,0 +1,37 @@
+// 02.017: noexcept(ifade)
+struct S { int v; int get() const noexcept { return v; } int thr() const { return v; } virtual ~S() {} };
+int plain(int x) { return x; }
+int safe(int x) noexcept { return x; }
+int safe2(int x) noexcept(true) { return x; }
+int maybe(int x) noexcept(false) { return x; }
+struct T { int a; };
+struct U : S { virtual void f() noexcept {} };
+int main() {
+  int i = 0; S s; S* ps = &s; T t;
+  pi(noexcept(i + 1));
+  pi(noexcept(i = 2));
+  pi(noexcept(i++));
+  pi(noexcept(plain(1)));
+  pi(noexcept(safe(1)));
+  pi(noexcept(safe2(1)));
+  pi(noexcept(maybe(1)));
+  pi(noexcept(safe(plain(1))));
+  pi(noexcept(safe(safe(1))));
+  pi(noexcept(s.get()));
+  pi(noexcept(s.thr()));
+  pi(noexcept(ps->get()));
+  pi(noexcept(t.a));
+  pi(noexcept(i ? 1 : 2));
+  pi(noexcept(dynamic_cast<U&>(s)));
+  pi(noexcept(dynamic_cast<U*>(ps)));
+  pi(noexcept(typeid(*ps)));
+  pi(noexcept(typeid(i)));
+  pi(noexcept(sizeof(plain(1))));
+  pi(noexcept(static_cast<int>(1.5)));
+  pi(noexcept(noexcept(plain(1))));
+  int c = 0;
+  pi(noexcept(c++ + safe(2)));
+  pi(noexcept(safe(1), plain(2)));
+  pi(noexcept(i && plain(3)));
+  return 0;
+}
