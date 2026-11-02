@@ -1,0 +1,3 @@
+// RED: E_RETURN
+// GPP: red
+void f() { return 1; } int main() { f(); return 0; }

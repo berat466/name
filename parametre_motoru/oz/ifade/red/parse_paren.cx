@@ -1,0 +1,3 @@
+// RED: E_PARSE
+// GPP: red
+int main() { int a = (1 + 2; return 0; }

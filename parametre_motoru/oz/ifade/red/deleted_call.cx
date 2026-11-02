@@ -1,0 +1,3 @@
+// RED: E_DELETED
+// GPP: red
+struct S { int f(int) = delete; }; int main() { S s; return s.f(1); }

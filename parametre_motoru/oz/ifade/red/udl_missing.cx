@@ -1,0 +1,3 @@
+// RED: E_UDL
+// GPP: red
+int main() { return 5_zz; }

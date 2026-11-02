@@ -803,8 +803,10 @@ struct Sema {
   V constInt(int t, int64_t val) { V v = pr(t, num(foldNorm(val, t))); v.ci = true; v.cval = foldNorm(val, t); return v; }
   void addEff(V& v, const V& o) { v.eff.insert(v.eff.end(), o.eff.begin(), o.eff.end()); }
   // sirasiz (unsequenced) degerlendirme denetimi (02.034): iki operanddan biri ayni nesneyi degistirir, digeri okur/degistirirse tanimsiz davranis
-  void unseq(const V& x, const V& y) {
-    for (auto& e : x.eff) for (auto& f : y.eff) if (!e.key.empty() && e.key == f.key && (e.rw == 2 || f.rw == 2)) err("E_UNSEQ", "ayni nesne '" + e.key.substr(e.key.find('#') + 1) + "' siralanmamis iki degerlendirmede degistiriliyor/okunuyor (tanimsiz davranis)");
+  vector<Eff> effRead(const V& v) { vector<Eff> r = v.eff; if (v.cat == C_LV && !v.key.empty() && !isCls(v.ty) && !isArr(v.ty)) r.push_back({v.key, 1}); return r; }
+  void unseq(const V& x0, const V& y0) {
+    vector<Eff> xe = effRead(x0), ye = effRead(y0);
+    for (auto& e : xe) for (auto& f : ye) if (!e.key.empty() && e.key == f.key && (e.rw == 2 || f.rw == 2)) err("E_UNSEQ", "ayni nesne '" + e.key.substr(e.key.find('#') + 1) + "' siralanmamis iki degerlendirmede degistiriliyor/okunuyor (tanimsiz davranis)");
   }
   // ---- sinif / uye / yontem sorgulari ----
   int findFld(int ci, const string& n, int& woff, int& fty) {
@@ -948,10 +950,10 @@ struct Sema {
         if (ac && !tc) return rk;   // const nesne -> const olmayan referans yok
         if (!rr) {
           if (!tc && !lv) return rk;   // T& rvalue'ya baglanmaz
-          rk.ok = true; rk.r = (au == tu) ? 0 : 2; rk.t = (tc ? 1 : 0); if (tc && !lv) rk.t = 1; return rk;
+          rk.ok = true; rk.r = (au == tu) ? 0 : 2; rk.t = (tc ? 1 : 0) + (lv ? 0 : 2); return rk;
         }
         if (lv) return rk;   // T&& lvalue'ya baglanmaz
-        rk.ok = true; rk.r = (au == tu) ? 0 : 2; rk.t = 0; return rk;
+        rk.ok = true; rk.r = (au == tu) ? 0 : 2; rk.t = tc ? 1 : 0; return rk;
       }
       // donusum ile gecici olusturup baglama: yalniz const T& ve T&&
       if (!tc && !rr) return rk;
@@ -961,7 +963,7 @@ struct Sema {
         else { int sr; int m = pickUserConv(au, &a, tu, false, sr); if (m < 0) return rk; r = 4; }
       } else if (isCls(tu)) return rk;
       else { int sr = stdRank(isArr(au) ? ptrTo(ty(au).e) : au, &a, tu); if (sr < 0) return rk; r = sr; }
-      rk.ok = true; rk.r = std::max(r, 1); rk.t = 1; return rk;
+      rk.ok = true; rk.r = std::max(r, 1); rk.t = rr ? (tc ? 1 : 0) : 3; return rk;
     }
     // deger parametresi
     int pu = unq(P), au = unq(isArr(aTy) ? ptrTo(ty(aTy).e) : aTy);
@@ -1051,6 +1053,7 @@ struct Sema {
     to = unq(to); int tc = ty(to).cls;
     if (isCls(unq(v.ty))) {
       int vc = ty(unq(v.ty)).cls;
+      if (vc != tc && isOrd(unq(v.ty)) && isOrd(to) && ordConvertible(unq(v.ty), to)) { V t = tempObj(to); string w = R(); E("ld " + w + ", " + v.reg + ", 0"); E("st " + w + ", " + t.reg + ", 0"); t.eff = v.eff; return t; }
       if (vc == tc) {
         if (v.cat == C_PR) return v;   // kopya eksiltme: ayni gecici nesne
         V t = tempObj(to); copyObj(t.reg, v.reg, tc, true); t.eff = v.eff; return t;
@@ -1578,7 +1581,7 @@ struct Sema {
       E("jz " + c.reg + ", " + els); V a1 = gen(x.kid[1]); E("mov " + res + ", " + a1.reg); E("jmp " + end); LAB(els); V b1 = gen(x.kid[2]); E("mov " + res + ", " + b1.reg); LAB(end);
       V r; r.ty = A0.ty; r.cat = C_LV; r.reg = res; r.viaPtr = true; addEff(r, c); return r;
     }
-    V Ar = rval(A0), Br = rval(B0); int rt;
+    g->dry++; V Ar = rval(A0), Br = rval(B0); g->dry--; int rt;
     if (isArith(Ar.ty) && isArith(Br.ty)) rt = Ar.ty == Br.ty ? Ar.ty : uac(Ar.ty, Br.ty);
     else if (isPtr(Ar.ty) && isPtr(Br.ty)) { if (Ar.ty == Br.ty) rt = Ar.ty; else if (stdRank(Br.ty, &Br, Ar.ty) >= 0) rt = Ar.ty; else if (stdRank(Ar.ty, &Ar, Br.ty) >= 0) rt = Br.ty; else err("E_TYPE", "?: isaretci turleri uyumsuz"); }
     else if (isPtr(Ar.ty) && (K(Br.ty) == Y_NULLPTR || (B0.nullLit && B0.ci))) rt = Ar.ty;
@@ -1688,11 +1691,11 @@ struct Sema {
       if (v.cat != C_LV && !(K(T) == Y_RREF)) err("E_LVALUE", "reinterpret_cast<T&>: lvalue gerekli");
       int tgt = ty(T).e, vt = v.ty;
       if (ty(vt).c && !ty(tgt).c) err("E_CONSTCAST", "reinterpret_cast const'i kaldiramaz");
-      if (unq(vt) == unq(tgt)) err("E_REINTERP", "reinterpret_cast ayni turu referansla donusturemez");
       if (isScalar(unq(vt)) && isScalar(unq(tgt)) && sizeOf(vt) != sizeOf(tgt)) err("E_REINTERP", "reinterpret_cast: boyutlar farkli (" + num(sizeOf(vt)) + " ve " + num(sizeOf(tgt)) + ") -- motor sozcuk modelinde bayt gorunumu yok");
       V o = v; o.ty = tgt; o.cat = K(T) == Y_RREF ? C_XV : C_LV; return o;
     }
     V r = rval(v); T = unq(T);
+    if (r.ty == T && (isInt(T) || isPtr(T) || isFlt(T) || K(T) == Y_BOOL)) { V o = r; return o; }   // kendi turune donusum (standart izin verir)
     if (isPtr(T)) {
       if (isPtr(r.ty)) { if (castsAway(r.ty, T)) err("E_CONSTCAST", "reinterpret_cast const'i kaldiramaz"); V o = pr(T, r.reg); o.eff = r.eff; return o; }
       if (isInt(r.ty)) {

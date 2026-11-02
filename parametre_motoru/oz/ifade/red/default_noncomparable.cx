@@ -1,0 +1,2 @@
+// RED: E_DEFAULT
+struct N { int x; }; struct M { N n; auto operator<=>(const M&) const = default; }; int main() { return 0; }

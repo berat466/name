@@ -1,0 +1,2 @@
+// RED: E_LEX
+int main() { return 'ab'; }

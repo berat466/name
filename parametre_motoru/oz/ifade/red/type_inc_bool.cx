@@ -1,0 +1,3 @@
+// RED: E_TYPE
+// GPP: red
+int main() { bool b = false; b++; return b; }

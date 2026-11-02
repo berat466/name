@@ -1,0 +1,3 @@
+// RED: E_SIZEOF
+// GPP: red
+struct S; int main() { return sizeof(S); }

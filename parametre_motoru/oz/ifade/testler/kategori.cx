@@ -1,0 +1,29 @@
+// 02.033: deger kategorileri: lvalue / xvalue / prvalue (asiri yukleme secimiyle gozlenir)
+int which(int&) { return 1; } int which(const int&) { return 2; } int which(int&&) { return 3; } int which(const int&&) { return 4; }
+struct S { int v; int& ref() { return v; } int&& rref() { return static_cast<int&&>(v); } int val() { return v; } };
+S make() { S s; s.v = 7; return s; }
+int g = 3;
+int& lref() { return g; } int&& xref() { return static_cast<int&&>(g); } int prv() { return g; }
+int cat(int&) { return 1; } int cat(int&&) { return 3; }
+int main() {
+  int x = 1; const int cx = 2; int arr[2] = {5, 6}; int* p = &x; S s; s.v = 4;
+  pi(which(x)); pi(which(cx)); pi(which(5)); pi(which(x + 1)); pi(which(*p)); pi(which(arr[0])); pi(which(s.v)); pi(which(make().v));
+  pi(which(static_cast<int&&>(x))); pi(which(static_cast<const int&&>(x))); pi(which(lref())); pi(which(xref())); pi(which(prv()));
+  pi(which(s.ref())); pi(which(s.rref())); pi(which(s.val()));
+  pi(which(x = 3)); pi(which(x += 3)); pi(which(++x)); pi(which(x++)); pi(which(--x)); pi(which(x--));
+  pi(which(-x)); pi(which(!x)); pi(which(~x)); pi(which((x, x))); pi(which((x, 5)));
+  pi(which(x ? x : x)); pi(which(x ? x : 1)); pi(which(x ? 1 : 2)); pi(which(x ? cx : cx));
+  pi(which(sizeof(x))); pi(which('a')); pi(which(true)); pi(which(x == 1)); pi(which(x && 1));
+  pi(which((x))); pi(which((5)));
+  pi(which(*p = 9)); pi(which(*(p + 0))); pi(which(p[0])); pi(which(&x == p));
+  pi(which(static_cast<int>(x))); pi(which((int)x)); pi(which(int(x)));
+  int&& rr = 5; pi(which(rr)); int& lr = x; pi(which(lr)); pi(which(static_cast<int&&>(rr)));
+  const int& cr = 8; pi(which(cr));
+  pi(cat(x)); pi(cat(7)); pi(cat(x * 2)); pi(cat(arr[1])); pi(cat(make().v)); pi(cat(static_cast<int&&>(s.v)));
+  int a = 1; (a = 2) = 5; pi(a); ++(++a); pi(a); (x ? a : x) = 0; pi(a);
+  int&& r2 = x + 1; r2 = 40; pi(r2);
+  S&& sr = make(); pi(sr.v); sr.v = 1; pi(sr.v);
+  const S& csr = make(); pi(csr.v);
+  pi(&x != 0); pi(&arr[1] - &arr[0]); pi(&s.v == &s.ref());
+  return 0;
+}
