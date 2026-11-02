@@ -1,0 +1,2 @@
+// RED: E_REINTERP  -- bayt adresli isaretci void* a cevrilemez (sozcuk adresiyle karisir)
+int main() { int a = 1; unsigned char* p = reinterpret_cast<unsigned char*>(&a); void* v = reinterpret_cast<void*>(p); return v != 0; }

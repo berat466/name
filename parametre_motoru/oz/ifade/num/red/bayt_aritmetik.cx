@@ -1,2 +1,0 @@
-// RED: E_REINTERP  -- bayt gorunumu: isaretci aritmetigi
-int main() { int a[2] = {1, 2}; char* c = reinterpret_cast<char*>(a); c = c + 1; return 0; }

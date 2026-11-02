@@ -1,2 +1,0 @@
-// RED: E_REINTERP  -- bayt gorunumu: dolayli erisim
-int main() { int a = 258; unsigned char* b = reinterpret_cast<unsigned char*>(&a); return *b; }

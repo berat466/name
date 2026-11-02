@@ -1,2 +1,0 @@
-// RED: E_REINTERP  -- bayt gorunumu: char* uzerinden int dizisinin baytina indeks
-int main() { int a[2] = {1, 2}; char* c = reinterpret_cast<char*>(a); return c[4]; }

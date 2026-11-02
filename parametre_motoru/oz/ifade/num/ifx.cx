@@ -237,8 +237,8 @@ const int F_CONST = 1; const int F_VIRT = 2; const int F_NOEX = 4; const int F_D
 int fn_has(int f, int bit) { return (fn_fl[f] & bit) != 0; }
 // ============================ DEGER / UretIM ============================
 const int NEF = 8;
-struct V { long long ty; long long cat; long long reg; long long ci; long long cv; long long key; long long nl; long long vp; long long ne; long long bp; long long ek[8]; long long er[8]; };
-V mkv(long long ty, long long cat, long long reg) { V v; v.ty = ty; v.cat = cat; v.reg = reg; v.ci = 0; v.cv = 0; v.key = 0; v.nl = 0; v.vp = 0; v.ne = 0; v.bp = 0; return v; }
+struct V { long long ty; long long cat; long long reg; long long ci; long long cv; long long key; long long nl; long long vp; long long ne; long long bp; long long bks; long long bkr; long long ek[8]; long long er[8]; };
+V mkv(long long ty, long long cat, long long reg) { V v; v.ty = ty; v.cat = cat; v.reg = reg; v.ci = 0; v.cv = 0; v.key = 0; v.nl = 0; v.vp = 0; v.ne = 0; v.bp = 0; v.bks = 0; v.bkr = 0; return v; }
 V imm(long long ty, long long val) { V v = mkv(ty, 0, 0 - 1); v.ci = 1; v.cv = val; return v; }
 V novalue() { return mkv(Y_VOID, 0, 0 - 2); }
 void add_eff(V& v, long long key, long long rw) { if (key == 0) return; if (v.ne < NEF) { v.ek[v.ne] = key; v.er[v.ne] = rw; v.ne = v.ne + 1; } }
@@ -461,6 +461,10 @@ V rval(V v) {
   if (is_arr(v.ty)) { V r = v; r.ty = ptrto(te[v.ty]); r.cat = 0; return r; }
   if (v.cat == 0 || is_cls(v.ty) || is_void(v.ty)) { V r = v; r.ty = unq(v.ty); if (is_cls(v.ty) == 0) r.cat = 0; return r; }
   if (is_ld(v.ty)) { long long p = ld_load(v); V o = ld_new(p); o.ne = v.ne; int q = 0; while (q < v.ne) { o.ek[q] = v.ek[q]; o.er[q] = v.er[q]; q = q + 1; } add_eff(o, v.key, 1); return o; }
+  if (v.bks) {   // bayt gorunumu okuma: sozcuk -> (sozcuk >> 8*k) & 255, sonra 1 baytlik turun normalizasyonu
+    long long w = newreg(); e_ld(w, 0, v, 0); long long t = newreg(); ins3("sar", t, mkv(0, 0, w), mkv(0, 0, v.bkr));
+    long long m = newreg(); ins3("and", m, mkv(0, 0, t), imm(0, 255)); V rb = norm(mkv(unq(v.ty), 0, m), unq(v.ty)); rb.cat = 0; return rb;
+  }
   V r = mkv(unq(v.ty), 0, 0); r.ne = v.ne; int i = 0; while (i < v.ne) { r.ek[i] = v.ek[i]; r.er[i] = v.er[i]; i = i + 1; }
   r.reg = newreg(); e_ld(r.reg, kind_for(r.ty), v, 0); r.bp = v.bp;
   if (pun_on && is_int(r.ty) && tk[r.ty] != Y_BOOL && bits_of(r.ty) < 64) {   // bellek gorunumu: dar tamsayi her okumada kendi genisligine/isaretine normalize (ayni boyutlu reinterpret_cast turleri arasi dogru)
@@ -715,7 +719,8 @@ V to_class_value(V v, int to) {
   die("E_CONV", "sinif donusumu yok"); return v;
 }
 V bind_arg(V a, int P) {
-  if (a.bp) die("E_REINTERP", "bayt gorunumu yok: reinterpret_cast ile uyumsuz gosterimli ture cevrilmis isaretci islev argumani olamaz");
+  if (a.bp) die("E_REINTERP", "bayt adresli isaretci islev argumani olamaz (calisan islev sozcuk adresli isaretci bekler)");
+  if (is_ref(P)) no_bytelv(a);
   if (is_ref(P)) {
     int rr = tk[P] == Y_RREF; int tgt = te[P]; int tu = unq(tgt); int au = unq(a.ty); int tc = tcv[tgt];
     int direct = au == tu;
@@ -841,14 +846,21 @@ V compare(int rule, V l, V r, int t) {
   ins3t(p, d, l, r);
   return mkv(bt, 0, d);
 }
+V byte_lv(V p, V idx, int et) {   // bayt adresli isaretci (p.bp = asil nesne boyutu S): p+idx baytinin sozcuk adresi ve sozcuk icindeki kaydirma
+  et = unq(et); if (is_int(et) == 0 || tk[et] == Y_BOOL || size_of(et) != 1) die("E_REINTERP", "bayt adresli isaretci yalniz 1 baytlik tamsayi turuyle kullanilabilir");
+  long long S = p.bp; V pi_ = cast_k(mat(p), 0); V ii = cast_k(mat_k(convert_arith(idx, mkt(Y_LONG, 0 - 1, 0)), 0), 0);
+  long long p2 = newreg(); ins3("add", p2, pi_, ii); long long wd = newreg(); ins3("div", wd, mkv(0, 0, p2), imm(0, S));
+  long long ky = newreg(); ins3("mod", ky, mkv(0, 0, p2), imm(0, S)); long long sh = newreg(); ins3("shl", sh, mkv(0, 0, ky), imm(0, 3));
+  V a = cast_k(mkv(0, 0, wd), 1); V r = mkv(et, 1, a.reg); r.bks = S; r.bkr = sh; r.vp = 1; return r;
+}
+void no_bytelv(V v) { if (v.bks) die("E_REINTERP", "bayt gorunumu: bu islem (bilesik atama, ++/--, adres alma, referansa baglama) desteklenmiyor; yalniz okuma ve '=' atamasi"); }
 V ptradd(V p, V i, int neg) {
-  if (p.bp) die("E_REINTERP", "bayt gorunumu yok: reinterpret_cast ile uyumsuz gosterimli ture cevrilmis isaretcide aritmetik");
   int et = te[p.ty]; if (complete_obj(et) == 0) die("E_PTRARITH", "tamamlanmamis/void turde isaretci aritmetigi");
   i = convert_arith(rval(i), mkt(Y_LONG, 0 - 1, 0));
   long long wd = words_of(et); V off = i;
   if (wd != 1) { long long t1 = newreg(); ins3("mul", t1, mat(i), imm(i.ty, wd)); off = mkv(i.ty, 0, t1); }
   long long d = newreg(); if (neg) ins3("sub", d, mat(p), off); else ins3("add", d, mat(p), off);
-  return mkv(p.ty, 0, d);
+  V rr = mkv(p.ty, 0, d); rr.bp = p.bp; return rr;
 }
 V ord_obj(int kind, V val) { int c = find_class(intern_c(kind == 1 ? "std::strong_ordering" : kind == 2 ? "std::weak_ordering" : "std::partial_ordering")); V t = tempobj(clsty(c)); e_st(mat(val), t, 0); return t; }
 V ord_cmp_zero(const char* op, V ord) {
@@ -1047,10 +1059,10 @@ V gen_index(int n) {
   V bp = rval(b); i = rval(i);
   if (is_ptr(bp.ty) == 0 && is_ptr(i.ty)) { V x = bp; bp = i; i = x; barr = 0; }
   if (is_ptr(bp.ty) == 0) die("E_TYPE", "dizi/isaretci olmayan ifade indekslenemez");
-  if (bp.bp) die("E_REINTERP", "bayt gorunumu yok: reinterpret_cast ile uyumsuz gosterimli ture cevrilmis isaretci indekslenemez");
   if (is_int(i.ty) == 0) die("E_TYPE", "dizi indeksi tamsayi olmali");
   int et = te[bp.ty]; if (complete_obj(et) == 0) die("E_PTRARITH", "tamamlanmamis turde eleman indekslenemez");
   if (barr == 0) nullchk(bp);
+  if (bp.bp) return byte_lv(bp, i, et);
   i = convert_arith(i, mkt(Y_LONG, 0 - 1, 0));
   if (barr) {
     long long cnt = tn[b.ty];
@@ -1142,7 +1154,14 @@ V gen_assign(int n) {
       V r = Lv; merge_eff(r, R); return r;
     }
     need_modifiable(Lv);
-    if (R.bp) { if (Lv.key % 1000 == 1 && Lv.key / 1000 > 0 && Lv.key / 1000 < 60000 && is_ptr(Lv.ty)) ubp[Lv.key / 1000] = 1; else die("E_REINTERP", "bayt gorunumu yok: uyumsuz gosterimli isaretci yalniz yerel degiskene atanabilir"); }
+    if (Lv.bks) {   // bayt gorunumu yazma: sozcuk oku-degistir-yaz
+      V val = to_scalar(R, unq(Lv.ty), 0); long long w = newreg(); e_ld(w, 0, Lv, 0);
+      long long msk = newreg(); ins3("shl", msk, imm(0, 255), mkv(0, 0, Lv.bkr)); long long inv = newreg(); ins3("xor", inv, mkv(0, 0, msk), imm(0, 0 - 1));
+      long long kept = newreg(); ins3("and", kept, mkv(0, 0, w), mkv(0, 0, inv)); long long b8 = newreg(); ins3("and", b8, mat(val), imm(0, 255));
+      long long sb = newreg(); ins3("shl", sb, mkv(0, 0, b8), mkv(0, 0, Lv.bkr)); long long nw = newreg(); ins3("or", nw, mkv(0, 0, kept), mkv(0, 0, sb));
+      e_st(mkv(0, 0, nw), Lv, 0); V rr = Lv; return rr;
+    }
+    if (R.bp) { if (Lv.key % 1000 == 1 && Lv.key / 1000 > 0 && Lv.key / 1000 < 60000 && is_ptr(Lv.ty)) ubp[Lv.key / 1000] = R.bp; else die("E_REINTERP", "bayt gorunumu yok: uyumsuz gosterimli isaretci yalniz yerel degiskene atanabilir"); }
     V val = to_scalar(R, unq(Lv.ty), 0); return store(Lv, val);
   }
   settok(s); int l = 0; while (tokbuf[l]) l = l + 1; tokbuf[l - 1] = 0;
@@ -1150,7 +1169,7 @@ V gen_assign(int n) {
     V ops[2]; ops[0] = Lv; ops[1] = R; char nb[80]; int k = 0; const char* pre = "operator"; while (pre[k]) { nb[k] = pre[k]; k = k + 1; } int j = 0; while (s_off[s] + j < s_off[s] + s_len[s]) { nb[k] = chars[s_off[s] + j]; k = k + 1; j = j + 1; } nb[k] = 0;
     V u = user_op(intern_c(nb), ops, 2, 0); if (u.ty >= 0) return u; die("E_NOVIABLE", "operator bu sinif icin tanimli degil");
   }
-  need_modifiable(Lv);
+  need_modifiable(Lv); no_bytelv(Lv);
   if (is_cls(unq(R.ty))) R = unwrap_conv(R); else R = rval(R);
   V cur; if (is_ld(Lv.ty)) { cur = rval(Lv); } else { cur = mkv(unq(Lv.ty), 0, newreg()); e_ld(cur.reg, kind_for(Lv.ty), Lv, 0); merge_eff(cur, Lv); add_eff(cur, Lv.key, 1); }
   if (is_ptr(Lv.ty) && !(streq(tokbuf, "+") || streq(tokbuf, "-"))) die("E_TYPE", "isaretciye bu islec uygulanamaz");
@@ -1163,7 +1182,7 @@ V gen_incdec(int n) {
   curline = nk_line[n]; int post = nk_k[n] == N_POSTINC; int inc = seqc(nk_s1[n], "++");
   V lv = gen(kid(n, 0));
   if (is_cls(unq(lv.ty))) { V ops[2]; ops[0] = lv; int no = 1; if (post) { ops[1] = imm(mkt(Y_INT, 0 - 1, 0), 0); no = 2; } V u = user_op(inc ? N_INC : N_DEC, ops, no, 0); if (u.ty >= 0) return u; die("E_NOVIABLE", "++/-- bu sinif icin tanimli degil"); }
-  need_modifiable(lv); int t = unq(lv.ty);
+  need_modifiable(lv); no_bytelv(lv); int t = unq(lv.ty);
   if (tk[t] == Y_BOOL) die("E_TYPE", "bool uzerinde ++/-- gecersiz");
   if (is_arith(t) == 0 && is_ptr(t) == 0) die("E_TYPE", "++/-- yalniz aritmetik/isaretci");
   V old; if (is_ld(t)) old = rval(lv); else { old = mkv(t, 0, newreg()); e_ld(old.reg, kind_for(t), lv, 0); } V nv;
@@ -1181,14 +1200,15 @@ V gen_unary(int n) {
   if (seqc(s, "&")) {
     if (is_cls(unq(v.ty))) { V ops[1]; ops[0] = v; V u = user_op(N_ADDR, ops, 1, 0); if (u.ty >= 0) return u; }
     if (v.cat != 1) die("E_ADDR", "adresi alinamaz: lvalue gerekli");
+    no_bytelv(v);
     V r = mkv(ptrto(v.ty), 0, v.reg); merge_eff(r, v); return r;
   }
   if (seqc(s, "*")) {
     if (is_cls(unq(v.ty))) { V ops[1]; ops[0] = v; V u = user_op(N_DEREF, ops, 1, 0); if (u.ty >= 0) return u; v = unwrap_conv(v); }
     v = rval(v); if (is_ptr(v.ty) == 0) die("E_TYPE", "'*' isaretci gerektirir");
     if (is_void(te[v.ty])) die("E_TYPE", "void isaretcisi dolayli erisilemez");
-    if (v.bp) die("E_REINTERP", "bayt gorunumu yok: reinterpret_cast ile uyumsuz gosterimli ture cevrilmis isaretci dolayli erisilemez");
     if (n == tid_node && exc_on) nullchk_exc(v, "std::bad_typeid"); else nullchk(v);
+    if (v.bp) return byte_lv(v, imm(mkt(Y_INT, 0 - 1, 0), 0), te[v.ty]);
     V m = mat(v); V r = mkv(te[v.ty], 1, m.reg); r.vp = 1; merge_eff(r, v); return r;
   }
   if (is_cls(unq(v.ty))) {
@@ -1364,7 +1384,21 @@ V reinterpret_cast_(V v, int T) {
   V r = rval(v); T = unq(T);
   if (r.ty == T && (is_int(T) || is_ptr(T) || is_flt(T))) return r;
   if (is_ptr(T)) {
-    if (is_ptr(r.ty)) { if (casts_away(r.ty, T)) die("E_CONSTCAST", "reinterpret_cast const'i kaldiramaz"); V o = r; o.ty = T; if (view_compat(te[r.ty], te[T]) == 0) o.bp = 1; else if (size_of(unq(te[T])) > 1) o.bp = 0; return o; }
+    if (is_ptr(r.ty)) {
+      if (casts_away(r.ty, T)) die("E_CONSTCAST", "reinterpret_cast const'i kaldiramaz");
+      int se = unq(te[r.ty]); while (is_arr(se)) se = unq(te[se]); int de = unq(te[T]); while (is_arr(de)) de = unq(te[de]);
+      V o = r; o.ty = T; int one = is_int(de) && tk[de] != Y_BOOL && size_of(de) == 1;
+      if (r.bp) {   // kaynak bayt adresli (bp = asil nesne boyutu)
+        if (one) return o;
+        if ((is_int(de) || tk[de] == Y_DOUBLE) && tk[de] != Y_BOOL && size_of(de) == r.bp) { long long q = newreg(); ins3("div", q, cast_k(mat(r), 0), imm(0, r.bp)); V bk = cast_k(mkv(0, 0, q), 1); bk.ty = T; return bk; }
+        die("E_REINTERP", "bayt adresli isaretci yalniz 1 baytlik ture ya da asil nesne boyutundaki ture cevrilebilir");
+      }
+      if (view_compat(se, de)) return o;
+      if (one && (is_int(se) || tk[se] == Y_DOUBLE) && tk[se] != Y_BOOL && size_of(se) > 1) {   // nesnenin baytlarina bakis: bayt adresi = sozcuk adresi * boyut
+        long long S = size_of(se); long long q = newreg(); ins3("mul", q, cast_k(mat(r), 0), imm(0, S)); V bk = cast_k(mkv(0, 0, q), 1); bk.ty = T; bk.bp = S; return bk;
+      }
+      die("E_REINTERP", "bu isaretci donusumu icin bayt/bit gorunumu yok (yalniz tamsayi/double nesnelerin 1 baytlik turle gorunumu desteklenir)");
+    }
     if (is_int(r.ty)) {
       if (size_of(r.ty) != 8) die("E_REINTERP", "tamsayidan isaretciye yalniz 64 bit tamsayi");
       if (r.ci && r.cv == 0) { V z = imm(T, 0); return z; }
@@ -1846,7 +1880,7 @@ void declvar(int vn) {
   int off = slot(words_of(T)); V ad = slotaddr(off); int isci = 0; long long cvv = 0;
   if (tcv[T] && is_int(T) && ie >= 0 && nk_k[ie] != N_INITLIST) { int sv = may_throw; dry = dry + 1; V pc = gen(ie); dry = dry - 1; may_throw = sv; if (pc.ci) { isci = 1; cvv = fold(pc.cv, unq(T)); } }
   if (init >= 0 && nk_k[init] == N_INITLIST && style == 2 && is_sc(T) && nk_n[init] == 1) { init = kid(init, 0); style = 1; }
-  int tnt = 0; if (pun_on && is_ptr(T) && ie >= 0 && nk_k[ie] != N_INITLIST) { dry = dry + 1; V pt_ = gen(ie); dry = dry - 1; tnt = pt_.bp != 0; }
+  int tnt = 0;  if (pun_on && is_ptr(T) && ie >= 0 && nk_k[ie] != N_INITLIST) { dry = dry + 1; V pt_ = gen(ie); dry = dry - 1; tnt = pt_.bp; }
   init_obj(ad, T, init, style);
   uidn = uidn + 1; if (uidn < 60000) ubp[uidn] = tnt; uidn = uidn - 1;
   vname[nvars] = nk_s1[vn]; vty[nvars] = T; voff[nvars] = off; vref[nvars] = 0; vci[nvars] = isci; vcv[nvars] = cvv; uidn = uidn + 1; vuid[nvars] = uidn; nvars = nvars + 1;

@@ -36,7 +36,7 @@ one() {
   lim $PM run $w/p.pmb > $w/pm.out 2>/dev/null; cmp -s $w/pm.out $w/exp && pass || fail "$n: pm cikti g++'dan farkli"
   if [ "${SVM:-1}" = 1 ]; then { cat $TAB; echo "@@PROGRAM"; cat $w/p.l; echo "@@GIRDI"; } > $w/sv.in; LIMS=300 lim $PM run $R/oz/sayisal/svm.pmb < $w/sv.in > $w/svm.out 2>/dev/null; cmp -s $w/svm.out $w/exp && pass || fail "$n: svm cikti g++'dan farkli"; fi
   # onceki (C++ yolu) ile ayni davranis
-  case $n in f80_*|istisna_*|bellek_gorunum) ;; *) $PM ifade $f -o $w/c.pmb --strip > /dev/null 2>&1 && lim $PM run $w/c.pmb > $w/cpp.out 2>/dev/null; cmp -s $w/cpp.out $w/exp && pass || fail "$n: C++ yolu cikti g++'dan farkli";; esac
+  case $n in f80_*|istisna_*|bellek_gorunum|bayt_gorunum) ;; *) $PM ifade $f -o $w/c.pmb --strip > /dev/null 2>&1 && lim $PM run $w/c.pmb > $w/cpp.out 2>/dev/null; cmp -s $w/cpp.out $w/exp && pass || fail "$n: C++ yolu cikti g++'dan farkli";; esac
 }
 red() {
   f=$1; grep -q '^// IFX: kabul' $f && return; n=$(basename $f .cx); w=$T/r_$n; mkdir -p $w; exp=$(head -1 $f | sed -n 's|^// HATA: *\(.*\)$|\1|p'); code=$(head -1 $f | sed -n 's|^// RED: *\([A-Z_]*\).*|\1|p')
@@ -103,6 +103,10 @@ head -c 2000 $TAB > $T/kisa.pmk; cat $T/kisa.pmk $T/k.pmx | lim $T/ifx.elf > /de
   grep -a '^;;PMT1' $sh/p1.pma | sed 's/^;;PMT1 //' > $sh/p1.t; tv=$( { echo '@@IMZA'; cat $IMZ; echo '@@PROGRAM'; cat $sh/p1.l; echo '@@TIPLER'; cat $sh/p1.t; } | LIMS=300 lim $TIPE | head -2 | tr '\n' ' '); [ "${tv%% *}" = 1 ] && pass || fail "oz-barindirma: tipdogr ifx2'yi reddetti: $tv"
   LIMS=300 lim $BAG/gen2.elf < $sh/p1.l > $sh/ifx2.elf && chmod +x $sh/ifx2.elf && LIMS=300 lim $sh/ifx2.elf < $sh/in > $sh/p2.pma 2>/dev/null; cmp -s $sh/p1.pma $sh/p2.pma && pass || fail "oz-barindirma: sabit nokta bozuk (ifx2 cikisi PMA1'den farkli)"
 }
+# 3b) bozuk PMX1 (sayisal derleyiciye): ifx.elf asla cokmez / takilmaz; kabul ettigi her cikti asm->coz->valid + tipdogr'den gecer (sessizce gecersiz program yok)
+[ -n "$SABOTAJ" ] || for fz in testler/istisna_sinif ../testler/uyg_agac; do
+  $PM ifade $D/$fz.cx --pmx1 $T/fz.pmx > /dev/null 2>&1; r=$(python3 $D/pmx_fuzz_ifx.py $BAG $IFXE $TIPE $TAB $IMZ $T/fz.pmx 100 $T 2>&1); [ "$r" = "0" ] && pass || fail "ifx PMX1 fuzz ($fz): $r"
+done
 ok=$(cat $T/gecen 2>/dev/null | wc -l); bad=$(grep -c . $T/hatalar 2>/dev/null); bad=${bad:-0}
 [ -s $T/hatalar ] && sort $T/hatalar | head -30
 echo "ifx: $ok gecti, $bad basarisiz"; rm -rf $T; [ "$bad" = 0 ]

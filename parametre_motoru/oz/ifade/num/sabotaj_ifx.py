@@ -64,6 +64,15 @@ S = [  # kaynak mutantlari (her satir bir mutant)
  ('bellek: atama reddi', 'else die("E_REINTERP", "bayt gorunumu yok: uyumsuz gosterimli isaretci yalniz yerel degiskene atanabilir"); }', 'else { } }'),
  ('oz-barindirma: operator adi onegi', 'while (k < 8) { if (chars[s_off[nm] + k] != o[k]) return 0; k = k + 1; }', 'while (k < 8) { k = k + 1; }'),
  ('oz-barindirma: dize tablosu siniri', 'int str_node[8000];', 'int str_node[600];'),
+ ('bayt: okuma kaydirma', 'long long t = newreg(); ins3("sar", t, mkv(0, 0, w), mkv(0, 0, v.bkr));', 'long long t = newreg(); ins3("sar", t, mkv(0, 0, w), imm(0, 0));'),
+ ('bayt: okuma maskesi', 'long long m = newreg(); ins3("and", m, mkv(0, 0, t), imm(0, 255));', 'long long m = newreg(); ins3("and", m, mkv(0, 0, t), imm(0, 65535));'),
+ ('bayt: bayt indeksi', 'ins3("mod", ky, mkv(0, 0, p2), imm(0, S));', 'ins3("mod", ky, mkv(0, 0, p2), imm(0, 2));'),
+ ('bayt: yazma maskesi', 'long long inv = newreg(); ins3("xor", inv, mkv(0, 0, msk), imm(0, 0 - 1));', 'long long inv = newreg(); ins3("xor", inv, mkv(0, 0, msk), imm(0, 0));'),
+ ('bayt: geri donus bolme', 'ins3("div", q, cast_k(mat(r), 0), imm(0, r.bp))', 'ins3("add", q, cast_k(mat(r), 0), imm(0, 0))'),
+ ('bayt: taint boyutu', 'bk.ty = T; bk.bp = S; return bk;', 'bk.ty = T; bk.bp = 8; return bk;'),
+ ('bayt: referans reddi', '  if (is_ref(P)) no_bytelv(a);\n', ''),
+ ('bayt: bilesik atama reddi', '  need_modifiable(Lv); no_bytelv(Lv);\n', '  need_modifiable(Lv);\n'),
+ ('bayt: adres alma reddi', '    no_bytelv(v);\n', ''),
 ]
 def run(tab, ifxcx):
     w = tempfile.mkdtemp(prefix='sabifx'); pm = w + '/ifx.pmb'
