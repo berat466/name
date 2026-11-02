@@ -253,10 +253,14 @@ Ast pmx_decode(const vector<int64_t>& v, int& root) {
 
 // ============================== OPERATOR TABLOSU + AYRISTIRICI (02.004-011) ==============================
 // Tek kaynak: ikili operator oncelik tablosu (buyuk sayi = siki baglanir). Ayristirici bu tabloyu okur; anlam asamasi AST'deki operator dizgesini kullanir.
-struct BinOp { const char* tok; int prec; };
-const BinOp kBin[] = {{"||", 3}, {"&&", 4}, {"|", 5}, {"^", 6}, {"&", 7}, {"==", 8}, {"!=", 8}, {"<", 9}, {">", 9}, {"<=", 9}, {">=", 9}, {"<=>", 10},
-                      {"<<", 11}, {">>", 11}, {"+", 12}, {"-", 12}, {"*", 13}, {"/", 13}, {"%", 13}};
-const char* kAssignOps[] = {"=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>="};
+#include "ifade_ops_gen.h"
+struct OpRow { int cls, prec, assoc; const char* tok; };
+const OpRow kOps[] = {
+#define X(c, p, a, t) {c, p, a, t},
+  PM_IFADE_OPS(X)
+#undef X
+};
+const OpRow* opRow(int cls, const string& tok) { for (auto& r : kOps) if (r.cls == cls && tok == r.tok) return &r; return nullptr; }
 
 struct Parser {
   Ast& a; vector<Tok>& t; size_t p = 0;
@@ -366,8 +370,8 @@ struct Parser {
   }
   int assign() {
     int l = cond();
-    if (cur().k == TK_P) for (auto op : kAssignOps) if (cur().s == op) {
-      int line = cur().line; p++; int r = isP("{") ? initList() : assign();   // sag birlesimli
+    if (cur().k == TK_P && opRow(2, cur().s)) {
+      string op = cur().s; int line = cur().line; p++; int r = isP("{") ? initList() : assign();   // sag birlesimli
       int n = a.mk(N_ASSIGN, line); a[n].s = op; a[n].kid = {l, r}; return n;
     }
     return l;
@@ -380,7 +384,7 @@ struct Parser {
     }
     return c;
   }
-  int binPrec(const Tok& k) const { if (k.k != TK_P) return -1; for (auto& b : kBin) if (k.s == b.tok) return b.prec; return -1; }
+  int binPrec(const Tok& k) const { if (k.k != TK_P) return -1; const OpRow* r = opRow(1, k.s); return r ? r->prec : -1; }
   int binary(int minPrec) {
     int l = unary();
     while (true) {
@@ -400,8 +404,8 @@ struct Parser {
     int line = cur().line;
     if (cur().k == TK_P) {
       const string& s = cur().s;
-      if (s == "+" || s == "-" || s == "!" || s == "~" || s == "*" || s == "&") { string op = s; p++; int e = unary(); int n = a.mk(N_UNARY, line); a[n].s = op; a[n].kid = {e}; return n; }
-      if (s == "++" || s == "--") { string op = s; p++; int e = unary(); int n = a.mk(N_PREINC, line); a[n].s = op; a[n].kid = {e}; return n; }
+      if (opRow(3, s) && s != "++" && s != "--") { string op = s; p++; int e = unary(); int n = a.mk(N_UNARY, line); a[n].s = op; a[n].kid = {e}; return n; }
+      if (opRow(3, s) && (s == "++" || s == "--")) { string op = s; p++; int e = unary(); int n = a.mk(N_PREINC, line); a[n].s = op; a[n].kid = {e}; return n; }
       if (s == "(" && typeStartAt(p + 1)) {   // C tipi donusum
         size_t save = p; p++; int ty = fullType(); if (accept(")")) {
           if (!(isP("{"))) { int e = unary(); int n = a.mk(N_CAST, line); a[n].s = "c"; a[n].kid = {ty, e}; return n; }
@@ -475,7 +479,7 @@ struct Parser {
         size_t pos = qn.rfind("::"); if (pos != string::npos) { a[n].s = qn.substr(pos + 2); a[n].s2 = qn.substr(0, pos); } else a[n].s = qn;
         e = n;
       }
-      else if (isP("++") || isP("--")) { int n = a.mk(N_POSTINC, line); a[n].s = cur().s; a[n].kid = {e}; p++; e = n; }
+      else if (cur().k == TK_P && opRow(4, cur().s) && (cur().s == "++" || cur().s == "--")) { int n = a.mk(N_POSTINC, line); a[n].s = cur().s; a[n].kid = {e}; p++; e = n; }
       else break;
     }
     return e;
@@ -520,11 +524,18 @@ struct Parser {
     if (isP(";")) { p++; return a.mk(N_EMPTY, line); }
     if (cur().k == TK_ID) {
       const string& s = cur().s;
-      if (s == "if") { p++; expect("("); int c = expr(); expect(")"); int th = stmt(); int n = a.mk(N_IF, line); a[n].kid = {c, th}; if (acceptId("else")) a[n].kid.push_back(stmt()); return n; }
+      if (s == "if") {
+        p++; expect("("); int pre = -1, c;
+        if (declStart()) { int b = typeSpec(); int ds = varDecls(b, false); if (accept(";")) { pre = ds; c = expr(); } else { pre = ds; c = a.mk(N_ID, line); a[c].s = a[a[ds].kid.back()].s; } }
+        else { int e = expr(); if (isP(";") && false) {} c = e; if (accept(";")) { pre = a.mk(N_EXPRSTMT, line); a[pre].kid = {e}; c = expr(); } }
+        expect(")"); int th = stmt(); int n = a.mk(N_IF, line); a[n].kid = {c, th}; if (acceptId("else")) a[n].kid.push_back(stmt());
+        if (pre < 0) return n;
+        int bl = a.mk(N_BLOCK, line); a[bl].kid = {pre, n}; return bl;
+      }
       if (s == "while") { p++; expect("("); int c = expr(); expect(")"); int b = stmt(); int n = a.mk(N_WHILE, line); a[n].kid = {c, b}; return n; }
       if (s == "do") { p++; int b = stmt(); if (!acceptId("while")) fail("E_PARSE", "do ... while bekleniyordu", line); expect("("); int c = expr(); expect(")"); expect(";"); int n = a.mk(N_DO, line); a[n].kid = {b, c}; return n; }
       if (s == "for") {
-        p++; expect("("); int in = -1, c = -1, inc = -1;
+        p++; expect("("); int in = a.mk(N_NONE), c = a.mk(N_NONE), inc = a.mk(N_NONE);
         if (!isP(";")) { if (declStart()) { int b = typeSpec(); in = varDecls(b, false); } else { int e = expr(); in = a.mk(N_EXPRSTMT, line); a[in].kid = {e}; } }
         expect(";"); if (!isP(";")) c = expr(); expect(";"); if (!isP(")")) inc = expr(); expect(")");
         int body = stmt(); int n = a.mk(N_FOR, line); a[n].kid = {in, c, inc, body}; return n;
@@ -795,7 +806,7 @@ struct Sema {
       case Y_CHAR: case Y_SCHAR: d = R(); E("sext8 " + d + ", " + r); return d; case Y_UCHAR: d = R(); E("zext8 " + d + ", " + r); return d;
       case Y_SHORT: d = R(); E("sext16 " + d + ", " + r); return d; case Y_USHORT: d = R(); E("zext16 " + d + ", " + r); return d;
       case Y_INT: d = R(); E("sext32 " + d + ", " + r); return d; case Y_UINT: d = R(); E("zext32 " + d + ", " + r); return d;
-      case Y_FLOAT: d = R(); E("rnd_f32 " + d + ", " + r); return d;
+      case Y_FLOAT: d = R(); E("rnd_f32 " + d + ", " + immReg(r)); return d;
       default: return r;
     }
   }
@@ -829,9 +840,14 @@ struct Sema {
     V r = pr(to, v.reg); r.eff = v.eff;
     if (isInt(from) && isInt(to)) {
       if (v.ci) { r.ci = true; r.cval = foldNorm(v.cval, to); r.reg = num(r.cval); return r; }
-      bool needs = K(to) == Y_BOOL || bitsOf(to) < 64 ? true : false;
-      if (K(to) != Y_BOOL && bitsOf(to) >= bitsOf(from)) needs = false;   // genisleme: deger zaten dogru genislikte
-      if (K(to) != Y_BOOL && bitsOf(to) == bitsOf(from) && isSigned(to) != isSigned(from)) needs = true;
+      int fb = bitsOf(from), tb = bitsOf(to); bool fs = isSigned(from), ts = isSigned(to);
+      bool needs = K(to) == Y_BOOL || tb < 64;
+      if (K(to) != Y_BOOL) {
+        if (K(from) == Y_BOOL) needs = false;
+        else if (fs == ts && tb >= fb) needs = false;
+        else if (!fs && ts && tb > fb) needs = false;
+        else if (tb == 64) needs = false;
+      }
       if (needs) r.reg = normReg(v.reg, to);
       return r;
     }
@@ -840,8 +856,8 @@ struct Sema {
       string t = R(); E(string((K(from) == Y_ULONG || K(from) == Y_ULLONG) ? "u2f " : "i2f ") + t + ", " + v.reg); r.reg = K(to) == Y_FLOAT ? normReg(t, to) : t; return r;
     }
     if (isFlt(from) && isInt(to)) {
-      if (K(to) == Y_BOOL) { string t = R(); E("feq " + t + ", " + v.reg + ", 0.0"); string d = R(); E("eq " + d + ", " + t + ", 0"); r.reg = d; return r; }
-      string t = R(); E(string((K(to) == Y_ULONG || K(to) == Y_ULLONG) ? "f2u " : "f2i ") + t + ", " + v.reg); r.reg = bitsOf(to) < 64 ? normReg(t, to) : t; return r;
+      if (K(to) == Y_BOOL) { string t = R(); E("feq " + t + ", " + immReg(v.reg) + ", 0.0"); string d = R(); E("eq " + d + ", " + t + ", 0"); r.reg = d; return r; }
+      string t = R(); E(string((K(to) == Y_ULONG || K(to) == Y_ULLONG) ? "f2u " : "f2i ") + t + ", " + immReg(v.reg)); r.reg = bitsOf(to) < 64 ? normReg(t, to) : t; return r;
     }
     if (isFlt(from) && isFlt(to)) { if (K(to) == Y_FLOAT) r.reg = normReg(v.reg, to); return r; }
     err("E_TYPE", "sayisal donusum yok: " + tyName(from) + " -> " + tyName(to));
@@ -2081,11 +2097,11 @@ struct Sema {
         string top = NL(), cont = NL(), end = NL(); LAB(top); g->loops.push_back({end, cont}); g->scopes.emplace_back(); stmt(x.kid[0]); g->scopes.pop_back(); g->loops.pop_back();
         LAB(cont); V c = condBool(gen(x.kid[1])); E("jnz " + c.reg + ", " + top); g->nreg = base; LAB(end); break; }
       case N_FOR: {
-        g->scopes.emplace_back(); if (x.kid[0] >= 0) stmt(x.kid[0]);
+        g->scopes.emplace_back(); if (a[x.kid[0]].k != N_NONE) stmt(x.kid[0]);
         string top = NL(), cont = NL(), end = NL(); LAB(top);
-        if (x.kid[1] >= 0) { V c = condBool(gen(x.kid[1])); E("jz " + c.reg + ", " + end); g->nreg = base; }
+        if (a[x.kid[1]].k != N_NONE) { V c = condBool(gen(x.kid[1])); E("jz " + c.reg + ", " + end); g->nreg = base; }
         g->loops.push_back({end, cont}); g->scopes.emplace_back(); stmt(x.kid[3]); g->scopes.pop_back(); g->loops.pop_back();
-        LAB(cont); if (x.kid[2] >= 0) { gen(x.kid[2]); g->nreg = base; } E("jmp " + top); LAB(end); g->scopes.pop_back(); break; }
+        LAB(cont); if (a[x.kid[2]].k != N_NONE) { gen(x.kid[2]); g->nreg = base; } E("jmp " + top); LAB(end); g->scopes.pop_back(); break; }
       case N_RETURN: stmtReturn(n); g->nreg = base; break;
       case N_BREAK: if (g->loops.empty()) err("E_STMT", "'break' dongu disinda"); E("jmp " + g->loops.back().first); break;
       case N_CONTINUE: if (g->loops.empty()) err("E_STMT", "'continue' dongu disinda"); E("jmp " + g->loops.back().second); break;
@@ -2405,6 +2421,7 @@ bool slurp(const string& f, string& out) { FILE* fp = fopen(f.c_str(), "rb"); if
 
 // pm ifade kaynak.cx [--pmx1 sayilar.txt] [--pmx1-oku sayilar.txt] [--pma cikti.pma] [-o cikti.pmb] [--strip] [--ops]
 int ifade_main(int argc, char** argv) {
+  if (!strcmp(argv[2], "--ops")) { for (auto& r : kOps) printf("%d %d %d %s\n", r.cls, r.prec, r.assoc, r.tok); return 0; }   // derlenmis operator tablosu (komutlar.pmk bolum 11'den uretilen baslik)
   string file = argv[2], pmxOut, pmxIn, pmaOut, pmbOut; bool strip = false;
   for (int i = 3; i < argc; i++) {
     if (!strcmp(argv[i], "--pmx1") && i + 1 < argc) pmxOut = argv[++i]; else if (!strcmp(argv[i], "--pmx1-oku") && i + 1 < argc) pmxIn = argv[++i];

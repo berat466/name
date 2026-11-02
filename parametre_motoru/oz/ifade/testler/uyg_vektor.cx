@@ -1,0 +1,34 @@
+// bilesik uygulama: operator asiri yukleme, donusum operatorleri, <=>, UDL, uye islevler
+struct V2 { double x; double y;
+  V2 operator+(const V2& o) const { V2 r; r.x = x + o.x; r.y = y + o.y; return r; }
+  V2 operator-(const V2& o) const { V2 r; r.x = x - o.x; r.y = y - o.y; return r; }
+  V2 operator*(double k) const { V2 r; r.x = x * k; r.y = y * k; return r; }
+  V2 operator-() const { V2 r; r.x = -x; r.y = -y; return r; }
+  V2& operator+=(const V2& o) { x += o.x; y += o.y; return *this; }
+  double operator[](int i) const { return i == 0 ? x : y; }
+  bool operator==(const V2& o) const { return x == o.x && y == o.y; }
+  double dot(const V2& o) const { return x * o.x + y * o.y; }
+  explicit operator bool() const { return x != 0 || y != 0; }
+  operator double() const { return x * x + y * y; }
+};
+V2 operator*(double k, const V2& v) { return v * k; }
+struct Cnt { int n; Cnt& operator++() { ++n; return *this; } Cnt operator++(int) { Cnt old = *this; ++n; return old; } };
+struct Money { long long cents; auto operator<=>(const Money&) const = default; };
+Money operator""_usd(unsigned long long d) { Money m; m.cents = (long long)d * 100; return m; }
+Money operator""_c(unsigned long long c) { Money m; m.cents = (long long)c; return m; }
+Money operator+(Money a, Money b) { Money r; r.cents = a.cents + b.cents; return r; }
+int main() {
+  V2 a = {1.5, 2.0}, b = {0.5, -1.0};
+  V2 c = a + b; pd(c.x); pd(c.y);
+  V2 d = a - b * 2.0; pd(d.x); pd(d.y);
+  V2 e = 3.0 * a; pd(e.x); pd(e[1]);
+  V2 f = -a; pd(f.x);
+  f += a; f += a; pd(f.x); pd(f[1]);
+  pi(a == a); pi(a == b); pd(a.dot(b));
+  pi(static_cast<bool>(a)); V2 z = {0, 0}; pi(z ? 1 : 0); pi(!z);
+  pd(a); pd(a + 1.0);
+  Cnt k = {5}; pi((k++).n); pi(k.n); pi((++k).n); pi(k.n);
+  Money m = 5_usd + 25_c; pi(m.cents); pi(m > 5_usd); pi(m == 525_c); pi(m < 5_usd); pi((m <=> 6_usd) < 0);
+  Money arr[3] = {7_usd, 1_usd, 3_usd}; int mx = 0; for (int i = 1; i < 3; i++) if (arr[i] > arr[mx]) mx = i; pi(mx);
+  return 0;
+}

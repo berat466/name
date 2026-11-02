@@ -1,0 +1,20 @@
+// bilesik uygulama: karakter/dize islemleri, kacis, ham dize, isaretci aritmetigi
+int slen(const char* s) { const char* p = s; while (*p) ++p; return p - s; }
+int count(const char* s, char c) { int n = 0; for (; *s; s++) if (*s == c) n++; return n; }
+void rev(char* s) { char* e = s + slen(s) - 1; while (s < e) { char t = *s; *s++ = *e; *e-- = t; } }
+int atoi_(const char* s) { int sign = 1, v = 0; if (*s == '-') { sign = -1; s++; } while (*s >= '0' && *s <= '9') v = v * 10 + (*s++ - '0'); return sign * v; }
+void ps(const char* s) { while (*s) pc(*s++); pc(10); }
+int hash(const char* s) { unsigned h = 5381; while (*s) h = h * 33u + (unsigned char)*s++; return (int)(h & 0x7fffffff); }
+int main() {
+  ps("hello, world"); pi(slen("hello, world")); pi(count("a-b-c-d", '-'));
+  char buf[32] = "stressed"; rev(buf); ps(buf);
+  pi(atoi_("12345")); pi(atoi_("-77")); pi(atoi_("42abc"));
+  pi(hash("")); pi(hash("a")); pi(hash("parametre"));
+  ps("tab:\t|nl-esc:\\n|quote:\"|apos:'");
+  ps(R"(raw: \t \n " ' \\)");
+  const char* multi = "adjacent " "literal " R"(concat\)" "!"; ps(multi); pi(slen(multi));
+  char digits[11]; for (int i = 0; i < 10; i++) digits[i] = '0' + i; digits[10] = 0; ps(digits);
+  pi('z' - 'a' + 1); pi(digits[9] - '0'); pi((char)('A' + 2) == 'C');
+  unsigned char hi = '\xff'; pi(hi); char sg = '\xff'; pi(sg);
+  return 0;
+}
