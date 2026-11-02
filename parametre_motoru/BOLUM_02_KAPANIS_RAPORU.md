@@ -29,7 +29,7 @@ Dal: `claude/formul-avcisi` · Linux x86-64 · 2 Kasım 2026
 
 ## 4. Test sonuçları
 - Tam normal koşu `HIZLI_YENIDEN=1 oz/hizli.sh --tam --bag`: **32 paket, 0 başarısız, duvar 783 sn (13 dk 03 sn), CPU 2398 sn** (hedef ≤ 20 dk). Paketler: `ifx` 110 kontrol, `ifade` 927 kontrol, Bölüm 01 paketleri (uyum 189/189, yenile 60/0, bag, pmy2elf, komut, tip, turler …) geçti → geriye uyumluluk ve öz-barındırma korunuyor.
-- Sabotaj: `ifx` 35 mutant (15 kural-tablosu + 20 kaynak) **35 yakalandı** (69 sn); C++ referans `ifade` sabotajı SABOTAJ3. Bölüm 01 sabotaj kümeleri bu çalışmada yeniden koşulmadı.
+- Sabotaj: `ifx` 35 mutant (15 kural-tablosu + 20 kaynak) **35 yakalandı** (69 sn); C++ referans `ifade` sabotajı 58 mutant, 56 yakalandı, 2 gerekçeli denk, 0 yakalanmadı (225 sn). Bölüm 01 sabotaj kümeleri bu çalışmada yeniden koşulmadı.
 
 ## 5. Kalan zorunlu bağımlılıklar (dürüst)
 1. **Metin → PMX1** yalnız C++ ön yüzünde (`pm ifade`, isteğe bağlı uyumluluk). Sayısal metin ayrıştırıcı yok.
