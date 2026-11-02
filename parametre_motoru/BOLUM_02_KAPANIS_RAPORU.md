@@ -27,11 +27,11 @@ Her testin yolu: g++ oracle = `ifx.elf` (native) = `ifx.pmb` (pm) PMA'sı bayt-b
 | 018 | 🟢 | `testler/rtti.cx`, `typeid_ad.cx`, `istisna_sinif.cx` (`typeid(*null)` → `std::bad_typeid`) |
 | 019 021 | 🟢 | `testler/donusum_acik.cx`; reddedilenler `red/*` |
 | 020 | 🟢 | `rtti.cx`; `dynamic_cast<T&>` hatası → `std::bad_cast` yakalanır (`istisna_sinif.cx`), yakalanmazsa TRAP (`trap/exc_badcast_yakalanmaz`) |
-| 022 | 🟢 | `testler/bayt_gorunum.cx` (bayt okuma/yazma, dizi, double, short, long long, geri dönüş) + `bellek_gorunum.cx` (aynı boyutlu punlar) + 18 olumsuz test (`num/red/bayt_*`, `f32_bit_gorunum`, `bool_bit_gorunum`) |
+| 022 | 🟢 | `testler/bayt_gorunum.cx` (bayt okuma/yazma, dizi, double, short, long long, geri dönüş) + `bellek_gorunum.cx` (aynı boyutlu punlar) + 13 olumsuz test (`num/red/bayt_*`, `f32_bit_gorunum`, `bool_bit_gorunum`) |
 | 023 024 025 | 🟢 | `donusum_ortuk.cx`, `kullanici_donusum.cx`, `udl.cx`, `f80_udl.cx` |
 | 031 032 | 🟢 | `sira.cx`, `uzay.cx`, `varsayilan_karsilastirma.cx` |
 | 033 034 | 🟢 | `kategori.cx`, `oncelik.cx`, `kisa_devre.cx`, `atama.cx`, `virgul.cx`, `artir.cx`; sıralanmamış değiştirme tanılaması `red/*` |
-| İstisna (D) | 🟢 | `istisna_temel.cx` (23 satır çıktı), `istisna_sinif.cx`, 6 trap testi (`num/trap/exc_*`), 6 olumsuz test (`num/red/catch_*`, `throw_void`) |
+| İstisna (D) | 🟢 | `istisna_temel.cx`, `istisna_sinif.cx`, 6 trap testi (`num/trap/exc_*`), 6 olumsuz test (`num/red/catch_*`, `throw_void`), bozuk PMX1 fuzz |
 
 ## 4. Önceki raporda açık bırakılanların durumu
 1. Metin → PMX1 yalnız C++ ön yüzde → **değişmedi, bilinçli**: PMX1 kanonik sayısal girdi; ön yüz isteğe bağlı uyumluluk aracı (sayısal metin ayrıştırıcı yazılmadı).

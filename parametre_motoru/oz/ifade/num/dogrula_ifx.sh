@@ -21,7 +21,7 @@ $PM liste $R/oz/tip/tipdogr.pmb > $T/tip.l && $T/bag/gen2.elf < $T/tip.l > $T/ti
 export TIPE=$T/tipdogr.elf
 one() {
   f=$1; n=$(basename $f .cx); w=$T/t_$n; mkdir -p $w
-  g++ -std=c++20 -O0 -w -include $D/../oracle.h -x c++ -o $w/bin $f 2> $w/gpp.err && lim $w/bin > $w/exp || { fail "$n: g++ oracle"; return; }
+  g++ -std=c++20 -O0 -w -frounding-math -include $D/../oracle.h -x c++ -o $w/bin $f 2> $w/gpp.err && lim $w/bin > $w/exp || { fail "$n: g++ oracle"; return; }
   $PM ifade $f --pmx1 $w/x.pmx > /dev/null 2> $w/fe.err; [ -s $w/x.pmx ] || { fail "$n: on yuz (PMX1 uretimi): $(head -c 120 $w/fe.err)"; return; }   # on yuz anlam asamasi reddetse de PMX1 yazilmistir
   { cat $TAB; cat $IMZ; echo; cat $w/x.pmx; } > $w/in.txt
   lim $IFXE < $w/in.txt > $w/p_elf.pma 2> $w/ifx.err || { fail "$n: ifx.elf basarisiz: $(grep -a HATA $w/p_elf.pma | head -c 150)"; return; }
