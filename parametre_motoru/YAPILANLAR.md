@@ -109,3 +109,16 @@ Mimari [Kesin]: yeni zorunlu metin dili yok. `pm ifade kaynak.cx` bir **C++ alt 
 | **Bozuk PMX1** | ifx.elf çökmez/takılmaz; kabul ettiği çıktı asm→coz→valid→tipdogr'dan geçer | `pmx_fuzz_ifx.py` |
 | **Sabotaj** | `num/sabotaj_ifx.sh`: tablo ve kaynak mutantları (istisna, bayt görünümü, tür notu, öz-barındırma dahil) | bkz. kapanış raporu |
 **Durum:** 34/34 madde 🟢. Açık sınırlar (kapanış raporu §5; motor yeteneği bağlantı denetimi): i128/u128, f16/bf16, karmaşık, bswap motorda var ama ifade derleyicisine bağlı DEĞİL; bayt görünümü kapsamı (tamsayı/double↔1 bayt), null/terminate tuzağı derleyici üretimli (`TRAP OOB`), referans C++ ön yüz istisna/bayt görünümü üretmez. İşlev argüman sırası: C++ standardı belirsiz bırakır; soldan sağa seçilmiştir, garanti değildir.
+
+## Bölüm 03 — denetim akışı (3 Kasım 2026; DURUM: TAMAMLANDI 19/19 — ayrıntı: `BOLUM_03_KAPANIS_RAPORU.md`)
+Mimari [Kesin]: kural ve işlem anlamı sayısal parametre; kaynak düzeyi akış ifx.pmb'de (PMX1 düğümleri), motor düzeyi yeni komut yalnız tabloda (JTAB), iyileştirici sayısal program (cfgopt.pmb, ifx ile derli).
+| Konu | Ne eklendi | Kanıt |
+|---|---|---|
+| switch/case/default 03.008 | PMX1 `N_SWITCH/N_CASE/N_DEFAULT`; seyrek → ikili arama, yoğun → `jtab`; aralık (`case a ... b`), düşme, ortada default, işaretsiz/64 bit, iç içe, ilklendirici, Duff cihazı; yinelenen/çakışan/sığmayan/ters case reddi | `num/testler/ca_switch.cx`, `num/red/sw_*` |
+| Atlama tablosu 03.009 | `JTAB r,n` + `BRX` mikro-işlemi YALNIZ tabloda (OP+SEM+PRIM+x86 şablonu+OPSIG; `oz/komut/gecis/denetim_ekle.py`); C++ `anlam.h` makroları, `svm.pma` kolu, ELF şablonu (sınırlı dizin + 5 bayt ileri `jmp` merdiveni) | `cfg/akis/tablo.pma` (pm = ELF = svm), `ca_switch` yoğun switch'ler |
+| range-for / do-while 03.010–011 | `N_RANGEFOR`: dizi, çok boyutlu dizi, üye/serbest `begin/end` yineleyici sınıfı, korutin; sentetik PMX1 düğümleriyle açılır | `ca_rangefor.cx`, `ca_dongu.cx` |
+| break/continue 03.012 + liveness/scope 03.018 | tek denetim yığını; `goto`/etiket; erişilebilirlik (`E_FLOW` değer döndüren işlevin sonu), `E_JUMPINIT`, `E_GOTO`, `E_LABEL`, `E_CASE` | 30 olumsuz test |
+| desen eşleştirme 03.013 | `__match` (sabit/aralık/joker/bağlama/seçenek/koruma/yapı) | `ca_match.cx` (+`.out`) |
+| korutin 03.014 | `std::generator<T>`, `co_yield/co_await/co_return`, yığın çerçevesi, `corun` dağıtıcı | `ca_korutin.cx` (+`.out`) |
+| istisna akışı / if constexpr / kısa devre 03.015–017 | try içinden break/continue/return/goto; `if constexpr`; `cj` doğrudan koşul atlaması | `ca_istisna_akis.cx`, `ca_constexpr.cx`, `ca_kosul.cx` |
+| CFG iyileştirici 03.019 | `oz/cfg/cfgopt.pmb`: atlama zinciri, sabit dal katlama, dal tersleme, ulaşılamaz/ölü kod; tablodan çalışma anında komut özellikleri | `oz/cfg/dogrula_cfg.sh`, `sabotaj_cfg.sh` |

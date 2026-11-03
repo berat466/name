@@ -22,7 +22,7 @@ DURUM İŞARETLERİ
 🔵 Daha yeni rapora göre tamamlandı; depoda doğrula.
 ❌ Yapılmadı veya tam işlevi kanıtlanmadı.
 
-SAYIM: 41 bölüm / 1399 kontrol / 133 🟢 / 42 🔵 / 1224 ❌ (2 Kasım 2026; Bölüm 01 ve Bölüm 02 tamamlandı: 02.001–034 sayısal derleyici ifx.pmb ile doğrulandı — ayrıntı ve açık sınırlar BOLUM_02_KAPANIS_RAPORU.md; sıradaki bölüm 03, başlatılmadı; Windows ABI kapsam dışı).
+SAYIM: 41 bölüm / 1399 kontrol / 146 🟢 / 41 🔵 / 1212 ❌ (3 Kasım 2026; Bölüm 01, 02 ve 03 tamamlandı: 03.001–019 denetim akışı — ayrıntı ve sınırlar BOLUM_03_KAPANIS_RAPORU.md; sıradaki bölüm 04, başlatılmadı; Windows ABI kapsam dışı).
 
 =======================================================================
 TAM BÖLÜM TABLOSU — EKSİKSİZ
@@ -156,19 +156,19 @@ TÜM KONTROL MADDELERİ
 03.004  🟢  Koşulsuz atlama (jmp)
 03.005  🟢  Fonksiyondan dönüş
 03.006  🟢  PMY1 ile temel yapısal koşul/döngü tanımı
-03.007  🔵  Yeni GOTO komutunun yalnızca sayısal SEM tanımı ve native üretimi
-03.008  ❌  Genel switch/case/default semantiği
-03.009  ❌  Atlama tablosuyla switch optimizasyonu
-03.010  ❌  Kaynak seviyesinde range-for
-03.011  ❌  Kaynak seviyesinde do-while
-03.012  ❌  break/continue için yüksek seviyeli yapısal soyutlama
-03.013  ❌  Genel pattern matching (C++ standardında yaygın sabit özellik değil)
-03.014  ❌  Korutin askıya alma/sürdürme
-03.015  ❌  İstisna yayılımıyla denetim akışı
-03.016  ❌  Derleme zamanı koşullu ifade seçimi (if constexpr)
-03.017  ❌  Genel kısa devre kontrol akışı
-03.018  ❌  Kaynak seviyesinde zorunlu liveness/scope kuralları
-03.019  ❌  Denetim akışı grafiği (CFG) merkezli genel optimizer
+03.007  🟢  Yeni GOTO komutunun yalnızca sayısal SEM tanımı ve native üretimi
+03.008  🟢  Genel switch/case/default semantiği
+03.009  🟢  Atlama tablosuyla switch optimizasyonu
+03.010  🟢  Kaynak seviyesinde range-for
+03.011  🟢  Kaynak seviyesinde do-while
+03.012  🟢  break/continue için yüksek seviyeli yapısal soyutlama
+03.013  🟢  Genel pattern matching (C++ standardında yaygın sabit özellik değil)
+03.014  🟢  Korutin askıya alma/sürdürme
+03.015  🟢  İstisna yayılımıyla denetim akışı
+03.016  🟢  Derleme zamanı koşullu ifade seçimi (if constexpr)
+03.017  🟢  Genel kısa devre kontrol akışı
+03.018  🟢  Kaynak seviyesinde zorunlu liveness/scope kuralları
+03.019  🟢  Denetim akışı grafiği (CFG) merkezli genel optimizer
 
 04. FONKSIYONLAR VE ÇAĞRI MODELI
 ------------------------------------------------------------------------

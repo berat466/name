@@ -52,7 +52,8 @@ ELF takımı (oz/bag/*.elf) ──yenile.sh──► yeni ELF takımı   (pm'siz
 | `oz/sayisal/` | **svm**: SEM'i çalışma anında okuyup yürüten sayısal yürütücü |
 | `oz/nesne/` | **PMO1 nesneleri**, bağlayıcı/görünüm testleri, `duzenle.sh`, Python referansı (`ref/`) |
 | `oz/bag/` | pm'siz zincir: `kur.sh` (önyükleme), `yenile.sh` (kendini yeniden üretme), `*.elf` (git'e girmez), testler |
-| `oz/ifade/num/` | **sayısal PMX1 derleyicisi (Bölüm 02 ürünü):** `ifx.pmb` (kanonik, sayısal program; PMA + PMT1 tür notu üretir), `ifx.cx` (geliştirme görünümü), `ifx.sh`, `dogrula_ifx.sh`, `pmx_fuzz_ifx.py`, `sabotaj_ifx.sh`, testler (`testler/`: sınıf, RTTI, istisna, bayt görünümü, f80 …), ret (`red/`) ve tuzak (`trap/`) testleri; ret testleri; kural tablosu `komutlar.pmk` bölüm 12 |
+| `oz/cfg/` | **Bölüm 03 ürünü — CFG iyileştirici:** `cfgopt.cx` (geliştirme görünümü) → `cfgopt.pmb` (sayısal program, ifx ile derlenir), `akis/` (elle yazılmış akış PMA testleri), `dogrula_cfg.sh`, `sabotaj_cfg.sh` |
+| `oz/ifade/num/` | **sayısal PMX1 derleyicisi (Bölüm 02–03 ürünü; denetim akışı dahil):** `ifx.pmb` (kanonik, sayısal program; PMA + PMT1 tür notu üretir), `ifx.cx` (geliştirme görünümü), `ifx.sh`, `dogrula_ifx.sh`, `pmx_fuzz_ifx.py`, `sabotaj_ifx.sh`, testler (`testler/`: sınıf, RTTI, istisna, bayt görünümü, f80 …), ret (`red/`) ve tuzak (`trap/`) testleri; ret testleri; kural tablosu `komutlar.pmk` bölüm 12 |
 | `oz/ifade/` | **Bölüm 02 — C++ referans/uyumluluk ön yüzünün testleri:** `testler/*.cx` (olumlu, g++ oracle), `red/*.cx` (reddedilmesi gerekenler), `trap/*.cx` (çalışma zamanı tuzakları), rastgele UB'siz ifade üreteci, PMX1 fuzz, sabotaj. Derleyici: `src/ifade.cpp` (`pm ifade`); operatör tablosu `oz/komut/komutlar.pmk` bölüm 11 → `src/ifade_ops_gen.h` (`oz/komut/yenile_ifade.sh`) |
 | `oz/hizli.sh` | **hızlı test sistemi** (değişen dosyaya göre paketler, `--tam`) |
 | kökte `*_RAPORU.md`, `SARTNAME.md`, `YAPISAL.md` | önceki aşamaların raporları (bkz. §7) |
@@ -75,6 +76,7 @@ Hızlı çalıştırma: `oz/hizli.sh` (ilgili paketler + kritik denetimler), tam
 | komut | `oz/komut/dogrula_komut.sh` | PMK1 biçimi, kayıpsız çevirim, genişletme (yeni komutlar yalnız sayılarla) |
 | turler | `oz/komut/dogrula_turler.sh` | TYPES bölümü: tür özellikleri, limitler, LP64 ABI eşlemesi (C++ derleyici gerçekleriyle), dönüşüm kapsamı |
 | uyum | `oz/komut/dogrula_uyum.sh` | PMB1 geriye uyumluluk (komut kodu ≥ 255 kaçış kodlaması öncesi programlar bayt-bayt aynı) |
+| cfg | `oz/cfg/dogrula_cfg.sh` | CFG iyileştirici: pm = iyileştirilmiş pm = ELF = svm; valid + tipdogr; idempotent; asm/valid/gen2 iyileştirilmiş hâlleri aynı çıktı; çekirdek akış PMA testleri; sabotaj `sabotaj_cfg.sh` |
 | ifx | `oz/ifade/num/dogrula_ifx.sh` | sayısal PMX1 derleyicisi (Bölüm 02, 34/34; f80 + f128): g++ = ifx.elf/pm → asm.elf → coz.elf → valid.elf → tipdogr (PMT1) → gen2.elf ELF = pm = svm; istisna, bayt görünümü, f80, trap, bozuk PMX1 fuzz, öz-barındırma sabit noktası; kural tablosu değişikliği davranışa yansır; dürüst ret; sabotaj `sabotaj_ifx.sh` |
 | ifade | `oz/ifade/dogrula_ifade.sh` | C++ ifade/operatör/sabit ön yüzü (`pm ifade`): g++ oracle = C++ `pm` = native ELF = svm; PMX1 sayısal AST (gidiş-dönüş, bozma/fuzz); olumsuz ve tuzak testleri; operatör tablosu tutarlılığı; sabotaj `sabotaj_ifade.sh` |
 | tip | `oz/tip/dogrula_tip.sh` | program düzeyi tür sistemi (PMT1 + TYPES imzaları → tipdogr) |
