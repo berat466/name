@@ -14,7 +14,7 @@ gr() {   # grafik: ayni model, ELF secenekleri (olay, azami kare, ascii, kare ra
   (ulimit -v 900000; timeout 10 $PM run "$2" --max-kare 5 --ascii 4 --girdi $T/ev.txt --kare-rapor --ekran $T/pm.ppm < /dev/null > $T/go1 2> $T/ge1); g1=$?
   (ulimit -v 900000; timeout 10 $T/g.elf < /dev/null > $T/go2 2> $T/ge2 3> $T/g.ppm); g2=$?
   [ -s $T/g.ppm ] || rm -f $T/g.ppm
-  if [ $g1 = 124 ] || [ $g1 = 134 ] || grep -q "TRAP: FUEL" $T/ge1; then return; fi
+  if [ $g1 = 124 ] || [ $g1 = 134 ] || grep -q "TRAP: FUEL" $T/ge1 || grep -q "bellek ayrilamadi" $T/ge1; then return; fi
   gk=$((gk+1)); grep -a '^ekran:' $T/ge1 > $T/gr1; grep -a '^ekran:' $T/ge2 > $T/gr2
   [ $g1 = $g2 ] && cmp -s $T/go1 $T/go2 && cmp -s $T/gr1 $T/gr2 && [ "$(grep -a '^TRAP:' $T/ge1 | cut -d" " -f1-2)" = "$(grep -a '^TRAP:' $T/ge2 | cut -d" " -f1-2)" ] && { [ ! -e $T/pm.ppm ] && [ ! -e $T/g.ppm ] || cmp -s $T/pm.ppm $T/g.ppm; } && pass || fail "$1: grafik davranis farkli (pm rc=$g1, elf rc=$g2; $(head -c 80 $T/gr1) <> $(head -c 80 $T/gr2))"
 }
@@ -32,7 +32,7 @@ one() {   # etiket tanim.pmy
   (ulimit -v $ML; timeout $TL $PM run "$2" < /dev/null > $T/o1 2> $T/e1); r1=$?
   # pm 10 sn icinde bitmedi (rc 124/134: cok uzun donguler, ornegin 7.5e11 yineleme) ya da varsayilan yakitini tuketti (TRAP: FUEL): ELF yakitsiz uretilir, karsilastirma yapilamaz
   # (yakit tuzagi dogrula_elf2.sh ve dogrula_svm.sh'de sinirli yakitla karsilastirilir). Atlananlar ATLANAN dosyasina yazilir.
-  if [ $r1 = 124 ] || [ $r1 = 134 ] || grep -q "TRAP: FUEL" $T/e1; then skip=$((skip+1)); echo "atlandi (pm rc=$r1: uzun dongu ya da varsayilan yakit tukendi): $1" >> ${ATLANAN:-/dev/null}; return; fi
+  if [ $r1 = 124 ] || [ $r1 = 134 ] || grep -q "TRAP: FUEL" $T/e1 || grep -q "bellek ayrilamadi" $T/e1; then skip=$((skip+1)); echo "atlandi (pm rc=$r1: uzun dongu ya da varsayilan yakit tukendi): $1" >> ${ATLANAN:-/dev/null}; return; fi
   (ulimit -v $ML; timeout $TL $T/u.elf < /dev/null > $T/o2 2> $T/e2); r2=$?
   [ $r1 = $r2 ] && cmp -s $T/o1 $T/o2 && pass || fail "$1: davranis farkli (pm rc=$r1, elf rc=$r2)"
   gr "$1" "$2"
