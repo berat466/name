@@ -9,7 +9,8 @@ mkdir -p $T/bin; for c in timeout chmod rm; do ln -s $(command -v $c) $T/bin/$c;
 Z() { env -i PATH=$T/bin ./zincir.sh "$@"; }
 g++ -O2 -o $T/mut ../mutasyon.cpp || exit 1
 corp=$T/corp; mkdir -p $corp; n=0
-for f in $(find $R/tests $R/uygulamalar $R/bench -name '*.pma' -not -path '*/tests/ek/*' 2>/dev/null | sort); do   # tests/ek/ mutasyon kulliyatinin disinda (kulliyat secimi kararli kalir; bkz. BOLUM_04_KAPANIS_RAPORU.md sinirlar) for s in "" "--strip"; do $PM asm $f -o $corp/k$n.pmb $s > /dev/null 2>&1 && n=$((n+1)); done; done
+# tests/ek/ mutasyon kulliyatinin disinda tutulur (kulliyat secimi kararli kalir; bkz. BOLUM_04_KAPANIS_RAPORU.md sinirlar)
+for f in $(find $R/tests $R/uygulamalar $R/bench -name '*.pma' -not -path '*/tests/ek/*' 2>/dev/null | sort); do for s in "" "--strip"; do $PM asm $f -o $corp/k$n.pmb $s > /dev/null 2>&1 && n=$((n+1)); done; done
 for f in $(find $R/uygulamalar $R/tests -name '*.pmt' 2>/dev/null | sort); do (cd $(dirname $f) && $PM sablon $f -o $corp/k$n.pmb > /dev/null 2>&1) && n=$((n+1)); done
 for f in $(find $R/oz $R/ai_testi3 $R/ai_testi4 -name '*.pmy' 2>/dev/null | sort); do $PM yapisal $f -o $corp/k$n.pmb > /dev/null 2>&1 && n=$((n+1)); done
 # referans karar: pm yukleyicisi (decode_program) kabul eder VE uretici destekler mi (pm tabanli gen2 ile)?
