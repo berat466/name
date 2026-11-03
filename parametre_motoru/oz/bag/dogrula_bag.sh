@@ -25,7 +25,7 @@ check() { # etiket pmb
     if [ $rz = 0 ] && cmp -s $T/ref.elf $T/z.elf; then pass; acc=$((acc+1)); else fail "$1: referans uretti, zincir rc=$rz ya da ELF farkli"; return; fi
     # davranis: uretilen ELF = pm run
     (ulimit -v 700000; timeout 10 $PM run $2 < /dev/null > $T/o1 2> $T/e1); r1=$?
-    if grep -q "TRAP: FUEL" $T/e1 || [ $r1 = 124 ]; then return; fi
+    if grep -q "TRAP: FUEL" $T/e1 || grep -q "bellek ayrilamadi" $T/e1 || [ $r1 = 124 ]; then return; fi   # kaynak siniri (ulimit) nedeniyle pm bellek ayiramadi: ortam farki, davranis karsilastirmasi anlamsiz
     (ulimit -v 700000; timeout 10 $T/z.elf < /dev/null > $T/o2 2> $T/e2); r2=$?
     [ $r1 = $r2 ] && cmp -s $T/o1 $T/o2 && pass || fail "$1: davranis farkli pm rc=$r1 elf rc=$r2"
   else

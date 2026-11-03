@@ -84,12 +84,32 @@ data KIND = @KIND@
 data KBASE = @KBASE@
 data KWID = @KWID@
 data ARITY = @ARITY@
+data OPFLOW = @OPFLOW@
+data OPCALL = @OPCALL@
 data KWS = "memory\0entry\0data\0space\0func\0main\0"
 
 ; G: 0 NSRC(kullanilan) 1 SATIR 2 NTOK 3 NST 4 NFN 5 NSY 6 NCONST 7 NDATA 8 BSS 9 BELLEK 10 giris-ad-ofset 11 giris-ad-uzunluk 12 giris-satiri
 ;    13 PV(parse_int degeri) 14 NGC(genel komut sayisi) 15 NOUT 16 gecerli fonksiyon 17 ORJ_UZUNLUK(kaynak) 20 NREG 21 NLAB 22 NIR 23 NOPR 24 NLIT 25 MAXWIN
 ;    26 NARG 27 NCODE 28 FNLN 30 mkint-uzunluk 31 ASM-hata-satiri
 
+; Bolum 04: dolayli / kuyruk cagrisi TABLODAN: OPCALL 3 = calli, OPFLOW 1 + OPCALL 1 = tcall (komut kimligi sabiti kullanilmaz; eski/dondurulmus tablolarda da baglanir)
+func isxcalli(op) {
+    add a, op, OPCALL
+    ld v, a, 0
+    eqi z, v, 3
+    ret z
+}
+func isxtcall(op) {
+    add a, op, OPFLOW
+    ld f, a, 0
+    eqi z, f, 1
+    jz z, n1
+    add b, op, OPCALL
+    ld c, b, 0
+    eqi z, c, 1
+    ret z
+n1: ret 0
+}
 func err(code) {
     host putc, 72
     host putc, 65
@@ -2041,9 +2061,9 @@ st4: call m, mnid, mo, ml
     call x, err, 66
 st5: eq z, op, @OP_CALL@
     jnz z, ccall
-    eq z, op, @OP_CALLI@
+    call z, isxcalli, op
     jnz z, ccall
-    eq z, op, @OP_TCALL@
+    call z, isxtcall, op
     jnz z, ctcall
     eq z, op, @OP_HOST@
     jnz z, chost
@@ -2250,9 +2270,9 @@ q1: ge z, i, nir
     ld na, a, 0
     eq z, op, @OP_CALL@
     jnz z, qcall
-    eq z, op, @OP_CALLI@
+    call z, isxcalli, op
     jnz z, qcall
-    eq z, op, @OP_TCALL@
+    call z, isxtcall, op
     jnz z, qcall
     eq z, op, @OP_HOST@
     jnz z, qcall
@@ -2381,7 +2401,7 @@ ch3: mov ty, 5
 ch4: call x, setio, i, 0, ty, id
     add k, k, 1
     ; calli: islev indeksi yazmaci (kaynak) -- 2. giris/cikis yuvasi
-    eq z, op, @OP_CALLI@
+    call z, isxcalli, op
     jz z, chp
     ge z, k, na
     jz z, chq
@@ -2504,9 +2524,9 @@ func isrd(i, r) {
     ld cc, a, 0
     eq z, op, @OP_CALL@
     jnz z, c1
-    eq z, op, @OP_TCALL@
+    call z, isxtcall, op
     jnz z, c1
-    eq z, op, @OP_CALLI@
+    call z, isxcalli, op
     jnz z, ci1
     eq z, op, @OP_HOST@
     jnz z, h1
@@ -2576,9 +2596,9 @@ func iswr(i, r) {
     ld cc, a, 0
     eq z, op, @OP_CALL@
     jnz z, w1
-    eq z, op, @OP_CALLI@
+    call z, isxcalli, op
     jnz z, w1
-    eq z, op, @OP_TCALL@
+    call z, isxtcall, op
     jz z, w0
     ret 0
 w0: eq z, op, @OP_HOST@
@@ -2635,9 +2655,9 @@ func isstop(op) {
     jnz z, y
     eq z, op, @OP_CALL@
     jnz z, y
-    eq z, op, @OP_CALLI@
+    call z, isxcalli, op
     jnz z, y
-    eq z, op, @OP_TCALL@
+    call z, isxtcall, op
     jnz z, y
     eq z, op, @OP_HOST@
     jnz z, y
@@ -2656,9 +2676,9 @@ func countacc(i) {       ; RD/WR sayaclarini artir
     ld cc, a, 0
     eq z, op, @OP_CALL@
     jnz z, c1
-    eq z, op, @OP_CALLI@
+    call z, isxcalli, op
     jnz z, c1
-    eq z, op, @OP_TCALL@
+    call z, isxtcall, op
     jnz z, c1
     eq z, op, @OP_HOST@
     jnz z, h1
@@ -2678,13 +2698,13 @@ w1: ge z, k, cnt
     st v, a, 0
     add k, k, 1
     jmp w1
-w2: eq z, op, @OP_CALLI@
+w2: call z, isxcalli, op
     jz z, w3
     add a, cc, RD
     ld v, a, 0
     add v, v, 1
     st v, a, 0
-w3: eq z, op, @OP_TCALL@
+w3: call z, isxtcall, op
     jz z, w4
     ret 0
 w4: add a, cb, WR
@@ -3180,9 +3200,9 @@ b11: ge z, i, nir
     ld op, a, 0
     eq z, op, @OP_CALL@
     jnz z, b12
-    eq z, op, @OP_CALLI@
+    call z, isxcalli, op
     jnz z, b12
-    eq z, op, @OP_TCALL@
+    call z, isxtcall, op
     jnz z, b12
     eq z, op, @OP_HOST@
     jnz z, b12
@@ -3217,9 +3237,9 @@ e1: ge z, i, nir
     ld op, a, 0
     eq z, op, @OP_CALL@
     jnz z, ecall
-    eq z, op, @OP_CALLI@
+    call z, isxcalli, op
     jnz z, ecall
-    eq z, op, @OP_TCALL@
+    call z, isxtcall, op
     jnz z, ecall
     eq z, op, @OP_HOST@
     jnz z, ecall
@@ -3270,7 +3290,7 @@ e2b: add j, j, 1
 e3: add a, i, IOV0
     ld id, a, 0
     mov pr_, 0
-    eq z, op, @OP_CALLI@
+    call z, isxcalli, op
     jz z, e3a
     add a, i, IOT1
     ld ty, a, 0

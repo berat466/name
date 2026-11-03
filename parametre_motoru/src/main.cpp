@@ -1,5 +1,6 @@
 // pm: Parametre Motoru komut satiri.  pm asm|run|dump|stats|fuzz
 #include <cstdio>
+#include <new>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -233,6 +234,9 @@ int main(int argc, char** argv) {
     }
   } catch (const PmError& e) {
     fprintf(stderr, "HATA: %s\n", e.what());
+    return 1;
+  } catch (const std::bad_alloc&) {   // istenen program bellegi ayrilamadi (kaynak siniri): cokme (abort) degil, temiz hata
+    fprintf(stderr, "HATA: bellek ayrilamadi (programin istedigi bellek bu ortamda ayrilamiyor)\n");
     return 1;
   }
   return usage();
