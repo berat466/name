@@ -32,7 +32,7 @@ space SC 256
 space OP3 4
 space G 64
 
-data PNAMES = "rd\0im\0lk\0wr\0alu_add\0alu_sub\0alu_mul\0alu_and\0alu_or\0alu_xor\0alu_shl\0alu_shr\0alu_sar\0cmp_eq\0cmp_ne\0cmp_lt\0cmp_le\0cmp_gt\0cmp_ge\0un_neg\0un_not\0divs\0mods\0divn\0modn\0ld\0st\0br\0brz\0brnz\0call\0ret\0halt\0host\0alloc\0fadd\0fsub\0fmul\0fdiv\0fneg\0fsqrt\0feq\0flt\0fle\0i2f\0f2i\0sel\0sx8\0sx16\0sx32\0zx8\0zx16\0zx32\0cmp_ltu\0cmp_leu\0divu\0modu\0lit\0rdw\0wrw\0mulhu\0lpb\0lpe\0spld\0spst\0"
+data PNAMES = "rd\0im\0lk\0wr\0alu_add\0alu_sub\0alu_mul\0alu_and\0alu_or\0alu_xor\0alu_shl\0alu_shr\0alu_sar\0cmp_eq\0cmp_ne\0cmp_lt\0cmp_le\0cmp_gt\0cmp_ge\0un_neg\0un_not\0divs\0mods\0divn\0modn\0ld\0st\0br\0brz\0brnz\0call\0ret\0halt\0host\0alloc\0fadd\0fsub\0fmul\0fdiv\0fneg\0fsqrt\0feq\0flt\0fle\0i2f\0f2i\0sel\0sx8\0sx16\0sx32\0zx8\0zx16\0zx32\0cmp_ltu\0cmp_leu\0divu\0modu\0lit\0rdw\0wrw\0mulhu\0lpb\0lpe\0spld\0spst\0brx\0"
 data HNAMES = "putc\0puti\0putf\0getc\0present\0poll\0frame\0"
 data M_TRAP = "@@TRAP \0"
 data M_RED = "@@RED \0"
@@ -1096,12 +1096,28 @@ n_w64: ; 64 spld to,n : kazima sozcugu
     jmp a_st
 n_w65: ; 65 spst n,ti
     eqi z, pid, 65
-    jz z, d_bad
+    jz z, n_w66
     add a, f1, TS
     ld v, a, 0
     add a, f0, SC
     st v, a, 0
     jmp mloop
+n_w66: ; 66 brx ti,ti : dizin [0,n) ise ip+1+dizin, degilse ip+1+n (merdivenin ardi). Yalniz ileri atlama (yakit yok)
+    eqi z, pid, 66
+    jz z, d_bad
+    add a, f0, TS
+    ld x, a, 0
+    add a, f1, TS
+    ld o, a, 0
+    lti z, x, 0
+    jnz z, bx_d
+    ge z, x, o
+    jnz z, bx_d
+    jmp bx_g
+bx_d: mov x, o
+bx_g: addi nip, ip, 1
+    add nip, nip, x
+    jmp mdone
 d_bad: call x, red, 30
 mdone: mov ip, nip
     jmp loop

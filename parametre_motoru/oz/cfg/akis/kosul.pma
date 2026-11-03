@@ -1,0 +1,21 @@
+; 03.001 kosullu dallanma: jz / jnz, sifir ve sifir olmayan, karsilastirma sonuclari, ardisik dallar
+func main() {
+  ldi i, -3
+L: lti c, i, 0
+  jz c, P1
+  ldi v, 1
+  jmp P2
+P1: ldi v, 0
+P2: host puti, v
+  host putc, 32
+  eqi c, i, 0
+  jnz c, Z
+  host putc, 78
+  jmp N
+Z: host putc, 90
+N: host putc, 10
+  addi i, i, 1
+  lti c, i, 4
+  jnz c, L
+  halt
+}

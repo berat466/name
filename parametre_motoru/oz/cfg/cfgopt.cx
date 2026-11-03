@@ -1,0 +1,268 @@
+// cfgopt: KONTROL AKISI GRAFIGI (CFG) MERKEZLI GENEL IYILESTIRICI -- sayisal program (ifx ile derlenir; C++/Python yok).
+// Girdi (stdin, sayi akisi):  MOD  PMK1-sayilari  PMB1-liste-sayilari      MOD 0: iyilestirilmis liste -> stdout ; MOD 1: yalniz istatistik "komut_once komut_sonra islev tur"
+// Komut ozellikleri (akis turu, hedef etiket yuvasi, anlik yuvasi, saflik, ldi/mov) PMK1 tablosundan (KIND/OP/PRIM/SEM) CALISMA ANINDA turetilir: komut numarasi yok.
+// Gecisler (islev basina, degisim kalmayana dek): atlama zincirlerini kisaltma, sabit kosullu dallanma katlama (blok ici sabit yayilimi), dal tersleme (jz L; jmp M; L: -> jnz M),
+//   sonraki komuta atlamayi silme, ulasilamaz kod silme (CFG erisilebilirligi), blok ici olu yazma silme. jtab merdiveni (ardisik ileri jmp'ler) korunur.
+long long RT[1];
+int KCH[64]; int op_n[1400]; int op_k[1400 * 3]; int op_fl[1400]; int op_tg[1400]; int op_im[1400]; int op_cd[1400]; char op_pure[1400]; char op_ldi[1400]; char op_mov[1400]; char op_have[1400];
+int pcls[200]; int pn[200]; int sem_n[1400]; int sem_p[1400 * 8]; int nsemp = 0;
+int tokbuf_n = 0; char tokb[40];
+long long rdraw(int echo) {   // sayi jetonu oku (bosluklari atla); echo ise ham metni yaz; deger (tasma sarar)
+  int c = __getc(); while (c == 32 || c == 10 || c == 13 || c == 9) c = __getc();
+  int k = 0; long long v = 0; int neg = 0;
+  if (c == 45) { neg = 1; tokb[k] = c; k = k + 1; c = __getc(); }
+  while (c >= 48 && c <= 57) { tokb[k] = c; k = k + 1; v = v * 10 + (c - 48); c = __getc(); }
+  if (neg) v = 0 - v;
+  if (echo) { int i = 0; while (i < k) { __putc(tokb[i]); i = i + 1; } __putc(32); }
+  return v;
+}
+long long rd() { return rdraw(0); }
+void skip(long long n) { while (n > 0) { rd(); n = n - 1; } }
+// ---- PMK1 cozumleme: yalniz KIND(1) OP(2) PRIM(4) SEM(5) ----
+void parse_pmk() {
+  rd(); rd(); rd(); long long nb = rd(); long long b = 0;
+  while (b < nb) {
+    long long id = rd(); rd(); rd(); long long len = rd();
+    if (id == 1) { long long n = rd(); long long r = 0; while (r < n) { long long rl = rd(); long long idk = rd(); long long ch = rd(); skip(rl - 2); if (idk < 64) KCH[idk] = ch; r = r + 1; } }
+    else if (id == 2) {
+      long long n = rd(); long long r = 0;
+      while (r < n) {
+        long long rl = rd(); long long opc = rd(); long long sl = rd(); skip(sl); long long al = rd(); skip(al); long long nk = rd(); long long q = 0;
+        if (opc < 1400) { op_n[opc] = nk; op_have[opc] = 1; }
+        while (q < nk) { long long kid = rd(); if (opc < 1400 && q < 3) op_k[opc * 3 + q] = KCH[kid]; q = q + 1; }
+        long long used = 1 + 1 + sl + 1 + al + 1 + nk; skip(rl - used); r = r + 1;
+      }
+    }
+    else if (id == 4) {
+      long long n = rd(); long long r = 0;
+      while (r < n) {
+        long long rl = rd(); long long pid = rd(); long long al = rd(); char nm[40]; long long q = 0; while (q < al) { long long ch = rd(); if (q < 39) nm[q] = ch; q = q + 1; } nm[al < 39 ? al : 39] = 0;
+        int cl = 0;   // 0 saf ; 1 br ; 2 brz ; 3 brnz ; 4 call ; 5 ret ; 6 halt ; 7 brx ; 8 host ; 9 yan etkili/tuzakli
+        if (seqs(nm, "br")) cl = 1; else if (seqs(nm, "brz")) cl = 2; else if (seqs(nm, "brnz")) cl = 3; else if (seqs(nm, "call")) cl = 4; else if (seqs(nm, "ret")) cl = 5; else if (seqs(nm, "halt")) cl = 6; else if (seqs(nm, "brx")) cl = 7; else if (seqs(nm, "host")) cl = 8;
+        else if (seqs(nm, "divs") || seqs(nm, "mods") || seqs(nm, "divn") || seqs(nm, "modn") || seqs(nm, "ld") || seqs(nm, "st") || seqs(nm, "alloc") || seqs(nm, "divu") || seqs(nm, "modu") || seqs(nm, "lpb") || seqs(nm, "lpe") || seqs(nm, "spld") || seqs(nm, "spst")) cl = 9;
+        if (pid < 200) { pcls[pid] = cl; pn[pid] = al; }
+        long long nal = rd(); skip(nal); long long used = 1 + 1 + al + 1 + nal; skip(rl - used); r = r + 1;
+      }
+    }
+    else if (id == 5) {
+      long long n = rd(); long long r = 0;
+      while (r < n) {
+        long long rl = rd(); long long opc = rd(); long long nm = rd(); long long q = 0;
+        if (opc < 1400) { sem_n[opc] = nm; }
+        while (q < nm) { long long pr = rd(); skip(4); if (opc < 1400 && q < 8) sem_p[opc * 8 + q] = pr; q = q + 1; }
+        long long used = 1 + 1 + nm * 5; skip(rl - used); r = r + 1;
+      }
+    }
+    else skip(len);
+    b = b + 1;
+  }
+}
+int seqs(const char* a, const char* b) { int i = 0; while (a[i] && b[i]) { if (a[i] != b[i]) return 0; i = i + 1; } return a[i] == b[i]; }
+void classify_ops() {
+  int o = 0;
+  while (o < 1400) {
+    if (op_have[o]) {
+      int fl = 0; int q = 0; int impure = 0; int pcount = 0;
+      while (q < sem_n[o] && q < 8) { int c = pcls[sem_p[o * 8 + q]]; if (c >= 1 && c <= 8) fl = c; else if (c == 9) impure = 1; q = q + 1; }
+      if (fl == 0 && impure) fl = 9;
+      op_fl[o] = fl; op_tg[o] = 0 - 1; op_im[o] = 0 - 1; op_cd[o] = 0 - 1;
+      int k = 0; while (k < op_n[o] && k < 3) { int ch = op_k[o * 3 + k]; if (ch == 'l') op_tg[o] = k; if (ch == 'i') op_im[o] = k; if (ch == 'r' && op_cd[o] < 0) op_cd[o] = k; k = k + 1; }
+      // saf: akis/yan etki yok ; hedef yalniz dar 'd' ; ldi: [im, wr] ; mov: [rd, wr]
+      op_pure[o] = 0;
+      if (fl == 0 && op_n[o] >= 1 && op_k[o * 3] == 'd') { int ok = 1; k = 1; while (k < op_n[o] && k < 3) { int ch = op_k[o * 3 + k]; if (ch != 'r' && ch != 'f' && ch != 's' && ch != 'i' && ch != 'k') ok = 0; k = k + 1; } op_pure[o] = ok; }
+      op_ldi[o] = 0; op_mov[o] = 0;
+      if (fl == 0 && sem_n[o] == 2 && op_n[o] == 2 && op_k[o * 3] == 'd') {
+        if (op_k[o * 3 + 1] == 'i' && pn[sem_p[o * 8]] == 2 && pcls[sem_p[o * 8]] == 0) op_ldi[o] = 1;
+        if (op_k[o * 3 + 1] == 's' && pn[sem_p[o * 8]] == 2 && pcls[sem_p[o * 8]] == 0) op_mov[o] = 1;
+      }
+    }
+    o = o + 1;
+  }
+}
+// ---- islev verisi ----
+const int MAXI = 60000;
+int iop[MAXI]; long long ia[MAXI]; long long ib[MAXI]; long long ic[MAXI]; char kdel[MAXI]; char ladd[MAXI]; int tcnt[MAXI]; int nidx[MAXI + 1]; int stk[MAXI]; char reach_[MAXI];
+int ncode = 0; int fnregs = 0;
+long long getop(int i, int k) { if (k == 0) return ia[i]; if (k == 1) return ib[i]; return ic[i]; }
+void setop(int i, int k, long long v) { if (k == 0) ia[i] = v; else if (k == 1) ib[i] = v; else ic[i] = v; }
+int flow(int i) { return op_fl[iop[i]]; }
+int target(int i) { int t = op_tg[iop[i]]; if (t < 0) return 0 - 1; return getop(i, t); }
+void mark_ladders() {
+  int i = 0; while (i < ncode) { ladd[i] = 0; i = i + 1; }
+  i = 0; while (i < ncode) { if (flow(i) == 7) { int ip = op_im[iop[i]]; long long n = 0; if (ip >= 0) n = getop(i, ip); long long k = 1; while (k <= n && i + k < ncode) { ladd[i + k] = 1; k = k + 1; } } i = i + 1; }
+}
+void count_targets() {
+  int i = 0; while (i < ncode) { tcnt[i] = 0; i = i + 1; }
+  i = 0; while (i < ncode) {
+    int f = flow(i);
+    if (f == 1 || f == 2 || f == 3) { int t = target(i); if (t >= 0 && t < ncode) tcnt[t] = tcnt[t] + 1; }
+    if (f == 7) { int ip = op_im[iop[i]]; long long n = 0; if (ip >= 0) n = getop(i, ip); long long k = 1; while (k <= n + 1 && i + k < ncode) { tcnt[i + k] = tcnt[i + k] + 1; k = k + 1; } }
+    i = i + 1;
+  }
+}
+int opJMP = 0 - 1; int opBRZ = 0 - 1; int opBRNZ = 0 - 1;
+void find_ops() { int o = 0; while (o < 1400) { if (op_have[o]) { if (op_fl[o] == 1 && op_n[o] == 1 && opJMP < 0) opJMP = o; if (op_fl[o] == 2 && op_n[o] == 2 && opBRZ < 0) opBRZ = o; if (op_fl[o] == 3 && op_n[o] == 2 && opBRNZ < 0) opBRNZ = o; } o = o + 1; } }
+int pass_thread() {   // atlama zincirlerini kisalt
+  int ch = 0; int i = 0;
+  while (i < ncode) {
+    int f = flow(i);
+    if (f == 1 || f == 2 || f == 3) {
+      int t = target(i); int hop = 0; int nt = t;
+      while (nt >= 0 && nt < ncode && flow(nt) == 1 && hop < 16) { nt = target(nt); hop = hop + 1; }
+      if (nt != t && nt >= 0 && nt < ncode) {
+        if (ladd[i] && nt <= i) { }          // merdiven girdisi ileri kalmali
+        else { setop(i, op_tg[iop[i]], nt); ch = 1; }
+      }
+    }
+    i = i + 1;
+  }
+  return ch;
+}
+long long cval[2048]; char chas[2048]; int cgen[2048]; int curgen = 1;
+int pass_fold() {   // blok ici sabit yayilimi ile kosullu dal katlama
+  int ch = 0; int i = 0; curgen = curgen + 1;
+  while (i < ncode) {
+    if (tcnt[i] > 0 || ladd[i]) curgen = curgen + 1;
+    int o = iop[i]; int f = op_fl[o];
+    if ((f == 2 || f == 3) && op_cd[o] >= 0) {
+      long long r = getop(i, op_cd[o]);
+      if (r >= 0 && r < 2048 && cgen[r] == curgen) {
+        int taken = 0; if (f == 2) taken = cval[r] == 0; else taken = cval[r] != 0;
+        if (taken && opJMP >= 0) { int t = target(i); iop[i] = opJMP; ia[i] = t; ib[i] = 0; ic[i] = 0; ch = 1; }
+        else if (taken == 0) { if (ladd[i] == 0) { kdel[i] = 1; ch = 1; } }
+      }
+      curgen = curgen + 1;
+    } else if (f != 0) { curgen = curgen + 1; }
+    else {
+      int n = op_n[o];
+      if (op_ldi[o]) { long long d = ia[i]; if (d >= 0 && d < 2048) { cgen[d] = curgen; cval[d] = ib[i]; } }
+      else if (op_mov[o]) { long long d = ia[i]; long long s = ib[i]; if (d >= 0 && d < 2048) { if (s >= 0 && s < 2048 && cgen[s] == curgen) { cval[d] = cval[s]; cgen[d] = curgen; } else cgen[d] = 0; } }
+      else {
+        int k = 0; while (k < n && k < 3) { int ch2 = op_k[o * 3 + k]; if (ch2 == 'd' || ch2 == 'Q' || ch2 == 'O') { long long d = getop(i, k); int w = 1; if (ch2 == 'Q') w = 2; if (ch2 == 'O') w = 4; int z = 0; while (z < w) { if (d + z >= 0 && d + z < 2048) cgen[d + z] = 0; z = z + 1; } } k = k + 1; }
+      }
+    }
+    i = i + 1;
+  }
+  return ch;
+}
+int next_kept(int i) { int j = i + 1; while (j < ncode && kdel[j]) j = j + 1; return j; }
+int pass_layout() {   // dal tersleme + sonraki komuta atlamayi silme
+  int ch = 0; int i = 0;
+  while (i < ncode) {
+    if (kdel[i] == 0) {
+      int f = flow(i);
+      if ((f == 2 || f == 3) && i + 1 < ncode && kdel[i + 1] == 0 && flow(i + 1) == 1 && ladd[i + 1] == 0 && tcnt[i + 1] == 0 && target(i) == i + 2) {
+        int inv = opBRZ; if (f == 2) inv = opBRNZ;
+        if (inv >= 0 && op_n[inv] == op_n[iop[i]] && op_tg[inv] == op_tg[iop[i]] && op_cd[inv] == op_cd[iop[i]]) {
+          int t2 = target(i + 1); iop[i] = inv; setop(i, op_tg[inv], t2); kdel[i + 1] = 1; ch = 1;
+        }
+      }
+      if (flow(i) == 1 && ladd[i] == 0 && target(i) == next_kept(i)) { kdel[i] = 1; ch = 1; }
+    }
+    i = i + 1;
+  }
+  return ch;
+}
+int pass_unreach() {   // CFG erisilebilirligi: erisilemeyen komutlari sil
+  int i = 0; while (i < ncode) { reach_[i] = 0; i = i + 1; }
+  int sp = 0; stk[0] = 0; sp = 1; reach_[0] = 1;
+  while (sp > 0) {
+    sp = sp - 1; int u = stk[sp]; int f = flow(u);
+    int s0 = 0 - 1; int s1 = 0 - 1; int s2 = 0 - 1;
+    if (f == 5 || f == 6) { }
+    else if (f == 1) s0 = target(u);
+    else if (f == 2 || f == 3) { s0 = u + 1; s1 = target(u); }
+    else if (f == 7) {
+      int ip = op_im[iop[u]]; long long n = 0; if (ip >= 0) n = getop(u, ip); long long k = 1;
+      while (k <= n + 1) { int v = u + k; if (v < ncode && reach_[v] == 0) { reach_[v] = 1; stk[sp] = v; sp = sp + 1; } k = k + 1; }
+    }
+    else s0 = u + 1;
+    if (s0 >= 0 && s0 < ncode && reach_[s0] == 0) { reach_[s0] = 1; stk[sp] = s0; sp = sp + 1; }
+    if (s1 >= 0 && s1 < ncode && reach_[s1] == 0) { reach_[s1] = 1; stk[sp] = s1; sp = sp + 1; }
+  }
+  int ch = 0; i = 0; while (i < ncode) { if (reach_[i] == 0 && kdel[i] == 0) { kdel[i] = 1; ch = 1; } i = i + 1; }
+  return ch;
+}
+char dead_[MAXI];
+int pass_dce() {   // blok ici: ayni yazmaci okunmadan yeniden yazan saf komutun onceki yazisi olu
+  int ch = 0; int i = 0;
+  while (i < ncode) {
+    int o = iop[i];
+    if (kdel[i] == 0 && op_pure[o] && ladd[i] == 0) {
+      long long d = ia[i]; int j = i + 1; int dead = 0; int go = 1;
+      while (go && j < ncode) {
+        if (tcnt[j] > 0 || ladd[j]) { go = 0; }
+        else if (kdel[j]) { j = j + 1; }
+        else {
+          int oj = iop[j]; int fj = op_fl[oj]; int rd_ = 0; int wr_ = 0; int k = 0; int n = op_n[oj];
+          if (fj != 0) { go = 0; }   // dal/cagri/donus/host: sinir (tum yazmaclar canli varsay)
+          else {
+            while (k < n && k < 3) { int ch2 = op_k[oj * 3 + k]; long long v = getop(j, k);
+              if (ch2 == 'r' || ch2 == 'f' || ch2 == 's' || ch2 == 'q' || ch2 == 'o') { int w = 1; if (ch2 == 'q') w = 2; if (ch2 == 'o') w = 4; if (v <= d && d < v + w) rd_ = 1; }
+              if (ch2 == 'd' || ch2 == 'Q' || ch2 == 'O') { int w = 1; if (ch2 == 'Q') w = 2; if (ch2 == 'O') w = 4; if (v <= d && d < v + w) wr_ = 1; }
+              k = k + 1; }
+            if (rd_) go = 0;
+            else if (wr_) { if (op_k[oj * 3] == 'd' && ia[j] == d && op_pure[oj]) dead = 1; go = 0; }
+            j = j + 1;
+          }
+        }
+      }
+      if (dead) { kdel[i] = 1; ch = 1; }
+    }
+    i = i + 1;
+  }
+  return ch;
+}
+void compact() {
+  int kept = 0; int i = 0;
+  while (i < ncode) { nidx[i] = kept; if (kdel[i] == 0) kept = kept + 1; i = i + 1; }
+  nidx[ncode] = kept;
+  i = 0; while (i < ncode) { if (kdel[i] == 0) { int f = flow(i); if (f == 1 || f == 2 || f == 3) { int t = target(i); if (t >= 0 && t <= ncode) setop(i, op_tg[iop[i]], nidx[t]); } } i = i + 1; }
+  int w = 0; i = 0;
+  while (i < ncode) { if (kdel[i] == 0) { iop[w] = iop[i]; ia[w] = ia[i]; ib[w] = ib[i]; ic[w] = ic[i]; w = w + 1; } i = i + 1; }
+  ncode = w; i = 0; while (i < ncode) { kdel[i] = 0; i = i + 1; }
+}
+void optimize_fn() {
+  int round = 0; int go = 1;
+  while (go && round < 8) {
+    go = 0; round = round + 1;
+    mark_ladders(); count_targets();
+    if (pass_thread()) go = 1;
+    count_targets();
+    if (pass_fold()) go = 1;
+    compact(); mark_ladders(); count_targets();
+    if (pass_layout()) go = 1;
+    compact(); mark_ladders(); count_targets();
+    if (pass_unreach()) go = 1;
+    compact(); mark_ladders(); count_targets();
+    if (pass_dce()) go = 1;
+    compact();
+  }
+}
+int main() {
+  int mode = rd(); parse_pmk(); classify_ops(); find_ops();
+  long long total0 = 0; long long total1 = 0;
+  long long flag = rdraw(mode == 0); long long mem = rdraw(mode == 0); long long entry = rdraw(mode == 0);
+  if (mode == 0) __putc(10);
+  long long nc = rdraw(mode == 0); long long q = 0; while (q < nc) { rdraw(mode == 0); q = q + 1; } if (mode == 0) __putc(10);
+  long long nd = rdraw(mode == 0); q = 0; while (q < nd) { rdraw(mode == 0); q = q + 1; } if (mode == 0) __putc(10);
+  rdraw(mode == 0); if (mode == 0) __putc(10);
+  long long nf = rdraw(mode == 0); if (mode == 0) __putc(10);
+  long long f = 0;
+  while (f < nf) {
+    long long np = rd(); fnregs = rd(); long long n = rd(); if (n > MAXI) return 3;
+    ncode = n; int i = 0;
+    while (i < ncode) { int o = rd(); iop[i] = o; ia[i] = 0; ib[i] = 0; ic[i] = 0; int k = 0; while (k < op_n[o]) { setop(i, k, rd()); k = k + 1; } kdel[i] = 0; i = i + 1; }
+    total0 = total0 + n;
+    optimize_fn();
+    total1 = total1 + ncode;
+    if (mode == 0) {
+      __puti(np); __putc(32); __puti(fnregs); __putc(32); __puti(ncode); __putc(10);
+      i = 0; while (i < ncode) { int o = iop[i]; __puti(o); int k = 0; while (k < op_n[o]) { __putc(32); __puti(getop(i, k)); k = k + 1; } __putc(10); i = i + 1; }
+    }
+    f = f + 1;
+  }
+  if (mode == 0 && flag != 0) { int c = __getc(); while (c >= 0) { __putc(c); c = __getc(); } }
+  if (mode == 1) { __puti(total0); __putc(32); __puti(total1); __putc(32); __puti(nf); __putc(10); }
+  return 0;
+}

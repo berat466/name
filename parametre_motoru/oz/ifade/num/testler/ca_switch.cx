@@ -44,5 +44,7 @@ int main() {
   { int n = 10; int* t = dst; int* f = src; int cnt = (n + 3) / 4;
     switch (n % 4) { case 0: do { *t = *f; t = t + 1; f = f + 1; case 3: *t = *f; t = t + 1; f = f + 1; case 2: *t = *f; t = t + 1; f = f + 1; case 1: *t = *f; t = t + 1; f = f + 1; } while (--cnt > 0); } }
   int sum = 0; for (int i = 0; i < 10; i = i + 1) sum = sum + dst[i]; pi(sum);
+  // yogun switch (atlama tablosu) icinde geri 'continue' : tablo girdileri geri atlayan bir jmp'ye zincirlenir
+  { int n = 0; int tot = 0; while (n < 40) { n = n + 1; switch (n % 8) { case 0: tot = tot + 1; continue; case 1: tot = tot + 2; break; case 2: continue; case 3: tot = tot + 4; break; case 4: continue; case 5: tot = tot + 8; break; case 6: continue; default: tot = tot + 16; } tot = tot + 100; } pi(tot); }
   return 0;
 }

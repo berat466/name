@@ -2078,13 +2078,11 @@ void sw_bsearch(int lo, int hi, int deflab) {
   sw_bsearch(m, hi, deflab); place(left); sw_bsearch(lo, m, deflab);
 }
 int use_jtab = 0;
-void sw_table(int cnt, long long mn, long long mx, int deflab) {   // atlama tablosu: idx = c - mn ; idx > mx-mn ise default ; jtab idx, N + N adet 'jmp' merdiveni
+void sw_table(int cnt, long long mn, long long mx, int deflab) {   // atlama tablosu: idx = c - mn ; jtab idx, N (dizin disi -> merdivenin ardi = default) + N adet ileri 'jmp' merdiveni
   int T = sw_T; long long span = mx - mn + 1;
-  V idx = binop("-", sw_c, imm(T, mn)); V okc = binop("<=", idx, imm(T, span - 1));
-  // idx isaretsiz karsilastirma icin: negatif idx'i de disarida say (idx < 0 || idx > span-1)
-  V neg = binop("<", idx, imm(T, 0)); e_jcc("jnz", neg, deflab); e_jcc("jz", okc, deflab);
+  V idx = binop("-", sw_c, imm(T, mn));
   V ix = to_scalar(idx, mkt(Y_LONG, 0 - 1, 0), 0); V ixm = mat(ix); V ixc = cast_k(ixm, 0);
-  w("  "); w("jtab "); wr(ixc.reg); w(", "); wn(span); wc(10);
+  w("  jtab "); wr(ixc.reg); w(", "); wn(span); wc(10);
   long long v = mn; while (v <= mx) {
     int tgt = deflab; int j = 0; while (j < cnt) { int e = sw_ord[j]; if (v >= sw_lo[e] && v <= sw_hi[e]) tgt = sw_lab[e]; j = j + 1; }
     jmpl(tgt); v = v + 1;

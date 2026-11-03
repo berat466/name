@@ -344,7 +344,8 @@
   X(CV_U128_BF16, "cv_u128_bf16", 2, "dq") \
   X(CV_F64_I128, "cv_f64_i128", 2, "Qf") \
   X(CV_F64_U128, "cv_f64_u128", 2, "Qf") \
-  X(BSWAP128, "bswap128", 2, "Qq")
+  X(BSWAP128, "bswap128", 2, "Qq") \
+  X(JTAB, "jtab", 2, "ri")
 
 // X(ENUM, "ad", arguman_sayisi)  host islevleri
 #define PM_HOSTS(X) \

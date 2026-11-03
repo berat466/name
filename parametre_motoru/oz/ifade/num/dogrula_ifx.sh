@@ -95,6 +95,8 @@ for bt in $T/kbad*.t; do tb=$( { echo '@@IMZA'; cat $IMZ; echo '@@PROGRAM'; cat 
 [ $nb -ge 20 ] && [ $rej -ge 5 ] && pass || fail "bozuk tur notlari tipdogr tarafindan yeterince reddedilmedi ($rej/$nb)"
 # 3) bozuk tablo/PMX1: temiz hata (cokme yok)
 head -c 2000 $TAB > $T/kisa.pmk; cat $T/kisa.pmk $T/k.pmx | lim $T/ifx.elf > /dev/null 2>&1; [ $? -ne 139 ] && pass || fail "kisa tablo: cokme"
+# 3c) atlama tablosu: yogun switch jtab uretir, seyrek switch ikili arama (karsilastirma) ; her ikisi de testlerde dogrulanir
+{ cat $TAB; cat $IMZ; echo; $PM ifade $D/testler/ca_switch.cx --pmx1 /dev/stdout 2>/dev/null; } | lim $IFXE 2>/dev/null | grep -aq '^  jtab ' && pass || fail "ca_switch: yogun switch icin jtab uretilmedi"
 # 4) OZ-BARINDIRMA (sabit nokta): ifx.cx'in PMX1'i -> ifx.elf -> PMA1 -> (asm.elf coz.elf valid.elf tipdogr gen2.elf) -> ifx2.elf ; ifx2.elf ayni girdiyi derler -> PMA2 ; PMA1 == PMA2
 # (pm yok: yalniz PMX1 uretimi isteğe bagli on yuzden; derleyici kendini sayisal zincirle uretip yeniden uretebilir)
 [ -n "$SABOTAJ" ] || {

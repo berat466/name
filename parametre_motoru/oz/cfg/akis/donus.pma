@@ -1,0 +1,23 @@
+; 03.005 islevden donus: deger donduren ozyinelemeli fib, iki donus yolu
+func fib(n) {
+  lti c, n, 2
+  jz c, R
+  ret n
+R: addi a, n, -1
+  call x, fib, a
+  addi b, n, -2
+  call y, fib, b
+  add z, x, y
+  ret z
+}
+func main() {
+  ldi i, 0
+L: call r, fib, i
+  host puti, r
+  host putc, 32
+  addi i, i, 1
+  lti c, i, 12
+  jnz c, L
+  host putc, 10
+  halt
+}

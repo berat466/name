@@ -34,6 +34,7 @@ uyum|oz/komut|dogrula_uyum.sh|||25|PMB1 geriye uyumluluk: eski pm'in urettigi pr
 kayan|oz/kayan|dogrula_kayan.sh|70 5||40|genis kayan nokta f80/f128 + karmasik c64/c128/c160 (ELF = svm = C++ pm = long double/__float128/_Complex oracle; PMB1 kacis kodlamasi)
 ifade|oz/ifade|dogrula_ifade.sh|20|150|60|Bolum 02 ifade/operator/sabit on yuzu (pm ifade): g++ oracle = C++ pm = native ELF = svm; PMX1 sayisal AST; olumsuz testler; operator tablosu (PMK1 bolum 11)
 ifx|oz/ifade/num|dogrula_ifx.sh|||40|sayisal PMX1 derleyicisi ifx.pmb (kural tablosu = komutlar.pmk bolum 12): g++ = ifx.elf/pm -> asm.elf -> coz.elf -> valid.elf -> gen2.elf ELF = pm = svm; kural degisikligi tablo ile; ret testleri
+cfg|oz/cfg|dogrula_cfg.sh|||30|Bolum 03 CFG iyilestirici (cfgopt.pmb, ifx ile derlenmis sayisal program) + cekirdek akis komutlari (jz/jnz/dongu/ret/jtab): pm = ELF = svm = iyilestirilmis; arac zinciri iyilestirme esdegerligi
 tip|oz/tip|dogrula_tip.sh|||20|program duzeyi tur sistemi: PMT1 tur notu + TYPES imzalari -> tipdogr (sayisal PMA araci)
 turler|oz/komut|dogrula_turler.sh|||20|TYPES bolumu: tur ozellikleri, limitler, ABI veri modeli, bayt sirasi (C++ derleyici gercekleriyle)
 valid|oz/dogr|dogrula_valid.sh|8 8||31|PMB1 dogrulayici (guvenlik kapisi)
@@ -63,6 +64,7 @@ i128|oz/tur128|sabotaj_i128.sh
 tip|oz/tip|sabotaj_tip.sh
 ifade|oz/ifade|sabotaj_ifade.sh
 ifx|oz/ifade/num|sabotaj_ifx.sh
+cfg|oz/cfg|sabotaj_cfg.sh
 kayan|oz/kayan|sabotaj_kayan.sh
 tur|oz/elf2|sabotaj_tur.sh
 donusum|oz/elf2|sabotaj_donusum.sh
@@ -79,7 +81,7 @@ svm|oz/sayisal|sabotaj_svm.sh
 nesne|oz/nesne|sabotaj_nesne.sh
 "
 KRITIK="testler valid mikro arac"
-TUMALAN="elf2 oob yap ikili komut turler tip ifade ifx i128 uyum kayan valid asm kural grafik svm nesne gorunum elf mikro cagri tur dar donusum arac testler ondalik float"
+TUMALAN="elf2 oob yap ikili komut turler tip ifade ifx cfg i128 uyum kayan valid asm kural grafik svm nesne gorunum elf mikro cagri tur dar donusum arac testler ondalik float"
 
 # ---- degisen dosya -> alanlar
 alan_dosya() {
@@ -89,11 +91,12 @@ alan_dosya() {
     src/*|Makefile|tests/*) echo "testler ikili elf elf2 oob mikro asm kural valid yap svm komut nesne arac ondalik float grafik tur ifade ifx" ;;   # C++ cekirdek = bagimsiz referans: her sey ona karsi karsilastirilir
     oz/komut/dogrula_turler.sh|oz/komut/turler_oracle.cpp) echo "turler" ;;
     oz/tip/*) echo "tip" ;;
-    oz/ifade/num/*) echo "ifx" ;;
+    oz/cfg/*) echo "cfg" ;;
+    oz/ifade/num/*) echo "ifx cfg" ;;
     oz/ifade/*) echo "ifade" ;;
     oz/tur128/*) echo "i128" ;;
     oz/kayan/*) echo "kayan" ;;
-    oz/komut/komutlar.pmk) echo "ifade ifx komut turler tip i128 uyum kayan nesne gorunum kural mikro cagri tur dar donusum svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
+    oz/komut/komutlar.pmk) echo "ifade ifx cfg komut turler tip i128 uyum kayan nesne gorunum kural mikro cagri tur dar donusum svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
     oz/komut/*) echo "komut" ;;                                                  # tablo disi: test/belge/gecis dosyalari
     oz/arac/*.sh|oz/arac/ref/*) echo "arac" ;;
     oz/arac/komut.*) echo "arac komut turler tip nesne gorunum asm valid elf2" ;;         # komut.pmb tum sozlukleri uretir
