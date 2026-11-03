@@ -207,7 +207,7 @@ enum NK {
   // Bolum 03: denetim akisi
   N_SWITCH, N_CASE, N_DEFAULT, N_GOTO, N_LABEL, N_RANGEFOR, N_MATCH, N_ARM, N_PWILD, N_PCONST, N_PRANGE, N_PBIND, N_PALT, N_PSTRUCT, N_COYIELD, N_CORETURN, N_COAWAIT,
   // Bolum 04: islevler ve cagri modeli
-  N_TFN, N_LAMBDA, N_NAMEARG, N_VASTART, N_VAARG, N_VAEND, N_TYID, N_STATASSERT, N_ALLOCA, N_NONE
+  N_TFN, N_LAMBDA, N_NAMEARG, N_VASTART, N_VAARG, N_VAEND, N_TYID, N_STATASSERT, N_ALLOCA, N_ABICLASS, N_NONE
 };
 struct Node {
   int k = N_NONE; int64_t i = 0, j = 0; double d = 0; string s, s2; vector<int> kid; int line = 0;
@@ -243,7 +243,7 @@ void pmx_validate(const Ast& a, int root) {
   static const Arity ar[] = {{N_INT,0,0},{N_FLT,0,0},{N_CHR,0,0},{N_STR,0,0},{N_BOOL,0,0},{N_NULLPTR,0,0},{N_THIS,0,0},{N_ID,0,0},{N_UNARY,1,1},{N_BINARY,2,2},{N_ASSIGN,2,2},{N_COND,3,3},{N_COMMA,2,2},
     {N_CALL,1,-1},{N_INDEX,2,2},{N_MEMBER,1,1},{N_ARROW,1,1},{N_PREINC,1,1},{N_POSTINC,1,1},{N_SIZEOF_E,1,1},{N_SIZEOF_T,1,1},{N_ALIGNOF,1,1},{N_NOEXCEPT,1,1},{N_TYPEID_E,1,1},{N_TYPEID_T,1,1},
     {N_CAST,2,2},{N_FCAST,1,2},{N_UDL,0,-1},{N_INITLIST,0,-1},{N_TY,0,1},{N_TPTR,1,1},{N_TREF,1,1},{N_TRREF,1,1},{N_TARR,1,2},{N_BLOCK,0,-1},{N_VAR,1,2},{N_DECLS,0,-1},{N_EXPRSTMT,1,1},{N_IF,2,3},
-    {N_WHILE,2,2},{N_DO,2,2},{N_FOR,4,4},{N_RETURN,0,1},{N_BREAK,0,0},{N_CONTINUE,0,0},{N_EMPTY,0,0},{N_FUNC,2,3},{N_PARAMS,0,-1},{N_CLASS,0,-1},{N_PROG,0,-1},{N_USING,0,-1},{N_THROW,0,1},{N_TRY,2,-1},{N_CATCH,2,2},{N_SWITCH,2,2},{N_CASE,1,2},{N_DEFAULT,0,0},{N_GOTO,0,0},{N_LABEL,0,0},{N_RANGEFOR,3,3},{N_MATCH,2,-1},{N_ARM,3,3},{N_PWILD,0,0},{N_PCONST,1,1},{N_PRANGE,2,2},{N_PBIND,1,1},{N_PALT,2,-1},{N_PSTRUCT,1,-1},{N_COYIELD,1,1},{N_CORETURN,0,1},{N_COAWAIT,1,1},{N_TFN,1,-1},{N_LAMBDA,3,-1},{N_NAMEARG,0,1},{N_VASTART,2,2},{N_VAARG,2,2},{N_VAEND,1,1},{N_TYID,0,0},{N_STATASSERT,1,2},{N_ALLOCA,1,1},{N_NONE,0,0}};
+    {N_WHILE,2,2},{N_DO,2,2},{N_FOR,4,4},{N_RETURN,0,1},{N_BREAK,0,0},{N_CONTINUE,0,0},{N_EMPTY,0,0},{N_FUNC,2,3},{N_PARAMS,0,-1},{N_CLASS,0,-1},{N_PROG,0,-1},{N_USING,0,-1},{N_THROW,0,1},{N_TRY,2,-1},{N_CATCH,2,2},{N_SWITCH,2,2},{N_CASE,1,2},{N_DEFAULT,0,0},{N_GOTO,0,0},{N_LABEL,0,0},{N_RANGEFOR,3,3},{N_MATCH,2,-1},{N_ARM,3,3},{N_PWILD,0,0},{N_PCONST,1,1},{N_PRANGE,2,2},{N_PBIND,1,1},{N_PALT,2,-1},{N_PSTRUCT,1,-1},{N_COYIELD,1,1},{N_CORETURN,0,1},{N_COAWAIT,1,1},{N_TFN,1,-1},{N_LAMBDA,3,-1},{N_NAMEARG,0,1},{N_VASTART,2,2},{N_VAARG,2,2},{N_VAEND,1,1},{N_TYID,0,0},{N_STATASSERT,1,2},{N_ALLOCA,1,1},{N_ABICLASS,1,1},{N_NONE,0,0}};
   for (size_t i = 0; i < a.n.size(); i++) {
     const Node& x = a.n[i];
     if (x.k < 0 || x.k > N_NONE) fail("E_PMX", "PMX1 dugum turu gecersiz");
@@ -624,6 +624,7 @@ struct Parser {
         if (s == "nullptr") { p++; return a.mk(N_NULLPTR, line); }
         if (s == "va_start") { p++; expect("("); int ap = assign(); expect(","); int last = assign(); expect(")"); int n = a.mk(N_VASTART, line); a[n].kid = {ap, last}; return n; }
         if ((s == "alloca" || s == "__builtin_alloca") && isPk(1, "(")) { p++; expect("("); int sz = assign(); expect(")"); int n = a.mk(N_ALLOCA, line); a[n].kid = {sz}; return n; }
+        if (s == "__abi_class" && isPk(1, "(")) { p++; expect("("); int n = a.mk(N_ABICLASS, line); if (typeStart()) { a[n].kid = {fullType()}; a[n].i = 1; } else a[n].kid = {assign()}; expect(")"); return n; }   // Bolum 04.016: SysV x86-64 tur sinifi
         if (s == "va_arg") { p++; expect("("); int ap = assign(); expect(","); int ty = fullType(); expect(")"); int n = a.mk(N_VAARG, line); a[n].kid = {ap, ty}; return n; }
         if (s == "va_end") { p++; expect("("); int ap = assign(); expect(")"); int n = a.mk(N_VAEND, line); a[n].kid = {ap}; return n; }
         if (s == "this") { p++; return a.mk(N_THIS, line); }

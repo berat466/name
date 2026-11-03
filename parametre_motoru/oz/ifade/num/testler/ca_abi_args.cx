@@ -1,0 +1,29 @@
+// 04.016: parametre gecirme semantigi -- 12 parametre (yigin+yazmac), karisik tur, deger/referans, yapi degeri, donus
+struct P2 { int a, b; };
+struct M3 { double x, y, z; };
+struct Big { long v[6]; };
+struct Mix { long l; double d; };
+long sum12(int a, long b, short c, char d, unsigned e, long long f, int g, int h, int i, long j, int k, long l) { return a + b + c + d + e + f + g + h + i + j + k + l; }
+double dmix(int a, double b, float c, double d, int e, double f, double g, double h, double i, double j, double k, int l) { return a + b + c + d + e + f + g + h + i + j + k + l; }
+long structs(P2 p, M3 m, Big b, Mix x) { p.a = p.a + 1; m.x = m.x + 1.0; b.v[0] = b.v[0] + 1; x.l = x.l + 1; return p.a + p.b + (long)(m.x + m.y + m.z) + b.v[0] + b.v[5] + x.l + (long)x.d; }
+P2 retp(int a) { P2 p; p.a = a; p.b = a * 2; return p; }
+M3 retm(double a) { M3 m; m.x = a; m.y = a * 2; m.z = a * 3; return m; }
+Big retb(long a) { Big b; for (int i = 0; i < 6; i++) b.v[i] = a + i; return b; }
+Mix retx(long a) { Mix x; x.l = a; x.d = a * 0.5; return x; }
+int refs(int& r, const int& c, int* p) { r = r + 1; *p = *p + c; return r + c + *p; }
+long mixedBool(bool b, char c, signed char sc, unsigned char uc, short s, unsigned short us) { return b + c + sc + uc + s + us; }
+long long wide(long double b, long long c, double d) { return (long long)b + c + (long long)d; }
+int f13(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j, int k, int l, int m) { return a + b + c + d + e + f + g + h + i + j + k + l + m; }
+int main2() { int (*fp)(int,int,int,int,int,int,int,int,int,int,int,int,int) = f13; pi(fp(1,2,3,4,5,6,7,8,9,10,11,12,13)); pi(f13(1,1,1,1,1,1,1,1,1,1,1,1,2)); return 0; }
+int main() {
+  main2();
+  pi(sum12(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
+  pd(dmix(1, 2.5, 3.5f, 4.5, 5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12));
+  P2 p = {3, 4}; M3 m = {1.5, 2.5, 3.5}; Big b; for (int i = 0; i < 6; i++) b.v[i] = 10 + i; Mix x = {7, 2.5};
+  pi(structs(p, m, b, x)); pi(p.a); pd(m.x); pi(b.v[0]); pi(x.l);
+  P2 q = retp(21); pi(q.a); pi(q.b); M3 r = retm(1.25); pd(r.x + r.y + r.z); Big s = retb(100); pi(s.v[0] + s.v[5]); Mix t = retx(9); pi(t.l); pd(t.d);
+  int v = 5, w = 7, z = 1; pi(refs(v, 3, &w)); pi(v); pi(w);
+  pi(mixedBool(true, 'a', -5, 200, -300, 60000));
+  pi(wide(2.75L, 1000, 3.5));
+  return 0;
+}

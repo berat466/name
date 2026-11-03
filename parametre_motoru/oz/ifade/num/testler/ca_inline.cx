@@ -11,10 +11,10 @@ int x = 100;
 inline int useg(int a) { return a + x; }
 int nonin(int a) { return a * 2; }
 int main() {
-  int a = 7; int x2 = 3;
+  int a = 7; int x = 3;
   pi(sq(a)); pi(add3(1, 2, 3)); pd(half(5.0)); pi(mix(2, 10)); pi(fact(5)); pi(twice(21));
   pi(deref(&a)); pi(clamp(15, 0, 10)); pi(clamp(-5, 0, 10)); pi(clamp(5, 0, 10)); pi(tob(300));
-  pi(sq(sq(3))); pi(sq(a++)); pi(a); pi(useg(1)); pi(sq(x2) + sq(a));
+  pi(sq(sq(3))); pi(sq(a++)); pi(a); pi(useg(1)); pi(sq(x) + sq(a));
   int (*fp)(int) = sq; pi(fp(9));
   pi(nonin(sq(4)));
   return 0;
