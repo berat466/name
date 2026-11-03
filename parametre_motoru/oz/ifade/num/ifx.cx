@@ -775,6 +775,8 @@ int resolve(int* cands, int nc, V* self, V* args, int na) {
 int may_throw = 0; int tiname_used = 0;
 int exc_on = 0; int pun_on = 0; char ubp[60000];   // programda try var: cagri sonrasi bekleyen istisna denetimi + yazilimsal yayilim (yoksa throw dogrudan terminate=TRAP)
 V callfn(int fi, V* self, V* args, int na, int allowvirt);
+V gen_coawait_use(int n);
+int has_co(int n);
 int inline_cand(int fi, V* self, int allowvirt);
 V inline_expand(int fi, V* ops, int n);
 void exc_check();
@@ -925,6 +927,29 @@ V callfn(int fi, V* self, V* args, int na, int allowvirt) {
       int pf = fn_bi[fi] == 6; long long p = ld_load(ops[0]); long long lo = newreg(); long long hi = newreg(); setk(lo, 1); setk(hi, 1);
       w("  "); wrt(nmw(NM_LO80, pf)); w(" "); wr(lo); w(", "); wr(p); w("\n  "); wrt(nmw(NM_HI80, pf)); w(" "); wr(hi); w(", "); wr(p); wc(10);
       emit_host("puti", mkv(0, 0, lo)); long long sp = e_movi(0, 32); emit_host("putc", mkv(0, 0, sp)); emit_host("puti", mkv(0, 0, hi)); long long nl_ = e_movi(0, 10); emit_host("putc", mkv(0, 0, nl_)); return novalue();
+    }
+    if (fn_bi[fi] >= 10) {   // Bolum 04.033: korutin tutamaci ic islevleri
+      corun_used = 1;
+      if (fn_bi[fi] == 15) { e_sti(1, mkv(0, 0, FPID), 3); return novalue(); }   // son askiya alma isareti: done() dogru olur
+      V f = cast_k(mat_k(ops[0], 1), 1);
+      int okn = newlab(); e_jcc("jnz", f, okn); trapnow(); wl(okn); w(":\n");   // bos tutamac tuzagi
+      if (fn_bi[fi] == 13) { long long r13 = e_addi(f, 8); return mkv(ptrto(mkt(Y_VOID, 0 - 1, 0)), 0, r13); }
+      if (fn_bi[fi] == 14) { long long r14 = e_addi(f, 0 - 8); return mkv(ptrto(mkt(Y_VOID, 0 - 1, 0)), 0, r14); }
+      long long st = newreg(); e_ld(st, 0, f, 0);
+      if (fn_bi[fi] == 11) {
+        long long d1 = newreg(); ins3("lt", d1, mkv(0, 0, st), imm(0, 0)); long long fl = newreg(); e_ld(fl, 0, f, 3);
+        long long d2 = newreg(); ins3("ne", d2, mkv(0, 0, fl), imm(0, 0));
+        V orv = binop("|", mkv(bool_t(), 0, d1), mkv(bool_t(), 0, d2)); return to_scalar(orv, bool_t(), 0);
+      }
+      if (fn_bi[fi] == 12) {   // destroy: iki kez yok etme tuzaktir
+        long long t2 = newreg(); ins3("eq", t2, mkv(0, 0, st), imm(0, 0 - 2)); int ok2 = newlab(); e_jcc("jz", mkv(0, 0, t2), ok2); trapnow(); wl(ok2); w(":\n");
+        e_sti(0 - 2, f, 0); return novalue();
+      }
+      // resume: bitmis / yok edilmis / son askiya alma noktasindaki korutini surdurmek tuzaktir
+      long long lt0 = newreg(); ins3("lt", lt0, mkv(0, 0, st), imm(0, 0)); int ok3 = newlab(); e_jcc("jz", mkv(0, 0, lt0), ok3); trapnow(); wl(ok3); w(":\n");
+      long long fl2 = newreg(); e_ld(fl2, 0, f, 3); int ok4 = newlab(); e_jcc("jz", mkv(0, 0, fl2), ok4); trapnow(); wl(ok4); w(":\n");
+      long long rr = newreg(); setk(rr, 0); w("  call "); wr(rr); w(", corun, "); wr(f.reg); wc(10); note_win(1); may_throw = 1; if (exc_on) exc_check();
+      return novalue();
     }
     V a0 = mat(ops[0]);
     if (fn_bi[fi] == 1) emit_host("puti", a0); if (fn_bi[fi] == 2) emit_host("putc", a0); if (fn_bi[fi] == 3) emit_host("putf", a0);
@@ -1957,9 +1982,10 @@ V gen_call(int n) {
         if (isnext) { long long c2 = newreg(); ins3("eq", c2, mkv(0, 0, r), imm(0, 2)); e_jcc("jnz", mkv(0, 0, c2), top); }
         long long d = newreg(); ins3("ne", d, mkv(0, 0, r), imm(0, 0)); V b = mkv(bool_t(), 0, d); merge_eff(b, o); return b;
       }
+      if (seqc(nk_s1[cn], "destroy")) { e_sti(0 - 2, mkv(0, 0, fr), 0); V dv = novalue(); merge_eff(dv, o); return dv; }   // yok edilen uretec bitmis sayilir (done() dogru, next() 0)
       if (seqc(nk_s1[cn], "value")) { long long v = newreg(); e_ld(v, kind_for(T), mkv(0, 0, fr), 1); V r = mkv(T, 0, v); merge_eff(r, o); return r; }
       if (seqc(nk_s1[cn], "done")) { long long st = newreg(); e_ld(st, 0, mkv(0, 0, fr), 0); long long d = newreg(); ins3("lt", d, mkv(0, 0, st), imm(0, 0)); V b = mkv(bool_t(), 0, d); merge_eff(b, o); return b; }
-      die("E_UNDECL", "std::generator yalniz next()/value()/done() destekler");
+      die("E_UNDECL", "std::generator yalniz next()/value()/done()/resume()/destroy() destekler");
     }
     if (cl_bi[ocls] == 4) {
       if (seqc(nk_s1[cn], "name") == 0 || nk_n[n] != 1) die("E_UNDECL", "std::type_info yalniz name() destekler");
@@ -2460,6 +2486,7 @@ V gen(int n) {
   if (k == N_LAMBDA) return gen_lambda(n);
   if (k == N_VASTART) return gen_vastart(n);
   if (k == N_ALLOCA) return emit_alloca(gen(kid(n, 0)));
+  if (k == N_COAWAIT) return gen_coawait_use(n);
   if (k == N_VAARG) return gen_vaarg(n);
   if (k == N_VAEND) { gen(kid(n, 0)); return novalue(); }
   if (k == N_CALL) return gen_call(n);
@@ -3095,6 +3122,7 @@ void stmt(int n) {
   int k = nk_k[n]; int base = nreg; curline = nk_line[n];
   if (k == N_EMPTY) return;
   if (k == N_BLOCK) { int mark = nvars; int sl = scope_lo; scope_lo = nvars; int i = 0; while (i < nk_n[n]) { stmt(kid(n, i)); i = i + 1; } nvars = mark; scope_lo = sl; return; }
+  if (co_mode && (k == N_DECLS || k == N_EXPRSTMT)) { nhoist = 0; hoist_co(n); nreg = base; }
   if (k == N_DECLS) { int i = 0; while (i < nk_n[n]) { declvar(kid(n, i)); nreg = base; i = i + 1; } return; }
   if (k == N_EXPRSTMT) { gen(kid(n, 0)); nreg = base; return; }
   if (k == N_IF) {
@@ -3160,12 +3188,75 @@ void stmt(int n) {
   }
   die("E_INTERNAL", "deyim bekleniyordu");
 }
+int co_pure_lv(int e) { int k = nk_k[e]; if (k == N_ID) return 1; if (k == N_MEMBER || k == N_ARROW) return co_pure_lv(kid(e, 0)); return 0; }
+// co_await: oznel awaiter protokolu (await_ready / await_suspend(tutamac) / await_resume) -- awaiter nesnesi cerceve yuvasinda tutulur (askida kalir)
+V gen_coawait_core(int n) {
+  if (co_mode == 0) die("E_COROUTINE", "co_await yalniz korutin icinde kullanilabilir");
+  curline = nk_line[n];
+  V a = gen(kid(n, 0));
+  if (is_cls(unq(a.ty)) == 0 || cl_bi[tcl[unq(a.ty)]] != 0) {   // yerlesik tur: duz askiya alma (std::generator korutini), sonuc yok
+    co_k = co_k + 1; e_sti(co_k, mkv(0, 0, FPID), 0); long long two = e_movi(0, 2); w("  ret "); wr(two); wc(10); place(co_lab0 + co_k - 1); reach = 1; return novalue();
+  }
+  int T = unq(a.ty); int ci = tcl[T];
+  methods_named(ci, intern_c("await_ready")); if (nmeth_cand == 0) die("E_COROUTINE", "awaiter await_ready() tanimlamali"); int m_ready = meth_cand[0];
+  methods_named(ci, intern_c("await_suspend")); if (nmeth_cand == 0) die("E_COROUTINE", "awaiter await_suspend() tanimlamali"); int m_susp = meth_cand[0];
+  methods_named(ci, intern_c("await_resume")); if (nmeth_cand == 0) die("E_COROUTINE", "awaiter await_resume() tanimlamali"); int m_res = meth_cand[0];
+  if (fn_np[m_susp] != 1) die("E_COROUTINE", "await_suspend(std::coroutine_handle<>) tek parametre almali");
+  int lv = a.cat == 1 && co_pure_lv(kid(n, 0));   // sol deger awaiter: nesnenin kendisi kullanilir (askidan donuste ifade yeniden degerlendirilir); aksi halde cerceve yuvasina kopyalanir
+  int off = 0; V sa = a;
+  if (lv == 0) { off = slot(cl_words[ci]); sa = slotaddr(off); V c = to_mem_value(a, T); V dst = mkv(T, 1, sa.reg); copy_n(dst, c, 0, cl_words[ci]); }
+  V self = mkv(T, 1, sa.reg); self.vp = 1;
+  V rd = callfn(m_ready, &self, 0, 0, 0); rd = to_scalar(rval(rd), bool_t(), 0);
+  int Lready = newlab(); e_jcc("jnz", rd, Lready);
+  co_k = co_k + 1; int kk = co_k; e_sti(kk, mkv(0, 0, FPID), 0);
+  int P0 = fn_pt[m_susp * 8]; if (is_cls(unq(P0)) == 0) die("E_COROUTINE", "await_suspend parametresi tutamac sinifi olmali");
+  V hv = tempobj(unq(P0)); e_st(mkv(0, 0, FPID), mkv(0, 0, hv.reg), 0);
+  V hargs[1]; hargs[0] = hv;
+  int rt = fn_ret[m_susp]; V sr = callfn(m_susp, &self, hargs, 1, 0);
+  if (is_void(rt) == 0 && is_cls(unq(rt)) == 0) { V sb = to_scalar(rval(sr), bool_t(), 0); e_jcc("jz", sb, Lready); }   // bool: false -> askiya alma, devam
+  else if (is_cls(unq(rt))) {   // simetrik aktarim: donen tutamac ayni anda devam ettirilir
+    long long hf = newreg(); e_ld(hf, 1, mkv(0, 0, sr.reg), 0); int skip = newlab(); e_jcc("jz", mkv(0, 0, hf), skip);
+    long long rr = newreg(); setk(rr, 0); w("  call "); wr(rr); w(", corun, "); wr(hf); wc(10); note_win(1); may_throw = 1; if (exc_on) exc_check(); place(skip);
+  }
+  long long two = e_movi(0, 2); w("  ret "); wr(two); wc(10);
+  place(co_lab0 + kk - 1); place(Lready); reach = 1;
+  V self2; if (lv) { V a2 = gen(kid(n, 0)); self2 = mkv(T, 1, a2.reg); self2.vp = 1; } else { V sa2 = slotaddr(off); self2 = mkv(T, 1, sa2.reg); self2.vp = 1; }
+  return callfn(m_res, &self2, 0, 0, 0);
+}
+// deyim/bildirim icindeki co_await'leri degerlendirme sirasiyla onceden yapar; sonuc gizli yerel degiskene konur (askidan donuste yazmac gecerli olmaz)
+void hoist_co(int n) {
+  int i = 0; if (nk_k[n] == N_LAMBDA) return;
+  while (i < nk_n[n]) { hoist_co(kid(n, i)); i = i + 1; }
+  if (nk_k[n] == N_COAWAIT && co_mode) {
+    if (nhoist >= 64) die("E_SINIR", "cok fazla co_await ifadesi");
+    V r = gen_coawait_core(n); int nm = nameU("__co", n);
+    hoist_node[nhoist] = n; hoist_void[nhoist] = is_void(r.ty); nhoist = nhoist + 1;
+    if (is_void(r.ty) == 0) {
+      if (is_sc(unq(r.ty)) == 0 || words_of(unq(r.ty)) != 1 || is_ld(unq(r.ty))) die("E_COROUTINE", "co_await sonucu tek sozcuklu skaler olmali");
+      int T = unq(r.ty); r = rval(r); int off = slot(1); e_st(mat(r), slotaddr(off), 0);
+      vname[nvars] = nm; vty[nvars] = T; voff[nvars] = off; vref[nvars] = 0; vci[nvars] = 0; vuid[nvars] = 0; nvars = nvars + 1;
+    }
+  }
+}
+V gen_coawait_use(int n) {   // ifade icinde co_await: onceden yapilmis olmali
+  int i = 0; while (i < nhoist) { if (hoist_node[i] == n) { if (hoist_void[i]) return novalue(); return var_ref(findvar(nameU("__co", n))); } i = i + 1; }
+  die("E_COROUTINE", "co_await ifadesi yalniz ifade deyimi ya da bildirim ilklendiricisi icinde kullanilabilir"); return novalue();
+}
 void gen_coro(int n) {
-  int k = nk_k[n]; if (co_mode == 0) die("E_COROUTINE", "korutin yalniz std::generator donduren islevlerde kullanilir");
+  int k = nk_k[n]; if (co_mode == 0) die("E_COROUTINE", "korutin yalniz std::generator ya da promise_type'li sinif donduren islevlerde kullanilir");
+  if (fn_co[co_cur] == 2) {   // promise'li korutin
+    if (k == N_CORETURN) {
+      if (nk_n[n] > 0) { int c0 = kid(n, 0); stmt(exprstmt(pro_call("return_value", 1, c0))); }
+      else if (has_pro_method(co_cur, "return_void")) stmt(exprstmt(pro_call("return_void", 0, 0)));
+      stmt(mk0(N_GOTO, 0, N_COFINAL)); reach = 0; return;
+    }
+    if (k == N_COYIELD) { int aw = mk1(N_COAWAIT, 0, 0 - 1, pro_call("yield_value", 1, kid(n, 0))); gen_coawait_core(aw); return; }
+    gen_coawait_core(n); return;
+  }
   if (k == N_CORETURN) { if (nk_n[n] > 0) die("E_COROUTINE", "std::generator korutininde co_return deger tasiyamaz"); emit_ret(imm(0, 0)); reach = 0; return; }
   int T = co_elem(co_cur);
   if (k == N_COYIELD) { V v = to_scalar(gen(kid(n, 0)), T, 0); e_st(mat(v), mkv(0, 0, FPID), 1); }
-  else { gen(kid(n, 0)); }
+  else { gen_coawait_core(n); return; }
   co_k = co_k + 1; e_sti(co_k, mkv(0, 0, FPID), 0); long long one = e_movi(0, k == N_COYIELD ? 1 : 2); w("  ret "); wr(one); wc(10); place(co_lab0 + co_k - 1); reach = 1;
 }
 // ============================ VARSAYILAN KARSILASTIRMA (= default) ============================
@@ -3227,6 +3318,36 @@ void default_body(int fi) {
 int fn_body_node(int fi) { int fnode = fn_node[fi]; if (nk_n[fnode] > 2) return kid(fnode, 2); return 0 - 1; }
 int has_co(int n) { int k = nk_k[n]; if (k == N_COYIELD || k == N_COAWAIT || k == N_CORETURN) return 1; int i = 0; while (i < nk_n[n]) { if (has_co(kid(n, i))) return 1; i = i + 1; } return 0; }
 int count_co(int n) { int k = nk_k[n]; int c = 0; if (k == N_COYIELD || k == N_COAWAIT) c = 1; int i = 0; while (i < nk_n[n]) { c = c + count_co(kid(n, i)); i = i + 1; } return c; }
+int fn_pc[1700]; int co_wrapn[1700]; int co_fw[1700]; int co_creator = 0; int N_PROMISE = 0; int N_COFINAL = 0;
+int hoist_node[64]; int hoist_void[64]; int nhoist = 0;
+int intern_cat(int sid, const char* suf) { int k = 0; int i = 0; while (i < s_len[sid] && k < 200) { tmpb[k] = chars[s_off[sid] + i]; k = k + 1; i = i + 1; } int j = 0; while (suf[j] && k < 220) { tmpb[k] = suf[j]; k = k + 1; j = j + 1; } tmpb[k] = 0; return intern_n(tmpb, k); }
+int pro_call(const char* meth, int narg, int a0) {   // __promise.meth(a0)
+  int idn = mk0(N_ID, 0, N_PROMISE); int mem = mk1(N_MEMBER, 0, intern_c(meth), idn);
+  int ca[2]; ca[0] = mem; ca[1] = a0; return mkn(N_CALL, 0, 0 - 1, curline, narg + 1, ca);
+}
+int has_pro_method(int fi, const char* meth) { methods_named(fn_pc[fi], intern_c(meth)); return nmeth_cand > 0; }
+int exprstmt(int e) { return mk1(N_EXPRSTMT, 0, 0 - 1, e); }
+// promise'li korutin govdesi (Bolum 04.033):  { co_await promise.initial_suspend(); try { govde; promise.return_void(); } catch (...) { promise.unhandled_exception(); }  __cofinal: __co_mark(); co_await promise.final_suspend(); }
+int co_wrap_body(int fi) {
+  if (co_wrapn[fi] > 0) return co_wrapn[fi] - 1;
+  curline = nk_line[fn_node[fi]]; int body = kid(fn_node[fi], 2);
+  int init = exprstmt(mk1(N_COAWAIT, 0, 0 - 1, pro_call("initial_suspend", 0, 0)));
+  int inner[2]; int ni = 1; inner[0] = body;
+  if (has_pro_method(fi, "return_void")) { inner[1] = exprstmt(pro_call("return_void", 0, 0)); ni = 2; }
+  int tb = mkn(N_BLOCK, 0, 0 - 1, curline, ni, inner);
+  int mid = tb;
+  if (has_pro_method(fi, "unhandled_exception")) {
+    int cb[1]; cb[0] = exprstmt(pro_call("unhandled_exception", 0, 0)); int cblk = mkn(N_BLOCK, 0, 0 - 1, curline, 1, cb);
+    int cc[2]; cc[0] = mk0(N_NONE, 0, 0 - 1); cc[1] = cblk; int ct = mkn(N_CATCH, 0, 0 - 1, curline, 2, cc);
+    int tk_[2]; tk_[0] = tb; tk_[1] = ct; mid = mkn(N_TRY, 0, 0 - 1, curline, 2, tk_);
+  }
+  int mark = exprstmt(mk1(N_CALL, 0, 0 - 1, mk0(N_ID, 0, intern_c("__co_mark"))));
+  int fin = exprstmt(mk1(N_COAWAIT, 0, 0 - 1, pro_call("final_suspend", 0, 0)));
+  int st[5]; st[0] = init; st[1] = mid; st[2] = mk0(N_LABEL, 0, N_COFINAL); st[3] = mark; st[4] = fin;
+  int w = mkn(N_BLOCK, 0, 0 - 1, curline, 5, st); co_wrapn[fi] = w + 1; return w;
+}
+int co_body_node(int fi) { if (fn_co[fi] == 2) return co_wrap_body(fi); return kid(fn_node[fi], 2); }
+int co_total(int fi) { return count_co(co_body_node(fi)); }
 int co_elem(int fi) { return mkt(cl_gen[tcl[unq(fn_ret[fi])]], 0 - 1, 0); }
 void emit_co_creator(int fi, int frame) {   // korutin yaratici: cerceve ayirir (alloc), durum/govde kimligi/parametreleri cerceveye yazar, tutamagi sret'e koyar
   int np = fn_np[fi]; int i = 0;
@@ -3235,6 +3356,21 @@ void emit_co_creator(int fi, int frame) {   // korutin yaratici: cerceve ayirir 
   w("  mov nI, "); wn(frame < 3 ? 3 : frame); w("\n  alloc fU, nI\n  mov zI, 0\n  st zI, fU, 0\n  mov cI, "); wn(fi + 1); w("\n  st cI, fU, 2\n");
   i = 0; while (i < np) { w("  st p"); wn(i + 1); w(", fU, "); wn(3 + i); wc(10); i = i + 1; }
   w("  st fU, p0, 0\n  ret fU\n}\n"); pm_add(0); pm_add(1); pm_add(0); pm_add(0); pm_end();
+}
+// promise'li korutin yaratici (Bolum 04.033): cerceve ayir, basliklari/parametreleri yaz, promise'i ilkle, get_return_object() sonucunu dondur, ilk adimi (initial_suspend'e kadar) calistir
+void co_creator_body(int fi) {
+  int pc = fn_pc[fi]; int np = fn_np[fi]; int rt = fn_ret[fi]; int pw = cl_words[pc]; if (pw < 1) pw = 1; int params = kid(fn_node[fi], 1);
+  int fw = co_fw[fi]; if (fw < 12) fw = 12;
+  long long nw = e_movi(0, fw); long long fr = newreg(); setk(fr, 1); w("  alloc "); wr(fr); w(", "); wr(nw); wc(10);
+  V frv = mkv(0, 0, fr);
+  e_sti(0, frv, 0); e_sti(fi + 1, frv, 2); e_sti(0, frv, 3);
+  int i = 0; while (i < np) { int vi = findvar(nk_s1[kid(params, i)]); V pv = rval(var_ref(vi)); e_st(mat(pv), frv, 8 + pw + i); i = i + 1; }
+  long long pa = e_addi(frv, 8); init_obj(mkv(0, 1, pa), clsty(pc), 0 - 1, 0);
+  methods_named(pc, intern_c("get_return_object")); if (nmeth_cand == 0) die("E_COROUTINE", "promise_type::get_return_object() yok"); int gm = meth_cand[0];
+  V self = mkv(clsty(pc), 1, pa); self.vp = 1;
+  V ro = callfn(gm, &self, 0, 0, 0);
+  int svi = findvar(N_SRET); V sp = rval(var_ref(svi)); V c = to_class_value(ro, unq(rt)); copy_obj(sp, c, tcl[unq(rt)], 1);
+  corun_used = 1; long long rr = newreg(); setk(rr, 0); w("  call "); wr(rr); w(", corun, "); wr(fr); wc(10); note_win(1); may_throw = 1; if (exc_on) exc_check();
 }
 int body_pass(int fi, int real, int frame) {
   int fnode = fn_node[fi]; int params = kid(fnode, 1);
@@ -3248,8 +3384,8 @@ int body_pass(int fi, int real, int frame) {
   { int hc = 0; if (nk_n[fnode] > 2) hc = has_co(kid(fnode, 2));
     if (hc && fn_co[fi] == 0) die("E_COROUTINE", "co_yield/co_await/co_return yalniz std::generator donduren islevde kullanilabilir");
     if (fn_co[fi] && hc == 0) die("E_COROUTINE", "std::generator donduren islev en az bir co_yield/co_await/co_return icermeli");
-    if (fn_co[fi]) { if (fn_cls[fi] >= 0 || np != nk_n[params]) die("E_COROUTINE", "uye korutin desteklenmiyor");
-      co_mode = 1; sret = 0; total = 1; foff = 3; co_k = 0; co_cur = fi; cur_ret_kind = 0; int nco = count_co(kid(fnode, 2)); co_lab0 = nlab; int q = 0; while (q < nco) { newlab(); q = q + 1; } corun_used = 1; } }
+    if (fn_co[fi] && (fn_co[fi] == 1 || co_creator == 0)) { if (fn_cls[fi] >= 0 || np != nk_n[params]) die("E_COROUTINE", "uye korutin desteklenmiyor");
+      co_mode = 1; sret = 0; total = 1; foff = fn_co[fi] == 2 ? 8 : 3; co_k = 0; co_cur = fi; cur_ret_kind = 0; int nco = co_total(fi); co_lab0 = nlab; int q = 0; while (q < nco) { newlab(); q = q + 1; } corun_used = 1; } }
   if (real && co_mode) {
     w("func fc"); wn(fi); w("(p0) {\n"); pm_begin(kt_ty[0]); pm_add(1); fn_prologue(0);
     w("  mov fp, p0\n");
@@ -3270,6 +3406,7 @@ int body_pass(int fi, int real, int frame) {
     int ct = clsty(fn_cls[fi]); if (fn_has(fi, F_CONST)) ct = withc(ct, 1);
     vname[nvars] = N_THISV; vty[nvars] = ptrto(ct); voff[nvars] = off; vref[nvars] = 0; vci[nvars] = 0; vuid[nvars] = 0; nvars = nvars + 1;
   }
+  if (co_mode && fn_co[fi] == 2) { int pw = cl_words[fn_pc[fi]]; if (pw < 1) pw = 1; vname[nvars] = N_PROMISE; vty[nvars] = clsty(fn_pc[fi]); voff[nvars] = 8; vref[nvars] = 0; vci[nvars] = 0; vuid[nvars] = 0; nvars = nvars + 1; foff = 8 + pw; }
   int i = 0;
   while (i < np) {
     int pt = fn_pt[fi * 8 + i]; int off = slot(1); int nm = 0 - 1; if (nk_n[params] > i) nm = nk_s1[kid(params, i)];
@@ -3288,14 +3425,16 @@ int body_pass(int fi, int real, int frame) {
   if (co_mode) {   // durum dagitimi: -1 bitti -> 0 ; k -> k. devam noktasi
     long long st = newreg(); e_ld(st, 0, mkv(0, 0, FPID), 0); long long cng = newreg(); ins3("lt", cng, mkv(0, 0, st), imm(0, 0)); int go = newlab(); e_jcc("jz", mkv(0, 0, cng), go);
     { long long z0 = e_movi(0, 0); w("  ret "); wr(z0); wc(10); } place(go);
-    int q = 0; int nco = count_co(kid(fnode, 2)); while (q < nco) { long long ck = newreg(); ins3("eq", ck, mkv(0, 0, st), imm(0, q + 1)); e_jcc("jnz", mkv(0, 0, ck), co_lab0 + q); q = q + 1; }
+    int q = 0; int nco = co_total(fi); while (q < nco) { long long ck = newreg(); ins3("eq", ck, mkv(0, 0, st), imm(0, q + 1)); e_jcc("jnz", mkv(0, 0, ck), co_lab0 + q); q = q + 1; }
   }
-  if (fn_has(fi, F_DEFAULT)) default_body(fi);
+  if (co_creator && fn_co[fi] == 2) co_creator_body(fi);
+  else if (fn_has(fi, F_DEFAULT)) default_body(fi);
+  else if (co_mode && fn_co[fi] == 2) stmt(co_wrap_body(fi));
   else stmt(fn_body_node(fi));
-  goto_end(); curline = nk_line[fnode];
+  goto_end(); curline = nk_line[fnode]; if (co_creator) reach = 0;
   if (co_mode == 0 && reach && is_void(rt) == 0 && is_main_fn(fi) == 0 && fn_has(fi, F_DEFAULT) == 0) die("E_FLOW", "deger donduren islevin sonuna kontrol ulasabilir (return eksik)");
   emit_ret(imm(0, 0)); if (real) { w("}\n"); pm_end(); }
-  if (real && co_mode) emit_co_creator(fi, frame);
+  if (real && co_mode && fn_co[fi] == 1) emit_co_creator(fi, frame);
   int used = foff; co_mode = 0; if (used < 1) used = 1;
   if (real == 0) { nlab = saved_lab; ndat = saved_dat; nstrn = saved_s; }
   return used;
@@ -3308,12 +3447,18 @@ int declare_func(int node, int cls) {
   fn_name[f] = nk_s1[node]; fn_cls[f] = cls; fn_node[f] = node; fn_fl[f] = nk_i[node]; fn_bi[f] = 0; fn_vroot[f] = 0 - 1; fn_used[f] = 0; fn_line[f] = nk_line[node];
   int params = kid(node, 1); int np = nk_n[params]; if (np > 8) die("E_SINIR", "cok fazla parametre"); fn_np[f] = np; fn_va[f] = nk_j[params];
   fn_ret[f] = typeof_(kid(node, 0)); fn_co[f] = 0; if (is_cls(unq(fn_ret[f])) && cl_bi[tcl[unq(fn_ret[f])]] == 5) fn_co[f] = 1;
+  fn_pc[f] = 0 - 1;
+  if (fn_co[f] == 0 && cls < 0 && is_ref(fn_ret[f]) == 0 && is_cls(unq(fn_ret[f])) && cl_bi[tcl[unq(fn_ret[f])]] == 0 && nk_n[node] > 2 && has_co(kid(node, 2))) {   // Bolum 04.033: sinif::promise_type'li korutin
+    int pc = find_class(intern_cat(cl_name[tcl[unq(fn_ret[f])]], "::promise_type"));
+    if (pc < 0) die("E_COROUTINE", "korutin donus sinifinin promise_type ic sinifi yok");
+    fn_co[f] = 2; fn_pc[f] = pc;
+  }
   int i = 0;
   while (i < np) {
     int pt = typeof_(kid(kid(params, i), 0)); if (is_arr(pt)) pt = ptrto(te[pt]);
     if (is_void(pt)) die("E_TYPE", "void parametre");
     if (is_ref(pt) == 0) pt = unq(pt);
-    fn_pt[f * 8 + i] = pt; i = i + 1;
+    fn_pt[f * 8 + i] = pt; if (fn_co[f] == 2 && (is_ref(pt) || is_mem(unq(pt)) || words_of(unq(pt)) != 1)) die("E_COROUTINE", "promise'li korutin parametreleri tek sozcuklu degerler olmali"); i = i + 1;
   }
   { fn_ndef[f] = 0; int seen = 0; int q = 0; while (q < np) { int pn_ = kid(params, q); int dn = 0 - 1; if (nk_n[pn_] > 1) dn = kid(pn_, 1); fn_pdef[f * 8 + q] = dn; if (dn >= 0) { seen = 1; fn_ndef[f] = fn_ndef[f] + 1; } else if (seen) die("E_DEFAULT", "varsayilan argumandan sonra varsayilansiz parametre"); q = q + 1; } }
   if (fn_name[f] == N_CONV && np != 0) die("E_OP", "donusum islecinin parametresi olamaz");
@@ -3350,6 +3495,7 @@ int declare_func(int node, int cls) {
       m = m + 1;
     }
   }
+  if (seqc(fn_name[f], "__co_resume")) fn_bi[f] = 10; if (seqc(fn_name[f], "__co_done")) fn_bi[f] = 11; if (seqc(fn_name[f], "__co_destroy")) fn_bi[f] = 12; if (seqc(fn_name[f], "__co_promise")) fn_bi[f] = 13; if (seqc(fn_name[f], "__co_frame")) fn_bi[f] = 14; if (seqc(fn_name[f], "__co_mark")) fn_bi[f] = 15;
   if (seqc(fn_name[f], "__puti")) fn_bi[f] = 1; if (seqc(fn_name[f], "__putc")) fn_bi[f] = 2; if (seqc(fn_name[f], "__putf")) fn_bi[f] = 3; if (seqc(fn_name[f], "__getc")) fn_bi[f] = 4; if (seqc(fn_name[f], "pl") && nk_n[node] < 3) fn_bi[f] = 5; if (seqc(fn_name[f], "pq") && nk_n[node] < 3) fn_bi[f] = 6;
   if (cls >= 0) {
     int c = cl_base[cls]; int found = 0;
@@ -3566,10 +3712,10 @@ int main() {
   }
   register_names();
   use_jtab = opid_pool(intern_c("jtab")) >= 0;
-  i = 0; while (i < nnodes) { if (nk_k[i] == N_TRY) exc_on = 1; if (nk_k[i] == N_CAST || (nk_k[i] == N_FCAST && seqc(nk_s1[i], "reinterpret_cast"))) pun_on = 1; i = i + 1; }
+  i = 0; while (i < nnodes) { if (nk_k[i] == N_TRY || (nk_k[i] == N_FUNC && seqc(nk_s1[i], "unhandled_exception"))) exc_on = 1; if (nk_k[i] == N_CAST || (nk_k[i] == N_FCAST && seqc(nk_s1[i], "reinterpret_cast"))) pun_on = 1; i = i + 1; }
   N_CONV = intern_c("operator conv"); N_CALLOP = intern_c("operator()"); N_EQ = intern_c("operator=="); N_NE = intern_c("operator!="); N_SS = intern_c("operator<=>"); N_ASG = intern_c("operator=");
   N_DEREF = intern_c("operator*"); N_ADDR = intern_c("operator&"); N_IDX = intern_c("operator[]"); N_ARW = intern_c("operator->"); N_INC = intern_c("operator++"); N_DEC = intern_c("operator--");
-  N_THISV = intern_c("this"); N_VAP = intern_c("__va_p"); N_VAN = intern_c("__va_n"); N_LTHIS = intern_c("__this"); N_SRET = intern_c("__sret"); N_ONAME = intern_c("__o");
+  N_PROMISE = intern_c("__promise"); N_COFINAL = intern_c("__cofinal"); N_THISV = intern_c("this"); N_VAP = intern_c("__va_p"); N_VAN = intern_c("__va_n"); N_LTHIS = intern_c("__this"); N_SRET = intern_c("__sret"); N_ONAME = intern_c("__o");
   { int bi = 0; while (bi < 4) { const char* nmx = "std::strong_ordering"; if (bi == 1) nmx = "std::weak_ordering"; if (bi == 2) nmx = "std::partial_ordering"; if (bi == 3) nmx = "std::type_info";
       int c = newclass(intern_c(nmx)); cl_def[c] = 1; cl_words[c] = 1; cl_bi[c] = bi + 1; cl_size[c] = 1; cl_align[c] = 1; if (bi == 3) { cl_size[c] = 16; cl_align[c] = 8; }
       fl_name[nfl] = intern_c("__v"); fl_ty[nfl] = mkt(Y_INT, 0 - 1, 0); fl_woff[nfl] = 0; fl_boff[nfl] = 0; cl_f0[c] = nfl; cl_nf[c] = 1; nfl = nfl + 1; bi = bi + 1; } }
@@ -3584,7 +3730,8 @@ int main() {
   { dry = 1; int fr = init_pass(0, 0); dry = 0; init_pass(1, fr); }
   int f = 0;
   // kuru gecis yeni tur/islev (lambda kapanisi vb.) urettiyse tekrarlanir: kuru ve gercek gecis ayni yazmac turlerini gormeli
-  while (f < nfn) { if (fn_body_node(f) >= 0 || fn_has(f, F_DEFAULT)) { int lz0 = nfn + ncl + nlamgi + nfl + nproto; dry = 1; int fr = body_pass(f, 0, 0); if (nfn + ncl + nlamgi + nfl + nproto != lz0) fr = body_pass(f, 0, 0); dry = 0; body_pass(f, 1, fr); } f = f + 1; }
+  while (f < nfn) { if (fn_body_node(f) >= 0 || fn_has(f, F_DEFAULT)) { int lz0 = nfn + ncl + nlamgi + nfl + nproto; dry = 1; int fr = body_pass(f, 0, 0); if (nfn + ncl + nlamgi + nfl + nproto != lz0) fr = body_pass(f, 0, 0); dry = 0; co_fw[f] = fr; body_pass(f, 1, fr);
+      if (fn_co[f] == 2) { co_creator = 1; dry = 1; int fr2 = body_pass(f, 0, 0); if (nfn + ncl + nlamgi + nfl + nproto != lz0) fr2 = body_pass(f, 0, 0); dry = 0; body_pass(f, 1, fr2); co_creator = 0; } } f = f + 1; }
   int mainf = 0 - 1; f = 0; while (f < nfn) { if (fn_cls[f] < 0 && seqc(fn_name[f], "main") && fn_np[f] == 0) mainf = f; f = f + 1; }
   if (mainf < 0) die("E_MAIN", "int main() bulunamadi");
   if (unq(fn_ret[mainf]) != mkt(Y_INT, 0 - 1, 0)) die("E_MAIN", "main() int dondurmeli");

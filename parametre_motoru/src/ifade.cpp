@@ -356,13 +356,14 @@ struct Parser {
     if (!arg.empty() && !fwdDone.count(arg)) { fwdDone.insert(arg); int f = a.mk(N_CLASS, line); a[f].s = arg; a[f].i = 1; a[f].j = 1; preHoist.push_back(f); }
     string self = nm;
     string txt = self + " { public: void* f; void resume() { __co_resume(f); } bool done() const { return __co_done(f); } void destroy() { __co_destroy(f); } void* address() const { return f; } "
-      "bool valid() const { return f != nullptr; } ";
+      "explicit operator bool() const { return f != nullptr; } ";
     if (arg.empty()) txt += "static " + self + " from_address(void* a) { " + self + " h; h.f = a; return h; } };";
     else txt += "static " + self + " from_address(void* a) { " + self + " h; h.f = a; return h; } " + arg + "& promise() const { return *(" + arg + "*)__co_promise(f); } "
       "static " + self + " from_promise(" + arg + "& pr) { " + self + " h; h.f = __co_frame(&pr); return h; } operator std::coroutine_handle__v() const { std::coroutine_handle__v h; h.f = f; return h; } };";
     if (!arg.empty()) instHandle("", line);   // doniusum hedefi
     Lexer lx(txt); lx.run(); Parser pp(a, lx.out); pp.classes = classes; pp.alias = alias; pp.classes.insert(nm);
     int c = pp.classDef(true); classes.insert(nm); a[c].i = 0; preHoist.push_back(c);   // class (public)
+    for (int x : pp.preHoist) preHoist.push_back(x); for (int x : pp.postHoist) postHoist.push_back(x);
     return nm;
   }
   int cloneTy(int n) { Node x = a[n]; a.n.push_back(x); return int(a.n.size()) - 1; }
@@ -563,6 +564,7 @@ struct Parser {
   }
   int unary() {
     Dp dp(*this); int line = cur().line;
+    if (cur().k == TK_ID && cur().s == "co_await" && !(peek().k == TK_P && (peek().s == ";" || peek().s == ")" || peek().s == ","))) { p++; int e = unary(); int n = a.mk(N_COAWAIT, line); a[n].kid = {e}; return n; }   // Bolum 04.033: ifade olarak co_await
     if (cur().k == TK_P) {
       const string& s = cur().s;
       if (opRow(3, s) && s != "++" && s != "--") { string op = s; p++; int e = unary(); int n = a.mk(N_UNARY, line); a[n].s = op; a[n].kid = {e}; return n; }
@@ -631,7 +633,7 @@ struct Parser {
             int ty = typeSpec();
             if (isP("(")) { p++; int e = isP(")") ? -1 : expr(); expect(")"); int n = a.mk(N_FCAST, line); a[n].kid = {ty}; if (e >= 0) a[n].kid.push_back(e); return n; }
             if (isP("{")) { int il = initList(); int n = a.mk(N_FCAST, line); a[n].kid = {ty, il}; a[n].i = 1; return n; }
-            // niteleyici ad: sinif::uye (tur adi degil, statik uye vb.) -> desteklenmez
+            if (isP("::") && peek().k == TK_ID && a[ty].k == N_TY && a[ty].i == Y_CLASS) { p++; string mem = ident(); int n = a.mk(N_ID, line); a[n].s = a[ty].s + "::" + mem; return n; }   // Sinif::statik_islev
             fail("E_PARSE", "tur adindan sonra '(' ya da '{' bekleniyordu", line);
           }
         }
@@ -845,7 +847,7 @@ struct Parser {
       int64_t msf = 0;
       while (cur().k == TK_ID && (cur().s == "virtual" || cur().s == "explicit" || cur().s == "static" || cur().s == "constexpr" || cur().s == "consteval" || cur().s == "inline")) { if (cur().s == "virtual") virt = 2; if (cur().s == "explicit") expl = true; if (cur().s == "static") stat = true; if (cur().s == "constexpr") { cexpr = true; msf |= 1024; } if (cur().s == "consteval") msf |= 2048; if (cur().s == "inline") msf |= 512; p++; }
       (void)cexpr;
-      if (stat) fail("E_PARSE", "statik uye desteklenmiyor", mline);
+      // statik uye islevler: sinif adiyla niteliklenmis serbest islev (Bolum 04.033 coroutine_handle::from_promise); statik veri uyesi desteklenmez
       if (isP("~")) {   // yok edici: yalniz bos govdeli (iz sirasi yok); sanal yok edici sinifi polimorfik yapar
         p++; string dn = "~" + ident(); expect("("); expect(")"); int64_t fl = 0; if (acceptId("noexcept")) fl |= 4;
         int f = a.mk(N_FUNC, mline); a[f].s = dn; int ps = mk(N_PARAMS); int rt = a.mk(N_TY, mline); a[rt].i = Y_VOID; int bl = mk(N_BLOCK);
@@ -858,7 +860,12 @@ struct Parser {
       }
       int b = typeSpec(); size_t savePos = p; int tt = ptrOps(b);
       if (isId("operator")) { p++; int convTy; string nm = operatorName(convTy); int f = funcRest(tt, nm, mline, c); a[f].i |= virt | msf; a[c].kid.push_back(f); continue; }
-      if (cur().k == TK_ID && isPk(1, "(")) { string nm = ident(); int f = funcRest(tt, nm, mline, c); a[f].i |= virt | msf; a[c].kid.push_back(f); continue; }
+      if (cur().k == TK_ID && isPk(1, "(")) {
+        string nm = ident();
+        if (stat) { int f = funcRest(tt, name + "::" + nm, mline, -1); a[f].i |= msf; postHoist.push_back(f); continue; }
+        int f = funcRest(tt, nm, mline, c); a[f].i |= virt | msf; a[c].kid.push_back(f); continue;
+      }
+      if (stat) fail("E_PARSE", "statik veri uyesi desteklenmiyor", mline);
       // alan(lar)
       p = savePos; int ds = varDeclsFrom(b);
       for (int v : a[ds].kid) a[c].kid.push_back(v);
@@ -2728,6 +2735,11 @@ const char* kPrelude = "int __getc(); void __puti(long long); void __putc(int); 
 
 // istisna onsozu: yalniz kaynakta 'try' varsa eklenir (std::exception / bad_cast / bad_typeid gercek sinif tanimlari; sayisal derleyici bunlari siradan sinif olarak derler)
 const char* kPreludeExc = "class std::exception { public: virtual const char* what() const noexcept { return \"std::exception\"; } }; class std::bad_cast : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_cast\"; } }; class std::bad_typeid : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_typeid\"; } }; class std::bad_function_call : std::exception { public: virtual const char* what() const noexcept { return \"bad_function_call\"; } }; ";
+// Bolum 04.033: korutin onsozu (std::suspend_always / std::suspend_never + __co_* ic islevleri); yalniz kaynakta ilgili sozcuk varsa eklenir
+const char* kPreludeCo = "void __co_resume(void* f); bool __co_done(void* f); void __co_destroy(void* f); void* __co_promise(void* f); void* __co_frame(void* p); void __co_mark(); "
+  "class std::suspend_always { public: bool await_ready() const noexcept { return false; } void await_suspend(std::coroutine_handle<>) const noexcept { } void await_resume() const noexcept { } }; "
+  "class std::suspend_never { public: bool await_ready() const noexcept { return true; } void await_suspend(std::coroutine_handle<>) const noexcept { } void await_resume() const noexcept { } }; ";
+bool hasCoWords(const string& src) { Lexer l0(src); l0.run(); for (auto& tk : l0.out) if (tk.k == TK_ID && (tk.s == "coroutine_handle" || tk.s == "suspend_always" || tk.s == "suspend_never" || tk.s == "promise_type")) return true; return false; }
 bool usesF128(const string& src) { Lexer l0(src); l0.run(); for (auto& tk : l0.out) if (tk.k == TK_ID && tk.s == "__float128") return true; return false; }
 bool hasTryWord(const string& src) { for (size_t i = 0; i + 3 < src.size(); i++) if (!src.compare(i, 3, "try") && (i == 0 || !(isalnum((unsigned char)src[i-1]) || src[i-1] == '_')) && !(isalnum((unsigned char)src[i+3]) || src[i+3] == '_')) return true; return false; }
 bool slurp(const string& f, string& out) { FILE* fp = fopen(f.c_str(), "rb"); if (!fp) return false; char b[65536]; size_t n; out.clear(); while ((n = fread(b, 1, sizeof b, fp)) > 0) out.append(b, n); fclose(fp); return true; }
@@ -2750,7 +2762,7 @@ int ifade_main(int argc, char** argv) {
       ast = pmx_decode(v, root);
     } else {
       string src; if (!slurp(file, src)) fail("E_DOSYA", "kaynak okunamadi: " + file);
-      string full = string(kPrelude) + (usesF128(src) ? "void pq(__float128); " : "") + (hasTryWord(src) ? kPreludeExc : "") + src;
+      string full = string(kPrelude) + (usesF128(src) ? "void pq(__float128); " : "") + (hasTryWord(src) ? kPreludeExc : "") + (hasCoWords(src) ? kPreludeCo : "") + src;
       Lexer lx(full); lx.run(); Parser ps(ast, lx.out); root = ps.topLevel();
       vector<int64_t> nums = pmx_encode(ast, root);
       if (!pmxOut.empty()) { FILE* fp = fopen(pmxOut.c_str(), "wb"); if (!fp) fail("E_DOSYA", "yazilamadi: " + pmxOut); for (size_t i = 0; i < nums.size(); i++) fprintf(fp, "%lld%c", (long long)nums[i], i + 1 == nums.size() ? '\n' : ' '); fclose(fp); }

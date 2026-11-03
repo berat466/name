@@ -6,6 +6,7 @@
 #include <compare>
 #include <typeinfo>
 #include <alloca.h>
+#include <coroutine>
 static void pi(long long x) { printf("%lld\n", x); }
 static void pc(int c) { putchar(c); }
 static void pd(double d) { printf("%.15g\n", d); }

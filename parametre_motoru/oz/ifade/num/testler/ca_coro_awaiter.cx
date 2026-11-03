@@ -1,0 +1,50 @@
+// simetrik aktarim, bool await_suspend, istisna -> unhandled_exception, co_await iç içe görev
+struct Task {
+  struct promise_type {
+    int result; int failed; std::coroutine_handle<> cont;
+    Task get_return_object() { Task t; t.h = std::coroutine_handle<promise_type>::from_promise(*this); return t; }
+    std::suspend_always initial_suspend() { return std::suspend_always(); }
+    struct Final {
+      bool await_ready() noexcept { return false; }
+      void await_suspend(std::coroutine_handle<promise_type> self) noexcept { if (self.promise().cont) self.promise().cont.resume(); }
+      void await_resume() noexcept { }
+    };
+    Final final_suspend() noexcept { return Final(); }
+    void return_value(int v) { result = v; }
+    void unhandled_exception() { failed = 1; }
+  };
+  std::coroutine_handle<promise_type> h;
+  bool await_ready() { return false; }
+  void await_suspend(std::coroutine_handle<> c) { h.promise().cont = c; h.resume(); }
+  int await_resume() { return h.promise().result; }
+};
+// simetrik aktarim: await_suspend baska bir askida korutinin tutamacini dondurur; o korutin devam eder
+struct Hop { std::coroutine_handle<> target; bool await_ready() noexcept { return false; } std::coroutine_handle<> await_suspend(std::coroutine_handle<>) noexcept { return target; } void await_resume() noexcept { } };
+Task side(int* out) { *out = *out + 7; co_return 0; }
+Task hopper(int* out) { Task s = side(out); co_await Hop{s.h}; co_return 1; }
+Task leaf(int x) { co_return x * 3; }
+Task mid(int x) { int a = co_await leaf(x); int b = co_await leaf(a); co_return a + b; }
+Task thrower(int x) { if (x > 0) throw 5; co_return x; }
+struct BoolAw { int tag; bool await_ready() { return false; } bool await_suspend(std::coroutine_handle<>) { return tag == 0; } int await_resume() { return tag + 100; } };
+struct Top {
+  struct promise_type {
+    int r; Top get_return_object() { Top t; t.h = std::coroutine_handle<promise_type>::from_promise(*this); return t; }
+    std::suspend_never initial_suspend() { return std::suspend_never(); }
+    std::suspend_always final_suspend() noexcept { return std::suspend_always(); }
+    void return_value(int v) { r = v; }
+    void unhandled_exception() { }
+  };
+  std::coroutine_handle<promise_type> h;
+};
+Top top(int x) { int m = co_await mid(x); int z = co_await BoolAw{1}; co_return m + z; }
+int main() {
+  Top t = top(2);
+  pi(t.h.done()); pi(t.h.promise().r);
+  t.h.destroy();
+  Task th = thrower(1); th.h.promise().cont = std::coroutine_handle<>();
+  th.h.resume(); pi(th.h.done()); pi(th.h.promise().failed);
+  th.h.destroy();
+  int cell = 1; Task hp = hopper(&cell); hp.h.resume(); pi(cell); pi(hp.h.done()); pi(hp.h.promise().failed);
+  Task ok = thrower(0); ok.h.resume(); pi(ok.h.done()); pi(ok.h.promise().result); pi(ok.h.promise().failed);
+  return 0;
+}
