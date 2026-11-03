@@ -22,7 +22,7 @@ DURUM İŞARETLERİ
 🔵 Daha yeni rapora göre tamamlandı; depoda doğrula.
 ❌ Yapılmadı veya tam işlevi kanıtlanmadı.
 
-SAYIM: 41 bölüm / 1399 kontrol / 146 🟢 / 41 🔵 / 1212 ❌ (3 Kasım 2026; Bölüm 01, 02 ve 03 tamamlandı: 03.001–019 denetim akışı — ayrıntı ve sınırlar BOLUM_03_KAPANIS_RAPORU.md; sıradaki bölüm 04, başlatılmadı; Windows ABI kapsam dışı).
+SAYIM: 41 bölüm / 1399 kontrol / 146 🟢 / 41 🔵 / 1212 ❌ (3 Kasım 2026; Bölüm 01, 02 ve 03 tamamlandı: 03.001–019 denetim akışı; 3 Kasım 2026 2. tur düzeltmesiyle 03.009 native JTAB (`pm run --native-strict`), jtab doğrulayıcı/akış kuralı, 03.014 korutin+akış kombinasyonları ve 03.019 cfgopt doğrulaması (geçersiz akış reddi, yakıt tekdüzeliği) eksiksiz kapatıldı; sayım değişmedi — ayrıntı ve sınırlar BOLUM_03_KAPANIS_RAPORU.md §7; sıradaki bölüm 04, başlatılmadı; Windows ABI kapsam dışı).
 
 =======================================================================
 TAM BÖLÜM TABLOSU — EKSİKSİZ

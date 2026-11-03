@@ -1,0 +1,22 @@
+; jtab kolu karsilastir+jz ciftinin ORTASINA (jz'ye) inebilir: birlestirme (fuse) yapilmamali
+func main() {
+  ldi i, -1
+L: ldi q, 0
+  jtab i, 2
+  jmp Y
+  jmp W
+  ldi o, 4
+  jmp E
+Y: lti q, i, 5
+W: jz q, Z
+  ldi o, 3
+  jmp E
+Z: ldi o, 2
+E: host puti, o
+  host putc, 32
+  addi i, i, 1
+  lti c, i, 4
+  jnz c, L
+  host putc, 10
+  halt
+}

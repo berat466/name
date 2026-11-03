@@ -21,8 +21,16 @@ S = [
  ('merdiven korumasi', 'if (ladd[i] && nt <= i) { }', 'if (0) { }'),
  ('saf komut sinifi', 'if (fl == 0 && impure) fl = 9;', 'if (0) fl = 9;'),
  ('ldi sabiti', 'if (op_ldi[o]) { long long d = ia[i]; if (d >= 0 && d < 2048) { cgen[d] = curgen; cval[d] = ib[i]; } }', 'if (op_ldi[o]) { long long d = ia[i]; if (d >= 0 && d < 2048) { cgen[d] = curgen; cval[d] = ib[i] + 1; } }'),
+ ('girdi: jtab n siniri', 'if (n < 0 || i + 1 + n >= ncode) return 6;', ''),
+ ('girdi: merdiven jmp', 'if (flow(e) != 1) return 6;', ''),
+ ('girdi: merdiven ileri', 'if (target(e) <= e) return 6;', ''),
+ ('girdi: hedef siniri', 'if (t < 0 || t >= ncode) return 5; }', '}'),
+ ('girdi: bilinmeyen komut', 'if (op_have[o] == 0) return reddet(4);', ''),
+ ('girdi: kesik liste', 'kdel[i] = 0; i = i + 1; }\n    if (g_eof) return reddet(7);', 'kdel[i] = 0; i = i + 1; }'),
+ ('reddetme tuzagi', 'return kod / z;', 'return kod;'),
  ('islev basligi', '__puti(np); __putc(32); __puti(fnregs); __putc(32); __puti(ncode);', '__puti(np); __putc(32); __puti(fnregs + 1); __putc(32); __puti(ncode);'),
 ]
+S = [m for m in S if not os.environ.get('SADECE') or os.environ['SADECE'] in m[0]]   # SADECE=metin: yalniz adinda metin gecen mutantlar
 def build(src, w):
     open(w + '/c.cx', 'w').write(src)
     r = subprocess.run([PM, 'ifade', w + '/c.cx', '--pmx1', w + '/c.pmx'], capture_output=True)

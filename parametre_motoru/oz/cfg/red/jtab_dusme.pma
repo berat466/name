@@ -1,0 +1,8 @@
+; jtab merdiven girdisi jmp olmak zorunda
+func main() {
+  ldi i, 0
+  jtab i, 2
+  addi i, i, 1
+  jmp E
+E: halt
+}

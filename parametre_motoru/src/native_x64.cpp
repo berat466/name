@@ -195,6 +195,17 @@ void reg_access(const Program& P, const Ins& in, R rd, W wr) {
 bool is_cmp_op(int op) {
   return op == OP_EQ || op == OP_NE || op == OP_LT || op == OP_LE || op == OP_EQI || op == OP_NEI || op == OP_LTI || op == OP_LEI || op == OP_GTI || op == OP_GEI;
 }
+// Bolum 03: BRX mikro-islemi iceren komutun tablo uzunlugu (SEM'deki `im tN b` operandindan). Yoksa false.
+bool brx_count(const Ins& in, long& n) {
+  const MicroOp* m = sem_of(in.op);
+  if (!m) return false;
+  int64_t imv[8] = {0}; bool has[8] = {false};
+  for (; m->k != MK_END; m++) {
+    if (m->k == MK_IM && m->a < 8) { imv[m->a] = fld(in, m->b); has[m->a] = true; }
+    else if (m->k == MK_BRX) { if (m->b < 8 && has[m->b]) { n = long(imv[m->b]); return true; } n = -1; return true; }
+  }
+  return false;
+}
 }  // namespace
 
 bool native_available() { return true; }
@@ -202,7 +213,11 @@ bool native_supported(const Program& p) {
   for (const Func& f : p.funcs) for (const Ins& in : f.code) {
     const MicroOp* m = sem_of(in.op);
     if (!m) return false;
-    for (; m->k != MK_END; m++) if (m->k >= MK_SX || (m->k == MK_CMP && m->a >= CMPK_LTU)) return false;   // Plan Bolum 01 mikro-islemleri yalniz yorumlayicida
+    for (; m->k != MK_END; m++) if ((m->k >= MK_SX && m->k != MK_BRX) || (m->k == MK_CMP && m->a >= CMPK_LTU)) return false;   // Plan Bolum 01 mikro-islemleri yalniz yorumlayicida (MK_BRX: Bolum 03, yerel desteklenir)
+  }
+  // Bolum 03: brx tablosu islev kodunun icinde kalmali (ip+1+n <= kod uzunlugu); aksi halde yorumlayicinin "kod disi" davranisini yeniden uretmeyiz
+  for (const Func& f : p.funcs) for (size_t pc = 0; pc < f.code.size(); pc++) {
+    long n; if (brx_count(f.code[pc], n) && (n < 0 || n > (1 << 24) || pc + 1 + size_t(n) >= f.code.size())) return false;
   }
   return true;
 }
@@ -265,6 +280,7 @@ RunResult run_program_native(const Program& P, IO& io, const RunConfig& cfg) {
         int t = fld(in, j); tgt[size_t(t)] = 1;
         if (t <= int(pc)) for (int p = t; p <= int(pc); p++) inloop[size_t(p)] = 1;
       }
+      long bn; if (brx_count(in, bn) && bn >= 0) for (long i = 0; i <= bn; i++) tgt[pc + 1 + size_t(i)] = 1;   // brx hedefleri: ip+1 .. ip+1+n
     }
     for (size_t pc = 0; pc < M; pc++) {
       int w = inloop[pc] ? 8 : 1;
@@ -312,6 +328,19 @@ RunResult run_program_native(const Program& P, IO& io, const RunConfig& cfg) {
           if (wdst.k == V_REG) hint = wdst.r;
         }
         switch (m.k) {
+          case MK_BRX: {   // jtab: idx==tv[a] (isaretsiz) < n ise ip+1+idx, degilse ip+1+n. Ileri atlama: yakit harcanmaz (yorumlayici INTERP_BRX ile ayni).
+            long n = long(tv[m.b].imm);
+            Label ok, tab;
+            a.load_to(RAX, tv[m.a]); a.alu_ri(7, RAX, int32_t(n)); a.jcc(CC_B, ok); a.mov_imm32(RAX, int32_t(n)); a.bind(ok);
+            a.u8(0x48); a.u8(0x8D); a.u8(0x0D); a.rel32(tab);                       // lea rcx,[rip+tablo]
+            a.u8(0x48); a.u8(0x8D); a.u8(0x4C); a.u8(0x81); a.u8(0x04);             // lea rcx,[rcx+rax*4+4]
+            a.u8(0x48); a.u8(0x63); a.u8(0x41); a.u8(0xFC);                         // movsxd rax,[rcx-4]
+            a.u8(0x48); a.u8(0x01); a.u8(0xC8);                                     // add rax,rcx
+            a.u8(0xFF); a.u8(0xE0);                                                 // jmp rax
+            a.bind(tab);
+            for (long i = 0; i <= n; i++) a.rel32(pcl[pc + 1 + size_t(i)]);        // girdi i: hedef - (girdi sonu)
+            done = true; break;
+          }
           case MK_RD: tv[m.a] = vmloc(fld(in, m.b)); break;
           case MK_IM: tv[m.a] = vimm(fld(in, m.b)); break;
           case MK_LK: tv[m.a] = vimm(int64_t(P.consts[size_t(fld(in, m.b))])); break;

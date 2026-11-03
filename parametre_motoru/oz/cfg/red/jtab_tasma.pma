@@ -1,0 +1,7 @@
+; jtab varsayilan hedefi (ip+1+n) islev kodunun icinde olmali
+func main() {
+  ldi i, 5
+  jtab i, 3
+  jmp L
+L: halt
+}

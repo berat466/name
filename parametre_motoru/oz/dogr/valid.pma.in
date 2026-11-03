@@ -420,7 +420,7 @@ dmbad:
 vcall:
     add a, op, OPCALL
     ld cc, a, 0
-    jz cc, vend
+    jz cc, vtab
     add a, op, OPCS0
     ld s0, a, 0
     add a, op, OPCS1
@@ -446,12 +446,56 @@ vneed:
     mov need, 1
 wc: add t, fb, need
     gt z, t, nr
-    jz z, vend
+    jz z, vtab
     eqi z, cc, 1
     jz z, whx
     call x, rej, 18
 whx:
     call x, rej, 19
+; jtab (OPFLOW 4): n >= 0, varsayilan hedef ip+1+n islev kodunun icinde, merdivenin n girdisinin her biri ILERI kosulsuz atlama (OPFLOW 2, hedef > girdi)
+vtab:
+    add a, op, OPFLOW
+    ld fw, a, 0
+    eqi z, fw, 4
+    jz z, vend
+    add a, op, OPTGT
+    ld tgs, a, 0
+    add a, p, 1
+    add a, a, tgs
+    add a, a, TOK
+    ld nn, a, 0
+    lti z, nn, 0
+    jnz z, tbad
+    sub lm, ncode, pc
+    addi lm, lm, -1
+    ge z, nn, lm
+    jnz z, tbad
+    mov ti, 0
+tl1: ge z, ti, nn
+    jnz z, vend
+    add q2, pc, 1
+    add q2, q2, ti
+    add g2, base, q2
+    add a, g2, INSPOS
+    ld p2, a, 0
+    add a, p2, TOK
+    ld op2, a, 0
+    add a, op2, OPFLOW
+    ld f2, a, 0
+    nei z, f2, 2
+    jnz z, tbad
+    add a, op2, OPTGT
+    ld ts2, a, 0
+    add a, p2, 1
+    add a, a, ts2
+    add a, a, TOK
+    ld tg2, a, 0
+    le z, tg2, q2
+    jnz z, tbad
+    addi ti, ti, 1
+    jmp tl1
+tbad:
+    call x, rej, 20
 vend:
     add pc, pc, 1
     jmp vi
@@ -681,6 +725,22 @@ sflow:
     jnz z, sok
     add a, op, OPTGT
     ld tgs, a, 0
+    eqi z, fw, 4
+    jz z, s4x
+    add a, p, 1
+    add a, a, tgs
+    add a, a, TOK
+    ld nn, a, 0
+    mov ti, 0
+st1: gt z, ti, nn
+    jnz z, st2
+    add q2, pc, 1
+    add q2, q2, ti
+    call x, flow, q2
+    addi ti, ti, 1
+    jmp st1
+st2: ret 1
+s4x:
     eqi z, fw, 2
     jz z, s5
     add a, p, 1

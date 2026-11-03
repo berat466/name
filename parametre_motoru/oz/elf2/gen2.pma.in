@@ -895,8 +895,11 @@ func isbackop(op) {
 ib0: add t, op, OPFLOW
     ld fw, t, 0
     lti z, fw, 2
-    jz z, ib1
+    jz z, ib0b
     ret 0
+ib0b: gti z, fw, 3
+    jz z, ib1
+    ret 0   ; OPFLOW 4 (jtab): merdiven girdileri ileri jmp (dogrulayici kurali); jtab'in kendisi geri atlama degildir
 ib1: add t, op, OPTGT
     ld ts, t, 0
     add t, ts, 20

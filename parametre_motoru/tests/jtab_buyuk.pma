@@ -1,0 +1,914 @@
+; jtab (3): buyuk tablo (n=300): her kol ayri toplama; dizin -2..302 (aralik disi dahil); beklenen toplam bagimsiz hesaplandi
+func main() {
+  ldi i, -2
+  ldi s, 0
+T: ldi d, 7
+  jtab i, 300
+  jmp C0
+  jmp C1
+  jmp C2
+  jmp C3
+  jmp C4
+  jmp C5
+  jmp C6
+  jmp C7
+  jmp C8
+  jmp C9
+  jmp C10
+  jmp C11
+  jmp C12
+  jmp C13
+  jmp C14
+  jmp C15
+  jmp C16
+  jmp C17
+  jmp C18
+  jmp C19
+  jmp C20
+  jmp C21
+  jmp C22
+  jmp C23
+  jmp C24
+  jmp C25
+  jmp C26
+  jmp C27
+  jmp C28
+  jmp C29
+  jmp C30
+  jmp C31
+  jmp C32
+  jmp C33
+  jmp C34
+  jmp C35
+  jmp C36
+  jmp C37
+  jmp C38
+  jmp C39
+  jmp C40
+  jmp C41
+  jmp C42
+  jmp C43
+  jmp C44
+  jmp C45
+  jmp C46
+  jmp C47
+  jmp C48
+  jmp C49
+  jmp C50
+  jmp C51
+  jmp C52
+  jmp C53
+  jmp C54
+  jmp C55
+  jmp C56
+  jmp C57
+  jmp C58
+  jmp C59
+  jmp C60
+  jmp C61
+  jmp C62
+  jmp C63
+  jmp C64
+  jmp C65
+  jmp C66
+  jmp C67
+  jmp C68
+  jmp C69
+  jmp C70
+  jmp C71
+  jmp C72
+  jmp C73
+  jmp C74
+  jmp C75
+  jmp C76
+  jmp C77
+  jmp C78
+  jmp C79
+  jmp C80
+  jmp C81
+  jmp C82
+  jmp C83
+  jmp C84
+  jmp C85
+  jmp C86
+  jmp C87
+  jmp C88
+  jmp C89
+  jmp C90
+  jmp C91
+  jmp C92
+  jmp C93
+  jmp C94
+  jmp C95
+  jmp C96
+  jmp C97
+  jmp C98
+  jmp C99
+  jmp C100
+  jmp C101
+  jmp C102
+  jmp C103
+  jmp C104
+  jmp C105
+  jmp C106
+  jmp C107
+  jmp C108
+  jmp C109
+  jmp C110
+  jmp C111
+  jmp C112
+  jmp C113
+  jmp C114
+  jmp C115
+  jmp C116
+  jmp C117
+  jmp C118
+  jmp C119
+  jmp C120
+  jmp C121
+  jmp C122
+  jmp C123
+  jmp C124
+  jmp C125
+  jmp C126
+  jmp C127
+  jmp C128
+  jmp C129
+  jmp C130
+  jmp C131
+  jmp C132
+  jmp C133
+  jmp C134
+  jmp C135
+  jmp C136
+  jmp C137
+  jmp C138
+  jmp C139
+  jmp C140
+  jmp C141
+  jmp C142
+  jmp C143
+  jmp C144
+  jmp C145
+  jmp C146
+  jmp C147
+  jmp C148
+  jmp C149
+  jmp C150
+  jmp C151
+  jmp C152
+  jmp C153
+  jmp C154
+  jmp C155
+  jmp C156
+  jmp C157
+  jmp C158
+  jmp C159
+  jmp C160
+  jmp C161
+  jmp C162
+  jmp C163
+  jmp C164
+  jmp C165
+  jmp C166
+  jmp C167
+  jmp C168
+  jmp C169
+  jmp C170
+  jmp C171
+  jmp C172
+  jmp C173
+  jmp C174
+  jmp C175
+  jmp C176
+  jmp C177
+  jmp C178
+  jmp C179
+  jmp C180
+  jmp C181
+  jmp C182
+  jmp C183
+  jmp C184
+  jmp C185
+  jmp C186
+  jmp C187
+  jmp C188
+  jmp C189
+  jmp C190
+  jmp C191
+  jmp C192
+  jmp C193
+  jmp C194
+  jmp C195
+  jmp C196
+  jmp C197
+  jmp C198
+  jmp C199
+  jmp C200
+  jmp C201
+  jmp C202
+  jmp C203
+  jmp C204
+  jmp C205
+  jmp C206
+  jmp C207
+  jmp C208
+  jmp C209
+  jmp C210
+  jmp C211
+  jmp C212
+  jmp C213
+  jmp C214
+  jmp C215
+  jmp C216
+  jmp C217
+  jmp C218
+  jmp C219
+  jmp C220
+  jmp C221
+  jmp C222
+  jmp C223
+  jmp C224
+  jmp C225
+  jmp C226
+  jmp C227
+  jmp C228
+  jmp C229
+  jmp C230
+  jmp C231
+  jmp C232
+  jmp C233
+  jmp C234
+  jmp C235
+  jmp C236
+  jmp C237
+  jmp C238
+  jmp C239
+  jmp C240
+  jmp C241
+  jmp C242
+  jmp C243
+  jmp C244
+  jmp C245
+  jmp C246
+  jmp C247
+  jmp C248
+  jmp C249
+  jmp C250
+  jmp C251
+  jmp C252
+  jmp C253
+  jmp C254
+  jmp C255
+  jmp C256
+  jmp C257
+  jmp C258
+  jmp C259
+  jmp C260
+  jmp C261
+  jmp C262
+  jmp C263
+  jmp C264
+  jmp C265
+  jmp C266
+  jmp C267
+  jmp C268
+  jmp C269
+  jmp C270
+  jmp C271
+  jmp C272
+  jmp C273
+  jmp C274
+  jmp C275
+  jmp C276
+  jmp C277
+  jmp C278
+  jmp C279
+  jmp C280
+  jmp C281
+  jmp C282
+  jmp C283
+  jmp C284
+  jmp C285
+  jmp C286
+  jmp C287
+  jmp C288
+  jmp C289
+  jmp C290
+  jmp C291
+  jmp C292
+  jmp C293
+  jmp C294
+  jmp C295
+  jmp C296
+  jmp C297
+  jmp C298
+  jmp C299
+  jmp E
+C0: addi s, s, 1
+  jmp E
+C1: addi s, s, 2
+  jmp E
+C2: addi s, s, 5
+  jmp E
+C3: addi s, s, 10
+  jmp E
+C4: addi s, s, 17
+  jmp E
+C5: addi s, s, 26
+  jmp E
+C6: addi s, s, 37
+  jmp E
+C7: addi s, s, 50
+  jmp E
+C8: addi s, s, 65
+  jmp E
+C9: addi s, s, 82
+  jmp E
+C10: addi s, s, 101
+  jmp E
+C11: addi s, s, 122
+  jmp E
+C12: addi s, s, 145
+  jmp E
+C13: addi s, s, 170
+  jmp E
+C14: addi s, s, 197
+  jmp E
+C15: addi s, s, 226
+  jmp E
+C16: addi s, s, 257
+  jmp E
+C17: addi s, s, 290
+  jmp E
+C18: addi s, s, 325
+  jmp E
+C19: addi s, s, 362
+  jmp E
+C20: addi s, s, 401
+  jmp E
+C21: addi s, s, 442
+  jmp E
+C22: addi s, s, 485
+  jmp E
+C23: addi s, s, 530
+  jmp E
+C24: addi s, s, 577
+  jmp E
+C25: addi s, s, 626
+  jmp E
+C26: addi s, s, 677
+  jmp E
+C27: addi s, s, 730
+  jmp E
+C28: addi s, s, 785
+  jmp E
+C29: addi s, s, 842
+  jmp E
+C30: addi s, s, 901
+  jmp E
+C31: addi s, s, 962
+  jmp E
+C32: addi s, s, 1025
+  jmp E
+C33: addi s, s, 1090
+  jmp E
+C34: addi s, s, 1157
+  jmp E
+C35: addi s, s, 1226
+  jmp E
+C36: addi s, s, 1297
+  jmp E
+C37: addi s, s, 1370
+  jmp E
+C38: addi s, s, 1445
+  jmp E
+C39: addi s, s, 1522
+  jmp E
+C40: addi s, s, 1601
+  jmp E
+C41: addi s, s, 1682
+  jmp E
+C42: addi s, s, 1765
+  jmp E
+C43: addi s, s, 1850
+  jmp E
+C44: addi s, s, 1937
+  jmp E
+C45: addi s, s, 2026
+  jmp E
+C46: addi s, s, 2117
+  jmp E
+C47: addi s, s, 2210
+  jmp E
+C48: addi s, s, 2305
+  jmp E
+C49: addi s, s, 2402
+  jmp E
+C50: addi s, s, 2501
+  jmp E
+C51: addi s, s, 2602
+  jmp E
+C52: addi s, s, 2705
+  jmp E
+C53: addi s, s, 2810
+  jmp E
+C54: addi s, s, 2917
+  jmp E
+C55: addi s, s, 3026
+  jmp E
+C56: addi s, s, 3137
+  jmp E
+C57: addi s, s, 3250
+  jmp E
+C58: addi s, s, 3365
+  jmp E
+C59: addi s, s, 3482
+  jmp E
+C60: addi s, s, 3601
+  jmp E
+C61: addi s, s, 3722
+  jmp E
+C62: addi s, s, 3845
+  jmp E
+C63: addi s, s, 3970
+  jmp E
+C64: addi s, s, 4097
+  jmp E
+C65: addi s, s, 4226
+  jmp E
+C66: addi s, s, 4357
+  jmp E
+C67: addi s, s, 4490
+  jmp E
+C68: addi s, s, 4625
+  jmp E
+C69: addi s, s, 4762
+  jmp E
+C70: addi s, s, 4901
+  jmp E
+C71: addi s, s, 5042
+  jmp E
+C72: addi s, s, 5185
+  jmp E
+C73: addi s, s, 5330
+  jmp E
+C74: addi s, s, 5477
+  jmp E
+C75: addi s, s, 5626
+  jmp E
+C76: addi s, s, 5777
+  jmp E
+C77: addi s, s, 5930
+  jmp E
+C78: addi s, s, 6085
+  jmp E
+C79: addi s, s, 6242
+  jmp E
+C80: addi s, s, 6401
+  jmp E
+C81: addi s, s, 6562
+  jmp E
+C82: addi s, s, 6725
+  jmp E
+C83: addi s, s, 6890
+  jmp E
+C84: addi s, s, 7057
+  jmp E
+C85: addi s, s, 7226
+  jmp E
+C86: addi s, s, 7397
+  jmp E
+C87: addi s, s, 7570
+  jmp E
+C88: addi s, s, 7745
+  jmp E
+C89: addi s, s, 7922
+  jmp E
+C90: addi s, s, 8101
+  jmp E
+C91: addi s, s, 8282
+  jmp E
+C92: addi s, s, 8465
+  jmp E
+C93: addi s, s, 8650
+  jmp E
+C94: addi s, s, 8837
+  jmp E
+C95: addi s, s, 9026
+  jmp E
+C96: addi s, s, 9217
+  jmp E
+C97: addi s, s, 9410
+  jmp E
+C98: addi s, s, 9605
+  jmp E
+C99: addi s, s, 9802
+  jmp E
+C100: addi s, s, 10001
+  jmp E
+C101: addi s, s, 10202
+  jmp E
+C102: addi s, s, 10405
+  jmp E
+C103: addi s, s, 10610
+  jmp E
+C104: addi s, s, 10817
+  jmp E
+C105: addi s, s, 11026
+  jmp E
+C106: addi s, s, 11237
+  jmp E
+C107: addi s, s, 11450
+  jmp E
+C108: addi s, s, 11665
+  jmp E
+C109: addi s, s, 11882
+  jmp E
+C110: addi s, s, 12101
+  jmp E
+C111: addi s, s, 12322
+  jmp E
+C112: addi s, s, 12545
+  jmp E
+C113: addi s, s, 12770
+  jmp E
+C114: addi s, s, 12997
+  jmp E
+C115: addi s, s, 13226
+  jmp E
+C116: addi s, s, 13457
+  jmp E
+C117: addi s, s, 13690
+  jmp E
+C118: addi s, s, 13925
+  jmp E
+C119: addi s, s, 14162
+  jmp E
+C120: addi s, s, 14401
+  jmp E
+C121: addi s, s, 14642
+  jmp E
+C122: addi s, s, 14885
+  jmp E
+C123: addi s, s, 15130
+  jmp E
+C124: addi s, s, 15377
+  jmp E
+C125: addi s, s, 15626
+  jmp E
+C126: addi s, s, 15877
+  jmp E
+C127: addi s, s, 16130
+  jmp E
+C128: addi s, s, 16385
+  jmp E
+C129: addi s, s, 16642
+  jmp E
+C130: addi s, s, 16901
+  jmp E
+C131: addi s, s, 17162
+  jmp E
+C132: addi s, s, 17425
+  jmp E
+C133: addi s, s, 17690
+  jmp E
+C134: addi s, s, 17957
+  jmp E
+C135: addi s, s, 18226
+  jmp E
+C136: addi s, s, 18497
+  jmp E
+C137: addi s, s, 18770
+  jmp E
+C138: addi s, s, 19045
+  jmp E
+C139: addi s, s, 19322
+  jmp E
+C140: addi s, s, 19601
+  jmp E
+C141: addi s, s, 19882
+  jmp E
+C142: addi s, s, 20165
+  jmp E
+C143: addi s, s, 20450
+  jmp E
+C144: addi s, s, 20737
+  jmp E
+C145: addi s, s, 21026
+  jmp E
+C146: addi s, s, 21317
+  jmp E
+C147: addi s, s, 21610
+  jmp E
+C148: addi s, s, 21905
+  jmp E
+C149: addi s, s, 22202
+  jmp E
+C150: addi s, s, 22501
+  jmp E
+C151: addi s, s, 22802
+  jmp E
+C152: addi s, s, 23105
+  jmp E
+C153: addi s, s, 23410
+  jmp E
+C154: addi s, s, 23717
+  jmp E
+C155: addi s, s, 24026
+  jmp E
+C156: addi s, s, 24337
+  jmp E
+C157: addi s, s, 24650
+  jmp E
+C158: addi s, s, 24965
+  jmp E
+C159: addi s, s, 25282
+  jmp E
+C160: addi s, s, 25601
+  jmp E
+C161: addi s, s, 25922
+  jmp E
+C162: addi s, s, 26245
+  jmp E
+C163: addi s, s, 26570
+  jmp E
+C164: addi s, s, 26897
+  jmp E
+C165: addi s, s, 27226
+  jmp E
+C166: addi s, s, 27557
+  jmp E
+C167: addi s, s, 27890
+  jmp E
+C168: addi s, s, 28225
+  jmp E
+C169: addi s, s, 28562
+  jmp E
+C170: addi s, s, 28901
+  jmp E
+C171: addi s, s, 29242
+  jmp E
+C172: addi s, s, 29585
+  jmp E
+C173: addi s, s, 29930
+  jmp E
+C174: addi s, s, 30277
+  jmp E
+C175: addi s, s, 30626
+  jmp E
+C176: addi s, s, 30977
+  jmp E
+C177: addi s, s, 31330
+  jmp E
+C178: addi s, s, 31685
+  jmp E
+C179: addi s, s, 32042
+  jmp E
+C180: addi s, s, 32401
+  jmp E
+C181: addi s, s, 32762
+  jmp E
+C182: addi s, s, 33125
+  jmp E
+C183: addi s, s, 33490
+  jmp E
+C184: addi s, s, 33857
+  jmp E
+C185: addi s, s, 34226
+  jmp E
+C186: addi s, s, 34597
+  jmp E
+C187: addi s, s, 34970
+  jmp E
+C188: addi s, s, 35345
+  jmp E
+C189: addi s, s, 35722
+  jmp E
+C190: addi s, s, 36101
+  jmp E
+C191: addi s, s, 36482
+  jmp E
+C192: addi s, s, 36865
+  jmp E
+C193: addi s, s, 37250
+  jmp E
+C194: addi s, s, 37637
+  jmp E
+C195: addi s, s, 38026
+  jmp E
+C196: addi s, s, 38417
+  jmp E
+C197: addi s, s, 38810
+  jmp E
+C198: addi s, s, 39205
+  jmp E
+C199: addi s, s, 39602
+  jmp E
+C200: addi s, s, 40001
+  jmp E
+C201: addi s, s, 40402
+  jmp E
+C202: addi s, s, 40805
+  jmp E
+C203: addi s, s, 41210
+  jmp E
+C204: addi s, s, 41617
+  jmp E
+C205: addi s, s, 42026
+  jmp E
+C206: addi s, s, 42437
+  jmp E
+C207: addi s, s, 42850
+  jmp E
+C208: addi s, s, 43265
+  jmp E
+C209: addi s, s, 43682
+  jmp E
+C210: addi s, s, 44101
+  jmp E
+C211: addi s, s, 44522
+  jmp E
+C212: addi s, s, 44945
+  jmp E
+C213: addi s, s, 45370
+  jmp E
+C214: addi s, s, 45797
+  jmp E
+C215: addi s, s, 46226
+  jmp E
+C216: addi s, s, 46657
+  jmp E
+C217: addi s, s, 47090
+  jmp E
+C218: addi s, s, 47525
+  jmp E
+C219: addi s, s, 47962
+  jmp E
+C220: addi s, s, 48401
+  jmp E
+C221: addi s, s, 48842
+  jmp E
+C222: addi s, s, 49285
+  jmp E
+C223: addi s, s, 49730
+  jmp E
+C224: addi s, s, 50177
+  jmp E
+C225: addi s, s, 50626
+  jmp E
+C226: addi s, s, 51077
+  jmp E
+C227: addi s, s, 51530
+  jmp E
+C228: addi s, s, 51985
+  jmp E
+C229: addi s, s, 52442
+  jmp E
+C230: addi s, s, 52901
+  jmp E
+C231: addi s, s, 53362
+  jmp E
+C232: addi s, s, 53825
+  jmp E
+C233: addi s, s, 54290
+  jmp E
+C234: addi s, s, 54757
+  jmp E
+C235: addi s, s, 55226
+  jmp E
+C236: addi s, s, 55697
+  jmp E
+C237: addi s, s, 56170
+  jmp E
+C238: addi s, s, 56645
+  jmp E
+C239: addi s, s, 57122
+  jmp E
+C240: addi s, s, 57601
+  jmp E
+C241: addi s, s, 58082
+  jmp E
+C242: addi s, s, 58565
+  jmp E
+C243: addi s, s, 59050
+  jmp E
+C244: addi s, s, 59537
+  jmp E
+C245: addi s, s, 60026
+  jmp E
+C246: addi s, s, 60517
+  jmp E
+C247: addi s, s, 61010
+  jmp E
+C248: addi s, s, 61505
+  jmp E
+C249: addi s, s, 62002
+  jmp E
+C250: addi s, s, 62501
+  jmp E
+C251: addi s, s, 63002
+  jmp E
+C252: addi s, s, 63505
+  jmp E
+C253: addi s, s, 64010
+  jmp E
+C254: addi s, s, 64517
+  jmp E
+C255: addi s, s, 65026
+  jmp E
+C256: addi s, s, 65537
+  jmp E
+C257: addi s, s, 66050
+  jmp E
+C258: addi s, s, 66565
+  jmp E
+C259: addi s, s, 67082
+  jmp E
+C260: addi s, s, 67601
+  jmp E
+C261: addi s, s, 68122
+  jmp E
+C262: addi s, s, 68645
+  jmp E
+C263: addi s, s, 69170
+  jmp E
+C264: addi s, s, 69697
+  jmp E
+C265: addi s, s, 70226
+  jmp E
+C266: addi s, s, 70757
+  jmp E
+C267: addi s, s, 71290
+  jmp E
+C268: addi s, s, 71825
+  jmp E
+C269: addi s, s, 72362
+  jmp E
+C270: addi s, s, 72901
+  jmp E
+C271: addi s, s, 73442
+  jmp E
+C272: addi s, s, 73985
+  jmp E
+C273: addi s, s, 74530
+  jmp E
+C274: addi s, s, 75077
+  jmp E
+C275: addi s, s, 75626
+  jmp E
+C276: addi s, s, 76177
+  jmp E
+C277: addi s, s, 76730
+  jmp E
+C278: addi s, s, 77285
+  jmp E
+C279: addi s, s, 77842
+  jmp E
+C280: addi s, s, 78401
+  jmp E
+C281: addi s, s, 78962
+  jmp E
+C282: addi s, s, 79525
+  jmp E
+C283: addi s, s, 80090
+  jmp E
+C284: addi s, s, 80657
+  jmp E
+C285: addi s, s, 81226
+  jmp E
+C286: addi s, s, 81797
+  jmp E
+C287: addi s, s, 82370
+  jmp E
+C288: addi s, s, 82945
+  jmp E
+C289: addi s, s, 83522
+  jmp E
+C290: addi s, s, 84101
+  jmp E
+C291: addi s, s, 84682
+  jmp E
+C292: addi s, s, 85265
+  jmp E
+C293: addi s, s, 85850
+  jmp E
+C294: addi s, s, 86437
+  jmp E
+C295: addi s, s, 87026
+  jmp E
+C296: addi s, s, 87617
+  jmp E
+C297: addi s, s, 88210
+  jmp E
+C298: addi s, s, 88805
+  jmp E
+C299: addi s, s, 89402
+  jmp E
+E: addi i, i, 1
+  lti c, i, 303
+  jnz c, T
+  host puti, s
+  host putc, 10
+  halt
+}

@@ -27,6 +27,12 @@ mut kosullu_atlama 's/eqi z, fw, 3\n    jz z, s7/eqi z, fw, 2\n    jz z, s7/'
 mut temizle 's/eqi z, cc, 1\n    jz z, s4/eqi z, cc, 2\n    jz z, s4/'
 mut hedef_yuvasi 's/add a, op, OPTGT\n    ld tgs, a, 0/mov tgs, 0/'
 mut arite_host 's/shq:\n    add a, fa, ARITY/shq:\n    add a, fa, FNP/'
+# (jtab 'ip+1+n kod icinde' siniri ayri mutantlanmaz: her girdi ileri jmp ve son komut sonlandirici olmak zorunda oldugundan merdiven islevden tasamaz -> sinir savunma amaclidir, karar degistirmez)
+mut jtab_negatif "s/lti z, nn, 0\n    jnz z, tbad/lti z, nn, -99\n    jnz z, tbad/"
+mut jtab_girdi_jmp "s/nei z, f2, 2\n    jnz z, tbad/eqi z, f2, 99\n    jnz z, tbad/"
+mut jtab_girdi_ileri "s/le z, tg2, q2\n    jnz z, tbad/le z, tg2, -1\n    jnz z, tbad/"
+mut jtab_akis_kenari "s/eqi z, fw, 4\n    jz z, s4x/eqi z, fw, 99\n    jz z, s4x/"
+mut jtab_akis_varsayilan "s/st1: gt z, ti, nn/st1: ge z, ti, nn/"
 wait
 cat $TOP/c_* 2>/dev/null
 yakalandi=$(cat $TOP/c_* 2>/dev/null | grep -cE '^yakalandi|dogrulama yakaladi'); kacti=$(cat $TOP/c_* 2>/dev/null | grep -cE '^KACTI|^SABOTAJ HATASI|derlenemedi|uretilemedi')

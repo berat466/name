@@ -110,7 +110,7 @@ Mimari [Kesin]: yeni zorunlu metin dili yok. `pm ifade kaynak.cx` bir **C++ alt 
 | **Sabotaj** | `num/sabotaj_ifx.sh`: tablo ve kaynak mutantları (istisna, bayt görünümü, tür notu, öz-barındırma dahil) | bkz. kapanış raporu |
 **Durum:** 34/34 madde 🟢. Açık sınırlar (kapanış raporu §5; motor yeteneği bağlantı denetimi): i128/u128, f16/bf16, karmaşık, bswap motorda var ama ifade derleyicisine bağlı DEĞİL; bayt görünümü kapsamı (tamsayı/double↔1 bayt), null/terminate tuzağı derleyici üretimli (`TRAP OOB`), referans C++ ön yüz istisna/bayt görünümü üretmez. İşlev argüman sırası: C++ standardı belirsiz bırakır; soldan sağa seçilmiştir, garanti değildir.
 
-## Bölüm 03 — denetim akışı (3 Kasım 2026; DURUM: TAMAMLANDI 19/19 — ayrıntı: `BOLUM_03_KAPANIS_RAPORU.md`)
+## Bölüm 03 — denetim akışı (3 Kasım 2026; DURUM: TAMAMLANDI 19/19, 2. tur düzeltmeyle eksiksiz — ayrıntı: `BOLUM_03_KAPANIS_RAPORU.md`)
 Mimari [Kesin]: kural ve işlem anlamı sayısal parametre; kaynak düzeyi akış ifx.pmb'de (PMX1 düğümleri), motor düzeyi yeni komut yalnız tabloda (JTAB), iyileştirici sayısal program (cfgopt.pmb, ifx ile derli).
 | Konu | Ne eklendi | Kanıt |
 |---|---|---|
@@ -122,3 +122,13 @@ Mimari [Kesin]: kural ve işlem anlamı sayısal parametre; kaynak düzeyi akı�
 | korutin 03.014 | `std::generator<T>`, `co_yield/co_await/co_return`, yığın çerçevesi, `corun` dağıtıcı | `ca_korutin.cx` (+`.out`) |
 | istisna akışı / if constexpr / kısa devre 03.015–017 | try içinden break/continue/return/goto; `if constexpr`; `cj` doğrudan koşul atlaması | `ca_istisna_akis.cx`, `ca_constexpr.cx`, `ca_kosul.cx` |
 | CFG iyileştirici 03.019 | `oz/cfg/cfgopt.pmb`: atlama zinciri, sabit dal katlama, dal tersleme, ulaşılamaz/ölü kod; tablodan çalışma anında komut özellikleri | `oz/cfg/dogrula_cfg.sh`, `sabotaj_cfg.sh` |
+
+
+**2. tur — eksiksiz kapanış düzeltmesi (3 Kasım 2026):**
+| Konu | Ne yapıldı | Kanıt |
+|---|---|---|
+| Native JTAB | `src/native_x64.cpp` `MK_BRX`: işaretsiz sıkıştırma + 32 bit göreli adres tablosu, yakıt harcamaz; `--native-strict` JTAB'ı doğrudan çalıştırır | `tests/jtab_*.pma` (yorumlayıcı = native-strict, 3 promote kipi, çıktı + çıkış + tuzak + kalan yakıt); yakıt süpürmesi 1..130 pm = native = ELF; `oz/cfg/sabotaj_native.sh` 6 mutant |
+| jtab akış/merdiven kuralı | `OPFLOW=4` (komut.pmb türetir), `valid.pmb` + C++ `validate_program/analyze_program`: n≥0, varsayılan kod içinde, girdiler ileri `jmp`; akış kenarları ip+1…ip+1+n (başlatılmamış okuma artık yakalanır) | `dogrula_valid.sh` 11 elle jtab listesi; `sabotaj_valid.sh` 5 mutant; `oz/cfg/red/jtab_*.pma`; `dogrula_asm.sh`: anlamsal ret valid.pmb'ye bırakılır (10 program) |
+| gen2 `isbackop` | OPFLOW 4 geri atlama sayılmıyor (`jtab r,1` DIV0 reddini giderdi) | `jtab_*` ELF karşılaştırmaları |
+| cfgopt | geçersiz akış güvenle reddedilir (DIV0), yakıt tekdüzeliği + meta-test, native-strict karşılaştırması | `dogrula_cfg.sh` 598 kontrol, `sabotaj_cfg.py` 25 mutant |
+| Korutin + akış | goto/__match/kısa devre/switch/try-catch/iç içe/örnek yalıtımı/resume | `testler/ca_korutin2.cx` (+`.out`) |

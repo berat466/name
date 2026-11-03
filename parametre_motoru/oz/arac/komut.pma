@@ -2009,6 +2009,7 @@ data STR_P_RET = "ret\0"
 data STR_P_HALT = "halt\0"
 data STR_P_HOST = "host\0"
 data STR_P_DIVN = "divn\0"
+data STR_P_BRX = "brx\0"
 data STR_P_MODN = "modn\0"
 data STR_P_IM = "im\0"
 data STR_KFLAGS = "KFLAGS\0"
@@ -2112,7 +2113,29 @@ sf7: call x, pis, pid, STR_P_HOST
     st f0, G, 53
     st f1, G, 54
     jmp sfn
-sf8: call x, pis, pid, STR_P_DIVN
+sf8: call x, pis, pid, STR_P_BRX
+    jz x, sf8b
+    ; brx ti,tn: OPFLOW 4 (atlama tablosu); OPTGT = tablo uzunlugu (tn) gecicisini tanimlayan 'im' islemi -> operand yuvasi
+    mov v, 4
+    st v, G, 50
+    mov k, 0
+sh1: ge z, k, j
+    jnz z, sfn
+    muli t, k, 5
+    add t, t, r
+    addi t, t, 3
+    add b, t, T
+    ld p2, b, 0
+    ld g0, b, 1
+    ld g1, b, 2
+    call x, pis, p2, STR_P_IM
+    jz x, sh2
+    ne z, g0, f1
+    jnz z, sh2
+    st g1, G, 51
+sh2: addi k, k, 1
+    jmp sh1
+sf8b: call x, pis, pid, STR_P_DIVN
     jnz x, sf9a
     call x, pis, pid, STR_P_MODN
     jz x, sfn

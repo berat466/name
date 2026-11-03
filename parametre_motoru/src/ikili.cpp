@@ -158,6 +158,13 @@ void validate_program(const Program& p) {
         else if (k == 'h') { if (v < 0 || v >= H_COUNT) bad(pc, "bilinmeyen host islevi"); }
       }
       if ((in.op == OP_DIVI || in.op == OP_MODI) && (in.c == 0 || in.c == -1)) bad(pc, "divi/modi sabiti 0 veya -1 olamaz");
+      if (in.op == OP_JTAB) {   // Bolum 03: n>=0; varsayilan hedef ip+1+n islev icinde; merdivenin n girdisinin her biri ILERI kosulsuz atlama (jmp, hedef > girdi)
+        if (in.b < 0 || int64_t(pc) + 1 + int64_t(in.b) >= int64_t(f.code.size())) bad(pc, "jtab: tablo islev kodunun disina tasiyor");
+        for (int64_t i = 0; i < in.b; i++) {
+          const Ins& e = f.code[pc + 1 + size_t(i)];
+          if (e.op != OP_JMP || int64_t(e.a) <= int64_t(pc) + 1 + i) bad(pc, "jtab: merdiven girdileri ileri jmp olmali");
+        }
+      }
       if (in.op == OP_CALL) {
         uint32_t need = std::max<uint32_t>(1, p.funcs[in.a].nparams);
         if (uint64_t(in.b) + need > f.nregs) bad(pc, "cagri penceresi yazmaclara sigmiyor");
@@ -215,6 +222,7 @@ void analyze_program(Program& p) {
       };
       if (ins.op == OP_RET || ins.op == OP_HALT) continue;
       if (ins.op == OP_JMP) { flow(uint32_t(ins.a)); continue; }
+      if (ins.op == OP_JTAB) { for (int64_t i = 0; i <= ins.b; i++) flow(uint32_t(pc + 1 + i)); continue; }
       if (ins.op == OP_JZ || ins.op == OP_JNZ) flow(uint32_t(ins.b));
       if (pc + 1 < M) flow(pc + 1);
     }

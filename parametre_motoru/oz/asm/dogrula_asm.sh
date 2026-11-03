@@ -7,14 +7,21 @@ pass() { ok=$((ok+1)); }; fail() { bad=$((bad+1)); echo "HATA: $1"; }
 AS="$D/asm.pmb"
 [ -n "$ASMPMB" ] && AS=$ASMPMB
 runasm() { if [ -n "$ASMELF" ]; then (ulimit -v 900000; timeout 30 $ASMELF < $1 > $T/mine.pmb 2> $T/mine.err); else (ulimit -v 900000; timeout 30 $PM run $AS < $1 > $T/mine.pmb 2> $T/mine.err); fi; }
+vred() {   # PMB1 dosyasi: sayisal dogrulayici (valid.pmb) reddediyor mu? (ilk jeton 0)
+  $PM liste $1 > $T/vr.l 2>/dev/null || return 1
+  [ "$( (ulimit -v 900000; timeout 30 $PM run ../dogr/valid.pmb < $T/vr.l 2>/dev/null) | head -1 | cut -d' ' -f1)" = 0 ]
+}
+rejv=0
 cmpsrc() {   # etiket kaynak
-  $PM asm $2 -o $T/ref.pmb --strip > /dev/null 2>&1; rr=$?
+  $PM asm $2 -o $T/ref.pmb --strip > /dev/null 2> $T/ref.err; rr=$?
   runasm $2; rm_=$?
   if [ $rr = 0 ]; then
     if [ $rm_ = 0 ] && cmp -s $T/ref.pmb $T/mine.pmb; then pass; acc=$((acc+1))
     else fail "$1: referans kabul etti, parametre rc=$rm_ $(head -c 80 $T/mine.pmb | tr -c '[:print:]\n' '?')"; cp $2 /tmp/asm_fark_$((ok+bad)).pma; fi
   else
-    if [ $rm_ != 0 ]; then pass; rej=$((rej+1)); else fail "$1: referans reddetti, parametre kabul etti"; cp $2 /tmp/asm_fark_$((ok+bad)).pma; fi
+    if [ $rm_ != 0 ]; then pass; rej=$((rej+1))
+    elif grep -q "^HATA: dogrulama:" $T/ref.err && vred $T/mine.pmb; then pass; rejv=$((rejv+1))   # anlamsal (validate_program) ret: sayisal asm bunu valid.pmb'ye birakir (asm.pma.in basligi); zincirin ZORUNLU kapisi (valid) reddetmeli
+    else fail "$1: referans reddetti, parametre kabul etti"; cp $2 /tmp/asm_fark_$((ok+bad)).pma; fi
   fi
 }
 # ---- 0) guncellik
@@ -114,4 +121,4 @@ na=0; for f in $(find $R/tests $R/uygulamalar $R/bench -name '*.pma' | sort | he
   if [ $re = $rp ] && cmp -s $T/e.pmb $T/mine.pmb; then pass; else fail "asm.elf farkli: $f (rc $re/$rp)"; fi; na=$((na+1)); done
 $T/asm.elf < asm.pma | cmp -s - asm.pmb && pass || fail "asm.elf kendi kaynagindan asm.pmb uretmedi"
 rm -rf $T
-echo "assembler (parametre): gecen $ok, kalan $bad (C++ ile ayni uretim: $acc, ayni ret: $rej)"; [ $bad = 0 ]
+echo "assembler (parametre): gecen $ok, kalan $bad (C++ ile ayni uretim: $acc, ayni ret: $rej, anlamsal ret valid.pmb ile: $rejv)"; [ $bad = 0 ]
