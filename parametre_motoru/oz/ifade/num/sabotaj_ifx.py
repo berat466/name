@@ -46,7 +46,7 @@ S = [  # kaynak mutantlari (her satir bir mutant)
  ('istisna: bad_cast', 'throw_named("std::bad_cast"); wl(ok)', 'trapnow(); wl(ok)'),
  ('istisna: bad_typeid', 'if (n == tid_node && exc_on) nullchk_exc', 'if (0) nullchk_exc'),
  ('istisna: yeniden firlatma denetimi', 'V c = cell_ld("__cx", 0); int ok = newlab(); e_jcc("jnz", c, ok); trapnow();', 'V c = cell_ld("__cx", 0); int ok = newlab(); e_jcc("jz", c, ok); trapnow();'),
- ('istisna: break islenen-istisna geri yukleme', 'die("E_STMT", "\'break\' dongu disinda"); hs_restore_to(loop_hs[nloop - 1]);', 'die("E_STMT", "\'break\' dongu disinda");'),
+ ('istisna: break islenen-istisna geri yukleme', 'loop_bs[nloop - 1] = 1; hs_restore_to(loop_hs[nloop - 1]); jmpl(loop_brk[nloop - 1]);', 'loop_bs[nloop - 1] = 1; jmpl(loop_brk[nloop - 1]);'),
  ('istisna: return islenen-istisna geri yukleme', 'void emit_ret(V v) {\n  hs_restore_to(0);\n', 'void emit_ret(V v) {\n'),
  ('istisna: catch(...) son olmali', 'if (nk_k[kid(c, 0)] == N_NONE) { if (i != nh - 1) die(', 'if (nk_k[kid(c, 0)] == N_NONE) { if (0) die('),
  ('istisna: eslesmeyen iletimi', '  if (all == 0) emit_propagate();', '  if (all == 0) { }'),

@@ -42,6 +42,7 @@ int main() {
         case MK_BR: printf("br "); opd(m->a); break;
         case MK_BRZ: printf("brz t%d ", m->a); opd(m->b); break;
         case MK_BRNZ: printf("brnz t%d ", m->a); opd(m->b); break;
+        case MK_BRX: printf("brx t%d t%d", m->a, m->b); break;
         case MK_CALLM: printf("call "); opd(m->a); putchar(' '); opd(m->b); break;
         case MK_RETM: printf("ret t%d", m->a); break;
         case MK_HALTM: printf("halt"); break;

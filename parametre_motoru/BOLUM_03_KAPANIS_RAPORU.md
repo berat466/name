@@ -47,7 +47,11 @@ Sayım tablodan alındı: Bölüm 03 öncesi 133 🟢; Bölüm 03'ün 6 🟢'si 
 - Önceki bölümlerden kalan tür bağlantıları (i128, f16/bf16, karmaşık, bswap) bu bölümün kapsamı dışında bırakıldı (Bölüm 02 raporu §5).
 
 ## 5. Testler
-__TEST_SONUCLARI__
+- **Tam normal koşu** `HIZLI_YENIDEN=1 oz/hizli.sh --tam --bag`: **33 paket, duvar 846 sn (14 dk 06 sn), toplam CPU 2743 sn** (hedef ≤ 20 dk; hiçbir test atlanmadı). 32 paket ilk koşuda geçti; `komut` paketi 1 başarısızlık verdi (C++ SEM dökümü aracı `anlam_dump.cpp` yeni `BRX` mikro-işlemini tanımıyordu — araç düzeltildi, `komut` 397/397 geçti). Paketler: `ifx` **723 kontrol**, `cfg` **487 kontrol**, `ifade` 927 (referans C++ ön yüz, değişmeden), `asm`, `bag`, `valid`, `yap`, `svm`, `uyum`, `kayan`, `i128`, `elf2` … → geriye uyumluluk (eski programlar), Bölüm 01 araç zinciri ve Bölüm 02 öz-barındırma sabit noktası korundu.
+- `ifx` 723 kontrol: 53 olumlu program (g++ oracle ya da bağımsız Python beklenen çıktı) için ifx.elf = ifx.pmb PMA'sı, asm→coz→valid→tipdogr, ELF = pm = svm; 8 yeni `ca_*` test; 59 (+105 ortak) olumsuz test; 17 çalışma zamanı tuzağı; bozuk PMX1 fuzz; **pm'siz öz-barındırma sabit noktası** (ifx kendini yeni denetim akışı koduyla yeniden üretir); yoğun switch'in `jtab` ürettiği denetimi.
+- **Mutasyon (test-testi):** ifx **110 mutant (19 tablo + 91 kaynak) → 110 yakalandı** (Bölüm 03 için 26 yeni: `cj` yönleri, switch aralık/çakışma/default/continue/tablo, goto/jump-over-init, erişilebilirlik, if constexpr, range-for, match, korutin); `cfg` **18/18**; C++ referans ön yüz 58 mutant → 56 yakalandı, 2 gerekçeli denk, 0 yakalanmayan.
+- Çalışma sırasında bulunan gerçek hatalar: `!` koşulunda "hemen sonraki etiket" yanlış eşlenmişti (ifx'in kendini yeniden üretmesi sabit noktasında yakalandı); sabit `const int` değerleri `rval`'de bellekten okunuyordu (sabit koşullar katlanmıyordu); sabit karşılaştırma ve `&&/||` katlanmıyordu; mutasyon testinde sabit yayılımında "bilinmeyen kaynaklı `mov` hedefi geçersiz kılmıyor" ve "tuzaklı `ld` ölü yazma sanılıyor" boşlukları yeni `akis/sabit.pma`, `akis/tuzak_ld.pma` testleriyle kapatıldı.
+
 
 ## 6. Dosyalar
 `oz/ifade/num/{ifx.cx,ifx.pmb,testler/ca_*.cx,red/*,dogrula_ifx.sh,sabotaj_ifx.py}`, `oz/cfg/{cfgopt.cx,cfgopt.pmb,uret.sh,dogrula_cfg.sh,sabotaj_cfg.sh,sabotaj_cfg.py,akis/}`, `oz/komut/gecis/denetim_ekle.py`, `oz/komut/komutlar.pmk` (JTAB, BRX, şablonlar, OPSIG), `src/anlam.h` (BRX makroları), `src/ifade.cpp` (yeni PMX1 düğümleri, söz dizimi), `oz/sayisal/svm.pma/.pmb`, `oz/hizli.sh` (paket `cfg`).
