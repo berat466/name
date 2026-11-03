@@ -1,0 +1,43 @@
+func sum(n, acc) {
+  jnz n, R
+  ret acc
+R: add acc2, acc, n
+  addi n2, n, -1
+  tcall sum, n2, acc2
+}
+func ev(n) {
+  jnz n, R
+  ret 1
+R: addi m, n, -1
+  tcall od, m
+}
+func od(n) {
+  jnz n, R
+  ret 0
+R: addi m, n, -1
+  tcall ev, m
+}
+func sw(a, b, c) {
+  jnz a, R
+  ret b
+R: addi a2, a, -1
+  tcall sw, a2, c, b
+}
+func main() {
+  ldi n, 1000000
+  ldi acc, 0
+  call r, sum, n, acc
+  host puti, r
+  host putc, 10
+  ldi n, 100001
+  call r, ev, n
+  host puti, r
+  host putc, 10
+  ldi a, 7
+  ldi b, 11
+  ldi c, 13
+  call r, sw, a, b, c
+  host puti, r
+  host putc, 10
+  halt
+}

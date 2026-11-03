@@ -1,0 +1,19 @@
+func big(a) {
+  addi r, a, 1
+  ret r
+}
+func sum(n, acc) {
+  jnz n, R
+  ret acc
+R: add acc2, acc, n
+  addi n2, n, -1
+  tcall sum, n2, acc2
+}
+func main() {
+  ldi n, 30
+  ldi acc, 0
+  call r, sum, n, acc
+  host puti, r
+  host putc, 10
+  halt
+}

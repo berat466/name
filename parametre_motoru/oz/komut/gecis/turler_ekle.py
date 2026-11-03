@@ -214,7 +214,7 @@ def sig(name, fmt):
     if n == 'JMP': return (NONE, NONE, NONE, 0)
     if n in ('JZ', 'JNZ'): return (INT1, NONE, NONE, 0)
     if n == 'JTAB': return (INT1, NONE, NONE, 0)   # Plan Bolum 03: atlama tablosu (dizin tamsayi, n anlik)
-    if n in ('CALL', 'RET', 'HALT', 'HOST'): return None   # ozel kurallar (denetleyicide)
+    if n in ('CALL', 'RET', 'HALT', 'HOST', 'CALLI', 'TCALL'): return None   # ozel kurallar (denetleyicide)
     if n == 'LD': return (FREE, ADDR, NONE, 0)
     if n == 'ST': return (ANY1, ADDR, NONE, 0)
     if n == 'ALLOC': return (I('u64'), INT64, NONE, 0)

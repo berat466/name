@@ -96,6 +96,7 @@ struct X {
   void ret() { u8(0xC3); }
   void call_rax() { u8(0xFF); u8(0xD0); }
   void rep_stosq() { u8(0xF3); u8(0x48); u8(0xAB); }
+  void rep_movsq() { u8(0xF3); u8(0x48); u8(0xA5); }
   void xor_eax() { u8(0x31); u8(0xC0); }
   void rel32(Label& l) {
     if (l.pos >= 0) u32(uint32_t(int32_t(l.pos - long(b.size() + 4))));
@@ -185,6 +186,8 @@ inline int32_t fld(const Ins& in, int x) { return x == 0 ? in.a : x == 1 ? in.b 
 template <class R, class W>
 void reg_access(const Program& P, const Ins& in, R rd, W wr) {
   if (in.op == OP_CALL) { size_t np = P.funcs[size_t(in.a)].nparams; for (size_t j = 0; j < np; j++) rd(in.b + int(j)); wr(in.b); return; }
+  if (in.op == OP_CALLI) { size_t np = P.funcs[size_t(in.a)].nparams; for (size_t j = 0; j < np; j++) rd(in.b + int(j)); rd(in.c); wr(in.b); return; }
+  if (in.op == OP_TCALL) { size_t np = P.funcs[size_t(in.a)].nparams; for (size_t j = 0; j < np; j++) rd(in.b + int(j)); return; }
   if (in.op == OP_HOST) { int ar = kHostInfo[in.a].arity; for (int j = 0; j < ar; j++) rd(in.b + j); wr(in.b); return; }
   const OpInfo& oi = kOpInfo[in.op];
   for (int j = 0; j < oi.nops; j++) {
@@ -213,7 +216,7 @@ bool native_supported(const Program& p) {
   for (const Func& f : p.funcs) for (const Ins& in : f.code) {
     const MicroOp* m = sem_of(in.op);
     if (!m) return false;
-    for (; m->k != MK_END; m++) if ((m->k >= MK_SX && m->k != MK_BRX) || (m->k == MK_CMP && m->a >= CMPK_LTU)) return false;   // Plan Bolum 01 mikro-islemleri yalniz yorumlayicida (MK_BRX: Bolum 03, yerel desteklenir)
+    for (; m->k != MK_END; m++) if ((m->k >= MK_SX && m->k != MK_BRX && m->k != MK_CALLIM && m->k != MK_TCALLM) || (m->k == MK_CMP && m->a >= CMPK_LTU)) return false;   // Plan Bolum 01 mikro-islemleri yalniz yorumlayicida (MK_BRX: Bolum 03, yerel desteklenir)
   }
   // Bolum 03: brx tablosu islev kodunun icinde kalmali (ip+1+n <= kod uzunlugu); aksi halde yorumlayicinin "kod disi" davranisini yeniden uretmeyiz
   for (const Func& f : p.funcs) for (size_t pc = 0; pc < f.code.size(); pc++) {
@@ -244,7 +247,7 @@ RunResult run_program_native(const Program& P, IO& io, const RunConfig& cfg) {
   // ---- kod uretimi ----
   X a;
   std::vector<Label> fl(P.funcs.size());
-  Label lEpi, lDiv0, lOob, lStack, lDepth, lFuel, lAlloc;
+  Label lEpi, lDiv0, lOob, lStack, lDepth, lFuel, lAlloc, lStubs;
   // trampolin: (uint64_t* R)
   a.push(RBX); a.push(RBP); a.push(R12); a.push(R13); a.push(R14); a.push(R15);
   a.mov_imm64(RAX, A_(&ctx.saved_rsp)); a.store(RAX, 0, RSP);
@@ -274,7 +277,7 @@ RunResult run_program_native(const Program& P, IO& io, const RunConfig& cfg) {
     int limit = int(f.nregs);
     for (size_t pc = 0; pc < M; pc++) {
       const Ins& in = f.code[pc];
-      if (in.op == OP_CALL || in.op == OP_HOST) limit = std::min(limit, int(in.b));
+      if (in.op == OP_CALL || in.op == OP_HOST || in.op == OP_CALLI || in.op == OP_TCALL) limit = std::min(limit, int(in.b));
       const OpInfo& oi = kOpInfo[in.op];
       for (int j = 0; j < oi.nops; j++) if (oi.kinds[j] == 'l') {
         int t = fld(in, j); tgt[size_t(t)] = 1;
@@ -295,7 +298,8 @@ RunResult run_program_native(const Program& P, IO& io, const RunConfig& cfg) {
     }
     const bool pad = used.size() % 2 == 0;
     auto vmloc = [&](int x) { return preg[size_t(x)] >= 0 ? vreg(preg[size_t(x)]) : vmem(8 * x); };
-    auto emit_ret = [&]() { if (pad) a.alu_ri(0, RSP, 8); for (size_t i = used.size(); i-- > 0;) a.pop(used[i]); a.ret(); };
+    auto emit_unwind = [&]() { if (pad) a.alu_ri(0, RSP, 8); for (size_t i = used.size(); i-- > 0;) a.pop(used[i]); };
+    auto emit_ret = [&]() { emit_unwind(); a.ret(); };
 
     std::vector<Label> pcl(M);
     a.bind(fl[fi]);
@@ -497,6 +501,29 @@ RunResult run_program_native(const Program& P, IO& io, const RunConfig& cfg) {
             a.incdec(1, R12);
             break;
           }
+          case MK_CALLIM: {   // Bolum 04: dolayli cagri. Hedef islev indeksi (isaretsiz) < islev sayisi, yoksa OOB; prototip parametre sayisi hedefinkine esit olmali (stub denetler); stub: STACK/DEPTH/sifirlama/jmp
+            const Func& pr = P.funcs[size_t(fld(in, m.a))]; int base = fld(in, m.b);
+            checkpoint();
+            a.load_to(RAX, vmloc(fld(in, m.c))); a.alu_ri(7, RAX, int32_t(P.funcs.size())); a.jcc(CC_AE, lOob);
+            a.mov_imm32(RDX, int32_t(pr.nparams));
+            a.shift_imm(4, RAX, 7); a.u8(0x48); a.u8(0x8D); a.u8(0x0D); a.rel32(lStubs); a.alu_rr(0x01, RAX, RCX);   // lea rcx,[rip+stubs]; add rax,rcx
+            a.alu_ri(0, RBX, 8 * base);
+            a.call_rax();
+            a.alu_ri(5, RBX, 8 * base);
+            a.incdec(1, R12);
+            break;
+          }
+          case MK_TCALLM: {   // Bolum 04: kuyruk cagrisi. Yigin denetimi hedefin yazmac sayisiyla; argumanlar cerceve tabanina; yerelleri sifirla; yazmaca alinmis kayitlari geri yukle; jmp
+            const Func& g = P.funcs[size_t(fld(in, m.a))]; int base = fld(in, m.b);
+            checkpoint();
+            a.mov_imm64(RAX, stack_end); a.alu_rr(0x29, RAX, RBX); a.shift_imm(5, RAX, 3);
+            a.alu_ri(7, RAX, int32_t(g.nregs)); a.jcc(CC_B, lStack);
+            if (base > 0 && g.nparams > 0) { a.lea(RSI, RBX, 8 * base); a.mov_rr(RDI, RBX); a.mov_imm32(RCX, int32_t(g.nparams)); a.rep_movsq(); }
+            if (!P.zero_free && g.nregs > g.nparams) { a.lea(RDI, RBX, 8 * int(g.nparams)); a.mov_imm32(RCX, int32_t(g.nregs - g.nparams)); a.xor_eax(); a.rep_stosq(); }
+            emit_unwind();
+            a.jmp(fl[size_t(fld(in, m.a))]);
+            break;
+          }
           case MK_RETM: a.load_to(RAX, tv[m.a]); a.store(RBX, 0, RAX); emit_ret(); break;
           case MK_HALTM: a.jmp(lEpi); break;
           case MK_HOSTM: {
@@ -525,6 +552,23 @@ RunResult run_program_native(const Program& P, IO& io, const RunConfig& cfg) {
           default: break;
         }
       }
+    }
+  }
+  // ---- Bolum 04: dolayli cagri stub tablosu (islev basina 128 bayt): imza (rdx = beklenen parametre sayisi) / STACK / DEPTH denetimi, yerelleri sifirla, girise jmp. rbx = yeni cerceve. ----
+  bool hasCalli = false;
+  for (const Func& f : P.funcs) for (const Ins& in : f.code) if (in.op == OP_CALLI) hasCalli = true;
+  if (hasCalli) {
+    a.bind(lStubs);
+    for (size_t fi = 0; fi < P.funcs.size(); fi++) {
+      const Func& g = P.funcs[fi]; size_t st0 = a.b.size();
+      a.alu_ri(7, RDX, int32_t(g.nparams)); a.jcc(CC_NE, lOob);
+      a.mov_imm64(RAX, stack_end); a.alu_rr(0x29, RAX, RBX); a.shift_imm(5, RAX, 3);
+      a.alu_ri(7, RAX, int32_t(g.nregs)); a.jcc(CC_B, lStack);
+      a.alu_ri(7, R12, int32_t(cfg.max_frames)); a.jcc(CC_AE, lDepth); a.incdec(0, R12);
+      if (!P.zero_free && g.nregs > g.nparams) { a.lea(RDI, RBX, 8 * int(g.nparams)); a.mov_imm32(RCX, int32_t(g.nregs - g.nparams)); a.xor_eax(); a.rep_stosq(); }
+      a.jmp(fl[fi]);
+      if (a.b.size() - st0 > 128) throw PmError("native: calli stub 128 bayti asti");
+      while (a.b.size() - st0 < 128) a.u8(0xCC);
     }
   }
   // ---- calistir ----

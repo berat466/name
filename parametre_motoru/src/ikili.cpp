@@ -146,7 +146,7 @@ void validate_program(const Program& p) {
     };
     if (f.code.empty()) bad(0, "bos fonksiyon");
     uint16_t last = f.code.back().op;
-    if (last != OP_JMP && last != OP_RET && last != OP_HALT) bad(f.code.size() - 1, "son komut jmp/ret/halt olmali");
+    if (last != OP_JMP && last != OP_RET && last != OP_HALT && last != OP_TCALL) bad(f.code.size() - 1, "son komut jmp/ret/halt olmali");
     for (size_t pc = 0; pc < f.code.size(); pc++) {
       const Ins& in = f.code[pc]; const OpInfo& oi = kOpInfo[in.op];
       for (int j = 0; j < oi.nops; j++) {
@@ -165,7 +165,7 @@ void validate_program(const Program& p) {
           if (e.op != OP_JMP || int64_t(e.a) <= int64_t(pc) + 1 + i) bad(pc, "jtab: merdiven girdileri ileri jmp olmali");
         }
       }
-      if (in.op == OP_CALL) {
+      if (in.op == OP_CALL || in.op == OP_CALLI || in.op == OP_TCALL) {   // CALLI/TCALL: a = (prototip) islev, pencere ayni kural
         uint32_t need = std::max<uint32_t>(1, p.funcs[in.a].nparams);
         if (uint64_t(in.b) + need > f.nregs) bad(pc, "cagri penceresi yazmaclara sigmiyor");
       } else if (in.op == OP_HOST) {
@@ -197,9 +197,10 @@ void analyze_program(Program& p) {
       const Ins& ins = f.code[pc]; const OpInfo& oi = kOpInfo[ins.op];
       memcpy(s.data(), &in[size_t(pc) * W], W * 8);
       auto need = [&](size_t r) { return bit(s.data(), r) != 0; };
-      if (ins.op == OP_CALL) {
+      if (ins.op == OP_CALL || ins.op == OP_CALLI || ins.op == OP_TCALL) {
         size_t np = p.funcs[ins.a].nparams;
         for (size_t j = 0; j < np; j++) if (!need(size_t(ins.b) + j)) return;
+        if (ins.op == OP_CALLI && !need(size_t(ins.c))) return;
         for (size_t r = size_t(ins.b); r < N; r++) s[r >> 6] &= ~(uint64_t(1) << (r & 63));
         setb(s.data(), size_t(ins.b));
       } else if (ins.op == OP_HOST) {
@@ -220,7 +221,7 @@ void analyze_program(Program& p) {
         for (size_t i = 0; i < W; i++) { uint64_t n = t[i] & s[i]; if (n != t[i]) { t[i] = n; ch = true; } }
         if (ch && !queued[to]) { queued[to] = 1; work.push_back(to); }
       };
-      if (ins.op == OP_RET || ins.op == OP_HALT) continue;
+      if (ins.op == OP_RET || ins.op == OP_HALT || ins.op == OP_TCALL) continue;   // TCALL: akis donmez (cerceve devredilir)
       if (ins.op == OP_JMP) { flow(uint32_t(ins.a)); continue; }
       if (ins.op == OP_JTAB) { for (int64_t i = 0; i <= ins.b; i++) flow(uint32_t(pc + 1 + i)); continue; }
       if (ins.op == OP_JZ || ins.op == OP_JNZ) flow(uint32_t(ins.b));

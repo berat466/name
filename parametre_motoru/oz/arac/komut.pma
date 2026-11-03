@@ -2010,6 +2010,9 @@ data STR_P_HALT = "halt\0"
 data STR_P_HOST = "host\0"
 data STR_P_DIVN = "divn\0"
 data STR_P_BRX = "brx\0"
+data STR_P_CALLI = "calli\0"
+data STR_P_TCALL = "tcall\0"
+data STR_OPCS2 = "OPCS2\0"
 data STR_P_MODN = "modn\0"
 data STR_P_IM = "im\0"
 data STR_KFLAGS = "KFLAGS\0"
@@ -2061,6 +2064,7 @@ func semflow(i) {
     st zr, G, 54
     mov mone, -1
     st mone, G, 55
+    st mone, G, 56
     add a, i, SMA
     ld o, a, 0
     jz o, sfd
@@ -2100,8 +2104,26 @@ sf5a: mov v, 1
     st v, G, 50
     jmp sfn
 sf6: call x, pis, pid, STR_P_CALL
-    jz x, sf7
+    jz x, sf6b
     mov v, 1
+    st v, G, 52
+    st f0, G, 53
+    st f1, G, 54
+    jmp sfn
+sf6b: call x, pis, pid, STR_P_CALLI
+    jz x, sf6c
+    ; calli F,b,r: OPCALL 3 (dolayli; F prototip islev), OPCS0 = F yuvasi, OPCS1 = pencere yuvasi, OPCS2 = islev indeksi yazmaci yuvasi
+    mov v, 3
+    st v, G, 52
+    st f0, G, 53
+    st f1, G, 54
+    st f2, G, 56
+    jmp sfn
+sf6c: call x, pis, pid, STR_P_TCALL
+    jz x, sf7
+    ; tcall F,b: akis durur (OPFLOW 1) ama pencere denetimi CALL gibi (OPCALL 1)
+    mov v, 1
+    st v, G, 50
     st v, G, 52
     st f0, G, 53
     st f1, G, 54
@@ -2286,6 +2308,7 @@ func emit_flow() {
     call x, emit_flowarr, STR_OPCALL, 52
     call x, emit_flowarr, STR_OPCS0, 53
     call x, emit_flowarr, STR_OPCS1, 54
+    call x, emit_flowarr, STR_OPCS2, 56
     call x, emit_flowarr, STR_OPDIVSL, 55
     call x, emit_back
     ret 0

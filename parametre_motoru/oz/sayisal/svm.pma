@@ -32,7 +32,7 @@ space SC 256
 space OP3 4
 space G 64
 
-data PNAMES = "rd\0im\0lk\0wr\0alu_add\0alu_sub\0alu_mul\0alu_and\0alu_or\0alu_xor\0alu_shl\0alu_shr\0alu_sar\0cmp_eq\0cmp_ne\0cmp_lt\0cmp_le\0cmp_gt\0cmp_ge\0un_neg\0un_not\0divs\0mods\0divn\0modn\0ld\0st\0br\0brz\0brnz\0call\0ret\0halt\0host\0alloc\0fadd\0fsub\0fmul\0fdiv\0fneg\0fsqrt\0feq\0flt\0fle\0i2f\0f2i\0sel\0sx8\0sx16\0sx32\0zx8\0zx16\0zx32\0cmp_ltu\0cmp_leu\0divu\0modu\0lit\0rdw\0wrw\0mulhu\0lpb\0lpe\0spld\0spst\0brx\0"
+data PNAMES = "rd\0im\0lk\0wr\0alu_add\0alu_sub\0alu_mul\0alu_and\0alu_or\0alu_xor\0alu_shl\0alu_shr\0alu_sar\0cmp_eq\0cmp_ne\0cmp_lt\0cmp_le\0cmp_gt\0cmp_ge\0un_neg\0un_not\0divs\0mods\0divn\0modn\0ld\0st\0br\0brz\0brnz\0call\0ret\0halt\0host\0alloc\0fadd\0fsub\0fmul\0fdiv\0fneg\0fsqrt\0feq\0flt\0fle\0i2f\0f2i\0sel\0sx8\0sx16\0sx32\0zx8\0zx16\0zx32\0cmp_ltu\0cmp_leu\0divu\0modu\0lit\0rdw\0wrw\0mulhu\0lpb\0lpe\0spld\0spst\0brx\0calli\0tcall\0"
 data HNAMES = "putc\0puti\0putf\0getc\0present\0poll\0frame\0"
 data M_TRAP = "@@TRAP \0"
 data M_RED = "@@RED \0"
@@ -825,7 +825,7 @@ take1: addi fuel, fuel, -1
 take2: add nip, fbase, o
     jmp mdone
 d_call: eqi z, pid, 31
-    jz z, d_ret
+    jz z, d_calli
     jnz fuel, cl0
     call x, trap, N_FUEL
 cl0: addi fuel, fuel, -1
@@ -833,6 +833,7 @@ cl0: addi fuel, fuel, -1
     ld cf, a, 0
     add a, f1, OP3
     ld cb, a, 0
+cl_after:
     add a, cf, FR
     ld cnr, a, 0
     add nrb, rb, cb
@@ -866,6 +867,78 @@ cl3: ge z, r, cnr
     jmp cl3
 cl4: mov rb, nrb
     mov fn, cf
+    add a, fn, FB
+    ld nip, a, 0
+    jmp mdone
+d_calli: eqi z, pid, 67
+    jz z, d_tcall
+    ; Bolum 04: calli F,b,r -- F prototip, r islev indeksi yazmaci. Gecersiz indeks / parametre sayisi uyumsuzlugu = OOB. Sonrasi CALL ile ayni.
+    jnz fuel, ci0
+    call x, trap, N_FUEL
+ci0: addi fuel, fuel, -1
+    add a, f0, OP3
+    ld pf, a, 0
+    add a, f1, OP3
+    ld cb, a, 0
+    add a, f2, OP3
+    ld rr, a, 0
+    add a, rb, rr
+    add a, a, RS
+    ld cf, a, 0
+    ld nfn, G, 12
+    lti z, cf, 0
+    jnz z, ci_oob
+    ge z, cf, nfn
+    jz z, ci1
+ci_oob: call x, trap, N_OOB
+ci1: add a, cf, FP
+    ld cnp, a, 0
+    add a, pf, FP
+    ld pnp, a, 0
+    eq z, cnp, pnp
+    jnz z, cl_after
+    call x, trap, N_OOB
+d_tcall: eqi z, pid, 68
+    jz z, d_ret
+    ; Bolum 04: tcall F,b -- kuyruk cagrisi: argumanlar cerceve tabanina, ayni cerceve F'e (derinlik artmaz)
+    jnz fuel, tc0
+    call x, trap, N_FUEL
+tc0: addi fuel, fuel, -1
+    add a, f0, OP3
+    ld cf, a, 0
+    add a, f1, OP3
+    ld cb, a, 0
+    add a, cf, FR
+    ld cnr, a, 0
+    mov lim, 1048576
+    sub room, lim, rb
+    ge z, room, cnr
+    jnz z, tc1
+    call x, trap, N_STACK
+tc1: add a, cf, FP
+    ld cnp, a, 0
+    mov r, 0
+tc2: ge z, r, cnp
+    jnz z, tc3
+    add a, rb, cb
+    add a, a, r
+    add a, a, RS
+    ld v, a, 0
+    add a, rb, r
+    add a, a, RS
+    st v, a, 0
+    addi r, r, 1
+    jmp tc2
+tc3: mov r, cnp
+tc4: ge z, r, cnr
+    jnz z, tc5
+    add a, rb, r
+    add a, a, RS
+    mov zr, 0
+    st zr, a, 0
+    addi r, r, 1
+    jmp tc4
+tc5: mov fn, cf
     add a, fn, FB
     ld nip, a, 0
     jmp mdone

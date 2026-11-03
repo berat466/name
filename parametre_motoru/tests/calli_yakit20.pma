@@ -1,0 +1,27 @@
+func proto1(a) {
+  ret a
+}
+func fib(n) {
+  lti c, n, 2
+  jz c, R
+  ret n
+R: addi a, n, -1
+  ldi fp, 1
+  calli x, proto1, fp, a
+  addi b, n, -2
+  calli y, proto1, fp, b
+  add z, x, y
+  ret z
+}
+func main() {
+  ldi i, 0
+L: ldi fp, 1
+  calli r, proto1, fp, i
+  host puti, r
+  host putc, 32
+  addi i, i, 1
+  lti c, i, 15
+  jnz c, L
+  host putc, 10
+  halt
+}

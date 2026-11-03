@@ -243,6 +243,8 @@ struct Asm {
   template <class R, class W>
   void regAccess(const Ins& in, R onRead, W onWrite) {
     if (in.op == OP_CALL) { size_t np = fsrc[in.a].params.size(); for (size_t j = 0; j < np; j++) onRead(in.b + int(j)); onWrite(in.b); return; }
+    if (in.op == OP_CALLI) { size_t np = fsrc[in.a].params.size(); for (size_t j = 0; j < np; j++) onRead(in.b + int(j)); onRead(in.c); onWrite(in.b); return; }
+    if (in.op == OP_TCALL) { size_t np = fsrc[in.a].params.size(); for (size_t j = 0; j < np; j++) onRead(in.b + int(j)); return; }
     if (in.op == OP_HOST) { int ar = kHostInfo[in.a].arity; for (int j = 0; j < ar; j++) onRead(in.b + j); onWrite(in.b); return; }
     const OpInfo& oi = kOpInfo[in.op];
     for (int j = 0; j < oi.nops; j++) {
@@ -261,7 +263,7 @@ struct Asm {
     for (const Ins& in : C) { const OpInfo& oi = kOpInfo[in.op]; for (int j = 0; j < oi.nops; j++) if (oi.kinds[j] == 'l') tgt[size_t(j == 0 ? in.a : j == 1 ? in.b : in.c)] = 1; }
     std::vector<int> rd(f.nregs, 0), wr(f.nregs, 0);
     for (const Ins& in : C) regAccess(in, [&](int r) { rd[size_t(r)]++; }, [&](int r) { wr[size_t(r)]++; });
-    auto stops = [](uint16_t op) { return op == OP_JMP || op == OP_JZ || op == OP_JNZ || op == OP_RET || op == OP_HALT || op == OP_CALL || op == OP_HOST; };
+    auto stops = [](uint16_t op) { return op == OP_JMP || op == OP_JZ || op == OP_JNZ || op == OP_RET || op == OP_HALT || op == OP_CALL || op == OP_HOST || op == OP_CALLI || op == OP_TCALL; };
     auto refs = [&](const Ins& in, int r) { bool x = false; regAccess(in, [&](int q) { if (q == r) x = true; }, [&](int q) { if (q == r) x = true; }); return x; };
     for (size_t u = 0; u < M; u++) {   // A
       const Ins m = C[u];
@@ -336,10 +338,16 @@ struct Asm {
       if (op < 0) err(st.line, "bilinmeyen komut: " + n.mn);
       if (op == OP_LDK) err(st.line, "ldk metinde kullanilamaz (sabitleri yukleyici uretir)");
       const OpInfo& oi = kOpInfo[op];
-      if (op == OP_CALL) {
+      if (op == OP_CALL || op == OP_TCALL) {
         if (n.a.empty()) err(st.line, "call eksik");
-        if (!funcIdx.count(n.a[0])) {                 // call d, f, args...
-          if (n.a.size() < 2 || !funcIdx.count(n.a[1])) err(st.line, "call [d,] fonksiyon, argumanlar... ; fonksiyon bulunamadi");
+        if (!funcIdx.count(n.a[0])) {                 // call d, f, args...   (tcall: hedefsiz, yalniz tcall f, args...)
+          if (op == OP_TCALL || n.a.size() < 2 || !funcIdx.count(n.a[1])) err(st.line, std::string(op == OP_CALL ? "call" : "tcall") + " [d,] fonksiyon, argumanlar... ; fonksiyon bulunamadi");
+          addReg(n.a[0], st.line);
+        }
+      } else if (op == OP_CALLI) {                    // calli [d,] prototip, isaretci, args...
+        if (n.a.empty()) err(st.line, "calli eksik");
+        if (!funcIdx.count(n.a[0])) {
+          if (n.a.size() < 3 || !funcIdx.count(n.a[1])) err(st.line, "calli [d,] prototip_fonksiyon, isaretci, argumanlar... ; prototip bulunamadi");
           addReg(n.a[0], st.line);
         }
       } else if (op == OP_HOST) {
@@ -401,13 +409,14 @@ struct Asm {
       IIns I; I.line = n.line; I.op = op_index(n.mn);
       const OpInfo& oi = kOpInfo[I.op];
       uint64_t lb = 0;
-      if (I.op == OP_CALL || I.op == OP_HOST) {
+      if (I.op == OP_CALL || I.op == OP_HOST || I.op == OP_CALLI || I.op == OP_TCALL) {
         size_t k = 0;
-        bool isCall = I.op == OP_CALL;
+        bool isCall = I.op != OP_HOST;
         bool direct = isCall ? funcIdx.count(n.a[0]) > 0 : host_index(n.a[0]) >= 0;
         if (!direct) { I.has_dest = true; I.dest = dst(n.a[0], n.line); k = 1; }
         Opd t; t.t = isCall ? Opd::FUN : Opd::HOST; t.v = isCall ? funcIdx[n.a[k]] : host_index(n.a[k]);
         I.o[0] = t; k++;
+        if (I.op == OP_CALLI) { if (k >= n.a.size()) err(n.line, "calli: isaretci yazmaci eksik"); I.o[1] = src(n.a[k], 'r', n.line); k++; }
         int want = isCall ? int(fsrc[t.v].params.size()) : kHostInfo[t.v].arity;
         int got = int(n.a.size() - k);
         if (got != want) err(n.line, std::string(oi.name) + ": " + std::to_string(want) + " arguman bekleniyor, " + std::to_string(got) + " verildi");
@@ -456,7 +465,7 @@ struct Asm {
     for (int i = 0; i < nLits; i++) emitConst(nNamed + i, int64_t(lits[size_t(i)]));   // on hazirlik: sabit yazmaclari
     size_t pre = f.code.size();
     auto sizeOf = [](const IIns& I) -> size_t {
-      if (I.op == OP_CALL || I.op == OP_HOST) return I.args.size() + 1 + (I.has_dest ? 1 : 0);
+      if (I.op == OP_CALL || I.op == OP_HOST || I.op == OP_CALLI || I.op == OP_TCALL) return I.args.size() + 1 + (I.has_dest ? 1 : 0);
       if (I.op == OP_RET && I.o[0].t == Opd::CONST) return 2;
       return 1;
     };
@@ -467,12 +476,12 @@ struct Asm {
     if (pc > Limits::kMaxCode) err(fs.line, "fonksiyon cok uzun: " + fs.name);
 
     for (const IIns& I : code) {
-      if (I.op == OP_CALL || I.op == OP_HOST) {
+      if (I.op == OP_CALL || I.op == OP_HOST || I.op == OP_CALLI || I.op == OP_TCALL) {
         for (size_t j = 0; j < I.args.size(); j++) {
           if (I.args[j].t == Opd::CONST) emitConst(w + int32_t(j), I.args[j].v);
           else { Ins m{}; m.op = OP_MOV; m.a = w + int32_t(j); m.b = reg(I.args[j]); f.code.push_back(m); }
         }
-        Ins c{}; c.op = uint16_t(I.op); c.a = int32_t(I.o[0].v); c.b = w; f.code.push_back(c);
+        Ins c{}; c.op = uint16_t(I.op); c.a = int32_t(I.o[0].v); c.b = w; if (I.op == OP_CALLI) c.c = reg(I.o[1]); f.code.push_back(c);
         if (I.has_dest) { Ins m{}; m.op = OP_MOV; m.a = reg(I.dest); m.b = w; f.code.push_back(m); }
         continue;
       }

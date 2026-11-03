@@ -27,7 +27,7 @@ enum FunK : uint8_t { FUNK_NEG, FUNK_SQRT };
 enum FcmpK : uint8_t { FCMPK_EQ, FCMPK_LT, FCMPK_LE };
 enum MicroKind : uint8_t { MK_END, MK_RD, MK_IM, MK_LK, MK_ALU, MK_CMP, MK_UN, MK_DIVS, MK_MODS, MK_DIVN, MK_MODN, MK_WR,
                            MK_LD, MK_ST, MK_BR, MK_BRZ, MK_BRNZ, MK_CALLM, MK_RETM, MK_HALTM, MK_HOSTM, MK_ALLOCM, MK_FALU, MK_FUN, MK_FCMP, MK_CVTIF, MK_CVTFI,
-                           MK_SX, MK_ZX, MK_DIVU, MK_MODU, MK_LIT, MK_U2F, MK_F2U, MK_RNDF, MK_I2FN, MK_BSWAP, MK_W128, MK_WFP, MK_WCX, MK_BRX };   // MK_SX.. : Plan Bolum 01 (tamsayi turleri); makine kodu uretecinde (native) DESTEKLENMEZ -> yorumlayici
+                           MK_SX, MK_ZX, MK_DIVU, MK_MODU, MK_LIT, MK_U2F, MK_F2U, MK_RNDF, MK_I2FN, MK_BSWAP, MK_W128, MK_WFP, MK_WCX, MK_BRX, MK_CALLIM, MK_TCALLM };   // MK_SX.. : Plan Bolum 01 (tamsayi turleri); makine kodu uretecinde (native) DESTEKLENMEZ -> yorumlayici
 struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define OPD_a 0
 #define OPD_b 1
@@ -84,6 +84,8 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define SEM_JNZ(M)  M##_RD(1,a) M##_BRNZ(1,b)
 // Plan Bolum 03: atlama tablosu (jtab r, n): dizin r in [0,n) ise ip+1+r, degilse ip+1+n ; ardindaki n adet `jmp` merdiveni hedefleri tasir. Yalniz ileri atlama (yakit kontrol noktasi yok).
 #define SEM_JTAB(M) M##_RD(1,a) M##_IM(2,b) M##_BRX(1,2)
+#define SEM_CALLI(M) M##_CALLIM(a,b,c)
+#define SEM_TCALL(M) M##_TCALLM(a,b)
 #define SEM_CALL(M) M##_CALLM(a,b)
 #define SEM_RET(M)  M##_RD(1,a) M##_RETM(1)
 #define SEM_HALT(M) M##_HALTM()
@@ -260,7 +262,7 @@ struct MicroOp { MicroKind k; uint8_t a, b, c, d; };
 #define PM_SEM_OPS(X) PM_SEM_OPS_WFP(X) PM_SEM_OPS_WCX(X) PM_SEM_OPS_WI(X) \
   X(MOV) X(LDI) X(LDK) X(ADD) X(SUB) X(MUL) X(AND) X(OR) X(XOR) X(SHL) X(SHR) X(SAR) X(EQ) X(NE) X(LT) X(LE) \
   X(NEG) X(NOT) X(DIV) X(MOD) X(ADDI) X(MULI) X(ANDI) X(SHLI) X(SHRI) X(SARI) X(DIVI) X(MODI) \
-  X(EQI) X(NEI) X(LTI) X(LEI) X(GTI) X(GEI) X(JMP) X(JZ) X(JNZ) X(JTAB) X(CALL) X(RET) X(HALT) X(LD) X(ST) X(ALLOC) X(HOST) \
+  X(EQI) X(NEI) X(LTI) X(LEI) X(GTI) X(GEI) X(JMP) X(JZ) X(JNZ) X(JTAB) X(CALLI) X(TCALL) X(CALL) X(RET) X(HALT) X(LD) X(ST) X(ALLOC) X(HOST) \
   X(FADD) X(FSUB) X(FMUL) X(FDIV) X(FNEG) X(FSQRT) X(FEQ) X(FLT) X(FLE) X(I2F) X(F2I) \
   X(SEXT8) X(SEXT16) X(SEXT32) X(ZEXT8) X(ZEXT16) X(ZEXT32) X(ADD_I8) X(SUB_I8) X(MUL_I8) X(SHL_I8) X(DIV_I8) X(MOD_I8) X(NEG_I8) X(ADD_I16) X(SUB_I16) X(MUL_I16) X(SHL_I16) X(DIV_I16) X(MOD_I16) X(NEG_I16) X(ADD_I32) X(SUB_I32) X(MUL_I32) X(SHL_I32) X(DIV_I32) X(MOD_I32) X(NEG_I32) X(ADD_U8) X(SUB_U8) X(MUL_U8) X(SHL_U8) X(NEG_U8) X(NOT_U8) X(ADD_U16) X(SUB_U16) X(MUL_U16) X(SHL_U16) X(NEG_U16) X(NOT_U16) X(ADD_U32) X(SUB_U32) X(MUL_U32) X(SHL_U32) X(NEG_U32) X(NOT_U32) X(DIVU) X(MODU) X(LTU) X(LEU) X(U2F) X(F2U) \
   X(TOBOOL) X(BNOT) X(BAND) X(BOR) X(BXOR) X(NULLB) \
@@ -369,6 +371,8 @@ static inline int pm_w128(int code, int p1, int p2, uint64_t* R, int a, int b, i
 #define DATA_BRNZ(t,x) {MK_BRNZ, t, OPD_##x, 0, 0},
 #define DATA_BRX(t,tn) {MK_BRX, t, tn, 0, 0},
 #define DATA_CALLM(f,b) {MK_CALLM, OPD_##f, OPD_##b, 0, 0},
+#define DATA_CALLIM(f,b,r) {MK_CALLIM, OPD_##f, OPD_##b, OPD_##r, 0},
+#define DATA_TCALLM(f,b) {MK_TCALLM, OPD_##f, OPD_##b, 0, 0},
 #define DATA_RETM(t) {MK_RETM, t, 0, 0, 0},
 #define DATA_HALTM() {MK_HALTM, 0, 0, 0, 0},
 #define DATA_HOSTM(h,b) {MK_HOSTM, OPD_##h, OPD_##b, 0, 0},
@@ -455,6 +459,25 @@ inline const MicroOp* sem_of(int op) {
     frames[depth++] = Frame{ip + 1, R, cur}; \
     if (!P.zero_free) memset(nr_ + g_.nparams, 0, size_t(g_.nregs - g_.nparams) * 8); \
     R = nr_; cur = uint32_t(in.f); fn = &g_; ip = g_.code.data(); continue; }
+// Bolum 04: dolayli cagri. f = PROTOTIP islev (imza), b = pencere, r = hedef islev indeksini tutan yazmac. Gecersiz indeks ya da parametre sayisi uyumsuzlugu = TRAP OOB.
+#define INTERP_CALLIM(f,b,r) { \
+    CHECKPOINT(); \
+    uint64_t fi_ = R[in.r]; if (fi_ >= P.funcs.size()) TRAP(T_OOB); \
+    const Func& g_ = P.funcs[fi_]; if (g_.nparams != P.funcs[in.f].nparams) TRAP(T_OOB); \
+    uint64_t* nr_ = R + in.b; \
+    if (size_t(stack_end - nr_) < g_.nregs) TRAP(T_STACK); \
+    if (depth >= frames.size()) TRAP(T_DEPTH); \
+    frames[depth++] = Frame{ip + 1, R, cur}; \
+    if (!P.zero_free) memset(nr_ + g_.nparams, 0, size_t(g_.nregs - g_.nparams) * 8); \
+    R = nr_; cur = uint32_t(fi_); fn = &g_; ip = g_.code.data(); continue; }
+// Bolum 04: kuyruk cagrisi. Pencere argumanlari cercevenin tabanina tasinir; ayni cerceve f'e devredilir (derinlik artmaz, donus adresi korunur).
+#define INTERP_TCALLM(f,b) { \
+    CHECKPOINT(); \
+    const Func& g_ = P.funcs[in.f]; \
+    if (size_t(stack_end - R) < g_.nregs) TRAP(T_STACK); \
+    for (uint32_t k_ = 0; k_ < g_.nparams; k_++) R[k_] = R[uint32_t(in.b) + k_]; \
+    if (!P.zero_free) memset(R + g_.nparams, 0, size_t(g_.nregs - g_.nparams) * 8); \
+    cur = uint32_t(in.f); fn = &g_; ip = g_.code.data(); continue; }
 #define INTERP_RETM(t) { \
     if (depth == 0) { result = int64_t(T##t); goto done; } \
     R[0] = T##t; const Frame& fr_ = frames[--depth]; \

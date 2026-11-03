@@ -1,0 +1,18 @@
+func proto1(a) {
+  ret a
+}
+func f1(a) {
+  addi r, a, 1
+  ret r
+}
+func main() {
+  ldi i, 1
+  ldi x, 5
+  calli r, proto1, i, x
+  host puti, r
+  host putc, 10
+  ldi i, 99
+  calli r, proto1, i, x
+  host puti, r
+  halt
+}

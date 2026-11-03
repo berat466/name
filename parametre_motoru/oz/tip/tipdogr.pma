@@ -717,8 +717,28 @@ sc1: ge z, i, cnp
     call x, die, 24, f, pc
 sc2: addi i, i, 1
     jmp sc1
-scg: ; sonuc turu
-scallg: add b, o0, PRT
+scg: ; calli (3. yuva yazmac): islev indeksi yazmaci tamsayi olmali
+    eqi z, c2, 114
+    jz z, scallg
+    jz md2, scallg
+    call at2, curtype, f, nr, pc, o2
+    mov sp1, -1
+    call ok, matchslot, sp1, at2, 0, 0, 0
+    jnz ok, scallg
+    call x, die, 21, f, pc
+scallg: eqi z, fl, 1
+    jz z, scallr
+    ; tcall (akis durur): hedefin donus turu bu islevin donus turuyle ayni olmali
+    jz md2, sdone
+    add b, o0, PRT
+    ld crt, b, 0
+    add b, f, PRT
+    ld rt, b, 0
+    eq z, crt, rt
+    jnz z, sdone
+    call x, die, 26, f, pc
+scallr: ; sonuc turu
+    add b, o0, PRT
     ld crt, b, 0
     jz crt, sdone
     call dt, rtype, f, o1
@@ -1025,7 +1045,28 @@ w2: call x, step, f, nr, pc, gi, md2, 0
     ld fl, t, 0
     ld tg, t, 1
     mov chg, 0
-    ; ardil: dusme (akis 0 ya da 3) 
+    ; jtab (akis 4): ardiller ip+1 .. ip+1+n (n = tg yuvasindaki anlik)
+    eqi z, fl, 4
+    jz z, nofl4
+    add b, gi, XA
+    jz tg, j4a
+    add b, gi, XB
+    eqi z, tg, 1
+    jnz z, j4a
+    add b, gi, XC
+j4a: ld nn, b, 0
+    mov ti, 0
+j4l: gt z, ti, nn
+    jnz z, restore
+    add np, pc, 1
+    add np, np, ti
+    ge z, np, nc
+    jnz z, restore
+    call c1, prop, pc, np, nr
+    add chg, chg, c1
+    addi ti, ti, 1
+    jmp j4l
+nofl4: ; ardil: dusme (akis 0 ya da 3) 
     eqi z, fl, 0
     jnz z, fall
     eqi z, fl, 3

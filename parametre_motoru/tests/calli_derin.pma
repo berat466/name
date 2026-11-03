@@ -1,0 +1,15 @@
+func proto1(a) {
+  ret a
+}
+func rec(n) {
+  addi a, n, 1
+  ldi fp, 1
+  calli x, proto1, fp, a
+  ret x
+}
+func main() {
+  ldi fp, 1
+  ldi i, 0
+  calli r, proto1, fp, i
+  halt
+}

@@ -195,7 +195,11 @@ q2: call op, nx
     ge z, op, @OPCOUNT@
     jz z, q3
     call x, fail
-q3: add a, gi, OPS
+q3: eq z, op, @OP_CALLI@
+    jz z, q4
+    mov one, 1
+    st one, G, 81
+q4: add a, gi, OPS
     st op, a, 0
     add a, op, NOPS
     ld nops, a, 0
@@ -397,7 +401,16 @@ func eb64(v) {
 
 ; imm32 simgesi (k = simge-256) degeri
 func val32(k) {
-    ld a, G, 20
+    eqi z, k, 35
+    jz z, vn1
+    ld r, G, 11
+    ret r
+vn1: eqi z, k, 36
+    jz z, vn2
+    ld r, G, 80
+    add r, r, 4194304
+    ret r
+vn2: ld a, G, 20
     ld b, G, 21
     ld c, G, 22
     eq z, k, 0
@@ -1075,6 +1088,32 @@ eid:
     add f, f, 1
     jmp ef
 efd:
+    ; Bolum 04: dolayli cagri stub tablosu (islev basina 128 bayt; calli_stub sablonu, G[20] = islev). STUBS simgesi G[80].
+    mov s, 80
+    call x, mark, s
+    ld hc, G, 81
+    jz hc, stbd
+    mov f, 0
+    ld nf, G, 11
+stb: ge z, f, nf
+    jnz z, stbd
+    st f, G, 20
+    ld p0, G, 2
+    call x, etpl, @TS_CALLI_STUB@
+    ld p1, G, 2
+    sub p1, p1, p0
+    gti z, p1, 128
+    jz z, stb1
+    call x, fail
+stb1: lti z, p1, 128
+    jz z, stb2
+    mov cc3, 204
+    call x, eb, cc3
+    addi p1, p1, 1
+    jmp stb1
+stb2: addi f, f, 1
+    jmp stb
+stbd:
     mov s, 30
     call x, mark, s
     call x, etpl, @TS_EXIT0@

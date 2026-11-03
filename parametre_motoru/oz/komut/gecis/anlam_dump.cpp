@@ -44,6 +44,8 @@ int main() {
         case MK_BRNZ: printf("brnz t%d ", m->a); opd(m->b); break;
         case MK_BRX: printf("brx t%d t%d", m->a, m->b); break;
         case MK_CALLM: printf("call "); opd(m->a); putchar(' '); opd(m->b); break;
+        case MK_CALLIM: printf("calli "); opd(m->a); putchar(' '); opd(m->b); putchar(' '); opd(m->c); break;
+        case MK_TCALLM: printf("tcall "); opd(m->a); putchar(' '); opd(m->b); break;
         case MK_RETM: printf("ret t%d", m->a); break;
         case MK_HALTM: printf("halt"); break;
         case MK_HOSTM: printf("host "); opd(m->a); putchar(' '); opd(m->b); break;

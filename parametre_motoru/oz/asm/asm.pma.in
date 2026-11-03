@@ -2028,6 +2028,10 @@ st4: call m, mnid, mo, ml
     call x, err, 66
 st5: eq z, op, @OP_CALL@
     jnz z, ccall
+    eq z, op, @OP_CALLI@
+    jnz z, ccall
+    eq z, op, @OP_TCALL@
+    jnz z, ctcall
     eq z, op, @OP_HOST@
     jnz z, chost
     ; genel
@@ -2094,6 +2098,14 @@ cc2: call o1, opr, i, 1
     call x, err, 69
 cc3: call x, addreg, o, l
     jmp fin
+ctcall: jnz na, ct1
+    call x, err, 68
+ct1: call o, opr, i, 0
+    ld l, G, 64
+    call r, funcfind, o, l
+    gei z, r, 0
+    jnz z, fin
+    call x, err, 69
 chost: jnz na, ch1
     call x, err, 70
 ch1: call o, opr, i, 0
@@ -2227,6 +2239,10 @@ q1: ge z, i, nir
     ld na, a, 0
     eq z, op, @OP_CALL@
     jnz z, qcall
+    eq z, op, @OP_CALLI@
+    jnz z, qcall
+    eq z, op, @OP_TCALL@
+    jnz z, qcall
     eq z, op, @OP_HOST@
     jnz z, qcall
     ; mov d, sabit
@@ -2318,8 +2334,12 @@ q9: add j, j, 1
     jmp q4
 qcall:
     mov k, 0
-    eq z, op, @OP_CALL@
-    jz z, ch1
+    ; isfn: islev cagrisi ailesi (call / calli / tcall) ; host degil
+    mov isfn, 1
+    eq z, op, @OP_HOST@
+    jz z, qc0
+    mov isfn, 0
+qc0: jz isfn, ch1
     call o0, opr, i, 0
     ld l0, G, 64
     call r, funcfind, o0, l0
@@ -2342,19 +2362,29 @@ nodirect:
 direct:
     call ok_, opr, i, k
     ld lk, G, 64
-    eq z, op, @OP_CALL@
-    jz z, ch2
+    jz isfn, ch2
     call id, funcfind, ok_, lk
     jmp ch3
 ch2: call id, hostid, ok_, lk
 ch3: mov ty, 5
-    eq z, op, @OP_CALL@
-    jnz z, ch4
+    jnz isfn, ch4
     mov ty, 6
 ch4: call x, setio, i, 0, ty, id
     add k, k, 1
-    eq z, op, @OP_CALL@
-    jz z, ch5
+    ; calli: islev indeksi yazmaci (kaynak) -- 2. giris/cikis yuvasi
+    eq z, op, @OP_CALLI@
+    jz z, chp
+    ge z, k, na
+    jz z, chq
+    call x, err, 88
+chq: call op_, opr, i, k
+    ld lp, G, 64
+    call x, src_opd, op_, lp, 4
+    ld tp, G, 61
+    ld vp, G, 62
+    call x, setio, i, 1, tp, vp
+    add k, k, 1
+chp: jz isfn, ch5
     add a, id, FNNP
     ld want, a, 0
     jmp ch6
@@ -2465,9 +2495,16 @@ func isrd(i, r) {
     ld cc, a, 0
     eq z, op, @OP_CALL@
     jnz z, c1
+    eq z, op, @OP_TCALL@
+    jnz z, c1
+    eq z, op, @OP_CALLI@
+    jnz z, ci1
     eq z, op, @OP_HOST@
     jnz z, h1
     jmp gen
+ci1: eq z, cc, r
+    jz z, c1
+    ret 1
 c1: add a, ca, FNNP
     ld cnt, a, 0
     jmp win
@@ -2530,7 +2567,12 @@ func iswr(i, r) {
     ld cc, a, 0
     eq z, op, @OP_CALL@
     jnz z, w1
-    eq z, op, @OP_HOST@
+    eq z, op, @OP_CALLI@
+    jnz z, w1
+    eq z, op, @OP_TCALL@
+    jz z, w0
+    ret 0
+w0: eq z, op, @OP_HOST@
     jnz z, w1
     jmp gen
 w1: eq z, cb, r
@@ -2584,6 +2626,10 @@ func isstop(op) {
     jnz z, y
     eq z, op, @OP_CALL@
     jnz z, y
+    eq z, op, @OP_CALLI@
+    jnz z, y
+    eq z, op, @OP_TCALL@
+    jnz z, y
     eq z, op, @OP_HOST@
     jnz z, y
     ret 0
@@ -2600,6 +2646,10 @@ func countacc(i) {       ; RD/WR sayaclarini artir
     add a, i, CC
     ld cc, a, 0
     eq z, op, @OP_CALL@
+    jnz z, c1
+    eq z, op, @OP_CALLI@
+    jnz z, c1
+    eq z, op, @OP_TCALL@
     jnz z, c1
     eq z, op, @OP_HOST@
     jnz z, h1
@@ -2619,7 +2669,16 @@ w1: ge z, k, cnt
     st v, a, 0
     add k, k, 1
     jmp w1
-w2: add a, cb, WR
+w2: eq z, op, @OP_CALLI@
+    jz z, w3
+    add a, cc, RD
+    ld v, a, 0
+    add v, v, 1
+    st v, a, 0
+w3: eq z, op, @OP_TCALL@
+    jz z, w4
+    ret 0
+w4: add a, cb, WR
     ld v, a, 0
     add v, v, 1
     st v, a, 0
@@ -3112,6 +3171,10 @@ b11: ge z, i, nir
     ld op, a, 0
     eq z, op, @OP_CALL@
     jnz z, b12
+    eq z, op, @OP_CALLI@
+    jnz z, b12
+    eq z, op, @OP_TCALL@
+    jnz z, b12
     eq z, op, @OP_HOST@
     jnz z, b12
     eq z, op, @OP_RET@
@@ -3144,6 +3207,10 @@ e1: ge z, i, nir
     add a, i, IIOP
     ld op, a, 0
     eq z, op, @OP_CALL@
+    jnz z, ecall
+    eq z, op, @OP_CALLI@
+    jnz z, ecall
+    eq z, op, @OP_TCALL@
     jnz z, ecall
     eq z, op, @OP_HOST@
     jnz z, ecall
@@ -3193,7 +3260,15 @@ e2b: add j, j, 1
     jmp e2
 e3: add a, i, IOV0
     ld id, a, 0
-    call x, emit, op, id, w, 0
+    mov pr_, 0
+    eq z, op, @OP_CALLI@
+    jz z, e3a
+    add a, i, IOT1
+    ld ty, a, 0
+    add a, i, IOV1
+    ld v, a, 0
+    call pr_, regof, ty, v
+e3a: call x, emit, op, id, w, pr_
     add a, i, IIHAS
     ld hs, a, 0
     jz hs, enext

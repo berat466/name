@@ -41,7 +41,7 @@ void parse_pmk() {
       while (r < n) {
         long long rl = rd(); long long pid = rd(); long long al = rd(); char nm[40]; long long q = 0; while (q < al) { long long ch = rd(); if (q < 39) nm[q] = ch; q = q + 1; } nm[al < 39 ? al : 39] = 0;
         int cl = 0;   // 0 saf ; 1 br ; 2 brz ; 3 brnz ; 4 call ; 5 ret ; 6 halt ; 7 brx ; 8 host ; 9 yan etkili/tuzakli
-        if (seqs(nm, "br")) cl = 1; else if (seqs(nm, "brz")) cl = 2; else if (seqs(nm, "brnz")) cl = 3; else if (seqs(nm, "call")) cl = 4; else if (seqs(nm, "ret")) cl = 5; else if (seqs(nm, "halt")) cl = 6; else if (seqs(nm, "brx")) cl = 7; else if (seqs(nm, "host")) cl = 8;
+        if (seqs(nm, "br")) cl = 1; else if (seqs(nm, "brz")) cl = 2; else if (seqs(nm, "brnz")) cl = 3; else if (seqs(nm, "call") || seqs(nm, "calli")) cl = 4; else if (seqs(nm, "ret") || seqs(nm, "tcall")) cl = 5; else if (seqs(nm, "halt")) cl = 6; else if (seqs(nm, "brx")) cl = 7; else if (seqs(nm, "host")) cl = 8;
         else if (seqs(nm, "divs") || seqs(nm, "mods") || seqs(nm, "divn") || seqs(nm, "modn") || seqs(nm, "ld") || seqs(nm, "st") || seqs(nm, "alloc") || seqs(nm, "divu") || seqs(nm, "modu") || seqs(nm, "lpb") || seqs(nm, "lpe") || seqs(nm, "spld") || seqs(nm, "spst")) cl = 9;
         if (pid < 200) { pcls[pid] = cl; pn[pid] = al; }
         long long nal = rd(); skip(nal); long long used = 1 + 1 + al + 1 + nal; skip(rl - used); r = r + 1;

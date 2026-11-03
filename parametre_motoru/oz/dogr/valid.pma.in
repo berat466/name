@@ -28,9 +28,10 @@ data OPTGT = @OPTGT@
 data OPCALL = @OPCALL@
 data OPCS0 = @OPCS0@
 data OPCS1 = @OPCS1@
+data OPCS2 = @OPCS2@
 data OPDIVSL = @OPDIVSL@
 ; komut ozellikleri komut tablosunun SEM bolumunden turetilir: OPFLOW 0 siradan 1 durdurur (ret/halt) 2 kosulsuz atlama 3 kosullu atlama; OPTGT hedef operand yuvasi;
-;   OPCALL 0 yok 1 islev cagrisi 2 host cagrisi (OPCS0 islev/host kimligi yuvasi, OPCS1 pencere tabani yuvasi); OPDIVSL bolen anlik operand yuvasi (-1 yok); KFLAGS tur bayraklari (KIND bolumu)
+;   OPCALL 0 yok 1 islev cagrisi (call, tcall) 2 host cagrisi 3 dolayli cagri (calli: OPCS2 = islev indeksi yazmaci yuvasi) (OPCS0 islev/host kimligi yuvasi, OPCS1 pencere tabani yuvasi); OPDIVSL bolen anlik operand yuvasi (-1 yok); KFLAGS tur bayraklari (KIND bolumu)
 
 ; G: 0 NT  1 bayrak  2 bellek  3 giris  4 nsabit  5 nveri  6 bss  7 nfonk  8 imlec  9 toplam komut
 ;    12 W  13 M  14 base  15 nparam  16 nregs
@@ -433,8 +434,8 @@ vcall:
     add a, a, s1
     add a, a, TOK
     ld fb, a, 0
-    eqi z, cc, 1
-    jz z, vhq
+    eqi z, cc, 2
+    jnz z, vhq
     add a, fa, FNP
     ld need, a, 0
     jmp vneed
@@ -447,8 +448,8 @@ vneed:
 wc: add t, fb, need
     gt z, t, nr
     jz z, vtab
-    eqi z, cc, 1
-    jz z, whx
+    eqi z, cc, 2
+    jnz z, whx
     call x, rej, 18
 whx:
     call x, rej, 19
@@ -694,8 +695,21 @@ swc:
     add a, a, s1
     add a, a, TOK
     ld fb, a, 0
-    eqi z, cc, 1
-    jz z, shq
+    ; calli (OPCALL 3): islev indeksi yazmaci tanimli olmali
+    eqi z, cc, 3
+    jz z, swc2
+    add a, op, OPCS2
+    ld s2, a, 0
+    add a, p, 1
+    add a, a, s2
+    add a, a, TOK
+    ld fr_, a, 0
+    call g, getbit, fr_
+    jnz g, swc2
+    ret 0
+swc2:
+    eqi z, cc, 2
+    jnz z, shq
     add a, fa, FNP
     ld cnt, a, 0
     jmp swin
@@ -714,8 +728,8 @@ s3n:
     add j, j, 1
     jmp s3
 s3d:
-    eqi z, cc, 1
-    jz z, s4
+    eqi z, cc, 2
+    jnz z, s4
     call x, clrfrom, fb
 s4: call x, setbit, fb
 sflow:
