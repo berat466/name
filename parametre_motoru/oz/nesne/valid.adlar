@@ -15,15 +15,15 @@ func analyze_func
 func analyze
 func main
 space TOK 0
-space FL 524288
-space INSPOS 1048576
-space IN 1572864
-space RCH 2097152
-space QUE 2621440
-space WRK 3145728
-space FNP 3670016
-space FNR 3735552
-space FNC 3801088
-space FNB 3866624
-space S 3932160
-space G 3933184
+space FL 2097152
+space INSPOS 4194304
+space IN 6291456
+space RCH 8388608
+space QUE 10485760
+space WRK 12582912
+space FNP 14680064
+space FNR 14745600
+space FNC 14811136
+space FNB 14876672
+space S 14942208
+space G 14943232

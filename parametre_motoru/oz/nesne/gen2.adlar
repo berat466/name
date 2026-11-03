@@ -27,13 +27,13 @@ func emit_all
 func rtimg
 func main
 space T 0
-space OPS 524288
-space OA 1048576
-space OB 1572864
-space OC 2097152
-space OFF 2621440
-space FBASE 3145728
-space FNP 3211264
-space FNR 3276800
-space G 3342336
-space EV 3342464
+space OPS 2097152
+space OA 3145728
+space OB 4194304
+space OC 5242880
+space OFF 6291456
+space FBASE 7340032
+space FNP 7405568
+space FNR 7471104
+space G 7536640
+space EV 7536768

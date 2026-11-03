@@ -1,0 +1,2 @@
+// RED: E_UNDEF  -- extern global tanimsiz kullanildi
+extern int ex; int main(){ return ex; }

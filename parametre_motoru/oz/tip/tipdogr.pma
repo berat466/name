@@ -5,7 +5,7 @@
 ;                 tur kimligi: TYPES kimligi | 254 DIN (akis izlemeli: tur komutlar boyunca izlenir) | 255 DEVAM (cok sozcuklu degerin ust sozcugu)
 ; cikis: "1"  ya da  "0 KOD islev komut". Tur kurallari TABLODAN gelir (komut imzalari, donusum matrisi, host imzalari); bu aracta komut adi/turu sabit kodlanmamistir.
 ; Yazmac turleri: bildirilen tur sabittir; DIN yazmaclar icin her komutta akis duyarli tur izlenir (kosul yollari birlesince farkli tur -> BILINMEYEN, kullanimi reddedilir).
-memory 40000000
+memory 60000000
 entry main
 space IB 3000000
 space ZA 40000
@@ -26,7 +26,7 @@ space TCL 256
 space TNW 256
 space TBT 256
 space TSG 256
-space ST 4000000
+space ST 12000000
 space RC 524288
 space RT 4096
 space G 64
@@ -956,7 +956,7 @@ a1: ge z, f, nf
     add b, f, FC
     ld nc, b, 0
     mul t, nc, nr
-    gti z, t, 4000000
+    gti z, t, 12000000
     jz z, a1a
     call x, die, 40, f, 0
 a1a: ; durum dizisini temizle

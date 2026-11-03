@@ -97,6 +97,11 @@ for bt in $T/kbad*.t; do tb=$( { echo '@@IMZA'; cat $IMZ; echo '@@PROGRAM'; cat 
 head -c 2000 $TAB > $T/kisa.pmk; cat $T/kisa.pmk $T/k.pmx | lim $T/ifx.elf > /dev/null 2>&1; [ $? -ne 139 ] && pass || fail "kisa tablo: cokme"
 # 3c) atlama tablosu: yogun switch jtab uretir, seyrek switch ikili arama (karsilastirma) ; her ikisi de testlerde dogrulanir
 { cat $TAB; cat $IMZ; echo; $PM ifade $D/testler/ca_switch.cx --pmx1 /dev/stdout 2>/dev/null; } | lim $IFXE 2>/dev/null | grep -aq '^  jtab ' && pass || fail "ca_switch: yogun switch icin jtab uretilmedi"
+# 3d) inline satir ici acilim (04.025): 'inline' anahtar sozcugu cagri sayisini dusurur; ayni program 'inline'siz daha cok 'call' uretir ve ciktilari ayni
+sed 's/^inline //' $D/testler/ca_inline.cx > $T/ca_noinline.cx
+ci1=$( { cat $TAB; cat $IMZ; echo; $PM ifade $D/testler/ca_inline.cx --pmx1 /dev/stdout 2>/dev/null; } | lim $IFXE 2>/dev/null | grep -ac '^  call ' )
+ci2=$( { cat $TAB; cat $IMZ; echo; $PM ifade $T/ca_noinline.cx --pmx1 /dev/stdout 2>/dev/null; } | lim $IFXE 2>/dev/null | grep -ac '^  call ' )
+[ "$ci1" -gt 0 ] && [ "$ci2" -ge $((ci1 + 15)) ] && pass || fail "ca_inline: satir ici acilim cagri sayisini dusurmedi (inline=$ci1, inline'siz=$ci2)"
 # 4) OZ-BARINDIRMA (sabit nokta): ifx.cx'in PMX1'i -> ifx.elf -> PMA1 -> (asm.elf coz.elf valid.elf tipdogr gen2.elf) -> ifx2.elf ; ifx2.elf ayni girdiyi derler -> PMA2 ; PMA1 == PMA2
 # (pm yok: yalniz PMX1 uretimi isteğe bagli on yuzden; derleyici kendini sayisal zincirle uretip yeniden uretebilir)
 [ -n "$SABOTAJ" ] || {

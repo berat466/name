@@ -1,0 +1,2 @@
+// RED: E_NOEXCEPT  -- noexcept bildirimler arasinda tutarsiz
+int f(int a) noexcept; int f(int a) { return a; } int main(){ return f(1); }

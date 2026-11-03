@@ -1,0 +1,2 @@
+// TRAP: OOB
+int f(int d) { char* p = (char*)alloca(100000); p[0] = 1; return f(d + 1) + p[0]; } int main() { pi(1); pi(f(0)); pi(2); return 0; }

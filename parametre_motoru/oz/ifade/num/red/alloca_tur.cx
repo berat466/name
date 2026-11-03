@@ -1,0 +1,2 @@
+// RED: E_TYPE  -- alloca boyutu tamsayi olmali
+int main(){ double d = 2.0; char* p = (char*)alloca(d); return 0; }
