@@ -156,6 +156,16 @@ bg mut giris_dyn_baslangic 'eqi z, tt, 254
     jz z, a4b
     call tt, i64id, 0'
 # kullanilmayan alan kodlari (-4 a ile ayni, -6 c ile ayni) hicbir komut imzasinda yok: bilincle mutantsiz
+bg mut calli_islev_indeksi_turu '    call ok, matchslot, sp1, at2, 0, 0, 0
+    jnz ok, scallg
+    call x, die, 21, f, pc' '    call ok, matchslot, sp1, at2, 0, 0, 0
+    jmp scallg
+    call x, die, 21, f, pc'
+bg mut tcall_donus_turu '    eq z, crt, rt
+    jnz z, sdone
+    call x, die, 26, f, pc' '    eq z, crt, rt
+    jmp sdone
+    call x, die, 26, f, pc'
 wait
 echo "---"
 for f in $T/sonuc_*; do cat $f; done | awk '/^yakalandi/{y++} /^KACTI/{k++; print} /HATASI|derlenemedi/{h++; print} END{printf "sabotaj(tip): %d yakalandi, %d kacti, %d uygulanamadi/derlenemedi\n", y, k, h}'

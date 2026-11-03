@@ -284,6 +284,93 @@ func main() {
 }
 entry main
 EOT
+# ---------------- calli / tcall (Bolum 04) ----------------
+tc "calli: islev indeksi tamsayi, argumanlar prototipe uyar" "1" "0 i32 : i32;1 i32 : i32 i32 i32;2 - : i32 i32 i32" <<'EOT'
+func proto(a) {
+ ret a
+}
+func inc(a) {
+ ldi b, 1
+ add_i32 c, a, b
+ ret c
+}
+func main() {
+ ldi f, inc
+ ldi x, 3
+ calli y, proto, f, x
+ halt
+}
+entry main
+EOT
+tc "calli: islev indeksi yazmaci kayan nokta" "0 21 2 2" "0 i32 : i32;1 i32 : i32 i32 i32;2 - : f64 i32 i32" <<'EOT'
+func proto(a) {
+ ret a
+}
+func inc(a) {
+ ldi b, 1
+ add_i32 c, a, b
+ ret c
+}
+func main() {
+ mov f, 1.5
+ ldi x, 3
+ calli y, proto, f, x
+ halt
+}
+entry main
+EOT
+tc "calli: arguman turu prototiple uyumsuz" "0 24 2 3" "0 i32 : i32;1 i32 : i32 i32 i32;2 - : i32 f64 i32 dyn" <<'EOT'
+func proto(a) {
+ ret a
+}
+func inc(a) {
+ ldi b, 1
+ add_i32 c, a, b
+ ret c
+}
+func main() {
+ ldi f, inc
+ mov x, 1.5
+ calli y, proto, f, x
+ host putf, x
+ halt
+}
+entry main
+EOT
+tc "tcall: donus turleri ayni" "1" "0 i32 : i32 i32;1 i32 : i32 i32 i32;2 - : i32 i32" <<'EOT'
+func g(a) {
+ ldi b, 1
+ add_i32 c, a, b
+ ret c
+}
+func f(a) {
+ ldi b, 2
+ tcall g, a
+}
+func main() {
+ ldi x, 3
+ call y, f, x
+ halt
+}
+entry main
+EOT
+tc "tcall: donus turu cagirandan farkli" "0 26 1 2" "0 i64 : i32 i64 i64;1 i32 : i32 i32;2 - : i32 i32" <<'EOT'
+func g(a) {
+ ldi b, 1
+ ldi c, 1
+ ret c
+}
+func f(a) {
+ ldi b, 2
+ tcall g, a
+}
+func main() {
+ ldi x, 3
+ call y, f, x
+ halt
+}
+entry main
+EOT
 tc "RET turu bildirilenle ayni degil" "0 26 0 2" "0 i64 : i32 i32 i32 i32;1 - : i32" <<'EOT'
 func inc(a) {
  ldi b, 1

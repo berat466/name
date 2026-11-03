@@ -33,6 +33,9 @@ mut jtab_girdi_jmp "s/nei z, f2, 2\n    jnz z, tbad/eqi z, f2, 99\n    jnz z, tb
 mut jtab_girdi_ileri "s/le z, tg2, q2\n    jnz z, tbad/le z, tg2, -1\n    jnz z, tbad/"
 mut jtab_akis_kenari "s/eqi z, fw, 4\n    jz z, s4x/eqi z, fw, 99\n    jz z, s4x/"
 mut jtab_akis_varsayilan "s/st1: gt z, ti, nn/st1: ge z, ti, nn/"
+mut calli_isaretci_tanimli 's/eqi z, cc, 3\n    jz z, swc2/eqi z, cc, 99\n    jz z, swc2/'
+mut calli_pencere_host 's/eqi z, cc, 2\n    jnz z, vhq/eqi z, cc, 3\n    jnz z, vhq/'
+mut calli_pencere_nregs 's/add a, fa, FNP\n    ld need, a, 0/add a, fa, FNR\n    ld need, a, 0/'
 wait
 cat $TOP/c_* 2>/dev/null
 yakalandi=$(cat $TOP/c_* 2>/dev/null | grep -cE '^yakalandi|dogrulama yakaladi'); kacti=$(cat $TOP/c_* 2>/dev/null | grep -cE '^KACTI|^SABOTAJ HATASI|derlenemedi|uretilemedi')

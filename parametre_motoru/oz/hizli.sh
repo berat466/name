@@ -66,6 +66,7 @@ ifade|oz/ifade|sabotaj_ifade.sh
 ifx|oz/ifade/num|sabotaj_ifx.sh
 cfg|oz/cfg|sabotaj_cfg.sh
 native|oz/cfg|sabotaj_native.sh
+native_cagri|oz/cfg|sabotaj_native_cagri.sh
 kayan|oz/kayan|sabotaj_kayan.sh
 tur|oz/elf2|sabotaj_tur.sh
 donusum|oz/elf2|sabotaj_donusum.sh

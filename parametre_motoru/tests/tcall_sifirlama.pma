@@ -1,0 +1,24 @@
+func g(a, b) {
+  jnz a, W
+  jmp R
+W: ldi t, 55
+R: host puti, t
+  host putc, 10
+  ret b
+}
+func f(x) {
+  ldi p, 99
+  ldi q, 99
+  ldi s, 99
+  ldi u, 99
+  ldi z0, 0
+  ldi z1, 7
+  tcall g, z0, z1
+}
+func main() {
+  ldi n, 3
+  call r, f, n
+  host puti, r
+  host putc, 10
+  halt
+}

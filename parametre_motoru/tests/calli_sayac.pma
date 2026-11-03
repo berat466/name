@@ -1,0 +1,22 @@
+func proto1(a) {
+  ret a
+}
+func leaf(a) {
+  addi r, a, 1
+  ret r
+}
+func main() {
+  ldi i, 0
+  ldi s, 0
+  ldi lim, 70000
+  ldi fp, leaf
+L: ge z, i, lim
+  jnz z, D
+  calli x, proto1, fp, i
+  add s, s, x
+  addi i, i, 1
+  jmp L
+D: host puti, s
+  host putc, 10
+  halt
+}
