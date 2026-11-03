@@ -1,0 +1,2 @@
+// RED: E_CASE  -- case araligi ters
+int main() { int x = 1; switch (x) { case 5 ... 1: return 1; } return 0; }

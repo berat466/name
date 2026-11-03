@@ -1,0 +1,2 @@
+// RED: E_STMT  -- break dongu/switch disinda
+int main() { break; return 0; }

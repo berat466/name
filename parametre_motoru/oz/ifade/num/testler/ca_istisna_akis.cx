@@ -1,0 +1,38 @@
+// 03.015: istisna yayilimiyla denetim akisi -- try icinden break/continue/return/goto, catch icinde dongu, switch icinde throw, yeniden firlatma, ic ice islevler
+int f(int x) { if (x % 7 == 6) throw x; if (x % 5 == 4) throw 'c'; return x * 2; }
+int dongu_try() {
+  int s = 0;
+  for (int i = 0; i < 20; i = i + 1) {
+    try {
+      if (i == 3) continue;
+      if (i == 17) break;
+      s = s + f(i);
+    } catch (int e) { s = s + 1000; if (e == 13) continue; s = s + 1; }
+    catch (char c) { s = s - 1; }
+  }
+  return s;
+}
+int try_return(int x) { try { if (x > 5) return f(x); return -1; } catch (int e) { return e * 100; } catch (char) { return -7; } }
+int switch_throw(int k) { try { switch (k) { case 1: throw 11; case 2: return 22; case 3: { int q = f(6); return q; } default: break; } return 0; } catch (int e) { return e + 1; } }
+int goto_cik() { int r = 0; for (int i = 0; i < 5; i = i + 1) { try { if (i == 2) goto bitti; r = r + i; } catch (...) { } } bitti: return r; }
+int tekrar(int n) { int tries = 0; while (true) { try { tries = tries + 1; if (tries < n) throw tries; return tries * 10; } catch (int e) { if (e > 100) throw; } } }
+int ic_ice(int a) {
+  int r = 0;
+  for (int i = 0; i < 3; i = i + 1) {
+    try { try { if (i == a) throw i; r = r + 1; } catch (int e) { r = r + 10; throw 'x'; } r = r + 100; }
+    catch (char c) { r = r + 1000; if (i == 1) break; }
+  }
+  return r;
+}
+int derin(int n) { if (n == 0) throw 99; return derin(n - 1) + 1; }
+int main() {
+  pi(dongu_try());
+  for (int x = 4; x <= 14; x = x + 5) pi(try_return(x));
+  for (int k = 1; k <= 4; k = k + 1) pi(switch_throw(k));
+  pi(goto_cik()); pi(tekrar(4));
+  pi(ic_ice(0)); pi(ic_ice(1)); pi(ic_ice(5));
+  int dd = 0; try { dd = derin(25); } catch (int e) { dd = e; } pi(dd);
+  int cnt = 0; for (int i = 0; i < 4; i = i + 1) { try { for (int j = 0; j < 4; j = j + 1) { if (j == i) throw j; cnt = cnt + 1; } } catch (int e) { cnt = cnt + 100 * e; continue; } cnt = cnt + 5000; }
+  pi(cnt);
+  return 0;
+}

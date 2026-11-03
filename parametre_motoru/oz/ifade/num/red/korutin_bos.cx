@@ -1,0 +1,2 @@
+// RED: E_COROUTINE  -- generator islevi co_ icermeli
+std::generator<int> g() { } int main() { return 0; }

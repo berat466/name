@@ -1,0 +1,2 @@
+// RED: E_JUMPINIT  -- goto ilklendirmeyi atliyor
+int main() { goto son; int x = 5; son: return x; }

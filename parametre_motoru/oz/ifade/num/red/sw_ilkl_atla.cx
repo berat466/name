@@ -1,0 +1,2 @@
+// RED: E_JUMPINIT  -- case etiketi ilklendirmeli degiskeni atliyor
+int main() { int x = 1; switch (x) { case 0: int y = 5; case 1: return y; } return 0; }

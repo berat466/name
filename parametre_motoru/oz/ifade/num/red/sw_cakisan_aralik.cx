@@ -1,0 +1,2 @@
+// RED: E_CASE  -- cakisan case araligi
+int main() { int x = 1; switch (x) { case 1 ... 5: return 1; case 4: return 2; } return 0; }

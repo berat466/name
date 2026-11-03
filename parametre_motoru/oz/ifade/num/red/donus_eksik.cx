@@ -1,0 +1,2 @@
+// RED: E_FLOW  -- deger donduren islevin sonuna ulasilabilir
+int f(int x) { if (x) return 1; } int main() { return f(1); }

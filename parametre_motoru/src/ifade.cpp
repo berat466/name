@@ -203,7 +203,9 @@ enum NK {
   // tur dugumleri
   N_TY, N_TPTR, N_TREF, N_TRREF, N_TARR,
   // deyimler / bildirimler
-  N_BLOCK, N_VAR, N_DECLS, N_EXPRSTMT, N_IF, N_WHILE, N_DO, N_FOR, N_RETURN, N_BREAK, N_CONTINUE, N_EMPTY, N_FUNC, N_PARAMS, N_CLASS, N_PROG, N_USING, N_THROW, N_TRY, N_CATCH, N_NONE
+  N_BLOCK, N_VAR, N_DECLS, N_EXPRSTMT, N_IF, N_WHILE, N_DO, N_FOR, N_RETURN, N_BREAK, N_CONTINUE, N_EMPTY, N_FUNC, N_PARAMS, N_CLASS, N_PROG, N_USING, N_THROW, N_TRY, N_CATCH,
+  // Bolum 03: denetim akisi
+  N_SWITCH, N_CASE, N_DEFAULT, N_GOTO, N_LABEL, N_RANGEFOR, N_MATCH, N_ARM, N_PWILD, N_PCONST, N_PRANGE, N_PBIND, N_PALT, N_PSTRUCT, N_COYIELD, N_CORETURN, N_COAWAIT, N_NONE
 };
 struct Node {
   int k = N_NONE; int64_t i = 0, j = 0; double d = 0; string s, s2; vector<int> kid; int line = 0;
@@ -239,7 +241,7 @@ void pmx_validate(const Ast& a, int root) {
   static const Arity ar[] = {{N_INT,0,0},{N_FLT,0,0},{N_CHR,0,0},{N_STR,0,0},{N_BOOL,0,0},{N_NULLPTR,0,0},{N_THIS,0,0},{N_ID,0,0},{N_UNARY,1,1},{N_BINARY,2,2},{N_ASSIGN,2,2},{N_COND,3,3},{N_COMMA,2,2},
     {N_CALL,1,-1},{N_INDEX,2,2},{N_MEMBER,1,1},{N_ARROW,1,1},{N_PREINC,1,1},{N_POSTINC,1,1},{N_SIZEOF_E,1,1},{N_SIZEOF_T,1,1},{N_ALIGNOF,1,1},{N_NOEXCEPT,1,1},{N_TYPEID_E,1,1},{N_TYPEID_T,1,1},
     {N_CAST,2,2},{N_FCAST,1,2},{N_UDL,0,-1},{N_INITLIST,0,-1},{N_TY,0,0},{N_TPTR,1,1},{N_TREF,1,1},{N_TRREF,1,1},{N_TARR,1,2},{N_BLOCK,0,-1},{N_VAR,1,2},{N_DECLS,0,-1},{N_EXPRSTMT,1,1},{N_IF,2,3},
-    {N_WHILE,2,2},{N_DO,2,2},{N_FOR,4,4},{N_RETURN,0,1},{N_BREAK,0,0},{N_CONTINUE,0,0},{N_EMPTY,0,0},{N_FUNC,2,3},{N_PARAMS,0,-1},{N_CLASS,0,-1},{N_PROG,0,-1},{N_USING,0,-1},{N_THROW,0,1},{N_TRY,2,-1},{N_CATCH,2,2},{N_NONE,0,0}};
+    {N_WHILE,2,2},{N_DO,2,2},{N_FOR,4,4},{N_RETURN,0,1},{N_BREAK,0,0},{N_CONTINUE,0,0},{N_EMPTY,0,0},{N_FUNC,2,3},{N_PARAMS,0,-1},{N_CLASS,0,-1},{N_PROG,0,-1},{N_USING,0,-1},{N_THROW,0,1},{N_TRY,2,-1},{N_CATCH,2,2},{N_SWITCH,2,2},{N_CASE,1,2},{N_DEFAULT,0,0},{N_GOTO,0,0},{N_LABEL,0,0},{N_RANGEFOR,3,3},{N_MATCH,2,-1},{N_ARM,3,3},{N_PWILD,0,0},{N_PCONST,1,1},{N_PRANGE,2,2},{N_PBIND,1,1},{N_PALT,2,-1},{N_PSTRUCT,1,-1},{N_COYIELD,1,1},{N_CORETURN,0,1},{N_COAWAIT,1,1},{N_NONE,0,0}};
   for (size_t i = 0; i < a.n.size(); i++) {
     const Node& x = a.n[i];
     if (x.k < 0 || x.k > N_NONE) fail("E_PMX", "PMX1 dugum turu gecersiz");
@@ -254,6 +256,10 @@ void pmx_validate(const Ast& a, int root) {
     if (x.k == N_FUNC) { need(x.kid[1], {N_PARAMS}); if (x.kid.size() > 2) need(x.kid[2], {N_BLOCK}); }
     if (x.k == N_FOR) { need(x.kid[0], {N_NONE, N_DECLS, N_EXPRSTMT}); }
     if (x.k == N_TRY) { need(x.kid[0], {N_BLOCK}); for (size_t q = 1; q < x.kid.size(); q++) need(x.kid[q], {N_CATCH}); }
+    if (x.k == N_SWITCH) need(x.kid[1], {N_BLOCK});
+    if (x.k == N_RANGEFOR) { need(x.kid[0], {N_DECLS}); }
+    if (x.k == N_ARM) need(x.kid[0], {N_PWILD, N_PCONST, N_PRANGE, N_PBIND, N_PALT, N_PSTRUCT});
+    if (x.k == N_PALT || x.k == N_PSTRUCT) for (int c : x.kid) need(c, {N_PWILD, N_PCONST, N_PRANGE, N_PBIND, N_PALT, N_PSTRUCT});
     if (x.k == N_CATCH) { need(x.kid[0], {N_NONE, N_TY, N_TPTR, N_TREF, N_TRREF, N_TARR}); need(x.kid[1], {N_BLOCK}); }
   }
   // dongusuzluk + derinlik (yinelemesiz DFS)
@@ -332,7 +338,7 @@ struct Parser {
     if (t[q].k != TK_ID) return false;
     if (isTypeKw(t[q].s)) return true;
     size_t z = q; string n = qname(z);
-    return classes.count(n) || alias.count(n);
+    return classes.count(n) || alias.count(n) || n == "std::generator";
   }
   bool typeStart() const { return typeStartAt(p); }
 
@@ -355,7 +361,11 @@ struct Parser {
       else if (s == "struct" || s == "class") { p++; }
       else if (base == -1 && sg == 0 && sh == 0 && lg == 0 && cls.empty() && aliasNode < 0 && (classes.count(s) || alias.count(s) || (s == "std" && isPk(1, "::")))) {
         size_t z = p; string n = qname(z); p = z;
-        if (alias.count(n)) aliasNode = alias[n]; else if (classes.count(n)) cls = n; else fail("E_PARSE", "bilinmeyen tur adi: " + n, line);
+        if (n == "std::generator" && isP("<")) {   // Bolum 03 korutin ureteci: std::generator<T> (T = yerlesik skaler tur); sinif adi tur koduyla: std::generator<kod>
+          p++; int at = typeSpec(); if (a[at].k != N_TY || a[at].i == Y_CLASS || a[at].i == Y_VOID) fail("E_PARSE", "std::generator<T> icin T yerlesik skaler tur olmali", line);
+          if (!isP(">")) fail("E_PARSE", "'>' bekleniyordu", line); p++; n = "std::generator<" + std::to_string(a[at].i) + ">"; cls = n;
+        }
+        else if (alias.count(n)) aliasNode = alias[n]; else if (classes.count(n)) cls = n; else fail("E_PARSE", "bilinmeyen tur adi: " + n, line);
       } else break;
     }
     int n;
@@ -431,6 +441,24 @@ struct Parser {
       int n = a.mk(N_BINARY, line); a[n].s = op; a[n].kid = {l, r}; l = n;
     }
     return l;
+  }
+  // Bolum 03 desen eslestirme (__match): desen = secenek ('|' secenek)* ; secenek = '_' | sabit ['...' sabit] | tur ad (baglama) | '{' desen, ... '}' (sinif alanlari sirayla)
+  int patAtom() {
+    Dp dp(*this); int line = cur().line;
+    if (cur().k == TK_ID && cur().s == "_") { p++; return a.mk(N_PWILD, line); }
+    if (isP("{")) {
+      p++; int n = a.mk(N_PSTRUCT, line);
+      while (true) { a[n].kid.push_back(pattern()); if (!accept(",")) break; }
+      expect("}"); return n;
+    }
+    if (declStart()) { int b = typeSpec(); int tt = ptrOps(b); int n = a.mk(N_PBIND, line); a[n].s = ident(); a[n].kid = {tt}; return n; }
+    int lo = unary();
+    if (isP("...")) { p++; int hi = unary(); int n = a.mk(N_PRANGE, line); a[n].kid = {lo, hi}; return n; }
+    int n = a.mk(N_PCONST, line); a[n].kid = {lo}; return n;
+  }
+  int pattern() {
+    int line = cur().line; int l = patAtom(); if (!isP("|")) return l;
+    int n = a.mk(N_PALT, line); a[n].kid = {l}; while (accept("|")) a[n].kid.push_back(patAtom()); return n;
   }
   int initList() {
     Dp dp(*this); int n = mk(N_INITLIST); expect("{");
@@ -572,10 +600,10 @@ struct Parser {
     if (cur().k == TK_ID) {
       const string& s = cur().s;
       if (s == "if") {
-        p++; expect("("); int pre = -1, c;
+        p++; bool cxp = acceptId("constexpr"); expect("("); int pre = -1, c;
         if (declStart()) { int b = typeSpec(); int ds = varDecls(b, false); if (accept(";")) { pre = ds; c = expr(); } else { pre = ds; c = a.mk(N_ID, line); a[c].s = a[a[ds].kid.back()].s; } }
         else { int e = expr(); if (isP(";") && false) {} c = e; if (accept(";")) { pre = a.mk(N_EXPRSTMT, line); a[pre].kid = {e}; c = expr(); } }
-        expect(")"); int th = stmt(); int n = a.mk(N_IF, line); a[n].kid = {c, th}; if (acceptId("else")) a[n].kid.push_back(stmt());
+        expect(")"); int th = stmt(); int n = a.mk(N_IF, line); a[n].i = cxp; a[n].kid = {c, th}; if (acceptId("else")) a[n].kid.push_back(stmt());
         if (pre < 0) return n;
         int bl = a.mk(N_BLOCK, line); a[bl].kid = {pre, n}; return bl;
       }
@@ -583,11 +611,39 @@ struct Parser {
       if (s == "do") { p++; int b = stmt(); if (!acceptId("while")) fail("E_PARSE", "do ... while bekleniyordu", line); expect("("); int c = expr(); expect(")"); expect(";"); int n = a.mk(N_DO, line); a[n].kid = {b, c}; return n; }
       if (s == "for") {
         p++; expect("("); int in = a.mk(N_NONE), c = a.mk(N_NONE), inc = a.mk(N_NONE);
-        if (!isP(";")) { if (declStart()) { int b = typeSpec(); in = varDecls(b, false); } else { int e = expr(); in = a.mk(N_EXPRSTMT, line); a[in].kid = {e}; } }
+        if (!isP(";")) { if (declStart()) { int b = typeSpec(); in = varDecls(b, false);
+            if (isP(":")) { p++; int rng = expr(); expect(")"); int body = stmt(); int n = a.mk(N_RANGEFOR, line); a[n].kid = {in, rng, body}; return n; } } else { int e = expr(); in = a.mk(N_EXPRSTMT, line); a[in].kid = {e}; } }
         expect(";"); if (!isP(";")) c = expr(); expect(";"); if (!isP(")")) inc = expr(); expect(")");
         int body = stmt(); int n = a.mk(N_FOR, line); a[n].kid = {in, c, inc, body}; return n;
       }
       if (s == "return") { p++; int n = a.mk(N_RETURN, line); if (!isP(";")) a[n].kid.push_back(isP("{") ? initList() : expr()); expect(";"); return n; }
+      if (s == "switch") {
+        p++; expect("("); int pre = -1, c;
+        if (declStart()) { int b = typeSpec(); int ds = varDecls(b, false); expect(";"); pre = ds; c = expr(); }
+        else { int e = expr(); c = e; if (accept(";")) { pre = a.mk(N_EXPRSTMT, line); a[pre].kid = {e}; c = expr(); } }
+        expect(")"); int b = stmt(); if (a[b].k != N_BLOCK) { int bl = a.mk(N_BLOCK, line); a[bl].kid = {b}; b = bl; }
+        int n = a.mk(N_SWITCH, line); a[n].kid = {c, b};
+        if (pre < 0) return n;
+        int bl = a.mk(N_BLOCK, line); a[bl].kid = {pre, n}; return bl;
+      }
+      if (s == "case") { p++; int lo = cond(); int n = a.mk(N_CASE, line); a[n].kid = {lo}; if (isP("...")) { p++; a[n].kid.push_back(cond()); } expect(":"); return n; }
+      if (s == "default" && isPk(1, ":")) { p += 2; return a.mk(N_DEFAULT, line); }
+      if (s == "goto") { p++; int n = a.mk(N_GOTO, line); a[n].s = ident(); expect(";"); return n; }
+      if (s == "co_yield") { p++; int n = a.mk(N_COYIELD, line); a[n].kid = {expr()}; expect(";"); return n; }
+      if (s == "co_await") { p++; int n = a.mk(N_COAWAIT, line); a[n].kid = {expr()}; expect(";"); return n; }
+      if (s == "co_return") { p++; int n = a.mk(N_CORETURN, line); if (!isP(";")) a[n].kid.push_back(expr()); expect(";"); return n; }
+      if (s == "__match") {
+        p++; expect("("); int subj = expr(); expect(")"); expect("{"); int n = a.mk(N_MATCH, line); a[n].kid = {subj};
+        while (!isP("}")) {
+          int al = cur().line; if (!acceptId("case")) fail("E_PARSE", "__match kolunda 'case' bekleniyordu", al);
+          int pat = pattern(); int guard = a.mk(N_NONE, al); if (acceptId("if")) { expect("("); guard = expr(); expect(")"); }
+          expect(":"); int body = a.mk(N_BLOCK, al);
+          while (!isP("}") && !isId("case")) { if (cur().k == TK_EOF) fail("E_PARSE", "'}' eksik", al); a[body].kid.push_back(stmt()); }
+          int arm = a.mk(N_ARM, al); a[arm].kid = {pat, guard, body}; a[n].kid.push_back(arm);
+        }
+        expect("}"); if (a[n].kid.size() < 2) fail("E_PARSE", "__match en az bir kol gerektirir", line); return n;
+      }
+      if (cur().k == TK_ID && isPk(1, ":") && !isPk(1, "::") && s != "default" && s != "case") { int n = a.mk(N_LABEL, line); a[n].s = s; p += 2; return n; }
       if (s == "throw") { p++; int n = a.mk(N_THROW, line); if (!isP(";")) a[n].kid.push_back(expr()); expect(";"); return n; }
       if (s == "try") {
         p++; int n = a.mk(N_TRY, line); a[n].kid.push_back(block());
@@ -2192,6 +2248,7 @@ struct Sema {
       case N_RETURN: stmtReturn(n); g->nreg = base; break;
       case N_BREAK: if (g->loops.empty()) err("E_STMT", "'break' dongu disinda"); E("jmp " + g->loops.back().first); break;
       case N_CONTINUE: if (g->loops.empty()) err("E_STMT", "'continue' dongu disinda"); E("jmp " + g->loops.back().second); break;
+      case N_SWITCH: case N_CASE: case N_DEFAULT: case N_GOTO: case N_LABEL: case N_RANGEFOR: case N_MATCH: case N_COYIELD: case N_CORETURN: case N_COAWAIT: err("E_UNSUPPORTED", "Bolum 03 denetim akisi yapisi (switch/goto/range-for/match/korutin) yalniz sayisal derleyicide (ifx.pmb) tanimli");
       case N_THROW: case N_TRY: err("E_UNSUPPORTED", "istisna (try/catch/throw) yalniz sayisal derleyicide (ifx.pmb) tanimli; bu C++ referans yolu istisna uretmez");
       default: err("E_INTERNAL", "deyim bekleniyordu");
     }
@@ -2497,7 +2554,10 @@ struct Sema {
       extraFns.push_back("  ret 0"); extraFns.push_back("_yes: ret 1"); extraFns.push_back("}");
     }
     // cikti
-    string out; out += "memory " + num(int64_t(1) << 21) + "\n";
+    int64_t dw = 0;   // veri sozcukleri: bellek en az 2^21; global dizi buyukse veri + yigin/yigma payi
+    for (auto& d : dataLines) { if (d.rfind("space ", 0) == 0) { size_t q = d.rfind(' '); dw += atoll(d.c_str() + q + 1); } else dw += 1 + std::count(d.begin(), d.end(), ','); }
+    int64_t memw = std::max<int64_t>(int64_t(1) << 21, dw + 1572864);
+    string out; out += "memory " + num(memw) + "\n";
     out += "data __sp = 0\ndata __lim = 0\n";
     for (auto& d : dataLines) out += d + "\n";
     for (auto& f : F) { if (f.used && !f.hasBody && f.builtin.empty() && !f.deleted) fail("E_UNDEF", "tanimsiz islev kullanildi: " + f.name, f.line); }

@@ -1,0 +1,16 @@
+// 03.016: if constexpr -- sabit kosul, secilmeyen dal denetlenir ama uretilmez; ic ice; return ile birlikte
+int boyut_sec() { if constexpr (sizeof(long) == 8) return 8; else return 4; }
+int ic(int x) {
+  if constexpr (sizeof(int) == 4) { if constexpr (1 > 2) return -1; else { if (x > 0) return x * 2; return x; } }
+  else return 0;
+}
+const int N = 3;
+int tablo() { int s = 0; if constexpr (N > 2) { for (int i = 0; i < N; i = i + 1) s = s + i; } else { s = 100; } return s; }
+int main() {
+  pi(boyut_sec()); pi(ic(5)); pi(ic(-5)); pi(tablo());
+  if constexpr (true) pi(1);
+  if constexpr (false) pi(2);
+  if constexpr (sizeof(char) == 1 && sizeof(short) == 2) pi(3); else pi(4);
+  if constexpr (N == 3) { int q = 9; pi(q); }
+  return 0;
+}

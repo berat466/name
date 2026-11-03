@@ -1,0 +1,2 @@
+// RED: E_CASE  -- default switch disinda
+int main() { default: return 0; }

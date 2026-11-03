@@ -1,0 +1,2 @@
+// RED: E_FLOW  -- dongu kosullu cikis: sona ulasilabilir
+int f(int x) { while (x > 0) { return 1; } } int main() { return f(1); }

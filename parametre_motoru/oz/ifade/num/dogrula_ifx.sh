@@ -21,7 +21,10 @@ $PM liste $R/oz/tip/tipdogr.pmb > $T/tip.l && $T/bag/gen2.elf < $T/tip.l > $T/ti
 export TIPE=$T/tipdogr.elf
 one() {
   f=$1; n=$(basename $f .cx); w=$T/t_$n; mkdir -p $w
+  if [ -f ${f%.cx}.out ]; then cp ${f%.cx}.out $w/exp   # g++ karsiligi olmayan yapilar (__match, korutin): bagimsiz elle/python ile hesaplanmis beklenen cikti
+  else
   g++ -std=c++20 -O0 -w -frounding-math -fext-numeric-literals -include $D/../oracle.h -x c++ -o $w/bin $f 2> $w/gpp.err && lim $w/bin > $w/exp || { fail "$n: g++ oracle"; return; }
+  fi
   $PM ifade $f --pmx1 $w/x.pmx > /dev/null 2> $w/fe.err; [ -s $w/x.pmx ] || { fail "$n: on yuz (PMX1 uretimi): $(head -c 120 $w/fe.err)"; return; }   # on yuz anlam asamasi reddetse de PMX1 yazilmistir
   { cat $TAB; cat $IMZ; echo; cat $w/x.pmx; } > $w/in.txt
   lim $IFXE < $w/in.txt > $w/p_elf.pma 2> $w/ifx.err || { fail "$n: ifx.elf basarisiz: $(grep -a HATA $w/p_elf.pma | head -c 150)"; return; }
@@ -36,7 +39,7 @@ one() {
   lim $PM run $w/p.pmb > $w/pm.out 2>/dev/null; cmp -s $w/pm.out $w/exp && pass || fail "$n: pm cikti g++'dan farkli"
   if [ "${SVM:-1}" = 1 ]; then { cat $TAB; echo "@@PROGRAM"; cat $w/p.l; echo "@@GIRDI"; } > $w/sv.in; LIMS=300 lim $PM run $R/oz/sayisal/svm.pmb < $w/sv.in > $w/svm.out 2>/dev/null; cmp -s $w/svm.out $w/exp && pass || fail "$n: svm cikti g++'dan farkli"; fi
   # onceki (C++ yolu) ile ayni davranis
-  case $n in f80_*|f128_*|istisna_*|bellek_gorunum|bayt_gorunum) ;; *) $PM ifade $f -o $w/c.pmb --strip > /dev/null 2>&1 && lim $PM run $w/c.pmb > $w/cpp.out 2>/dev/null; cmp -s $w/cpp.out $w/exp && pass || fail "$n: C++ yolu cikti g++'dan farkli";; esac
+  case $n in f80_*|f128_*|ca_*|istisna_*|bellek_gorunum|bayt_gorunum) ;; *) $PM ifade $f -o $w/c.pmb --strip > /dev/null 2>&1 && lim $PM run $w/c.pmb > $w/cpp.out 2>/dev/null; cmp -s $w/cpp.out $w/exp && pass || fail "$n: C++ yolu cikti g++'dan farkli";; esac
 }
 red() {
   f=$1; grep -q '^// IFX: kabul' $f && return; n=$(basename $f .cx); w=$T/r_$n; mkdir -p $w; exp=$(head -1 $f | sed -n 's|^// HATA: *\(.*\)$|\1|p'); code=$(head -1 $f | sed -n 's|^// RED: *\([A-Z_]*\).*|\1|p')
