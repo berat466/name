@@ -2686,7 +2686,7 @@ int pm_cnt = 0; int pm_ret[3200]; int pm_start[3200]; int pm_len[3200]; int pm_d
 void pm_begin(int ret_tid) { if (dry) return; pm_ret[pm_cnt] = ret_tid; pm_start[pm_cnt] = pm_nd; pm_len[pm_cnt] = 0; pm_open = 1; }
 void pm_add(int kind) { if (dry) return; if (pm_nd >= 600000) die("E_SINIR", "PMT1 cok buyuk"); pm_dat[pm_nd] = kt_ty[kind]; pm_nd = pm_nd + 1; pm_len[pm_cnt] = pm_len[pm_cnt] + 1; }
 int win_max = 0;
-void note_win(int n) { if (n < 1) n = 1; if (n > win_max) win_max = n; }
+void note_win(int n) { if (dry) return; if (n < 1) n = 1; if (n > win_max) win_max = n; }   // yalniz gercekten uretilen cagrilar (noexcept/sizeof gibi degerlendirilmeyen islenenler pencereyi buyutmez)
 void pm_end() { if (dry) return; if (win_max < 1) win_max = 1; int q = 0; while (q < win_max) { if (pm_nd >= 600000) die("E_SINIR", "PMT1 cok buyuk"); pm_dat[pm_nd] = 254; pm_nd = pm_nd + 1; pm_len[pm_cnt] = pm_len[pm_cnt] + 1; q = q + 1; } win_max = 0; pm_cnt = pm_cnt + 1; pm_open = 0; }
 void wname(int n, int kind) { w("r"); wn(n); wc(KLET[kind]); }
 void hs_restore_to(int lvl);

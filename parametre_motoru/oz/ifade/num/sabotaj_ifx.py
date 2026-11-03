@@ -50,7 +50,7 @@ S = [  # kaynak mutantlari (her satir bir mutant)
  ('istisna: return islenen-istisna geri yukleme', 'void emit_ret(V v) {\n  hs_restore_to(0);\n', 'void emit_ret(V v) {\n'),
  ('istisna: catch(...) son olmali', 'if (nk_k[kid(c, 0)] == N_NONE) { if (i != nh - 1) die(', 'if (nk_k[kid(c, 0)] == N_NONE) { if (0) die('),
  ('istisna: eslesmeyen iletimi', '  if (all == 0) emit_propagate();', '  if (all == 0) { }'),
- ('istisna: sinif kopyasi', 'else if (is_cls(T)) { if (cl_bi[tcl[T]]) copy_n(hv, v, 0, 1); else copy_obj(hv, v, tcl[T], 1); }\n  else { V sv = rval(v);', 'else if (is_cls(T)) { }\n  else { V sv = rval(v);'),
+ ('istisna: sinif kopyasi', 'else if (is_cls(T)) { if (cl_bi[tcl[T]] != 0 && cl_bi[tcl[T]] < 7) copy_n(hv, v, 0, 1); else copy_obj(hv, v, tcl[T], 1); }\n  else { V sv = rval(v);', 'else if (is_cls(T)) { }\n  else { V sv = rval(v);'),
  ('bellek gorunumu: normalize okuma', 'if (pun_on && is_int(r.ty) && tk[r.ty] != Y_BOOL', 'if (0 && is_int(r.ty) && tk[r.ty] != Y_BOOL'),
  ('bellek gorunumu: boyut uyumu', 'size_of(a) == size_of(b)) return 1;', '1) return 1;'),
  ('bellek gorunumu: referans uyumu', 'if (view_compat(vt, tgt) == 0) die(', 'if (0) die('),

@@ -132,3 +132,20 @@ Mimari [Kesin]: kural ve işlem anlamı sayısal parametre; kaynak düzeyi akı�
 | gen2 `isbackop` | OPFLOW 4 geri atlama sayılmıyor (`jtab r,1` DIV0 reddini giderdi) | `jtab_*` ELF karşılaştırmaları |
 | cfgopt | geçersiz akış güvenle reddedilir (DIV0), yakıt tekdüzeliği + meta-test, native-strict karşılaştırması | `dogrula_cfg.sh` 598 kontrol, `sabotaj_cfg.py` 25 mutant |
 | Korutin + akış | goto/__match/kısa devre/switch/try-catch/iç içe/örnek yalıtımı/resume | `testler/ca_korutin2.cx` (+`.out`) |
+
+## Bölüm 04 — fonksiyonlar ve çağrı modeli (3 Kasım 2026; DURUM: TAMAMLANDI 33/33 — ayrıntı: `BOLUM_04_KAPANIS_RAPORU.md`)
+Mimari [Kesin]: yeni motor komutları yalnız tabloda (CALLI, TCALL: OP+SEM+PRIM+x86 şablonu+OPSIG), kaynak düzeyi anlam ifx.pmb'de (PMX1 düğümleri, kural tablosu bölüm 12), sabit değerlendirici ve ABI sınıflandırıcısı ifx içinde; C++ `pm ifade` yalnız eski kapsam için bağımsız referans.
+| Konu | Ne eklendi | Kanıt |
+|---|---|---|
+| Dolaylı çağrı 04.010–011 | `CALLI` (işlev dizini + prototip işlev `fpN` imzası; arity/aralık dışı = OOB tuzağı), işlev başına 128 baytlık stub (ELF/JIT); işlev işaretçisi türü/dönüşümleri/tabloları | `tests/calli_*.pma`, `ca_fnptr.cx`, `ca_fnptr2.cx` |
+| Kuyruk çağrısı 04.030 | `TCALL` + ifx `return f(...)` → `tcall` (çerçeve devri) | `tests/tcall_*.pma`, `ca_tailcall.cx` (sum(100000)) |
+| Aşırı yükleme/varsayılan/isimli/varargs 04.012–015 | sıralı dönüşüm sıralaması, varsayılan argüman, `f(.x = v)` isimli argüman, `va_list` | `ca_ovl_defarg`, `ca_named`, `ca_vararg` |
+| Lambda/function object/std::function 04.017–022 | `N_LAMBDA` kapanış sınıfı (değer/başvuru/init/this yakalama, mutable, generic), `std::function`/`std::move_only_function` tür silme (sınıf sarmalayıcı + hook'lar) | `ca_lambda*.cx`, `ca_functor`, `ca_stdfunction`, `ca_moveonly` |
+| Üye işlev işaretçisi 04.023 | `T::*`, `.*`, `->*`, sanal | `ca_memptr.cx` |
+| noexcept/inline 04.024–025 | `noexcept(e)`, sözleşme ihlali = terminate; inline satır içi açılım | `ca_noexcept`, `ca_inline`, `trap/fn_noexcept_atar` |
+| constexpr/consteval/constinit 04.026–028 | `cx` sabit değerlendirici (tür duyarlı, taşma = sabit değil), dizi boyutu/case/static_assert/constinit ilk değeri veri imgesinde | `ca_constexpr2/3`, `red/cx_*` |
+| extern "C"/bağlama 04.029/031 | `extern "C"` (aşırı yükleme yok), `static`, extern bildirim/tanım birleştirme, E_LINKAGE/E_UNDEF, yerel `static` (bir kez ilklenir) | `ca_linkage`, `red/lk_*` |
+| ABI 04.016 | SysV sınıflandırıcı `__abi_class`, 16 parametre, yığınla geçen argümanlar | `ca_abi_args`, `ca_abi_class` |
+| alloca 04.032 | `alloca(n)`, dönüşte `__sp = fp` ile serbest | `ca_alloca`, `trap/fn_alloca_*` |
+| Korutin 04.033 | promise_type'lı kullanıcı korutinleri, iç içe sınıflar, `std::coroutine_handle`, awaiter protokolü (simetrik aktarım dahil), `std::generator::destroy` | `ca_coro_*`, `trap/coro_*`, `red/coro_*` |
+| Altyapı | ayrıştırıcı: iç içe sınıf, statik üye işlev, yerel `static/constexpr`, `co_await` ifadesi, `__abi_class`, `alloca`; kuru geçiş tekrarı + `note_win`; `valid.pmb`/`gen2.pmb` sınırları büyütüldü; tipdogr durum dizisi 12 M | `dogrula_ifx.sh`, öz-barındırma sabit noktası |

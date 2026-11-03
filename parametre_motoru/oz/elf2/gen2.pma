@@ -4,14 +4,14 @@
 ; Desteklenmeyen: kayan nokta, present/poll/frame/putf; yakit siniri YOK. Desteklenmeyen girdi -> DIV0 tuzagi (cikis 2), stdout bos.
 ; Guvenilen (dogrulanmis) tablolar icin: islenen indeksleri denetlenmez (oz/dogr/valid.pmb once calistirilmali: oz/boru.sh).
 ; Iki gecis: 1) boyutlar/konumlar (cikti yok), 2) gercek cikti (ayni sablonlar, ayni boyutlar).
-memory 4194304
+memory 8388608
 entry main
-space T 524288
-space OPS 524288
-space OA 524288
-space OB 524288
-space OC 524288
-space OFF 524288
+space T 2097152
+space OPS 1048576
+space OA 1048576
+space OB 1048576
+space OC 1048576
+space OFF 1048576
 space FBASE 65536
 space FNP 65536
 space FNR 65536
@@ -47,7 +47,7 @@ func fail() {
 
 ; ---------- girdi ----------
 func put(nt, ng, val) {
-    ge e, nt, 524288
+    ge e, nt, 2097152
     jz e, p1
     call x, fail
 p1: jz ng, p2
@@ -188,7 +188,7 @@ pf: ge z, f, f1
     mov pc, 0
 pi: ge z, pc, ncode
     jnz z, pid
-    ge z, gi, 524288
+    ge z, gi, 1048576
     jz z, q2
     call x, fail
 q2: call op, nx
@@ -281,7 +281,7 @@ func loadrt(napp, gi) {
     ld nt, G, 0
     ld nr, RTLN, 0
     add e, nt, nr
-    gt z, e, 524288
+    gt z, e, 1048576
     jz z, lr0
     call x, fail
 lr0: mov i, 0

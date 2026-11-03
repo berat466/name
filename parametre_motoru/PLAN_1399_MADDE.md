@@ -22,7 +22,7 @@ DURUM İŞARETLERİ
 🔵 Daha yeni rapora göre tamamlandı; depoda doğrula.
 ❌ Yapılmadı veya tam işlevi kanıtlanmadı.
 
-SAYIM: 41 bölüm / 1399 kontrol / 146 🟢 / 41 🔵 / 1212 ❌ (3 Kasım 2026; Bölüm 01, 02 ve 03 tamamlandı: 03.001–019 denetim akışı; 3 Kasım 2026 2. tur düzeltmesiyle 03.009 native JTAB (`pm run --native-strict`), jtab doğrulayıcı/akış kuralı, 03.014 korutin+akış kombinasyonları ve 03.019 cfgopt doğrulaması (geçersiz akış reddi, yakıt tekdüzeliği) eksiksiz kapatıldı; sayım değişmedi — ayrıntı ve sınırlar BOLUM_03_KAPANIS_RAPORU.md §7; sıradaki bölüm 04, başlatılmadı; Windows ABI kapsam dışı).
+SAYIM: 41 bölüm / 1399 kontrol / 173 🟢 / 38 🔵 / 1188 ❌ (3 Kasım 2026; Bölüm 01, 02, 03 ve 04 tamamlandı: 04.001–033 fonksiyonlar ve çağrı modeli — 04.007–009 🔵→🟢 (ret/call/halt yerel şablonları, `cagri` paketi), 04.010–033 ❌→🟢; ayrıntı ve sınırlar BOLUM_04_KAPANIS_RAPORU.md; sıradaki bölüm 05, başlatılmadı; Windows ABI kapsam dışı).
 
 =======================================================================
 TAM BÖLÜM TABLOSU — EKSİKSİZ
@@ -32,7 +32,7 @@ BÖLÜM ÖZETİ
 01. Temel sayı ve değer türleri: 33 kontrol | 🟢33 🔵0 ❌0
 02. İfadeler, operatörler ve sabitler: 34 kontrol | 🟢17 🔵0 ❌17
 03. Denetim akışı: 19 kontrol | 🟢6 🔵1 ❌12
-04. Fonksiyonlar ve çağrı modeli: 33 kontrol | 🟢6 🔵3 ❌24
+04. Fonksiyonlar ve çağrı modeli: 33 kontrol | 🟢33 🔵0 ❌0
 05. Yapılar, sınıflar, nesneler: 39 kontrol | 🟢1 🔵0 ❌38
 06. Tür sistemi, generic ve metaprogramlama: 40 kontrol | 🟢0 🔵0 ❌40
 07. Önişlemci, bildirim ve derleme modeli: 24 kontrol | 🟢1 🔵1 ❌22
@@ -178,33 +178,33 @@ TÜM KONTROL MADDELERİ
 04.004  🟢  Özyinelemeli fonksiyon çağrısı
 04.005  🟢  Çok fonksiyonlu bağımsız ELF
 04.006  🟢  Çağrı derinliği sınırı ve tuzak
-04.007  🔵  SEM ret mikro-işlemini x86 şablonuyla üretme
-04.008  🔵  SEM call mikro-işlemini x86 şablonuyla üretme (Claude günlüğüne göre)
-04.009  🔵  SEM halt mikro-işlemini x86 şablonuyla üretme
-04.010  ❌  Fonksiyon işaretçisi ve dolaylı çağrı (CALLI)
-04.011  ❌  Fonksiyon işaretçisi tabloları
-04.012  ❌  Fonksiyon aşırı yüklemesi
-04.013  ❌  Varsayılan argümanlar
-04.014  ❌  Değişken sayıda argüman (varargs)
-04.015  ❌  İsimli parametreler (C++'ta yerleşik değil)
-04.016  ❌  C++ ABI'sine uygun parametre geçirme ve tür sınıflandırması
-04.017  ❌  Genel lambda ve capture
-04.018  ❌  Generic lambda
-04.019  ❌  Mutable lambda ve closure nesnesi
-04.020  ❌  Fonksiyon çağrılabilir nesneleri (function object)
-04.021  ❌  std::function benzeri tür silme
-04.022  ❌  std::move_only_function
-04.023  ❌  Üye fonksiyon işaretçisi
-04.024  ❌  noexcept fonksiyon sözleşmesi
-04.025  ❌  Inline fonksiyon semantiği
-04.026  ❌  constexpr fonksiyon
-04.027  ❌  consteval fonksiyon
-04.028  ❌  constinit değişken
-04.029  ❌  Özel bağlama türleri (extern C)
-04.030  ❌  Genel tail-call optimizasyonu
-04.031  ❌  Fonksiyon görünürlüğü ve linkage
-04.032  ❌  Değişken ömürlü yığın nesnelerinin dönüşte temizlenmesi
-04.033  ❌  Coroutines: promise, awaiter, resume/destroy
+04.007  🟢  SEM ret mikro-işlemini x86 şablonuyla üretme
+04.008  🟢  SEM call mikro-işlemini x86 şablonuyla üretme (Claude günlüğüne göre)
+04.009  🟢  SEM halt mikro-işlemini x86 şablonuyla üretme
+04.010  🟢  Fonksiyon işaretçisi ve dolaylı çağrı (CALLI)
+04.011  🟢  Fonksiyon işaretçisi tabloları
+04.012  🟢  Fonksiyon aşırı yüklemesi
+04.013  🟢  Varsayılan argümanlar
+04.014  🟢  Değişken sayıda argüman (varargs)
+04.015  🟢  İsimli parametreler (C++'ta yerleşik değil)
+04.016  🟢  C++ ABI'sine uygun parametre geçirme ve tür sınıflandırması
+04.017  🟢  Genel lambda ve capture
+04.018  🟢  Generic lambda
+04.019  🟢  Mutable lambda ve closure nesnesi
+04.020  🟢  Fonksiyon çağrılabilir nesneleri (function object)
+04.021  🟢  std::function benzeri tür silme
+04.022  🟢  std::move_only_function
+04.023  🟢  Üye fonksiyon işaretçisi
+04.024  🟢  noexcept fonksiyon sözleşmesi
+04.025  🟢  Inline fonksiyon semantiği
+04.026  🟢  constexpr fonksiyon
+04.027  🟢  consteval fonksiyon
+04.028  🟢  constinit değişken
+04.029  🟢  Özel bağlama türleri (extern C)
+04.030  🟢  Genel tail-call optimizasyonu
+04.031  🟢  Fonksiyon görünürlüğü ve linkage
+04.032  🟢  Değişken ömürlü yığın nesnelerinin dönüşte temizlenmesi
+04.033  🟢  Coroutines: promise, awaiter, resume/destroy
 
 05. YAPILAR, SINIFLAR, NESNELER
 ------------------------------------------------------------------------

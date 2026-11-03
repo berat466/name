@@ -4,7 +4,7 @@ Kullanim: rastgele_ifade.py N CIKTI_DIZINI [tohum]
 Her test: tipli rastgele ifadeler (ikili/tekli/kosul/mantiksal/donusum/virgul/birlesik atama); ifadenin TURU uretecte izlenir (olagan aritmetik donusumler), boylece pi/pd dogru secilir.
 Tanimsiz davranis (isaretli tasma, gecersiz kaydirma, sifira bolme, aralik disi f->i) UBSan ile g++ tarafindan ELENIR: yalniz temiz calisan testler yazilir.
 Beklenen cikti g++'dan gelir (dogrula_ifade.sh); bu betik yalniz temiz kaynaklari uretir."""
-import sys, os, random, subprocess, tempfile, concurrent.futures
+import re, sys, os, random, subprocess, tempfile, concurrent.futures
 N = int(sys.argv[1]); OUT = sys.argv[2]; SEED = int(sys.argv[3]) if len(sys.argv) > 3 else random.randrange(1 << 30)
 D = os.path.dirname(os.path.abspath(__file__))
 # tur: ad, genislik, isaretli, kayan
@@ -73,6 +73,7 @@ class G:
         if k < 0.92:
             a, ta = s.expr(d - 1); t = r.choice(list(T))
             if t == 'bool': return ('(bool)(%s)' % a, 'bool')
+            if T[ta][2] and not T[t][2] and not re.search(r'v\d', a): t = 'double'   # degiskensiz sabit kayan nokta ifadesinin tamsayiya donusumu: g++ derleme zamaninda katlar (aralik disi = tanimsiz davranis, UBSan gormez)
             if r.random() < 0.5: return ('static_cast<%s>(%s)' % (CN[t], a), t)
             return ('(%s)(%s)' % (CN[t], a), t)
         a, ta = s.expr(d - 1); b, tb = s.expr(d - 1)

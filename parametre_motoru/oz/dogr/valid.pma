@@ -2,17 +2,17 @@
 ; stdin : duz sayi listesi (pm liste / oz/coz.pmy ciktisi; etiketler MUTLAK).
 ; stdout: "1 Z\n" kabul (Z=1: kesin atama analizi ispatladi, zero_free) ya da "0 K\n" ret (K: ret nedeni kodu).
 ; C++ karsiligi: parse_program'in sinir/aralik denetimleri + validate_program + analyze_program (src/ikili.cpp).
-; Sinirlar: en fazla 524288 sayi (simge); analiz bit kumesi M*W <= 524288 (asarsa zero_free=0, kabul ayni).
+; Sinirlar: en fazla 2097152 sayi (simge) [Bolum 04: 524288 -> 2097152; ifx kendini derleyince 673k sayi]; analiz bit kumesi M*W <= 524288 (asarsa zero_free=0, kabul ayni).
 ; Kullanilan komutlar: call, ld/st, host getc/putc/puti, tamsayi ALU (alloc, kayan nokta YOK).
-memory 4194304
+memory 16777216
 entry main
-space TOK 524288
-space FL 524288
-space INSPOS 524288
-space IN 524288
-space RCH 524288
-space QUE 524288
-space WRK 524288
+space TOK 2097152
+space FL 2097152
+space INSPOS 2097152
+space IN 2097152
+space RCH 2097152
+space QUE 2097152
+space WRK 2097152
 space FNP 65536
 space FNR 65536
 space FNC 65536
@@ -46,7 +46,7 @@ func rej(code) {
 
 ; ---------- okuyucu ----------
 func store(nt, ng, val, nd, bad) {
-    ge e, nt, 524288
+    ge e, nt, 2097152
     jz e, c1
     call x, rej, 1
 c1: jz bad, c2
