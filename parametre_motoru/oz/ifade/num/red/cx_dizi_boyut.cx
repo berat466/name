@@ -1,0 +1,2 @@
+// RED: E_CONST  -- dizi boyutu sabit ifade olmali
+int f(int x){ return x; } int a[f(3)]; int main(){ return 0; }

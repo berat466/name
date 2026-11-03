@@ -1,0 +1,2 @@
+// RED: E_CONSTEXPR  -- sabit ifadede isaretli tasma
+constexpr int f(int x){ return x*x; } constexpr int g = f(100000); int main(){ return g; }

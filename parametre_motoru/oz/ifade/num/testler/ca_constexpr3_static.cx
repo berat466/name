@@ -1,0 +1,31 @@
+constexpr int sum_arr(int n){ int a[8]; for(int i=0;i<8;i++) a[i]=i*i; int s=0; for(int i=0;i<n;i++) s+=a[i]; return s; }
+constexpr unsigned long long big(unsigned long long x){ return x*3ull + (x>>2) ; }
+constexpr double mix(int n){ double d = 0.5; for (int i=0;i<n;i++) d = d*2 + 1; return d; }
+constexpr bool isprime(int n){ if (n<2) return false; for (int i=2;i*i<=n;i++) if (n%i==0) return false; return true; }
+constexpr int gcd(int a,int b){ return b==0?a:gcd(b,a%b); }
+constexpr long long pw(long long b, int e){ long long r=1; while(e>0){ if(e&1) r*=b; e>>=1; if(e>0) b*=b; } return r; }
+consteval int twice(int x){ return x*2; }
+constexpr int kLimit = twice(21);
+constinit long long cg = pw(2, 40);
+constinit double cd = mix(3);
+constexpr unsigned long long BIG = big(1000000000000ull);
+int tab[gcd(48,18)+kLimit];
+static_assert(isprime(97) && !isprime(91), "prime");
+static_assert(sizeof(tab)/sizeof(int) == 48, "tab");
+int counter() { static int c = 0; c++; return c; }
+int once() { static int v = kLimit * 2; v += 1; return v; }
+int lazy_src = 5;
+int dyn() { static int d = lazy_src * 3; d++; return d; }
+int arrs() { static int a[4] = {1,2,3,4}; static int idx; a[idx & 3] += 10; idx++; return a[0]+a[1]+a[2]+a[3]; }
+int main(){
+  pi(sum_arr(5)); pi((long long)BIG); pd(mix(5)); pi(isprime(7919)); pi(gcd(1071,462));
+  pi(cg); pd(cd); pi(kLimit);
+  constexpr int loc = gcd(100,75); int arr2[loc]; pi(sizeof(arr2)/sizeof(int));
+  counter(); counter(); pi(counter());
+  pi(once()); pi(once());
+  pi(dyn()); lazy_src = 100; pi(dyn());
+  arrs(); arrs(); pi(arrs());
+  switch (kLimit){ case twice(21): pi(111); break; default: pi(0); }
+  pi(twice(sum_arr(3)));
+  return 0;
+}

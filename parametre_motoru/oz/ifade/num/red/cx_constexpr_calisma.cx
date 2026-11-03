@@ -1,0 +1,2 @@
+// RED: E_CONSTEXPR  -- constexpr degisken ilklendirici sabit ifade olmali
+int f(int x){ return x; } constexpr int g = f(2); int main(){ return g; }

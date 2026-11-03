@@ -1,0 +1,2 @@
+// RED: E_STATIC_ASSERT  -- static_assert sarti saglanmiyor
+constexpr int f(int x){ return x*2; } static_assert(f(2) == 5, "yanlis"); int main(){ return 0; }

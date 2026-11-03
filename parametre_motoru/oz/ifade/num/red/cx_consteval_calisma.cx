@@ -1,0 +1,2 @@
+// RED: E_CONSTEVAL  -- consteval islevi calisma zamani argumanla cagrilamaz
+consteval int c(int x){ return x*x; } int main(){ int k = 3; return c(k); }

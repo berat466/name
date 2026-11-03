@@ -259,7 +259,8 @@ int is_ord(int t) { t = unq(deref(t)); if (!is_cls(t)) return 0; int b = cl_bi[t
 int ord_conv_ok(int from, int to) { int a = cl_bi[tcl[unq(from)]]; int b = cl_bi[tcl[unq(to)]]; return a >= 1 && a <= 3 && b >= 1 && b <= 3 && a <= b; }
 // ============================ ISLEVLER ============================
 const int NF = 1600;
-int fn_name[NF]; int fn_cls[NF]; int fn_ret[NF]; int fn_np[NF]; int fn_pt[NF * 8]; int fn_fl[NF]; int fn_node[NF]; int fn_bi[NF]; int fn_vroot[NF]; int fn_used[NF]; int fn_gen[NF]; int fn_va[NF]; int fn_pdef[NF * 8]; int fn_ndef[NF]; int allow_def = 0; int nfn = 0; int fn_line[NF];
+int fn_name[NF]; int fn_cls[NF]; int fn_ret[NF]; int fn_np[NF]; int fn_pt[NF * 8]; int fn_fl[NF]; int fn_node[NF]; int fn_bi[NF]; int fn_vroot[NF]; int fn_used[NF]; int tc_req = 0; int tc_done = 0; int tc_node = 0 - 1; int fn_gen[NF]; int fn_va[NF]; int fn_pdef[NF * 8]; int fn_ndef[NF]; int allow_def = 0; int nfn = 0; int fn_line[NF];
+const int F_INLINE = 512; const int F_CONSTEXPR = 1024; const int F_CONSTEVAL = 2048; const int F_STATIC = 4096; const int F_EXTC = 8192; const int F_EXTERN = 16384;
 const int F_CONST = 1; const int F_VIRT = 2; const int F_NOEX = 4; const int F_DEFAULT = 16; const int F_OVR = 32; const int F_DELETE = 64; const int F_EXPL = 128; const int F_PURE = 256;
 int fn_has(int f, int bit) { return (fn_fl[f] & bit) != 0; }
 // ============================ DEGER / UretIM ============================
@@ -275,6 +276,7 @@ int fn_type_of(int f) {
 }
 V fnaddr(int f) {
   if (fn_bi[f] != 0) die("E_ADDR", "yerlesik islevin adresi alinamaz");
+  if (fn_has(f, F_CONSTEVAL)) die("E_CONSTEVAL", "consteval islevinin adresi alinamaz");
   fn_used[f] = 1; int ft = fn_type_of(f); long long r = newreg(); setk(r, 1);
   if (fn_cls[f] >= 0 && fn_has(f, F_VIRT)) { fn_used[fn_vroot[f]] = 1; w("  mov "); wr(r); w(", vd"); wn(fn_vroot[f]); wc(10); }
   else { w("  mov "); wr(r); w(", f"); wn(f); wc(10); }
@@ -895,6 +897,17 @@ V callfn(int fi, V* self, V* args, int na, int allowvirt) {
     int q = 0; while (q < nfix) { int pk = param_kind(fn_pt[fi * 8 + q]); ops[pi_] = cast_k(mat_k(ops[pi_], pk), pk); pi_ = pi_ + 1; q = q + 1; }
     if (fn_va[fi]) { ops[pi_] = cast_k(mat_k(ops[pi_], 1), 1); pi_ = pi_ + 1; ops[pi_] = cast_k(mat_k(ops[pi_], 0), 0); pi_ = pi_ + 1; } }
   if (isv == 0 && sret == 0) setk(d, ret_kind(rt));
+  if (tc_req) {   // Bolum 04: kuyruk cagrisi -- return f(args); : cagiranin cercevesi serbest birakilir, argumanlar cerceve tabanina tasinir, ayni cerceve f'e devredilir (tcall)
+    tc_req = 0; int okt = (sret == 0 && fn_va[fi] == 0 && self == 0 && try_depth == 0 && nhs == 0 && co_mode == 0 && cur_fn >= 0 && is_ref(rt) == 0 && is_ref(fn_ret[cur_fn]) == 0 && unq(rt) == unq(fn_ret[cur_fn]) && is_mem(unq(rt)) == 0);
+    if (okt && fn_has(cur_fn, F_NOEX) && fn_has(fi, F_NOEX) == 0) okt = 0;
+    int q2 = 0; while (q2 < nfix && okt) { int P = fn_pt[fi * 8 + q2]; if (is_ref(P) || is_mem(unq(P)) || is_ptr(unq(P)) || is_cls(unq(P))) { if (!(is_ptr(unq(P)) && args[q2].ci && args[q2].cv == 0)) okt = 0; } q2 = q2 + 1; }
+    if (okt) {
+      long long ts = newreg(); setk(ts, 1); w("  mov "); wr(ts); w(", __sp\n"); e_st(mkv(0, 0, FPID), mkv(0, 0, ts), 0);
+      w("  tcall "); if (virt) { w("vd"); wn(fn_vroot[fi]); } else { w("f"); wn(fi); }
+      i = 0; while (i < no) { w(", "); wr(ops[i].reg); i = i + 1; }
+      wc(10); note_win(no); tc_done = 1; return novalue();
+    }
+  }
   w("  call "); if (isv == 0 && sret == 0) { wr(d); w(", "); }
   if (virt) { w("vd"); wn(fn_vroot[fi]); } else { w("f"); wn(fi); }
   i = 0; while (i < no) { w(", "); wr(ops[i].reg); i = i + 1; }
@@ -1081,7 +1094,7 @@ V binop(const char* tok, V l, V r) {   // iki rvalue skaler
 
 int kid(int n, int i) { return kids[nk_ks[n] + i]; }
 char vinit[3000]; int vname[3000]; int vty[3000]; int voff[3000]; int vref[3000]; int vci[3000]; long long vcv[3000]; int vuid[3000]; int nvars = 0; int uidn = 0;
-int gname[2000]; int gty[2000]; int gnode[2000]; int gci[2000]; long long gcv[2000]; int guid[2000]; int ngl = 0;
+int gname[2000]; int gty[2000]; int gnode[2000]; int gci[2000]; long long gcv[2000]; int guid[2000]; int gcinit[2000]; long long gcib[2000]; int gflags[2000]; int ngl = 0;
 int str_node[8000]; int nstrn = 0;
 int cur_fn = 0 - 1; int cur_cls = 0 - 1;
 int findvar(int sid) { int i = nvars - 1; while (i >= 0) { if (vname[i] == sid) return i; i = i - 1; } return 0 - 1; }
@@ -1094,19 +1107,253 @@ const int N_FUNC = 46; const int N_PARAMS = 47; const int N_CLASS = 48; const in
 const int N_SWITCH = 54; const int N_CASE = 55; const int N_DEFAULT = 56; const int N_GOTO = 57; const int N_LABEL = 58; const int N_RANGEFOR = 59; const int N_MATCH = 60; const int N_ARM = 61; const int N_PWILD = 62; const int N_PCONST = 63; const int N_PRANGE = 64; const int N_PBIND = 65; const int N_PALT = 66; const int N_PSTRUCT = 67; const int N_COYIELD = 68; const int N_CORETURN = 69; const int N_COAWAIT = 70; const int N_TFN = 71; const int N_LAMBDA = 72; const int N_NAMEARG = 73; const int N_VASTART = 74; const int N_VAARG = 75; const int N_VAEND = 76; const int N_TYID = 77; const int N_STATASSERT = 78; const int N_NONE = 79;
 V gen(int n);
 void init_obj(V addr, int T, int init, int style);
-long long ceval(int n) {
-  int k = nk_k[n];
-  if (k == N_INT || k == N_CHR || k == N_BOOL) return nk_i[n];
-  if (k == N_SIZEOF_T || k == N_SIZEOF_E || k == N_ALIGNOF) { dry = dry + 1; V v = gen(n); dry = dry - 1; if (v.ci == 0) die("E_CONST", "sabit ifade gerekli"); return v.cv; }
-  if (k == N_UNARY && seqc(nk_s1[n], "-")) return 0 - ceval(kid(n, 0));
-  if (k == N_ID) { int gi = findgl(nk_s1[n]); if (gi >= 0 && gci[gi]) return gcv[gi]; }
-  if (k == N_COND) { if (ceval(kid(n, 0))) return ceval(kid(n, 1)); return ceval(kid(n, 2)); }
-  if (k == N_BINARY) {
-    long long a = ceval(kid(n, 0)); long long b = ceval(kid(n, 1)); int s = nk_s1[n];
-    if (seqc(s, "+")) return a + b; if (seqc(s, "-")) return a - b; if (seqc(s, "*")) return a * b;
-    if (seqc(s, "/") && b != 0) return a / b; if (seqc(s, "%") && b != 0) return a % b; if (seqc(s, "<<")) return a << b; if (seqc(s, ">>")) return a >> b;
+// ============================ SABIT DEGERLENDIRME (Bolum 04: constexpr / consteval / constinit) ============================
+// Tip duyarli bir AST yorumlayicisi: tamsayi/bool/char/float/double yerel degiskenler, sabit boyutlu yerel diziler, if/for/while/do/break/continue/return, ?: && || !,
+// donusumler, ic ice constexpr islev cagrilari (ozyineleme dahil). Her turlu tamsayi anlami binop/fold (kod uretiminin kendi sabit katlayicisi) ile ayni.
+// Basarisizlik 'cx_fail' ile bildirilir (yorumlanamayan yapi, sabit olmayan ad, sifira bolme, adim siniri): baglama gore hata ya da calisma zamanina duser.
+struct CV { long long i; double d; int t; };
+int cx_fail = 0; long long cx_steps = 0; int cx_depth = 0; int cx_active = 0; int cx_nam = 0; int cx_nai = 0; int cx_curfn = 0 - 1; int cx_hasret = 0; CV cx_ret;
+int cx_nm[600]; CV cx_val[600]; int cx_isarr[600]; int cx_ao[600]; int cx_ac[600]; long long cx_ai[8192]; double cx_ad[8192];
+int fn_body_node(int fi);
+// IEEE-754 binary64 bit deseni <-> double (yazilimla; tur kandirmasi yok)
+double bits_to_d(long long bits) {
+  long long fr = bits & 4503599627370495LL; int ex = (int)((bits >> 52) & 2047); int sg = (int)((bits >> 63) & 1); double m; double v;
+  if (ex == 2047) { cx_fail = 1; return 0.0; }
+  if (ex == 0) { m = (double)fr / 4503599627370496.0; ex = 1; } else m = 1.0 + (double)fr / 4503599627370496.0;
+  int e = ex - 1023; v = m; while (e > 0) { v = v * 2.0; e = e - 1; } while (e < 0) { v = v / 2.0; e = e + 1; }
+  if (sg) v = 0.0 - v; return v;
+}
+long long d_to_bits(double d) {
+  if (d != d) return 9221120237041090560LL;
+  long long sg = 0; if (d < 0.0) { sg = 1; d = 0.0 - d; } else if (d == 0.0) { if (1.0 / d < 0.0) sg = 1; return sg << 63; }
+  if (d > 1.7976931348623157e308) return (sg << 63) | 9218868437227405312LL;
+  int e = 0; double m = d; while (m >= 2.0) { m = m / 2.0; e = e + 1; } while (m < 1.0 && e > 0 - 1022) { m = m * 2.0; e = e - 1; }
+  if (m < 1.0) { double f = d; int q = 0; while (q < 1074) { f = f * 2.0; q = q + 1; } return (sg << 63) | (long long)f; }   // alt-normal
+  long long frac = (long long)((m - 1.0) * 4503599627370496.0); return (sg << 63) | ((long long)(e + 1023) << 52) | frac;
+}
+CV cxz(int t) { CV v; v.i = 0; v.d = 0.0; v.t = t; return v; }
+CV cx_int(long long x, int t) { CV v; v.i = fold(x, t); v.d = 0.0; v.t = t; return v; }
+int cx_isf(int t) { return tk[t] == Y_FLOAT || tk[t] == Y_DOUBLE; }
+int cx_isi(int t) { return is_int(t); }
+CV cx_conv(CV v, int T) {
+  T = unq(T); CV r = cxz(T);
+  if (cx_isi(T)) {
+    if (cx_isf(v.t)) { if (tk[T] == Y_BOOL) r.i = v.d != 0.0; else { if (v.d != v.d || v.d > 9.2e18 || v.d < 0.0 - 9.2e18) { cx_fail = 1; return r; } r.i = fold((long long)v.d, T); } }
+    else if (cx_isi(v.t)) r.i = fold(v.i, T);
+    else cx_fail = 1;
+    return r;
   }
-  die("E_CONST", "sabit ifade gerekli"); return 0;
+  if (cx_isf(T)) {
+    if (cx_isf(v.t)) r.d = v.d; else if (cx_isi(v.t)) { if (uns64(v.t)) { cx_fail = 1; return r; } r.d = (double)v.i; } else { cx_fail = 1; return r; }
+    if (tk[T] == Y_FLOAT) { float f = (float)r.d; r.d = (double)f; }
+    return r;
+  }
+  cx_fail = 1; return r;
+}
+int cx_truth(CV v) { if (cx_isf(v.t)) return v.d != 0.0; return v.i != 0; }
+int cx_find(int nm) { int i = cx_nam - 1; while (i >= 0) { if (cx_nm[i] == nm) return i; i = i - 1; } return 0 - 1; }
+CV cx_binop(int s, CV a, CV b) {
+  CV r = cxz(mkt(Y_INT, 0 - 1, 0));
+  if (cx_isf(a.t) || cx_isf(b.t)) {
+    if (cx_isi(a.t) || cx_isi(b.t) || (cx_isf(a.t) && cx_isf(b.t))) {
+      int rt; if (tk[a.t] == Y_DOUBLE || tk[b.t] == Y_DOUBLE) rt = mkt(Y_DOUBLE, 0 - 1, 0); else rt = mkt(Y_FLOAT, 0 - 1, 0);
+      CV x = cx_conv(a, rt); CV y = cx_conv(b, rt); if (cx_fail) return r;
+      if (seqc(s, "+")) { r = cxz(rt); r.d = x.d + y.d; } else if (seqc(s, "-")) { r = cxz(rt); r.d = x.d - y.d; } else if (seqc(s, "*")) { r = cxz(rt); r.d = x.d * y.d; } else if (seqc(s, "/")) { r = cxz(rt); r.d = x.d / y.d; }
+      else if (seqc(s, "<")) return cx_int(x.d < y.d, bool_t()); else if (seqc(s, ">")) return cx_int(x.d > y.d, bool_t()); else if (seqc(s, "<=")) return cx_int(x.d <= y.d, bool_t()); else if (seqc(s, ">=")) return cx_int(x.d >= y.d, bool_t());
+      else if (seqc(s, "==")) return cx_int(x.d == y.d, bool_t()); else if (seqc(s, "!=")) return cx_int(x.d != y.d, bool_t());
+      else { cx_fail = 1; return r; }
+      if (tk[rt] == Y_FLOAT) { float f = (float)r.d; r.d = (double)f; }
+      return r;
+    }
+    cx_fail = 1; return r;
+  }
+  if (cx_isi(a.t) == 0 || cx_isi(b.t) == 0) { cx_fail = 1; return r; }
+  if ((seqc(s, "/") || seqc(s, "%")) && b.i == 0) { cx_fail = 1; return r; }
+  if ((seqc(s, "<<") || seqc(s, ">>")) && (b.i < 0 || b.i >= 64)) { cx_fail = 1; return r; }
+  int shf = seqc(s, "<<") || seqc(s, ">>");
+  int t; if (shf) t = promote(a.t); else t = uac(a.t, b.t);
+  CV x = cx_conv(a, t); CV y = cx_conv(b, shf ? promote(b.t) : t); if (cx_fail) return r;
+  long long p = x.i; long long q = y.i; int u = uns64(t); int ub = u && shf == 0; long long m = 0 - 9223372036854775807LL - 1;
+  if ((seqc(s, "/") || seqc(s, "%")) && q == 0) { cx_fail = 1; return r; }
+  if (shf && (q < 0 || q >= bits_of(t))) { cx_fail = 1; return r; }
+  if (u == 0 && sg_of(t) == 1 && (seqc(s, "+") || seqc(s, "-") || seqc(s, "*"))) {   // isaretli tasma sabit ifadede gecersiz
+    long long rw = p + q; if (seqc(s, "-")) rw = p - q; if (seqc(s, "*")) rw = p * q; int bad = 0;
+    if (bits_of(t) < 64) { if (fold(rw, t) != rw) bad = 1; }
+    else if (seqc(s, "+")) { if (((p ^ rw) & (q ^ rw)) < 0) bad = 1; }
+    else if (seqc(s, "-")) { if (((p ^ q) & (p ^ rw)) < 0) bad = 1; }
+    else { if (p != 0 && (rw / p != q || (p == 0 - 1 && q == m))) bad = 1; }
+    if (bad) { cx_fail = 1; return r; }
+  }
+  if (seqc(s, "+")) return cx_int(p + q, t); if (seqc(s, "-")) return cx_int(p - q, t); if (seqc(s, "*")) return cx_int(p * q, t);
+  if (seqc(s, "/")) { if (u) { if (q < 0) return cx_int(((p ^ m) >= (q ^ m)) ? 1 : 0, t); if (p >= 0) return cx_int(p / q, t); long long h = ((p >> 1) & 9223372036854775807LL) / q; long long rm = p - (h * 2) * q; if ((rm ^ m) >= (q ^ m)) h = h * 2 + 1; else h = h * 2; return cx_int(h, t); } if (p == m && q == 0 - 1) { cx_fail = 1; return r; } return cx_int(p / q, t); }
+  if (seqc(s, "%")) { if (u) { CV dv = cx_binop(intern_c("/"), x, y); return cx_int(p - dv.i * q, t); } if (p == m && q == 0 - 1) { cx_fail = 1; return r; } return cx_int(p % q, t); }
+  if (seqc(s, "&")) return cx_int(p & q, t); if (seqc(s, "|")) return cx_int(p | q, t); if (seqc(s, "^")) return cx_int(p ^ q, t);
+  if (seqc(s, "<<")) return cx_int(p << q, t);
+  if (seqc(s, ">>")) { if (u && q > 0) return cx_int(((p >> 1) & 9223372036854775807LL) >> (q - 1), t); return cx_int(p >> q, t); }
+  { long long pp = p; long long qq = q; if (u) { pp = p ^ m; qq = q ^ m; }
+    if (seqc(s, "==")) return cx_int(p == q, bool_t()); if (seqc(s, "!=")) return cx_int(p != q, bool_t());
+    if (seqc(s, "<")) return cx_int(pp < qq, bool_t()); if (seqc(s, ">")) return cx_int(pp > qq, bool_t());
+    if (seqc(s, "<=")) return cx_int(pp <= qq, bool_t()); if (seqc(s, ">=")) return cx_int(pp >= qq, bool_t()); }
+  cx_fail = 1; return r;
+}
+CV cx_call(int n);
+CV cx(int n) {
+  CV r = cxz(mkt(Y_INT, 0 - 1, 0)); if (cx_fail) return r;
+  cx_steps = cx_steps + 1; if (cx_steps > 3000000) { cx_fail = 1; return r; }
+  int k = nk_k[n];
+  if (k == N_INT) { if (nk_s2[n] >= 0) { cx_fail = 1; return r; } return cx_int(nk_i[n], mkt(nk_j[n], 0 - 1, 0)); }
+  if (k == N_CHR) { if (nk_s2[n] >= 0) { cx_fail = 1; return r; } return cx_int(nk_i[n], mkt(Y_CHAR, 0 - 1, 0)); }
+  if (k == N_BOOL) return cx_int(nk_i[n], bool_t());
+  if (k == N_FLT) {
+    if (nk_s2[n] >= 0 || is_ld(mkt(nk_j[n], 0 - 1, 0))) { cx_fail = 1; return r; }
+    int t = mkt(nk_j[n], 0 - 1, 0); CV f = cxz(t); long long bits = nk_d[n]; f.d = bits_to_d(bits); if (tk[t] == Y_FLOAT) { float ff = (float)f.d; f.d = (double)ff; } return f;
+  }
+  if (k == N_ID) {
+    int e = cx_find(nk_s1[n]);
+    if (e >= 0) { if (cx_isarr[e]) { cx_fail = 1; return r; } return cx_val[e]; }
+    if (cx_depth == 0) { int vi = findvar(nk_s1[n]); if (vi >= 0 && vci[vi]) return cx_int(vcv[vi], unq(vty[vi])); if (vi >= 0) { cx_fail = 1; return r; } }   // islev govdesinde cagiranin yerelleri gorunmez
+    if (cx_depth > 0 && findvar(nk_s1[n]) >= 0 && 0) { cx_fail = 1; return r; }
+    int gi = findgl(nk_s1[n]); if (gi >= 0 && gci[gi]) return cx_int(gcv[gi], unq(gty[gi]));
+    cx_fail = 1; return r;
+  }
+  if (k == N_UNARY) {
+    CV a = cx(kid(n, 0)); if (cx_fail) return r; int s = nk_s1[n];
+    if (seqc(s, "!")) return cx_int(cx_truth(a) == 0, bool_t());
+    if (cx_isf(a.t)) { if (seqc(s, "-")) { a.d = 0.0 - a.d; return a; } if (seqc(s, "+")) return a; cx_fail = 1; return r; }
+    if (cx_isi(a.t) == 0) { cx_fail = 1; return r; }
+    int t = promote(a.t); a = cx_conv(a, t);
+    if (seqc(s, "-")) return cx_int(0 - a.i, t); if (seqc(s, "+")) return a; if (seqc(s, "~")) return cx_int(~a.i, t);
+    cx_fail = 1; return r;
+  }
+  if (k == N_BINARY) {
+    int s = nk_s1[n];
+    if (seqc(s, "&&")) { CV a = cx(kid(n, 0)); if (cx_fail) return r; if (cx_truth(a) == 0) return cx_int(0, bool_t()); CV b = cx(kid(n, 1)); return cx_int(cx_truth(b), bool_t()); }
+    if (seqc(s, "||")) { CV a = cx(kid(n, 0)); if (cx_fail) return r; if (cx_truth(a)) return cx_int(1, bool_t()); CV b = cx(kid(n, 1)); return cx_int(cx_truth(b), bool_t()); }
+    CV a = cx(kid(n, 0)); CV b = cx(kid(n, 1)); if (cx_fail) return r; return cx_binop(s, a, b);
+  }
+  if (k == N_COND) { CV c = cx(kid(n, 0)); if (cx_fail) return r; if (cx_truth(c)) return cx(kid(n, 1)); return cx(kid(n, 2)); }
+  if (k == N_COMMA) { cx(kid(n, 0)); return cx(kid(n, 1)); }
+  if (k == N_CAST || (k == N_FCAST && nk_n[n] == 2 && nk_i[n] == 0)) {
+    int T = typeof_(kid(n, 0)); if (tk[T] == Y_AUTO || tk[unq(T)] == Y_VOID) { cx_fail = 1; return r; }
+    CV a = cx(kid(n, 1)); if (cx_fail) return r; return cx_conv(a, T);
+  }
+  if (k == N_SIZEOF_T || k == N_SIZEOF_E || k == N_ALIGNOF) { dry = dry + 1; V v = gen(n); dry = dry - 1; if (v.ci == 0) { cx_fail = 1; return r; } return cx_int(v.cv, v.ty); }
+  if (k == N_INDEX) {
+    int b = kid(n, 0); if (nk_k[b] != N_ID) { cx_fail = 1; return r; } int e = cx_find(nk_s1[b]); if (e < 0 || cx_isarr[e] == 0) { cx_fail = 1; return r; }
+    CV ix = cx(kid(n, 1)); if (cx_fail || cx_isi(ix.t) == 0 || ix.i < 0 || ix.i >= cx_ac[e]) { cx_fail = 1; return r; }
+    CV v = cxz(cx_val[e].t); if (cx_isf(v.t)) v.d = cx_ad[cx_ao[e] + ix.i]; else v.i = cx_ai[cx_ao[e] + ix.i]; return v;
+  }
+  if (k == N_ASSIGN || k == N_PREINC || k == N_POSTINC) {
+    int lv = kid(n, 0); int s = nk_s1[n]; int isinc = k != N_ASSIGN; CV rhs = cxz(mkt(Y_INT, 0 - 1, 0));
+    if (isinc == 0) { rhs = cx(kid(n, 1)); if (cx_fail) return r; }
+    int e = 0 - 1; long long ix = 0 - 1;
+    if (nk_k[lv] == N_ID) e = cx_find(nk_s1[lv]);
+    else if (nk_k[lv] == N_INDEX && nk_k[kid(lv, 0)] == N_ID) { e = cx_find(nk_s1[kid(lv, 0)]); CV iv = cx(kid(lv, 1)); if (cx_fail || cx_isi(iv.t) == 0) { cx_fail = 1; return r; } ix = iv.i; }
+    if (e < 0) { cx_fail = 1; return r; }
+    CV cur = cx_val[e]; int T = cur.t;
+    if (ix >= 0 || cx_isarr[e]) { if (cx_isarr[e] == 0 || ix < 0 || ix >= cx_ac[e]) { cx_fail = 1; return r; } if (cx_isf(T)) cur.d = cx_ad[cx_ao[e] + ix]; else cur.i = cx_ai[cx_ao[e] + ix]; }
+    else if (cx_isarr[e]) { cx_fail = 1; return r; }
+    CV old = cur; CV nv;
+    if (isinc) { CV one = cx_int(1, mkt(Y_INT, 0 - 1, 0)); int opn = intern_c("-"); if (seqc(s, "++")) opn = intern_c("+"); nv = cx_binop(opn, cur, one); }
+    else if (seqc(s, "=")) nv = rhs;
+    else { char op2[8]; int q = 0; while (q < s_len[s] - 1 && q < 6) { op2[q] = chars[s_off[s] + q]; q = q + 1; } op2[q] = 0; nv = cx_binop(intern_c(op2), cur, rhs); }
+    if (cx_fail) return r; nv = cx_conv(nv, T); if (cx_fail) return r;
+    if (cx_isarr[e]) { if (cx_isf(T)) cx_ad[cx_ao[e] + ix] = nv.d; else cx_ai[cx_ao[e] + ix] = nv.i; } else cx_val[e] = nv;
+    if (k == N_POSTINC) return old; return nv;
+  }
+  if (k == N_CALL) return cx_call(n);
+  cx_fail = 1; return r;
+}
+int cx_declare(int vn) {
+  int nm = nk_s1[vn]; if (cx_nam >= 599) { cx_fail = 1; return 0; }
+  int T = typeof_(kid(vn, 0)); int init = 0 - 1; if (nk_n[vn] > 1) init = kid(vn, 1);
+  if (is_ref(T)) { cx_fail = 1; return 0; }
+  int e = cx_nam;
+  if (is_arr(T)) {
+    long long cnt = tn[T]; int et = unq(te[T]); if (cnt <= 0 || cx_nai + cnt > 8190 || !(cx_isi(et) || cx_isf(et))) { cx_fail = 1; return 0; }
+    cx_nm[e] = nm; cx_isarr[e] = 1; cx_ao[e] = cx_nai; cx_ac[e] = cnt; cx_val[e] = cxz(et); long long z = 0; while (z < cnt) { cx_ai[cx_nai + z] = 0; cx_ad[cx_nai + z] = 0.0; z = z + 1; }
+    if (init >= 0) { if (nk_k[init] != N_INITLIST || nk_n[init] > cnt) { cx_fail = 1; return 0; } z = 0; while (z < nk_n[init]) { CV iv = cx_conv(cx(kid(init, z)), et); if (cx_fail) return 0; if (cx_isf(et)) cx_ad[cx_nai + z] = iv.d; else cx_ai[cx_nai + z] = iv.i; z = z + 1; } }
+    cx_nai = cx_nai + cnt; cx_nam = cx_nam + 1; return 1;
+  }
+  CV v;
+  if (tk[T] == Y_AUTO) { if (init < 0 || nk_k[init] == N_INITLIST) { cx_fail = 1; return 0; } v = cx(init); if (cx_fail) return 0; if (cx_isi(v.t) == 0 && cx_isf(v.t) == 0) { cx_fail = 1; return 0; } }
+  else {
+    int U = unq(T); if (!(cx_isi(U) || cx_isf(U))) { cx_fail = 1; return 0; }
+    v = cxz(U);
+    if (init >= 0) { int ie = init; if (nk_k[init] == N_INITLIST) { if (nk_n[init] > 1) { cx_fail = 1; return 0; } if (nk_n[init] == 1) ie = kid(init, 0); else ie = 0 - 1; } if (ie >= 0) { CV iv = cx(ie); if (cx_fail) return 0; v = cx_conv(iv, U); } }
+  }
+  if (cx_fail) return 0; cx_nm[e] = nm; cx_isarr[e] = 0; cx_val[e] = v; cx_nam = cx_nam + 1; return 1;
+}
+int cxs(int n) {   // 0 normal, 1 break, 2 continue, 3 return
+  if (cx_fail) return 3; cx_steps = cx_steps + 1; if (cx_steps > 3000000) { cx_fail = 1; return 3; }
+  int k = nk_k[n];
+  if (k == N_BLOCK) { int m = cx_nam; int mi = cx_nai; int i = 0; while (i < nk_n[n]) { int st = cxs(kid(n, i)); if (st != 0) { cx_nam = m; cx_nai = mi; return st; } i = i + 1; } cx_nam = m; cx_nai = mi; return 0; }
+  if (k == N_EXPRSTMT) { cx(kid(n, 0)); return 0; }
+  if (k == N_EMPTY) return 0;
+  if (k == N_DECLS) { int i = 0; while (i < nk_n[n]) { if (cx_declare(kid(n, i)) == 0 && cx_fail) return 3; i = i + 1; } return 0; }
+  if (k == N_IF) { CV c = cx(kid(n, 0)); if (cx_fail) return 3; if (cx_truth(c)) return cxs(kid(n, 1)); if (nk_n[n] > 2) return cxs(kid(n, 2)); return 0; }
+  if (k == N_WHILE) { while (1) { CV c = cx(kid(n, 0)); if (cx_fail) return 3; if (cx_truth(c) == 0) return 0; int st = cxs(kid(n, 1)); if (st == 3) return 3; if (st == 1) return 0; } }
+  if (k == N_DO) { while (1) { int st = cxs(kid(n, 0)); if (st == 3) return 3; if (st == 1) return 0; CV c = cx(kid(n, 1)); if (cx_fail) return 3; if (cx_truth(c) == 0) return 0; } }
+  if (k == N_FOR) {
+    int m = cx_nam; int mi = cx_nai; int init = kid(n, 0); if (nk_k[init] != N_NONE) { int st0 = cxs(init); if (st0 == 3) return 3; }
+    while (1) {
+      if (nk_k[kid(n, 1)] != N_NONE) { CV c = cx(kid(n, 1)); if (cx_fail) return 3; if (cx_truth(c) == 0) break; }
+      int st = cxs(kid(n, 3)); if (st == 3) { cx_nam = m; cx_nai = mi; return 3; } if (st == 1) break;
+      if (nk_k[kid(n, 2)] != N_NONE) cx(kid(n, 2));
+      if (cx_fail) return 3;
+    }
+    cx_nam = m; cx_nai = mi; return 0;
+  }
+  if (k == N_BREAK) return 1;
+  if (k == N_CONTINUE) return 2;
+  if (k == N_RETURN) {
+    if (nk_n[n] == 0) { cx_hasret = 1; cx_ret = cxz(mkt(Y_VOID, 0 - 1, 0)); return 3; }
+    CV v = cx(kid(n, 0)); if (cx_fail) return 3; int rt = unq(fn_ret[cx_curfn]);
+    if (is_void(rt)) { cx_fail = 1; return 3; }
+    cx_ret = cx_conv(v, rt); cx_hasret = 1; return 3;
+  }
+  cx_fail = 1; return 3;
+}
+CV cx_call(int n) {
+  CV r = cxz(mkt(Y_INT, 0 - 1, 0)); int cn = kid(n, 0); if (nk_k[cn] != N_ID) { cx_fail = 1; return r; }
+  int na = nk_n[n] - 1; if (na > 8) { cx_fail = 1; return r; }
+  CV a[8]; V av[8]; int i = 0;
+  while (i < na) { int an = kid(n, i + 1); if (nk_k[an] == N_NAMEARG || nk_k[an] == N_INITLIST) { cx_fail = 1; return r; } a[i] = cx(an); if (cx_fail) return r; av[i] = mkv(a[i].t, 0, 0 - 1); i = i + 1; }
+  int cc[64]; int ncc = 0; int f = 0; while (f < nfn) { if (fn_cls[f] < 0 && fn_name[f] == nk_s1[cn] && ncc < 64) { cc[ncc] = f; ncc = ncc + 1; } f = f + 1; }
+  if (ncc == 0) { cx_fail = 1; return r; }
+  allow_def = 1; int fi = resolve(cc, ncc, 0, av, na); allow_def = 0;
+  if (fi < 0 || fn_has(fi, F_CONSTEXPR | F_CONSTEVAL) == 0 || fn_va[fi] || cx_depth > 400) { cx_fail = 1; return r; }
+  int body = fn_body_node(fi); if (body < 0) { cx_fail = 1; return r; }
+  int np = fn_np[fi]; int saved_nam = cx_nam; int saved_nai = cx_nai; int saved_fn = cx_curfn; int params = kid(fn_node[fi], 1);
+  if (cx_nam + np >= 599) { cx_fail = 1; return r; }
+  i = 0;
+  while (i < np) {
+    int P = fn_pt[fi * 8 + i]; int U = unq(P); if (is_ref(P)) { if (tcv[te[P]] == 0 || tk[P] != Y_REF) { cx_fail = 1; return r; } U = unq(te[P]); }
+    CV v;
+    if (i < na) v = cx_conv(a[i], U); else { if (fn_pdef[fi * 8 + i] < 0) { cx_fail = 1; return r; } v = cx_conv(cx(fn_pdef[fi * 8 + i]), U); }
+    if (cx_fail) { cx_nam = saved_nam; return r; }
+    cx_nm[cx_nam] = nk_s1[kid(params, i)]; cx_val[cx_nam] = v; cx_isarr[cx_nam] = 0; cx_nam = cx_nam + 1; i = i + 1;
+  }
+  cx_curfn = fi; cx_depth = cx_depth + 1; cx_hasret = 0; int st = cxs(body); cx_depth = cx_depth - 1;
+  cx_nam = saved_nam; cx_nai = saved_nai; cx_curfn = saved_fn;
+  if (cx_fail) return r;
+  CV res; if (cx_hasret) res = cx_ret; else res = cxz(mkt(Y_VOID, 0 - 1, 0));
+  cx_hasret = 0;
+  if (is_void(unq(fn_ret[fi])) == 0 && st != 3) { cx_fail = 1; return r; }   // donus degeri olmayan yol
+  return res;
+}
+// sabit degerlendirme girisi: dugumun deger turu ve degeri
+CV cx_eval_top(int n) {
+  int saved_nam = cx_nam; int saved_nai = cx_nai; int saved_fn = cx_curfn; int sd = cx_depth; cx_curfn = 0 - 1; cx_fail = 0;
+  if (cx_active == 0) cx_steps = 0; cx_active = cx_active + 1; cx_depth = 0;
+  CV v = cx(n);
+  cx_active = cx_active - 1; cx_nam = saved_nam; cx_nai = saved_nai; cx_curfn = saved_fn; cx_depth = sd;
+  return v;
+}
+long long ceval(int n) {
+  CV v = cx_eval_top(n);
+  if (cx_fail || cx_isi(v.t) == 0) { cx_fail = 0; die("E_CONST", "sabit ifade gerekli"); }
+  return v.i;
 }
 char fn_co[1700]; int corun_used = 0; int cl_gen[NCL]; int co_k = 0; int co_lab0 = 0; int co_mode = 0; int co_cur = 0 - 1; long long co_foff0 = 3;
 int gen_class(int name) {   // 'std::generator<kod>' yerlesik korutin sinifi: 1 sozcuk (cerceve tutamagi), cl_bi = 5 ; 'va_list': 2 sozcuk (imlec, kalan sayisi), cl_bi = 7
@@ -1172,7 +1419,8 @@ int typeof_(int n) {
 }
 V var_ref(int vi) {
   long long r = newreg(); V v = mkv(vty[vi], 1, r); v.key = vuid[vi] * 1000 + 1; if (vuid[vi] > 0 && vuid[vi] < 60000) v.bp = ubp[vuid[vi]];
-  if (vref[vi]) { e_ld(r, 1, mkv(0, 0, FPID), voff[vi]); v.vp = 1; v.key = 0; }
+  if (vref[vi] == 2) { setk(r, 1); w("  mov "); wr(r); w(", g"); wn(voff[vi]); wc(10); v.key = guid[voff[vi]] * 1000 + 1; }
+  else if (vref[vi]) { e_ld(r, 1, mkv(0, 0, FPID), voff[vi]); v.vp = 1; v.key = 0; }
   else { v.reg = e_addi(mkv(0, 0, FPID), voff[vi]); }
   if (vci[vi]) { v.ci = 1; v.cv = vcv[vi]; }
   return v;
@@ -1486,6 +1734,7 @@ int mk0(int k, long long iv, int s1) { int c0[1]; return mkn(k, iv, s1, curline,
 int mk1(int k, long long iv, int s1, int a) { int c1[1]; c1[0] = a; return mkn(k, iv, s1, curline, 1, c1); }
 int mk2n(int k, long long iv, int s1, int a, int b) { int c2[2]; c2[0] = a; c2[1] = b; return mkn(k, iv, s1, curline, 2, c2); }
 int tyn(int t) { return mk0(N_TYID, t, 0 - 1); }
+int nameU(const char* pre, int v) { int k = 0; while (pre[k]) { tmpb[k] = pre[k]; k = k + 1; } char dg[12]; int nd = 0; if (v == 0) { dg[0] = '0'; nd = 1; } while (v > 0) { dg[nd] = '0' + v % 10; v = v / 10; nd = nd + 1; } while (nd > 0) { nd = nd - 1; tmpb[k] = dg[nd]; k = k + 1; } tmpb[k] = 0; return intern_n(tmpb, k); }
 int nameN(const char* pre, int v) { int k = 0; while (pre[k]) { tmpb[k] = pre[k]; k = k + 1; } tmpb[k] = '0' + (v / 10) % 10; tmpb[k + 1] = '0' + v % 10; tmpb[k + 2] = 0; return intern_n(tmpb, k + 2); }
 int inv_T[256]; int inv_ft[256]; int inv_f[256]; int ninv = 0; int cpy_T[256]; int cpy_f[256]; int ncpy = 0; int fw_cnt = 0;
 // cagirici: R inv(T* __o, P0 __a0, ...) { return (*__o)(__a0, ...); }
@@ -1715,8 +1964,18 @@ V gen_call(int n) {
   if (fi == 0 - 1) die("E_NOVIABLE", "uygun asiri yuklenmis islev yok");
   if (fi == 0 - 2) die("E_AMBIG", "belirsiz islev cagrisi");
   if (na < fn_np[fi]) { int q = na; while (q < fn_np[fi]) { av[q] = gen_default(fn_pdef[fi * 8 + q]); q = q + 1; } na = fn_np[fi]; }
+  if (fn_has(fi, F_CONSTEXPR | F_CONSTEVAL) && fn_cls[fi] < 0 && haveself == 0 && anamed == 0) {   // Bolum 04: sabit argumanli constexpr/consteval cagrisi derleme zamaninda degerlendirilir
+    CV cr = cx_eval_top(n); int rt0 = unq(fn_ret[fi]);
+    if (cx_fail == 0) {
+      if (cx_isi(rt0) && cx_isi(cr.t)) return imm(rt0, cr.i);
+      if (cx_isf(rt0) && cx_isf(cr.t)) { V fc = fconst(rt0, d_to_bits(cr.d)); return norm(fc, rt0); }
+    }
+    cx_fail = 0;
+    if (fn_has(fi, F_CONSTEVAL)) die("E_CONSTEVAL", "consteval islevi yalniz sabit ifadede, sabit argumanlarla cagrilabilir");
+  }
+  if (n == tc_node) { tc_node = 0 - 1; tc_req = 1; }
   V r; if (haveself) r = callfn(fi, &self, av, na, allowvirt); else r = callfn(fi, 0, av, na, allowvirt);
-  return r;
+  tc_req = 0; return r;
 }
 // ---- donusumler ----
 int casts_away(int from, int to) {
@@ -2426,6 +2685,31 @@ void gen_try(int n) {
   }
   wl(end); w(":\n"); nreg = base; reach = tacc;
 }
+// islev-yerel static: gizli global + (sabit olmayan ilklendirici icin) bir-kez koruma bayragi
+void declare_static_local(int vn, int T, int init, int style) {
+  if (complete_obj(T) == 0) die("E_TYPE", "tamamlanmamis tur");
+  int sid = nameU("__sl", vn); int gi = findgl(sid); int guard = 0 - 1;
+  if (gi < 0) {
+    gname[ngl] = sid; gty[ngl] = T; gnode[ngl] = vn; gci[ngl] = 0; gcinit[ngl] = 0; gflags[ngl] = nk_j[vn] | 4096; uidn = uidn + 1; guid[ngl] = uidn; gi = ngl; ngl = ngl + 1;
+    int isc = 0;
+    if (init < 0 && is_cls(unq(T)) == 0) isc = 1;
+    if (init >= 0 && nk_k[init] != N_INITLIST && is_sc(T) && is_ld(T) == 0) {
+      int sv = may_throw; dry = dry + 1; CV cv0 = cx_eval_top(init); dry = dry - 1; may_throw = sv;
+      int okc = cx_fail == 0 && (cx_isi(cv0.t) || cx_isf(cv0.t)) && (cx_isi(unq(T)) || cx_isf(unq(T))); cx_fail = 0;
+      if (okc) { CV c2 = cx_conv(cv0, unq(T)); gcinit[gi] = 1; if (cx_isf(unq(T))) gcib[gi] = d_to_bits(c2.d); else gcib[gi] = c2.i; isc = 1; }
+    }
+    if (init < 0 && is_cls(unq(T)) == 0) gcinit[gi] = 1;
+    if (isc == 0) { gname[ngl] = nameU("__sg", vn); gty[ngl] = mkt(Y_INT, 0 - 1, 0); gnode[ngl] = vn; gci[ngl] = 0; gcinit[ngl] = 1; gcib[ngl] = 0; gflags[ngl] = 4096; uidn = uidn + 1; guid[ngl] = uidn; ngl = ngl + 1; guard = ngl - 1; }
+  } else { if (gcinit[gi] == 0 && gcib[gi] == 0 && findgl(nameU("__sg", vn)) >= 0) guard = findgl(nameU("__sg", vn)); }
+  if (guard >= 0) {   // if (!guard) { guard = 1; init }
+    int base = nreg; long long a = newreg(); setk(a, 1); w("  mov "); wr(a); w(", g"); wn(guard); wc(10);
+    long long gv = newreg(); e_ld(gv, 0, mkv(0, 0, a), 0); int Lend = newlab(); e_jcc("jnz", mkv(0, 0, gv), Lend);
+    long long one = e_movi(0, 1); e_st(mkv(0, 0, one), mkv(0, 0, a), 0);
+    long long ga = newreg(); setk(ga, 1); w("  mov "); wr(ga); w(", g"); wn(gi); wc(10); init_obj(mkv(0, 1, ga), T, init, style);
+    wl(Lend); w(":\n"); nreg = base;
+  }
+  vname[nvars] = nk_s1[vn]; vty[nvars] = T; voff[nvars] = gi; vref[nvars] = 2; vci[nvars] = 0; vuid[nvars] = 0; nvars = nvars + 1;
+}
 void declvar(int vn) {
   curline = nk_line[vn]; { int q = scope_lo; while (q < nvars) { if (vname[q] == nk_s1[vn] && nk_s1[vn] >= 0) die("E_REDECL", "degisken ayni kapsamda yeniden tanimlandi"); q = q + 1; } } int T = typeof_(kid(vn, 0)); int init = 0 - 1; if (nk_n[vn] > 1) init = kid(vn, 1); int style = nk_i[vn]; vinit[nvars] = nk_n[vn] > 1;
   int ie = init; if (init >= 0 && nk_k[init] == N_INITLIST && nk_n[init] == 1 && (tk[T] == Y_AUTO || is_ref(T))) ie = kid(init, 0);
@@ -2438,6 +2722,8 @@ void declvar(int vn) {
   }
   if (is_void(T)) die("E_TYPE", "void turunde degisken");
   if (tk[T] == Y_AUTO) die("E_TYPE", "auto cikarilamadi");
+  if ((nk_j[vn] & 1) && is_ref(T) == 0) T = withc(T, 1);   // yerel constexpr => const
+  if (nk_j[vn] & 4) { if (is_ref(T)) die("E_TYPE", "static yerel referans desteklenmiyor"); declare_static_local(vn, T, init, style); return; }
   if (is_ref(T)) {
     if (init < 0) die("E_INIT", "referans ilklendirici gerektirir");
     V iv = gen(ie); V ad = bind_arg(iv, T); ad = mat(ad); int off = slot(1);
@@ -2456,7 +2742,7 @@ void declvar(int vn) {
 }
 int scope_lo = 0;
 int loop_brk[64]; int loop_cont[64]; int loop_hs[64]; int loop_kind[64]; int loop_bs[64]; int loop_cs[64]; int nloop = 0; int reach = 1; int N_SRET = 0;
-int deduce_on = 0; int deduce_ty = 0 - 1;
+int deduce_on = 0; int deduce_ty = 0 - 1; int inl_depth = 0;
 void stmt_return(int n) {
   if (deduce_on) {   // lambda donus turu cikarimi (kuru gecis): ilk return'un turu; digerleri ayni olmali
     curline = nk_line[n];
@@ -2469,7 +2755,7 @@ void stmt_return(int n) {
   curline = nk_line[n]; int rt = fn_ret[cur_fn]; if (co_mode) die("E_COROUTINE", "korutinde return yerine co_return kullanilir");
   if (nk_n[n] == 0) { if (is_void(rt) == 0) die("E_RETURN", "deger donduren islevde 'return' degersiz"); emit_ret(imm(0, 0)); return; }
   int e = kid(n, 0);
-  if (is_void(rt)) { if (nk_k[e] == N_INITLIST) die("E_RETURN", "void islevden deger donduruluyor"); V v = gen(e); if (is_void(v.ty) == 0) die("E_RETURN", "void islevden deger donduruluyor"); emit_ret(imm(0, 0)); return; }
+  if (is_void(rt)) { if (nk_k[e] == N_INITLIST) die("E_RETURN", "void islevden deger donduruluyor"); if (nk_k[e] == N_CALL && inl_depth == 0) tc_node = e; V v = gen(e); tc_node = 0 - 1; if (tc_done) { tc_done = 0; return; } if (is_void(v.ty) == 0) die("E_RETURN", "void islevden deger donduruluyor"); emit_ret(imm(0, 0)); return; }
   if (is_ref(rt)) {
     V v = gen(e); int rr = tk[rt] == Y_RREF; int tu = unq(te[rt]);
     if (unq(v.ty) != tu && !(is_cls(unq(v.ty)) && is_cls(tu) && derived_from(tcl[unq(v.ty)], tcl[tu]))) die("E_RETURN", "referans donusu: tur uyumsuz");
@@ -2491,7 +2777,7 @@ void stmt_return(int n) {
   V v;
   if (pun_on && nk_k[e] != N_INITLIST) { dry = dry + 1; V pb_ = gen(e); dry = dry - 1; if (pb_.bp) die("E_REINTERP", "bayt gorunumu yok: uyumsuz gosterimli isaretci donduruluyor"); }
   if (nk_k[e] == N_INITLIST) { int off = slot(1); V ad = slotaddr(off); init_obj(ad, unq(rt), e, 3); v = mkv(unq(rt), 0, newreg()); e_ld(v.reg, kind_for(unq(rt)), ad, 0); }
-  else v = gen(e);
+  else { if (nk_k[e] == N_CALL && inl_depth == 0) tc_node = e; v = gen(e); tc_node = 0 - 1; if (tc_done) { tc_done = 0; return; } }
   V s = to_scalar(v, unq(rt), 0); emit_ret(s);
 }
 // Bolum 04: lambda donus turu cikarimi -- govde kapsayan islev baglaminda KURU gecisle gezilir (parametreler gecici yerel degiskenler gibi tanimlanir); durum geri yuklenir.
@@ -2810,6 +3096,7 @@ void stmt(int n) {
   if (k == N_COYIELD || k == N_CORETURN || k == N_COAWAIT) { gen_coro(n); nreg = base; return; }
   if (k == N_THROW) { gen_throw(n); nreg = base; reach = 0; return; }
   if (k == N_TRY) { gen_try(n); return; }
+  if (k == N_STATASSERT) { static_assert_check(n); return; }
   if (k == N_RETURN) { stmt_return(n); nreg = base; reach = 0; return; }
   if (k == N_BREAK) { if (nloop == 0) die("E_STMT", "'break' dongu ya da switch disinda"); loop_bs[nloop - 1] = 1; hs_restore_to(loop_hs[nloop - 1]); jmpl(loop_brk[nloop - 1]); reach = 0; return; }
   if (k == N_CONTINUE) {
@@ -3062,16 +3349,32 @@ void declare_class(int node) {
   i = 0; while (i < nk_n[node]) { int m = kid(node, i); i = i + 1; if (nk_k[m] == N_FUNC) declare_func(m, ci); }
   layout_class(ci); finish_defaulted(ci);
 }
+void static_assert_check(int n) {
+  curline = nk_line[n]; CV v = cx_eval_top(kid(n, 0));
+  if (cx_fail || (cx_isi(v.t) == 0 && cx_isf(v.t) == 0)) { cx_fail = 0; die("E_STATIC_ASSERT", "static_assert kosulu sabit ifade degil"); }
+  if (cx_truth(v) == 0) die("E_STATIC_ASSERT", "static_assert basarisiz");
+}
 void declare_global(int vn) {
   curline = nk_line[vn]; int T = typeof_(kid(vn, 0)); int init = 0 - 1; if (nk_n[vn] > 1) init = kid(vn, 1);
   if (tk[T] == Y_AUTO) die("E_TYPE", "global auto desteklenmiyor"); if (is_ref(T)) die("E_TYPE", "global referans desteklenmiyor");
+  int vf0 = nk_j[vn]; if (vf0 & 1) T = withc(T, 1);   // constexpr => const
   if (is_arr(T) && tn[T] < 0) {
     if (init >= 0 && nk_k[init] == N_INITLIST) T = arrof(te[T], nk_n[init]); else if (init >= 0 && nk_k[init] == N_STR) T = arrof(te[T], slen(nk_s1[init]) + 1); else die("E_TYPE", "boyutsuz global dizi");
   }
   if (complete_obj(T) == 0) die("E_TYPE", "tamamlanmamis tur");
   if (findgl(nk_s1[vn]) >= 0) die("E_REDECL", "global yeniden tanimlandi");
-  gname[ngl] = nk_s1[vn]; gty[ngl] = T; gnode[ngl] = vn; gci[ngl] = 0; uidn = uidn + 1; guid[ngl] = uidn;
+  gname[ngl] = nk_s1[vn]; gty[ngl] = T; gnode[ngl] = vn; gci[ngl] = 0; gcinit[ngl] = 0; gflags[ngl] = vf0; uidn = uidn + 1; guid[ngl] = uidn;
   if (tcv[T] && is_int(T) && init >= 0 && nk_k[init] != N_INITLIST) { dry = dry + 1; V pc = gen(init); dry = dry - 1; if (pc.ci) { gci[ngl] = 1; gcv[ngl] = fold(pc.cv, unq(T)); } }
+  if (vf0 & 3) {   // constexpr / constinit: ilklendirici sabit ifade olmali
+    if (init < 0) die("E_CONSTEXPR", "constexpr/constinit degisken ilklendirici gerektirir");
+    if (nk_k[init] == N_INITLIST || is_sc(T) == 0 || is_ld(T)) { if (vf0 & 2) die("E_CONSTINIT", "constinit yalniz skaler (sabit ifade) ilklendirir"); }
+    else {
+      CV cv0 = cx_eval_top(init); int okc = cx_fail == 0 && (cx_isi(cv0.t) || cx_isf(cv0.t)) && (cx_isi(unq(T)) || cx_isf(unq(T))); cx_fail = 0;
+      if (okc == 0) { if (vf0 & 2) die("E_CONSTINIT", "constinit ilklendirici sabit ifade degil"); if (is_int(T)) die("E_CONSTEXPR", "constexpr ilklendirici sabit ifade degil"); }
+      else if (vf0 & 2) { CV c2 = cx_conv(cv0, unq(T)); gcinit[ngl] = 1; if (cx_isf(unq(T))) gcib[ngl] = d_to_bits(c2.d); else gcib[ngl] = c2.i; }
+    }
+  }
+  if ((vf0 & 1) && is_int(T) && gci[ngl] == 0) die("E_CONSTEXPR", "constexpr ilklendirici sabit ifade degil (gci)");
   ngl = ngl + 1;
 }
 int init_pass(int real, int frame) {
@@ -3083,7 +3386,7 @@ int init_pass(int real, int frame) {
   int i = 0;
   while (i < ngl) {
     int f = gnode[i]; int init = 0 - 1; if (nk_n[f] > 1) init = kid(f, 1); curline = nk_line[f];
-    if (init >= 0 || is_cls(unq(gty[i])) || is_arr(gty[i])) { int base = nreg; long long a = newreg(); setk(a, 1); w("  mov "); wr(a); w(", g"); wn(i); wc(10); init_obj(mkv(0, 1, a), gty[i], init, nk_i[f]); nreg = base; }
+    if (gcinit[i] == 0 && (init >= 0 || is_cls(unq(gty[i])) || is_arr(gty[i]))) { int base = nreg; long long a = newreg(); setk(a, 1); w("  mov "); wr(a); w(", g"); wn(i); wc(10); init_obj(mkv(0, 1, a), gty[i], init, nk_i[f]); nreg = base; }
     i = i + 1;
   }
   emit_ret(imm(0, 0)); if (real) { w("}\n"); pm_end(); }
@@ -3204,7 +3507,7 @@ int main() {
   int prog = root; i = 0;
   while (i < nk_n[prog]) {
     int k = kid(prog, i); i = i + 1;
-    if (nk_k[k] == N_CLASS) declare_class(k); else if (nk_k[k] == N_FUNC) declare_func(k, 0 - 1); else if (nk_k[k] == N_VAR) declare_global(k);
+    if (nk_k[k] == N_CLASS) declare_class(k); else if (nk_k[k] == N_FUNC) declare_func(k, 0 - 1); else if (nk_k[k] == N_VAR) declare_global(k); else if (nk_k[k] == N_STATASSERT) static_assert_check(k);
   }
   { long long gw = 0; int gi_ = 0; while (gi_ < ngl) { long long wd_ = words_of(gty[gi_]); if (wd_ < 1) wd_ = 1; gw = gw + wd_; gi_ = gi_ + 1; } long long msz = 2097152; if (gw + 1572864 > msz) msz = gw + 1572864; w("memory "); wn(msz); w("\n"); }
   w("data __sp = 0\ndata __lim = 0\n"); if (exc_on) w("data __ex = 0\ndata __exo = 0\ndata __cx = 0\ndata __cxo = 0\n");
@@ -3219,7 +3522,9 @@ int main() {
   fn_used[mainf] = 1;
   gen_dispatchers();
   f = 0; while (f < nfn) { if (fn_used[f] && fn_body_node(f) < 0 && fn_has(f, F_DEFAULT) == 0 && fn_bi[f] == 0) { curline = fn_line[f]; die("E_UNDEF", "tanimsiz islev kullanildi"); } f = f + 1; }
-  i = 0; while (i < ngl) { w("space g"); wn(i); w(" "); long long wd = words_of(gty[i]); if (wd < 1) wd = 1; wn(wd); wc(10); i = i + 1; }
+  i = 0; while (i < ngl) {
+    if (gcinit[i]) { w("data g"); wn(i); w(" = "); wn(gcib[i]); wc(10); i = i + 1; continue; }   // constinit: sabit ilk deger veri imgesinde (dinamik ilklendirme yok)
+    w("space g"); wn(i); w(" "); long long wd = words_of(gty[i]); if (wd < 1) wd = 1; wn(wd); wc(10); i = i + 1; }
   i = 0; while (i < nstrn) {
     int sid; if (str_node[i] < 0) sid = 0 - 1 - str_node[i]; else sid = nk_s1[str_node[i]];
     w("data s"); wn(i); w(" = "); int j = 0; while (j < slen(sid)) { wn(chars[soff(sid) + j]); w(", "); j = j + 1; } w("0\n"); i = i + 1;

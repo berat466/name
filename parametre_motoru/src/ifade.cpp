@@ -702,6 +702,11 @@ struct Parser {
         if (pre < 0) return n;
         int bl = a.mk(N_BLOCK, line); a[bl].kid = {pre, n}; return bl;
       }
+      if (s == "static_assert") {
+        p++; expect("("); int c = assign(); int n = a.mk(N_STATASSERT, line); a[n].kid = {c};
+        if (accept(",")) { if (cur().k != TK_STR) fail("E_PARSE", "static_assert iletisi dize olmali", line); int m = a.mk(N_STR, line); a[m].s = cur().s; p++; a[n].kid.push_back(m); }
+        expect(")"); expect(";"); return n;
+      }
       if (s == "while") { p++; expect("("); int c = expr(); expect(")"); int b = stmt(); int n = a.mk(N_WHILE, line); a[n].kid = {c, b}; return n; }
       if (s == "do") { p++; int b = stmt(); if (!acceptId("while")) fail("E_PARSE", "do ... while bekleniyordu", line); expect("("); int c = expr(); expect(")"); expect(";"); int n = a.mk(N_DO, line); a[n].kid = {b, c}; return n; }
       if (s == "for") {
@@ -754,6 +759,11 @@ struct Parser {
       if (s == "break") { p++; expect(";"); return a.mk(N_BREAK, line); }
       if (s == "continue") { p++; expect(";"); return a.mk(N_CONTINUE, line); }
     }
+    { size_t sp = p; int64_t vf = 0;
+      while (cur().k == TK_ID && (cur().s == "constexpr" || cur().s == "static" || cur().s == "constinit" || cur().s == "inline")) {
+        if (cur().s == "constexpr") vf |= 1; else if (cur().s == "constinit") vf |= 2; else if (cur().s == "static") vf |= 4; p++; }
+      if (vf && declStart()) { int b = typeSpec(); int ds = varDecls(b); for (int v : a[ds].kid) a[v].j |= vf; return ds; }
+      p = sp; }
     if (declStart()) { int b = typeSpec(); return varDecls(b); }
     int e = expr(); expect(";"); int n = a.mk(N_EXPRSTMT, line); a[n].kid = {e}; return n;
   }

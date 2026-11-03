@@ -1,0 +1,20 @@
+constexpr int fact(int n){ int r=1; for(int i=2;i<=n;i++) r*=i; return r; }
+constexpr int fib(int n){ return n<2?n:fib(n-1)+fib(n-2); }
+constexpr int N = fact(5);
+constexpr double half(double x){ return x/2; }
+consteval int cube(int x){ return x*x*x; }
+constexpr int sq(int x){ return x*x; }
+constinit int g = sq(7);
+int arr[fact(4)];
+static_assert(fact(4)==24, "fact");
+int main(){
+  static_assert(fib(10)==55, "fib");
+  int b[N];
+  pi(N); pi((int)(sizeof(arr)/sizeof(int))); pi((int)(sizeof(b)/sizeof(int)));
+  pi(cube(3)); pi(g);
+  constexpr double h = half(5.0);
+  pd(h);
+  switch (3){ case sq(3)-6: pi(1); break; default: pi(2); }
+  int k = 4; pi(sq(k));
+  return 0;
+}
