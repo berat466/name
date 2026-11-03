@@ -1,0 +1,18 @@
+int f(int a) { return a; }
+int f(double a) { return 2; }
+int f(int a, int b) { return a + b; }
+int g(int a, int b = 10, int c = 100) { return a + b + c; }
+int h(int a, int b, int c = 5);
+int h(int a, int b, int c) { return a * 100 + b * 10 + c; }
+int cnt = 0;
+int next() { cnt = cnt + 1; return cnt; }
+int d(int a, int b = next()) { return a * 10 + b; }
+struct S { int v; int m(int a, int b = 3) { return v + a * b; } int m(double x) { return -1; } };
+int vol(int w = 2, int hgt = 3, int dep = 4) { return w * 100 + hgt * 10 + dep; }
+int main() {
+  pi(f(1)); pi(f(1.5)); pi(f(1, 2)); pi(g(1)); pi(g(1, 2)); pi(g(1, 2, 3));
+  pi(h(1, 2)); pi(h(1, 2, 3)); pi(d(1)); pi(d(1)); pi(d(1, 7));
+  S s; s.v = 100; pi(s.m(2)); pi(s.m(2, 5)); pi(s.m(1.5));
+  pi(vol()); pi(vol(9)); pi(vol(9, 8)); pi(vol(9, 8, 7));
+  return 0;
+}

@@ -1,0 +1,15 @@
+// STD: c++23
+#include <functional>
+#include <utility>
+struct Acc { int total; int operator()(int x) { total = total + x; return total; } };
+std::move_only_function<int(int)> make() { Acc a; a.total = 100; std::move_only_function<int(int)> f = a; return f; }
+int use(std::move_only_function<int(int)> f, int v) { return f(v) + f(v); }
+int main() {
+  std::move_only_function<int(int)> f = [](int x) { return x * 2; }; pi(f(4));
+  std::move_only_function<int(int)> g = std::move(f); pi(g(5)); pi(bool(f)); pi(bool(g));
+  std::move_only_function<int(int)> h = make(); pi(h(1)); pi(h(2));
+  pi(use(std::move(h), 10)); pi(bool(h));
+  std::move_only_function<int(int)> k; pi(!k); k = std::move(g); pi(k(7));
+  int cnt = 0; std::move_only_function<void()> inc = [&cnt]() { cnt++; }; inc(); inc(); pi(cnt);
+  return 0;
+}

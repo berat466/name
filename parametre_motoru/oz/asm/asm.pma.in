@@ -243,6 +243,23 @@ f2: add i, i, 1
 no: ret -1
 }
 
+; Bolum 04: sembol degeri -- data/space adresi ya da ISLEV INDEKSI (islev isaretcisi sabiti). 1 ve G[65]=deger; yoksa 0
+func symv(o, l) {
+    call d, datafind, o, l
+    lti z, d, 0
+    jnz z, sv1
+    add a, d, SYV
+    ld v, a, 0
+    st v, G, 65
+    ret 1
+sv1: call r, funcfind, o, l
+    lti z, r, 0
+    jnz z, sv2
+    st r, G, 65
+    ret 1
+sv2: ret 0
+}
+
 func datafind(o, l) {     ; data/space adi: sembol indeksi ya da -1
     ld n, G, 5
     mov i, 0
@@ -1347,12 +1364,10 @@ func immof(o, l) {      ; 32 bite sigan tamsayi ya da data adresi? deger G[60]
     jnz z, no
     ret 1
 no: ret 0
-i1: call d, datafind, o, l
-    lti z, d, 0
-    jz z, i2
+i1: call r, symv, o, l
+    jnz r, i2
     ret 0
-i2: add a, d, SYV
-    ld v, a, 0
+i2: ld v, G, 65
     st v, G, 60
     gti z, v, 2147483647
     jnz z, no
@@ -1792,12 +1807,10 @@ b1: call r, isfloat, o, l
     ld v, G, 13
     st v, G, 63
     ret 1
-b2: call d, datafind, o, l
-    lti z, d, 0
-    jz z, b3
+b2: call r, symv, o, l
+    jnz r, b3
     ret 0
-b3: add a, d, SYV
-    ld v, a, 0
+b3: ld v, G, 65
     st v, G, 63
     ret 1
 }
@@ -2169,15 +2182,13 @@ s3: call rr, regfind, o, l
     st t, G, 61
     st rr, G, 62
     ret 0
-s4: call d, datafind, o, l
-    lti z, d, 0
-    jz z, s5
+s4: call r, symv, o, l
+    jnz r, s5
     call x, err, 82
 s5: eq z, kind, 3
     jz z, s6
     call x, err, 83
-s6: add a, d, SYV
-    ld v, a, 0
+s6: ld v, G, 65
     call li, litidx, v
     mov t, 2
     st t, G, 61
@@ -2310,12 +2321,10 @@ q7: eq z, kind, 5
     jz r, q7a
     ld v, G, 13
     jmp q7c
-q7a: call d, datafind, o, l
-    gei z, d, 0
-    jnz z, q7b
+q7a: call r, symv, o, l
+    jnz r, q7b
     call x, err, 85
-q7b: add a, d, SYV
-    ld v, a, 0
+q7b: ld v, G, 65
 q7c: lti z, v, -2147483648
     jnz z, q7d
     gti z, v, 2147483647

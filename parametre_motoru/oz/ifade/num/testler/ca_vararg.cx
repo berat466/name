@@ -1,0 +1,16 @@
+#include <cstdarg>
+int sum(int n, ...) { va_list ap; va_start(ap, n); int s = 0; int i = 0; while (i < n) { s = s + va_arg(ap, int); i = i + 1; } va_end(ap); return s; }
+double avg(int n, ...) { va_list ap; va_start(ap, n); double t = 0; int i = 0; while (i < n) { t = t + va_arg(ap, double); i = i + 1; } va_end(ap); return t / n; }
+long long mix(const char* fmt, ...) {
+  va_list ap; va_start(ap, fmt); long long r = 0; int i = 0;
+  while (fmt[i]) { if (fmt[i] == 'i') r = r + va_arg(ap, int); else if (fmt[i] == 'l') r = r * 2 + va_arg(ap, long long); else if (fmt[i] == 'p') { const char* q = va_arg(ap, const char*); r = r + q[0]; } else if (fmt[i] == 'd') r = r + (long long)va_arg(ap, double); i = i + 1; }
+  va_end(ap); return r;
+}
+int none(int a, ...) { return a; }
+struct K { int base; int add(int n, ...) { va_list ap; va_start(ap, n); int s = base; int i = 0; while (i < n) { s = s + va_arg(ap, int); i = i + 1; } va_end(ap); return s; } };
+int main() {
+  pi(sum(3, 1, 2, 3)); pi(sum(0)); pi(sum(5, 10, 20, 30, 40, 50)); pd(avg(2, 1.5, 2.5)); pd(avg(3, 1.0, 2.0, 6.0));
+  pl(mix("iilpd", 5, 6, 7LL, "A", 2.9)); pi(none(7)); pi(none(7, 1, 2)); K k; k.base = 100; pi(k.add(2, 4, 5));
+  char c = 'x'; short sh = 3; pi(sum(2, c, sh));
+  return 0;
+}

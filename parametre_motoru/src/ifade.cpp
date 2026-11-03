@@ -205,7 +205,9 @@ enum NK {
   // deyimler / bildirimler
   N_BLOCK, N_VAR, N_DECLS, N_EXPRSTMT, N_IF, N_WHILE, N_DO, N_FOR, N_RETURN, N_BREAK, N_CONTINUE, N_EMPTY, N_FUNC, N_PARAMS, N_CLASS, N_PROG, N_USING, N_THROW, N_TRY, N_CATCH,
   // Bolum 03: denetim akisi
-  N_SWITCH, N_CASE, N_DEFAULT, N_GOTO, N_LABEL, N_RANGEFOR, N_MATCH, N_ARM, N_PWILD, N_PCONST, N_PRANGE, N_PBIND, N_PALT, N_PSTRUCT, N_COYIELD, N_CORETURN, N_COAWAIT, N_NONE
+  N_SWITCH, N_CASE, N_DEFAULT, N_GOTO, N_LABEL, N_RANGEFOR, N_MATCH, N_ARM, N_PWILD, N_PCONST, N_PRANGE, N_PBIND, N_PALT, N_PSTRUCT, N_COYIELD, N_CORETURN, N_COAWAIT,
+  // Bolum 04: islevler ve cagri modeli
+  N_TFN, N_LAMBDA, N_NAMEARG, N_VASTART, N_VAARG, N_VAEND, N_TYID, N_STATASSERT, N_NONE
 };
 struct Node {
   int k = N_NONE; int64_t i = 0, j = 0; double d = 0; string s, s2; vector<int> kid; int line = 0;
@@ -240,8 +242,8 @@ struct Arity { int k, lo, hi; };
 void pmx_validate(const Ast& a, int root) {
   static const Arity ar[] = {{N_INT,0,0},{N_FLT,0,0},{N_CHR,0,0},{N_STR,0,0},{N_BOOL,0,0},{N_NULLPTR,0,0},{N_THIS,0,0},{N_ID,0,0},{N_UNARY,1,1},{N_BINARY,2,2},{N_ASSIGN,2,2},{N_COND,3,3},{N_COMMA,2,2},
     {N_CALL,1,-1},{N_INDEX,2,2},{N_MEMBER,1,1},{N_ARROW,1,1},{N_PREINC,1,1},{N_POSTINC,1,1},{N_SIZEOF_E,1,1},{N_SIZEOF_T,1,1},{N_ALIGNOF,1,1},{N_NOEXCEPT,1,1},{N_TYPEID_E,1,1},{N_TYPEID_T,1,1},
-    {N_CAST,2,2},{N_FCAST,1,2},{N_UDL,0,-1},{N_INITLIST,0,-1},{N_TY,0,0},{N_TPTR,1,1},{N_TREF,1,1},{N_TRREF,1,1},{N_TARR,1,2},{N_BLOCK,0,-1},{N_VAR,1,2},{N_DECLS,0,-1},{N_EXPRSTMT,1,1},{N_IF,2,3},
-    {N_WHILE,2,2},{N_DO,2,2},{N_FOR,4,4},{N_RETURN,0,1},{N_BREAK,0,0},{N_CONTINUE,0,0},{N_EMPTY,0,0},{N_FUNC,2,3},{N_PARAMS,0,-1},{N_CLASS,0,-1},{N_PROG,0,-1},{N_USING,0,-1},{N_THROW,0,1},{N_TRY,2,-1},{N_CATCH,2,2},{N_SWITCH,2,2},{N_CASE,1,2},{N_DEFAULT,0,0},{N_GOTO,0,0},{N_LABEL,0,0},{N_RANGEFOR,3,3},{N_MATCH,2,-1},{N_ARM,3,3},{N_PWILD,0,0},{N_PCONST,1,1},{N_PRANGE,2,2},{N_PBIND,1,1},{N_PALT,2,-1},{N_PSTRUCT,1,-1},{N_COYIELD,1,1},{N_CORETURN,0,1},{N_COAWAIT,1,1},{N_NONE,0,0}};
+    {N_CAST,2,2},{N_FCAST,1,2},{N_UDL,0,-1},{N_INITLIST,0,-1},{N_TY,0,1},{N_TPTR,1,1},{N_TREF,1,1},{N_TRREF,1,1},{N_TARR,1,2},{N_BLOCK,0,-1},{N_VAR,1,2},{N_DECLS,0,-1},{N_EXPRSTMT,1,1},{N_IF,2,3},
+    {N_WHILE,2,2},{N_DO,2,2},{N_FOR,4,4},{N_RETURN,0,1},{N_BREAK,0,0},{N_CONTINUE,0,0},{N_EMPTY,0,0},{N_FUNC,2,3},{N_PARAMS,0,-1},{N_CLASS,0,-1},{N_PROG,0,-1},{N_USING,0,-1},{N_THROW,0,1},{N_TRY,2,-1},{N_CATCH,2,2},{N_SWITCH,2,2},{N_CASE,1,2},{N_DEFAULT,0,0},{N_GOTO,0,0},{N_LABEL,0,0},{N_RANGEFOR,3,3},{N_MATCH,2,-1},{N_ARM,3,3},{N_PWILD,0,0},{N_PCONST,1,1},{N_PRANGE,2,2},{N_PBIND,1,1},{N_PALT,2,-1},{N_PSTRUCT,1,-1},{N_COYIELD,1,1},{N_CORETURN,0,1},{N_COAWAIT,1,1},{N_TFN,1,-1},{N_LAMBDA,3,-1},{N_NAMEARG,0,1},{N_VASTART,2,2},{N_VAARG,2,2},{N_VAEND,1,1},{N_TYID,0,0},{N_STATASSERT,1,2},{N_NONE,0,0}};
   for (size_t i = 0; i < a.n.size(); i++) {
     const Node& x = a.n[i];
     if (x.k < 0 || x.k > N_NONE) fail("E_PMX", "PMX1 dugum turu gecersiz");
@@ -252,6 +254,7 @@ void pmx_validate(const Ast& a, int root) {
     if (x.k == N_PROG) for (int c : x.kid) need(c, {N_CLASS, N_FUNC, N_VAR});
     if (x.k == N_CLASS) for (int c : x.kid) need(c, {N_VAR, N_FUNC});
     if (x.k == N_PARAMS) for (int c : x.kid) need(c, {N_VAR});
+    if (x.k == N_LAMBDA) { need(x.kid[1], {N_PARAMS}); need(x.kid[2], {N_BLOCK}); for (size_t q = 3; q < x.kid.size(); q++) need(x.kid[q], {N_NAMEARG}); }
     if (x.k == N_DECLS) for (int c : x.kid) need(c, {N_VAR});
     if (x.k == N_FUNC) { need(x.kid[1], {N_PARAMS}); if (x.kid.size() > 2) need(x.kid[2], {N_BLOCK}); }
     if (x.k == N_FOR) { need(x.kid[0], {N_NONE, N_DECLS, N_EXPRSTMT}); }
@@ -307,7 +310,7 @@ struct Parser {
   struct Dp { Parser& q; Dp(Parser& pq) : q(pq) { if (++q.depth > 300) fail("E_PARSE", "ifade/deyim ic ice gecme siniri asildi (300)", q.cur().line); } ~Dp() { q.depth--; } };
   std::set<string> classes; std::map<string, int> alias;   // ad -> N_TY/N_T* dugumu
   Parser(Ast& ast, vector<Tok>& toks) : a(ast), t(toks) {
-    const char* sc[] = {"std::strong_ordering", "std::weak_ordering", "std::partial_ordering", "std::type_info"};
+    const char* sc[] = {"std::strong_ordering", "std::weak_ordering", "std::partial_ordering", "std::type_info", "va_list", "std::va_list"};
     for (auto s : sc) classes.insert(s);
     struct { const char* n; int ty; } al[] = {{"size_t", Y_ULONG}, {"ptrdiff_t", Y_LONG}, {"intptr_t", Y_LONG}, {"uintptr_t", Y_ULONG}, {"int8_t", Y_SCHAR}, {"uint8_t", Y_UCHAR}, {"int16_t", Y_SHORT},
       {"uint16_t", Y_USHORT}, {"int32_t", Y_INT}, {"uint32_t", Y_UINT}, {"int64_t", Y_LONG}, {"uint64_t", Y_ULONG}, {"nullptr_t", Y_NULLPTR}};
@@ -338,14 +341,14 @@ struct Parser {
     if (t[q].k != TK_ID) return false;
     if (isTypeKw(t[q].s)) return true;
     size_t z = q; string n = qname(z);
-    return classes.count(n) || alias.count(n) || n == "std::generator";
+    return classes.count(n) || alias.count(n) || n == "std::generator" || n == "std::function" || n == "std::move_only_function";
   }
   bool typeStart() const { return typeStartAt(p); }
 
   int cloneTy(int n) { Node x = a[n]; a.n.push_back(x); return int(a.n.size()) - 1; }
   // tur belirtimi: cv + temel tur / sinif adi
   int typeSpec() {
-    int cv = 0; int sg = 0, sh = 0, lg = 0; int base = -1; string cls; int aliasNode = -1; int line = cur().line;
+    int cv = 0; int sg = 0, sh = 0, lg = 0; int base = -1; string cls; int aliasNode = -1; int line = cur().line; int fnSig = -1;
     while (cur().k == TK_ID) {
       const string& s = cur().s;
       if (s == "const") { cv |= 1; p++; }
@@ -365,12 +368,16 @@ struct Parser {
           p++; int at = typeSpec(); if (a[at].k != N_TY || a[at].i == Y_CLASS || a[at].i == Y_VOID) fail("E_PARSE", "std::generator<T> icin T yerlesik skaler tur olmali", line);
           if (!isP(">")) fail("E_PARSE", "'>' bekleniyordu", line); p++; n = "std::generator<" + std::to_string(a[at].i) + ">"; cls = n;
         }
+        else if ((n == "std::function" || n == "std::move_only_function") && isP("<")) {   // Bolum 04 tur silme: std::function<R(Args...)> / std::move_only_function<R(Args...)>
+          p++; fnSig = fullType(); if (a[fnSig].k != N_TFN) fail("E_PARSE", n + "<R(Args...)> bir islev turu gerektirir", line);
+          if (!isP(">")) fail("E_PARSE", "'>' bekleniyordu", line); p++; cls = n;
+        }
         else if (alias.count(n)) aliasNode = alias[n]; else if (classes.count(n)) cls = n; else fail("E_PARSE", "bilinmeyen tur adi: " + n, line);
       } else break;
     }
     int n;
     if (aliasNode >= 0) { n = cloneTy(aliasNode); }
-    else if (!cls.empty()) { n = a.mk(N_TY, line); a[n].i = Y_CLASS; a[n].s = cls; }
+    else if (!cls.empty()) { n = a.mk(N_TY, line); a[n].i = Y_CLASS; a[n].s = cls; if (fnSig >= 0) a[n].kid.push_back(fnSig); }
     else {
       int ty;
       if (base == Y_CHAR) ty = sg == 2 ? Y_UCHAR : sg == 1 ? Y_SCHAR : Y_CHAR;
@@ -395,6 +402,8 @@ struct Parser {
   int ptrOps(int base) {
     while (true) {
       if (isP("*")) { p++; int n = a.mk(N_TPTR, cur().line); a[n].kid = {base}; while (cur().k == TK_ID && (cur().s == "const" || cur().s == "volatile")) { a[n].j |= (cur().s == "const" ? 1 : 2); p++; } base = n; }
+      else if (cur().k == TK_ID && classes.count(cur().s) && isPk(1, "::") && isPk(2, "*")) {   // Bolum 04: uye islev isaretcisi  S::*  (N_TPTR, i=1, s=sinif)
+        string cn = cur().s; p += 3; int n = a.mk(N_TPTR, cur().line); a[n].kid = {base}; a[n].i = 1; a[n].s = cn; while (cur().k == TK_ID && (cur().s == "const" || cur().s == "volatile")) { a[n].j |= (cur().s == "const" ? 1 : 2); p++; } base = n; }
       else if (isP("&")) { p++; int n = a.mk(N_TREF, cur().line); a[n].kid = {base}; base = n; }
       else if (isP("&&")) { p++; int n = a.mk(N_TRREF, cur().line); a[n].kid = {base}; base = n; }
       else break;
@@ -407,7 +416,64 @@ struct Parser {
     for (size_t i = dims.size(); i-- > 0;) { int n = a.mk(N_TARR, cur().line); a[n].kid = {base}; if (dims[i] >= 0) a[n].kid.push_back(dims[i]); base = n; }
     return base;
   }
-  int fullType() { int b = typeSpec(); b = ptrOps(b); if (isP("[")) b = arraySuffix(b); return b; }
+  // Bolum 04: C bildirici gramerinin tamami.  declarator := ptr-ops ( '(' declarator ')' | ad ) { '[' n ']' | '(' parametreler ')' [noexcept] }
+  // Ic bildirici once atlanir, dis sonek uygulanir, sonra ic bildirici yeni taban turuyla yeniden cozulur (ters bagli turler: int (*p[2])(int)).
+  bool groupStart() const { return isPk(1, "*") || isPk(1, "&") || isPk(1, "&&") || (peek(1).k == TK_ID && classes.count(peek(1).s) && isPk(2, "::") && isPk(3, "*")); }
+  int fnTypeRest(int ret) {   // '(' parametreler ')' [const] [noexcept] -> N_TFN {ret, parametre turleri...}  (nk_i: 1 degisken sayili, nk_j: 1 noexcept)
+    int line = cur().line; expect("("); int fn = a.mk(N_TFN, line); a[fn].kid = {ret};
+    if (!isP(")")) {
+      if (isId("void") && isPk(1, ")")) p++;
+      else while (true) {
+        if (isP("...")) { p++; a[fn].i = 1; break; }
+        int b = typeSpec(); string nm; int tt = declarator(b, nm, true); a[fn].kid.push_back(tt);
+        if (accept(",")) { if (isP("...")) { p++; a[fn].i = 1; break; } continue; }
+        if (isP("...")) { p++; a[fn].i = 1; }
+        break;
+      }
+    }
+    expect(")");
+    while (cur().k == TK_ID && (cur().s == "const" || cur().s == "noexcept")) { if (cur().s == "noexcept") a[fn].j |= 1; p++; }
+    return fn;
+  }
+  int declSuffix(int base, bool fnOk) {
+    if (isP("[")) return arraySuffix(base);
+    if (fnOk && isP("(")) { int fn = fnTypeRest(base); if (isP("(") || isP("[")) fail("E_PARSE", "islev dondurulen islev/dizi desteklenmiyor", cur().line); return fn; }
+    return base;
+  }
+  int declarator(int base, string& name, bool abstractOk, bool fnOk = false) {
+    base = ptrOps(base);
+    if (isP("(") && groupStart()) {
+      size_t inner = ++p; int depth = 1; size_t q = p;
+      while (depth > 0) { if (t[q].k == TK_EOF) fail("E_PARSE", "bildirici ')' eksik", cur().line); if (t[q].k == TK_P) { if (t[q].s == "(") depth++; else if (t[q].s == ")") depth--; } q++; }
+      size_t close = q - 1; p = q;
+      int ty = declSuffix(base, true);
+      size_t after = p; p = inner;
+      int r = declarator(ty, name, abstractOk, false);
+      if (p != close) fail("E_PARSE", "bildirici ')' bekleniyordu", cur().line);
+      p = after; return r;
+    }
+    if (cur().k == TK_ID && !isTypeKw(cur().s) && !(abstractOk && typeStart())) name = ident();
+    else if (!abstractOk) fail("E_PARSE", "kimlik bekleniyordu", cur().line);
+    return declSuffix(base, fnOk);
+  }
+  int fullType() { int b = typeSpec(); string nm; return declarator(b, nm, true, true); }
+  // parametre listesi: N_PARAMS (j=1: degisken sayili '...'); her parametre N_VAR {tur [, varsayilan arguman]}
+  int paramList() {
+    expect("("); int ps = mk(N_PARAMS);
+    if (!isP(")")) {
+      if (isId("void") && isPk(1, ")")) p++;
+      else while (true) {
+        if (isP("...")) { p++; a[ps].j = 1; break; }
+        int b = typeSpec(); string nm; int tt = declarator(b, nm, true); int pv = mk(N_VAR); a[pv].s = nm; a[pv].kid = {tt};
+        if (isP("=")) { p++; a[pv].i = 1; a[pv].kid.push_back(isP("{") ? initList() : assign()); }
+        a[ps].kid.push_back(pv);
+        if (accept(",")) { if (isP("...")) { p++; a[ps].j = 1; break; } continue; }
+        if (isP("...")) { p++; a[ps].j = 1; }
+        break;
+      }
+    }
+    expect(")"); return ps;
+  }
 
   // ---------------- ifadeler ----------------
   int expr() {   // virgul (en dusuk)
@@ -432,8 +498,13 @@ struct Parser {
     return c;
   }
   int binPrec(const Tok& k) const { if (k.k != TK_P) return -1; const OpRow* r = opRow(1, k.s); return r ? r->prec : -1; }
-  int binary(int minPrec) {
+  int pmExpr() {   // Bolum 04: uye isaretcisi erisimi  e.*mp  e->*mp  (carpim duzeyinin hemen ustunde)
     int l = unary();
+    while (isP(".*") || isP("->*")) { string op = cur().s; int line = cur().line; p++; int r = unary(); int n = a.mk(N_BINARY, line); a[n].s = op; a[n].kid = {l, r}; l = n; }
+    return l;
+  }
+  int binary(int minPrec) {
+    int l = pmExpr();
     while (true) {
       int pr = binPrec(cur()); if (pr < minPrec) break;
       string op = cur().s; int line = cur().line; p++;
@@ -518,11 +589,15 @@ struct Parser {
       case TK_STR: { int n = a.mk(N_STR, line); a[n].s = k.s; a[n].s2 = k.udl; p++; return n; }
       case TK_P:
         if (k.s == "(") { p++; int e = expr(); expect(")"); return e; }
+        if (k.s == "[") return lambdaExpr(line);
         fail("E_PARSE", "ifade bekleniyordu, bulunan '" + k.s + "'", line);
       case TK_ID: {
         const string& s = k.s;
         if (s == "true" || s == "false") { int n = a.mk(N_BOOL, line); a[n].i = s == "true"; p++; return n; }
         if (s == "nullptr") { p++; return a.mk(N_NULLPTR, line); }
+        if (s == "va_start") { p++; expect("("); int ap = assign(); expect(","); int last = assign(); expect(")"); int n = a.mk(N_VASTART, line); a[n].kid = {ap, last}; return n; }
+        if (s == "va_arg") { p++; expect("("); int ap = assign(); expect(","); int ty = fullType(); expect(")"); int n = a.mk(N_VAARG, line); a[n].kid = {ap, ty}; return n; }
+        if (s == "va_end") { p++; expect("("); int ap = assign(); expect(")"); int n = a.mk(N_VAEND, line); a[n].kid = {ap}; return n; }
         if (s == "this") { p++; return a.mk(N_THIS, line); }
         if (s == "static_cast" || s == "dynamic_cast" || s == "const_cast" || s == "reinterpret_cast") { string kd = s; p++; return castExpr(kd, line); }
         if (typeStart()) {   // islevsel donusum  T(e) / T{...}
@@ -540,12 +615,38 @@ struct Parser {
       default: fail("E_PARSE", "beklenmeyen dosya sonu", line);
     }
   }
+  // Bolum 04: lambda  [yakalamalar](parametreler) mutable noexcept -> tur { govde }
+  //   N_LAMBDA kids {donus turu | N_NONE, N_PARAMS, N_BLOCK, yakalama N_VAR...}; i: bit0 mutable, bit1 noexcept ; j: 1 '=' varsayilan, 2 '&' varsayilan
+  //   yakalama N_VAR: s=ad, j: 0 deger, 1 basvuru, 2 this, 3 *this ; i=1 ise kid[0] ilk deger ifadesi (init-capture)
+  int lambdaExpr(int line) {
+    expect("["); vector<int> caps; int dflt = 0;
+    while (!isP("]")) {
+      if (isP("=")) { p++; dflt = 1; }
+      else if (isP("&") && (isPk(1, ",") || isPk(1, "]"))) { p++; dflt = 2; }
+      else if (isId("this")) { p++; int c = mk(N_NAMEARG); a[c].s = "this"; a[c].j = 2; caps.push_back(c); }
+      else if (isP("*") && peek().k == TK_ID && peek().s == "this") { p += 2; int c = mk(N_NAMEARG); a[c].s = "this"; a[c].j = 3; caps.push_back(c); }
+      else { bool ref = accept("&"); string nm = ident(); int c = mk(N_NAMEARG); a[c].s = nm; a[c].j = ref ? 1 : 0; if (isP("=")) { p++; a[c].i = 1; a[c].kid.push_back(assign()); } caps.push_back(c); }
+      if (!accept(",")) break;
+    }
+    expect("]");
+    int ps = isP("(") ? paramList() : mk(N_PARAMS);
+    int64_t fl = 0;
+    while (cur().k == TK_ID && (cur().s == "mutable" || cur().s == "noexcept" || cur().s == "constexpr" || cur().s == "consteval")) { if (cur().s == "mutable") fl |= 1; else if (cur().s == "noexcept") fl |= 2; p++; }
+    int rt; if (isP("->")) { p++; rt = fullType(); } else rt = a.mk(N_NONE, line);
+    int body = block();
+    int n = a.mk(N_LAMBDA, line); a[n].kid = {rt, ps, body}; for (int c : caps) a[n].kid.push_back(c); a[n].i = fl; a[n].j = dflt; return n;
+  }
+  // Bolum 04: cagri argumani; isimli arguman  .ad = ifade  (N_NAMEARG)
+  int callArg() {
+    if (isP(".") && peek().k == TK_ID && isPk(2, "=")) { int line = cur().line; p++; string nm = ident(); p++; int n = a.mk(N_NAMEARG, line); a[n].s = nm; a[n].kid = {assign()}; return n; }
+    return assign();
+  }
   int postfix() { return postfixRest(primary()); }
   int postfixRest(int e) {
     while (true) {
       int line = cur().line;
       if (isP("[")) { p++; int i = expr(); expect("]"); int n = a.mk(N_INDEX, line); a[n].kid = {e, i}; e = n; }
-      else if (isP("(")) { p++; int n = a.mk(N_CALL, line); a[n].kid = {e}; if (!isP(")")) { while (true) { a[n].kid.push_back(assign()); if (!accept(",")) break; } } expect(")"); e = n; }
+      else if (isP("(")) { p++; int n = a.mk(N_CALL, line); a[n].kid = {e}; if (!isP(")")) { while (true) { a[n].kid.push_back(callArg()); if (!accept(",")) break; } } expect(")"); e = n; }
       else if (isP(".") || isP("->")) {
         bool ar = cur().s == "->"; p++;
         if (cur().k != TK_ID) fail("E_PARSE", "uye adi bekleniyordu", line);
@@ -570,14 +671,8 @@ struct Parser {
   int varDecls(int base, bool needSemi = true) {
     int ds = mk(N_DECLS);
     while (true) {
-      int tt = base; while (true) {
-        if (isP("*")) { p++; int n = mk(N_TPTR); a[n].kid = {tt}; while (cur().k == TK_ID && (cur().s == "const" || cur().s == "volatile")) { a[n].j |= (cur().s == "const" ? 1 : 2); p++; } tt = n; }
-        else if (isP("&")) { p++; int n = mk(N_TREF); a[n].kid = {tt}; tt = n; }
-        else if (isP("&&")) { p++; int n = mk(N_TRREF); a[n].kid = {tt}; tt = n; }
-        else break;
-      }
-      int v = mk(N_VAR); a[v].s = ident();
-      if (isP("[")) tt = arraySuffix(tt);
+      string vname; int tt = declarator(base, vname, false);
+      int v = mk(N_VAR); a[v].s = vname;
       a[v].kid = {tt};
       if (isP("=")) { p++; a[v].i = 1; a[v].kid.push_back(isP("{") ? initList() : assign()); }
       else if (isP("(")) { p++; a[v].i = 2; int il = mk(N_INITLIST); if (!isP(")")) { while (true) { a[il].kid.push_back(assign()); if (!accept(",")) break; } } expect(")"); a[v].kid.push_back(il); }
@@ -590,7 +685,7 @@ struct Parser {
   }
   bool declStart() const {
     if (!typeStart()) return false;
-    if (cur().k == TK_ID && isTypeKw(cur().s) && cur().s != "const" && cur().s != "struct" && cur().s != "class" && cur().s != "volatile" && cur().s != "auto" && isPk(1, "(")) return false;
+    if (cur().k == TK_ID && isTypeKw(cur().s) && cur().s != "const" && cur().s != "struct" && cur().s != "class" && cur().s != "volatile" && cur().s != "auto" && isPk(1, "(") && !(isPk(2, "*") || isPk(2, "&") || (peek(2).k == TK_ID && isPk(3, "::") && isPk(4, "*")))) return false;
     return true;
   }
   int stmt() {
@@ -680,19 +775,7 @@ struct Parser {
     fail("E_PARSE", "operator belirtimi gecersiz", line);
   }
   int funcRest(int ret, const string& name, int line, int cls) {
-    int f = a.mk(N_FUNC, line); a[f].s = name; int ps = mk(N_PARAMS);
-    expect("(");
-    if (!isP(")")) {
-      if (isId("void") && isPk(1, ")")) p++;
-      else while (true) {
-        int b = typeSpec(); int tt = ptrOps(b); int pv = mk(N_VAR);
-        if (cur().k == TK_ID) a[pv].s = ident();
-        if (isP("[")) tt = arraySuffix(tt);
-        a[pv].kid = {tt}; a[ps].kid.push_back(pv);
-        if (!accept(",")) break;
-      }
-    }
-    expect(")");
+    int f = a.mk(N_FUNC, line); a[f].s = name; int ps = paramList();
     int64_t fl = 0;
     while (cur().k == TK_ID) {
       if (cur().s == "const") { fl |= 1; p++; }
@@ -719,7 +802,8 @@ struct Parser {
       if (cur().k == TK_EOF) fail("E_PARSE", "sinif '}' eksik", line);
       if ((isId("public") || isId("private") || isId("protected")) && isPk(1, ":")) { p += 2; continue; }
       int mline = cur().line; int64_t virt = 0; bool expl = false, stat = false, cexpr = false;
-      while (cur().k == TK_ID && (cur().s == "virtual" || cur().s == "explicit" || cur().s == "static" || cur().s == "constexpr" || cur().s == "inline")) { if (cur().s == "virtual") virt = 2; if (cur().s == "explicit") expl = true; if (cur().s == "static") stat = true; if (cur().s == "constexpr") cexpr = true; p++; }
+      int64_t msf = 0;
+      while (cur().k == TK_ID && (cur().s == "virtual" || cur().s == "explicit" || cur().s == "static" || cur().s == "constexpr" || cur().s == "consteval" || cur().s == "inline")) { if (cur().s == "virtual") virt = 2; if (cur().s == "explicit") expl = true; if (cur().s == "static") stat = true; if (cur().s == "constexpr") { cexpr = true; msf |= 1024; } if (cur().s == "consteval") msf |= 2048; if (cur().s == "inline") msf |= 512; p++; }
       (void)cexpr;
       if (stat) fail("E_PARSE", "statik uye desteklenmiyor", mline);
       if (isP("~")) {   // yok edici: yalniz bos govdeli (iz sirasi yok); sanal yok edici sinifi polimorfik yapar
@@ -730,11 +814,11 @@ struct Parser {
       }
       if (isId("operator")) {   // donusum isleci: operator T() const
         p++; int convTy; string nm = operatorName(convTy);
-        int f = funcRest(convTy, nm, mline, c); a[f].i |= virt | (expl ? 128 : 0); a[c].kid.push_back(f); continue;
+        int f = funcRest(convTy, nm, mline, c); a[f].i |= virt | msf | (expl ? 128 : 0); a[c].kid.push_back(f); continue;
       }
       int b = typeSpec(); size_t savePos = p; int tt = ptrOps(b);
-      if (isId("operator")) { p++; int convTy; string nm = operatorName(convTy); int f = funcRest(tt, nm, mline, c); a[f].i |= virt; a[c].kid.push_back(f); continue; }
-      if (cur().k == TK_ID && isPk(1, "(")) { string nm = ident(); int f = funcRest(tt, nm, mline, c); a[f].i |= virt; a[c].kid.push_back(f); continue; }
+      if (isId("operator")) { p++; int convTy; string nm = operatorName(convTy); int f = funcRest(tt, nm, mline, c); a[f].i |= virt | msf; a[c].kid.push_back(f); continue; }
+      if (cur().k == TK_ID && isPk(1, "(")) { string nm = ident(); int f = funcRest(tt, nm, mline, c); a[f].i |= virt | msf; a[c].kid.push_back(f); continue; }
       // alan(lar)
       p = savePos; int ds = varDeclsFrom(b);
       for (int v : a[ds].kid) a[c].kid.push_back(v);
@@ -742,28 +826,50 @@ struct Parser {
     expect("}"); expect(";"); return c;
   }
   int varDeclsFrom(int base) { return varDecls(base, true); }
+  int64_t linkFlags = 0;
+  // tek bir ust duzey islev/degisken bildirimi (belirtecler: inline static constexpr consteval constinit extern -> islev bayragi / degisken bayragi)
+  void topDecl(int prog) {
+    int line = cur().line; int64_t sf = linkFlags, vf = linkFlags ? 16 : 0;
+    while (cur().k == TK_ID && (cur().s == "inline" || cur().s == "static" || cur().s == "constexpr" || cur().s == "consteval" || cur().s == "constinit" || cur().s == "extern")) {
+      const string& m = cur().s;
+      if (m == "inline") { sf |= 512; vf |= 32; } else if (m == "static") { sf |= 4096; vf |= 4; } else if (m == "constexpr") { sf |= 1024; vf |= 1; } else if (m == "consteval") { sf |= 2048; vf |= 64; }
+      else if (m == "constinit") vf |= 2; else if (m == "extern") { sf |= 16384; vf |= 8; }
+      p++;
+    }
+    if (isId("struct") || isId("class")) {
+      bool st = cur().s == "struct";
+      if (peek().k == TK_ID) { size_t z = p + 1; qname(z); if (t[z].k == TK_P && (t[z].s == "{" || t[z].s == ":" || t[z].s == ";")) { p++; a[prog].kid.push_back(classDef(st)); return; } }
+    }
+    int b = typeSpec(); size_t savePos = p; int tt = ptrOps(b);
+    if (isId("operator")) { p++; int convTy; string nm = operatorName(convTy); int f = funcRest(tt, nm, line, -1); a[f].i |= sf; a[prog].kid.push_back(f); return; }
+    if (cur().k == TK_ID && isPk(1, "(")) { string nm = ident(); int f = funcRest(tt, nm, line, -1); a[f].i |= sf; a[prog].kid.push_back(f); return; }
+    p = savePos; int ds = varDecls(b, true);
+    for (int v : a[ds].kid) { a[v].j |= vf; a[prog].kid.push_back(v); }
+  }
   int topLevel() {
     int prog = mk(N_PROG);
     while (cur().k != TK_EOF) {
       int line = cur().line;
-      if (isId("struct") || isId("class")) {
-        // "struct X {" -> sinif tanimi ; "struct X x;" -> degisken (desteklenmez: elaborated tur kullanimi yalniz tanim)
-        bool st = cur().s == "struct";
-        if (peek().k == TK_ID) { size_t z = p + 1; qname(z); if (t[z].k == TK_P && (t[z].s == "{" || t[z].s == ":" || t[z].s == ";")) { p++; a[prog].kid.push_back(classDef(st)); continue; } }
-      }
       if (isId("using")) {
         p++; string nm = ident(); expect("="); int ty = fullType(); expect(";");
         alias[nm] = ty; continue;
       }
-      if (isId("typedef")) { p++; int ty = fullType(); string nm = ident(); expect(";"); alias[nm] = ty; continue; }
-      int64_t virt = 0; bool ext = false;
-      while (cur().k == TK_ID && (cur().s == "inline" || cur().s == "static" || cur().s == "constexpr" || cur().s == "extern")) { if (cur().s == "extern") ext = true; p++; }
-      (void)ext;
-      int b = typeSpec(); size_t savePos = p; int tt = ptrOps(b);
-      if (isId("operator")) { p++; int convTy; string nm = operatorName(convTy); int f = funcRest(tt, nm, line, -1); a[f].i |= virt; a[prog].kid.push_back(f); continue; }
-      if (cur().k == TK_ID && isPk(1, "(")) { string nm = ident(); int f = funcRest(tt, nm, line, -1); a[prog].kid.push_back(f); continue; }
-      p = savePos; int ds = varDecls(b, true);
-      for (int v : a[ds].kid) a[prog].kid.push_back(v);
+      if (isId("typedef")) { p++; int b = typeSpec(); string nm; int ty = declarator(b, nm, false, true); expect(";"); alias[nm] = ty; continue; }
+      if (isId("static_assert")) {
+        p++; expect("("); int c = assign(); int n = a.mk(N_STATASSERT, line); a[n].kid = {c};
+        if (accept(",")) { if (cur().k != TK_STR) fail("E_PARSE", "static_assert iletisi dize olmali", line); int m = a.mk(N_STR, line); a[m].s = cur().s; p++; a[n].kid.push_back(m); }
+        expect(")"); expect(";"); a[prog].kid.push_back(n); continue;
+      }
+      if (isId("extern") && peek().k == TK_STR && peek().s == "C") {   // extern "C" { ... }  /  extern "C" bildirim
+        p += 2;
+        if (isP("{")) {
+          p++; int64_t save = linkFlags; linkFlags = 8192;
+          while (!isP("}")) { if (cur().k == TK_EOF) fail("E_PARSE", "extern \"C\" blogu '}' eksik", line); topDecl(prog); }
+          p++; linkFlags = save; continue;
+        }
+        int64_t save = linkFlags; linkFlags |= 8192; topDecl(prog); linkFlags = save; continue;
+      }
+      topDecl(prog);
     }
     return prog;
   }
@@ -2572,7 +2678,7 @@ struct Sema {
 const char* kPrelude = "int __getc(); void __puti(long long); void __putc(int); void __putf(double); void pl(long double); void pi(long long x) { __puti(x); __putc(10); } void pc(int c) { __putc(c); } void pd(double d) { __putf(d); __putc(10); } ";
 
 // istisna onsozu: yalniz kaynakta 'try' varsa eklenir (std::exception / bad_cast / bad_typeid gercek sinif tanimlari; sayisal derleyici bunlari siradan sinif olarak derler)
-const char* kPreludeExc = "class std::exception { public: virtual const char* what() const noexcept { return \"std::exception\"; } }; class std::bad_cast : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_cast\"; } }; class std::bad_typeid : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_typeid\"; } }; ";
+const char* kPreludeExc = "class std::exception { public: virtual const char* what() const noexcept { return \"std::exception\"; } }; class std::bad_cast : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_cast\"; } }; class std::bad_typeid : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_typeid\"; } }; class std::bad_function_call : std::exception { public: virtual const char* what() const noexcept { return \"bad_function_call\"; } }; ";
 bool usesF128(const string& src) { Lexer l0(src); l0.run(); for (auto& tk : l0.out) if (tk.k == TK_ID && tk.s == "__float128") return true; return false; }
 bool hasTryWord(const string& src) { for (size_t i = 0; i + 3 < src.size(); i++) if (!src.compare(i, 3, "try") && (i == 0 || !(isalnum((unsigned char)src[i-1]) || src[i-1] == '_')) && !(isalnum((unsigned char)src[i+3]) || src[i+3] == '_')) return true; return false; }
 bool slurp(const string& f, string& out) { FILE* fp = fopen(f.c_str(), "rb"); if (!fp) return false; char b[65536]; size_t n; out.clear(); while ((n = fread(b, 1, sizeof b, fp)) > 0) out.append(b, n); fclose(fp); return true; }

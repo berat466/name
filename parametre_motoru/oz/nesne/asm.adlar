@@ -8,6 +8,7 @@ func streq
 func opid
 func hostid
 func funcfind
+func symv
 func datafind
 func addsym
 func mkint

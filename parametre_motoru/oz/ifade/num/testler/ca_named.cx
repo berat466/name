@@ -1,0 +1,8 @@
+int vol(int w = 2, int hgt = 3, int dep = 4) { return w * 100 + hgt * 10 + dep; }
+int sub(int a, int b) { return a - b; }
+struct S { int v; int m(int a, int b = 3, int c = 1) { return v + a * b + c; } };
+int main() {
+  pi(vol(.dep = 9)); pi(vol(5, .dep = 1)); pi(vol(.hgt = 7, .w = 8)); pi(sub(.b = 1, .a = 10)); pi(sub(10, .b = 3));
+  S s; s.v = 100; pi(s.m(2, .c = 9)); pi(s.m(.a = 2, .b = 10));
+  return 0;
+}

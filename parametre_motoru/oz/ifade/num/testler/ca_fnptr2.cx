@@ -1,0 +1,32 @@
+typedef int (*BinOp)(int, int);
+using UnOp = double (*)(double);
+using Cb = void (*)(int);
+struct P { int x; int y; };
+P mk(int a, int b) { P p; p.x = a; p.y = b; return p; }
+P swapp(P q) { P r; r.x = q.y; r.y = q.x; return r; }
+int add(int a, int b) { return a + b; }
+int sub(int a, int b) { return a - b; }
+double half(double d) { return d / 2; }
+double neg(double d) { return -d; }
+int total = 0;
+void acc(int v) { total = total + v; }
+void acc2(int v) { total = total + 2 * v; }
+int f(int a) { return a + 100; }
+double f(double a) { return a + 0.5; }
+BinOp pick(int w) { if (w == 0) return add; return sub; }
+struct Ops { BinOp op; Cb cb; int base; };
+int run(Ops& o, int a) { o.cb(a); return o.op(o.base, a); }
+P (*mkp)(int, int) = mk;
+int (*gtab[3])(int, int) = { add, sub, nullptr };
+int main() {
+  BinOp b = pick(1); pi(b(10, 3)); pi(pick(0)(10, 3));
+  UnOp u = half; pd(u(5.0)); u = neg; pd(u(5.0));
+  Cb c = acc; c(5); c = acc2; c(5); pi(total);
+  Ops o; o.op = add; o.cb = acc; o.base = 7; pi(run(o, 5)); pi(total);
+  int (*pf)(int) = f; double (*pg)(double) = f; pi(pf(1)); pd(pg(1.0));
+  P q = mkp(3, 4); P r = swapp(q); pi(r.x); pi(r.y);
+  P (*sw)(P) = swapp; P t = sw(mk(8, 9)); pi(t.x); pi(t.y);
+  pi(gtab[0](1, 2)); pi(gtab[1](1, 2)); pi(gtab[2] == nullptr);
+  void (*vp)(int) = &acc; vp(1); pi(total);
+  return 0;
+}

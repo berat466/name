@@ -1,0 +1,14 @@
+struct A { int v; int get() { return v; } int addv(int d) { return v + d; } virtual int vf(int x) { return x + 1; } int cget() const { return v * 2; } };
+struct B : A { virtual int vf(int x) { return x + 2; } };
+struct C { int a; int b; int sum() noexcept { return a + b; } };
+int main() {
+  A a; a.v = 5; B b; b.v = 7;
+  int (A::*pg)() = &A::get; pi((a.*pg)()); pi((b.*pg)());
+  int (A::*pa)(int) = &A::addv; pi((a.*pa)(10)); A* ap = &b; pi((ap->*pa)(1));
+  int (A::*pv)(int) = &A::vf; pi((a.*pv)(1)); pi((b.*pv)(1)); pi((ap->*pv)(1));
+  int (A::*pc)() const = &A::cget; pi((a.*pc)());
+  C c; c.a = 3; c.b = 4; int (C::*ps)() noexcept = &C::sum; pi((c.*ps)());
+  int (A::*tab[2])(int) = { &A::addv, &A::vf }; pi((a.*tab[0])(100)); pi((b.*tab[1])(100));
+  pi(pg == &A::get); pi(pg != nullptr);
+  return 0;
+}

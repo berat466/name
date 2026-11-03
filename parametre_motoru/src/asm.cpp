@@ -202,12 +202,16 @@ struct Asm {
     if (parse_float(tok, fv)) { bits = bits_of(fv); return true; }
     auto d = dataAddr.find(tok);
     if (d != dataAddr.end()) { bits = uint64_t(d->second); return true; }
+    auto fx = funcIdx.find(tok);   // Bolum 04: islev adi = islev indeksi sabiti (islev isaretcisi degeri)
+    if (fx != funcIdx.end()) { bits = uint64_t(fx->second); return true; }
     return false;
   }
   bool immOf(const std::string& t, int64_t& v) {   // 32 bite sigan tamsayi (veya data adresi)?
     if (parse_int(t, v)) return v >= INT32_MIN && v <= INT32_MAX;
     auto d = dataAddr.find(t);
     if (d != dataAddr.end()) { v = d->second; return v <= INT32_MAX; }
+    auto fx = funcIdx.find(t);
+    if (fx != funcIdx.end()) { v = fx->second; return true; }
     return false;
   }
 
@@ -393,6 +397,11 @@ struct Asm {
           if (kind == 'f') err(line, "data adresi ondalik islemde kullanilamaz: " + tok);
           return lit(uint64_t(d->second));
         }
+        auto fx = funcIdx.find(tok);
+        if (fx != funcIdx.end()) {
+          if (kind == 'f') err(line, "islev indeksi ondalik islemde kullanilamaz: " + tok);
+          return lit(uint64_t(fx->second));
+        }
         err(line, "tanimsiz ad (hic yazilmamis yazmac?): " + tok);
       }
       err(line, "gecersiz operand: " + tok);
@@ -435,6 +444,7 @@ struct Asm {
             int64_t iv; Opd o; o.t = Opd::IMM;
             if (parse_int(n.a[j], iv)) o.v = iv;
             else if (dataAddr.count(n.a[j])) o.v = dataAddr[n.a[j]];
+            else if (funcIdx.count(n.a[j])) o.v = funcIdx[n.a[j]];
             else err(n.line, "dogrudan tamsayi bekleniyor: " + n.a[j]);
             if (o.v < INT32_MIN || o.v > INT32_MAX) err(n.line, "dogrudan deger 32 bit disinda");
             I.o[j] = o;

@@ -1,0 +1,19 @@
+#include <functional>
+int add(int a, int b) { return a + b; }
+struct Mul { int k; int operator()(int x) const { return x * k; } };
+struct Cnt { int c; int operator()() { c = c + 1; return c; } };
+int apply(std::function<int(int, int)> f, int a, int b) { return f(a, b); }
+std::function<int(int)> mkadder(int n) { return [n](int x) { return x + n; }; }
+int main() {
+  std::function<int(int, int)> f = add; pi(f(2, 3)); pi(apply(f, 4, 5)); pi(apply(add, 6, 7)); pi(apply([](int a, int b) { return a * b; }, 6, 7));
+  std::function<int(int)> m = Mul{3}; pi(m(5));
+  std::function<int(int)> g = mkadder(10); pi(g(1)); std::function<int(int)> h = g; pi(h(2));
+  int base = 100; std::function<int(int)> r = [&base](int x) { base += x; return base; }; pi(r(1)); pi(r(2)); pi(base);
+  std::function<int()> c1 = Cnt{0}; pi(c1()); pi(c1()); std::function<int()> c2 = c1; pi(c2()); pi(c1()); pi(c2());
+  std::function<int(int)> e; pi(bool(e)); pi(!e); if (e) pi(111); else pi(222);
+  e = [](int x) { return -x; }; pi(bool(e)); pi(e(8)); e = nullptr; pi(!e);
+  std::function<void(int)> sink = [&base](int x) { base = x; }; sink(5); pi(base);
+  g = h; pi(g(5)); g = Mul{2}; pi(g(5));
+  std::function<double(double)> dd = [](double v) { return v / 4; }; pd(dd(3.0));
+  return 0;
+}

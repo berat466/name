@@ -1,0 +1,15 @@
+// 04.020 fonksiyon nesneleri: operator() siniflari (const / const olmayan, asiri yuklu, kalitim, durum), sablonsuz "geri cagirma" kaliplari
+struct Add { int k; int operator()(int x) const { return x + k; } };
+struct Counter { int n; int operator()() { n = n + 1; return n; } int operator()(int d) { n = n + d; return n; } };
+struct Base { virtual int operator()(int x) { return x; } };
+struct Dbl : Base { virtual int operator()(int x) { return x * 2; } };
+struct Cmp { bool operator()(const int& a, const int& b) const { return a < b; } };
+int each(int* a, int n, Add f) { int s = 0; for (int i = 0; i < n; i++) s += f(a[i]); return s; }
+int sortcount(int* a, int n, Cmp c) { int sw = 0; for (int i = 0; i < n; i++) for (int j = 0; j + 1 < n - i; j++) if (c(a[j + 1], a[j])) { int t = a[j]; a[j] = a[j + 1]; a[j + 1] = t; sw++; } return sw; }
+int main() {
+  Add a{10}; pi(a(5)); pi(Add{3}(4)); Counter c{0}; pi(c()); pi(c()); pi(c(10)); pi(c());
+  Dbl d; Base* bp = &d; pi((*bp)(21)); Base b; pi(b(21));
+  int arr[5] = {5, 3, 9, 1, 7}; pi(each(arr, 5, Add{1})); pi(sortcount(arr, 5, Cmp{})); for (int i = 0; i < 5; i++) pi(arr[i]);
+  const Add ca{100}; pi(ca(1));
+  return 0;
+}

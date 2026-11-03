@@ -23,7 +23,7 @@ one() {
   f=$1; n=$(basename $f .cx); w=$T/t_$n; mkdir -p $w
   if [ -f ${f%.cx}.out ]; then cp ${f%.cx}.out $w/exp   # g++ karsiligi olmayan yapilar (__match, korutin): bagimsiz elle/python ile hesaplanmis beklenen cikti
   else
-  g++ -std=c++20 -O0 -w -frounding-math -fext-numeric-literals -include $D/../oracle.h -x c++ -o $w/bin $f 2> $w/gpp.err && lim $w/bin > $w/exp || { fail "$n: g++ oracle"; return; }
+  STDV=c++20; grep -q '^// STD: c++23' $f && STDV=c++23; g++ -std=$STDV -O0 -w -frounding-math -fext-numeric-literals -include $D/../oracle.h -x c++ -o $w/bin $f 2> $w/gpp.err && lim $w/bin > $w/exp || { fail "$n: g++ oracle"; return; }
   fi
   $PM ifade $f --pmx1 $w/x.pmx > /dev/null 2> $w/fe.err; [ -s $w/x.pmx ] || { fail "$n: on yuz (PMX1 uretimi): $(head -c 120 $w/fe.err)"; return; }   # on yuz anlam asamasi reddetse de PMX1 yazilmistir
   { cat $TAB; cat $IMZ; echo; cat $w/x.pmx; } > $w/in.txt
