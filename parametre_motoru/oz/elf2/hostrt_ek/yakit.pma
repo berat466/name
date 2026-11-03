@@ -1,0 +1,12 @@
+; yakit taramasi (dogrula_hostrt.sh: -1 N oneki = pm --fuel N): putf cagrisi yakit sinirinda ayni noktada tuzaga dusmeli
+func main() {
+    mov x, 1.5
+    mov a, 1
+    mov b, 2
+    host putf, x
+    add a, a, b
+    host putc, 10
+    host puti, a
+    host putc, 10
+    ret 0
+}

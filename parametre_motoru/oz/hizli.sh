@@ -50,6 +50,7 @@ tur|oz/elf2|dogrula_tur.sh|0 6|0 14|60|tamsayi turleri (i8..u64, sext/zext, u2f/
 dar|oz/elf2|dogrula_dar.sh|0 8|0 12|30|dar kayan nokta f32/f16/bf16 (ELF = svm = C++ pm = tam-rasyonel referans + derleyici/donanim)
 donusum|oz/elf2|dogrula_donusum.sh|||40|sayisal turler arasi donusum matrisi (ELF = svm = C++ pm = C++ static_cast oracle)
 cagri|oz/elf2|dogrula_cagri.sh|||5|call/ret/halt/host mikro-islem sablonlari (yalniz SEM ile tanimli komutlar)
+hostrt|oz/elf2|dogrula_hostrt.sh|||8|host putf/present/poll/frame RT cagrisi: canli yazmac ezme, derinlik, yakit, yigin payi (pm = native-strict = svm = ELF)
 arac|oz/arac|dogrula_arac.sh|20||5|arac/sozluk tazeligi
 testler|tests|run_tests.sh|||3|ana test kosucusu
 ondalik|oz/asm|dogrula_ondalik.sh|5||1|ondalik sabit ayrisimi
@@ -60,6 +61,7 @@ yenile|oz/bag|dogrula_yenile.sh|||600|kendini yeniden uretme zinciri
 "
 SABOTAJ="
 cagri|oz/elf2|sabotaj_cagri.sh
+hostrt|oz/elf2|sabotaj_hostrt.sh
 i128|oz/tur128|sabotaj_i128.sh
 tip|oz/tip|sabotaj_tip.sh
 ifade|oz/ifade|sabotaj_ifade.sh
@@ -83,7 +85,7 @@ svm|oz/sayisal|sabotaj_svm.sh
 nesne|oz/nesne|sabotaj_nesne.sh
 "
 KRITIK="testler valid mikro arac"
-TUMALAN="elf2 oob yap ikili komut turler tip ifade ifx cfg i128 uyum kayan valid asm kural grafik svm nesne gorunum elf mikro cagri tur dar donusum arac testler ondalik float"
+TUMALAN="elf2 oob yap ikili komut turler tip ifade ifx cfg i128 uyum kayan valid asm kural grafik svm nesne gorunum elf mikro cagri hostrt tur dar donusum arac testler ondalik float"
 
 # ---- degisen dosya -> alanlar
 alan_dosya() {
@@ -98,7 +100,7 @@ alan_dosya() {
     oz/ifade/*) echo "ifade" ;;
     oz/tur128/*) echo "i128" ;;
     oz/kayan/*) echo "kayan" ;;
-    oz/komut/komutlar.pmk) echo "ifade ifx cfg komut turler tip i128 uyum kayan nesne gorunum kural mikro cagri tur dar donusum svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
+    oz/komut/komutlar.pmk) echo "ifade ifx cfg komut turler tip i128 uyum kayan nesne gorunum kural mikro cagri hostrt tur dar donusum svm arac asm valid elf2 ikili" ;;   # komut tablosu her araci uretir
     oz/komut/*) echo "komut" ;;                                                  # tablo disi: test/belge/gecis dosyalari
     oz/arac/*.sh|oz/arac/ref/*) echo "arac" ;;
     oz/arac/komut.*) echo "arac komut turler tip nesne gorunum asm valid elf2" ;;         # komut.pmb tum sozlukleri uretir
@@ -112,8 +114,8 @@ alan_dosya() {
     oz/elf2/dogrula_tur.sh|oz/elf2/tur_oracle.cpp) echo "tur" ;;
     oz/elf2/dogrula_donusum.sh|oz/elf2/donusum_oracle.cpp|oz/elf2/sabotaj_donusum.sh|oz/elf2/ref_donusum.py) echo "donusum" ;;
     oz/elf2/dogrula_dar.sh|oz/elf2/sabotaj_dar.sh|oz/elf2/ref_dar.py|oz/elf2/donanim_dar.cpp) echo "dar donusum" ;;
-    oz/elf2/dogrula_*.sh|oz/elf2/sabotaj_*.sh|oz/elf2/*_prog.sh|oz/elf2/rastgele2.awk) echo "elf2 mikro float grafik cagri" ;;
-    oz/elf2/*) echo "elf2 mikro float grafik cagri tur dar donusum" ;;
+    oz/elf2/dogrula_*.sh|oz/elf2/sabotaj_*.sh|oz/elf2/*_prog.sh|oz/elf2/rastgele2.awk) echo "elf2 mikro float grafik cagri hostrt" ;;
+    oz/elf2/*) echo "elf2 mikro float grafik cagri hostrt tur dar donusum" ;;
     oz/elf/*) echo "elf oob" ;;
     oz/yap/*) echo "yap" ;;
     oz/nesne/dogrula_gorunum.sh|oz/nesne/sabotaj_gorunum.sh|oz/nesne/duzenle.sh|oz/nesne/ref/*) echo "gorunum" ;;

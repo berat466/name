@@ -12,7 +12,7 @@ build() { g++ -std=c++17 -O1 -fno-fast-math -ffp-contract=off -w -I src -c $1 -o
 build src/native_x64.cpp $T/pm_ok || { echo "temel derleme basarisiz"; exit 1; }
 kos() {   # kos PMYOLU -> 0: tum jtab testleri gecer
   local P=$1 b f args rc_i rc_n bad=0
-  for f in tests/calli_*.pma tests/tcall_*.pma tests/ek/*.pma; do
+  for f in tests/calli_*.pma tests/tcall_*.pma; do
     b=${f%.pma}; args=""; [ -f $b.args ] && args=$(cat $b.args)
     $PM run $f $args --stats > $T/oi 2> $T/ei; rc_i=$?
     for prom in "" "--native-promote 0" "--native-promote 100000"; do

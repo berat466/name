@@ -405,7 +405,15 @@ func val32(k) {
     jz z, vn1
     ld r, G, 11
     ret r
-vn1: eqi z, k, 36
+vn1: eqi z, k, 37
+    jz z, vn1b
+    ; CURNR8: gecerli islevin yazmac sayisi * 8 (host -> RT cagrisinin cercevesi cagiranin cerceve sonunda baslar)
+    ld f, G, 24
+    add t, f, FNR
+    ld r, t, 0
+    mul r, r, 8
+    ret r
+vn1b: eqi z, k, 36
     jz z, vn2
     ld r, G, 80
     add r, r, 4194304
@@ -983,7 +991,7 @@ func hostmap() {
     jnz pv, hn
     addi t, na, @RTF_PUTF@
     st t, G, 20
-    mov r, @OP_CALL@
+    mov r, @TS_HOST_RT@
     ret r
 hq: lti z, h, @H_PRESENT@
     jnz z, hn
@@ -992,7 +1000,7 @@ hq: lti z, h, @H_PRESENT@
     add t, t, @RTF_PRESENT@
     add t, t, na
     st t, G, 20
-    mov r, @OP_CALL@
+    mov r, @TS_HOST_RTR@
     ret r
 hpv: mov r, @TS_HOST_SYSW@
     ret r

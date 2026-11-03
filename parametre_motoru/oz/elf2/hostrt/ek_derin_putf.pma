@@ -1,0 +1,18 @@
+; derinlik siniri: 65536. duzeyde putf (RT cagrisi kullanici derinligini tuketmemeli: pm ile ayni noktada DEPTH tuzagi)
+func f(n) {
+    mov a, 1
+    mov b, 2
+    mov c, 3
+    mov d, 4
+    mov e, 5
+    mov x, 0.5
+    host putf, x
+    host putc, 10
+    add n, n, 1
+    call r, f, n
+    ret r
+}
+func main() {
+    call r, f, 0
+    ret 0
+}

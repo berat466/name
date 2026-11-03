@@ -1,7 +1,7 @@
 #!/bin/bash
 # dogrula_cagri.sh'in yakaladigini kanitlar: ret/halt/call/host mikro-islem sablonlarini (komut tablosu) ve gen2'nin ilgili kodunu tek tek bozar (mutant),
 # kendi kopya agacinda gen2'yi yeniden uretir ve dogrula_cagri.sh'in BASARISIZ olmasini bekler. Kullanim: sabotaj_cagri.sh [pm] [paralel]   (SADECE: etiket deseni)
-PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] \&\& JOBS=1000
+PM=${1:-../../pm}; JOBS=${2:-3}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); . $D/../slot.sh; [ -n "$HIZLI_SLOT" ] && JOBS=1000
 taban() { rm -rf $1; mkdir -p $1; cp -r $R/oz $1/oz; }
 mut_tablo() {   # etiket sed_ifadesi (komut tablosu okunabilir gorunumu)
   [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return

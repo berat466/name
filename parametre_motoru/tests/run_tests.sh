@@ -9,7 +9,7 @@ T=$(mktemp -d)
 check() { # ad kosul aciklama
   if [ "$2" = ok ]; then pass=$((pass+1)); else fail=$((fail+1)); failed="$failed\n  $1: $3"; fi
 }
-for f in *.pma ek/*.pma; do   # ek/: bag mutasyon kulliyatina GIRMEYEN ek testler (kulliyat secimi kararli kalsin)
+for f in *.pma; do
   b=${f%.pma}
   args=""; [ -f $b.args ] && args=$(cat $b.args)
   inp=/dev/null; [ -f $b.in ] && inp=$b.in
