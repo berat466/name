@@ -18,6 +18,10 @@ NPR=$(mod tab < $TAB | awk '$1=="PRIMMAX"{print $2}')    # son mikro-islem kimli
 KN=$(mod kanon < $TAB | sed -n 3p); OPH=$((4+KN)); OP0=$((OPH+2)); L3=$((OP0+N0))   # kind sayisi -> OP baslik/ilk komut/HOST baslik satirlari                                            # kanonik yerlesimde bolum 3 (HOST) baslik satiri; host kayitlari L3+2, L3+3
 # ---- 0) arac guncel
 $PM asm ../arac/komut.pma -o $T/k.pmb --strip > /dev/null 2>&1 && cmp -s $T/k.pmb ../arac/komut.pmb && pass || fail "komut.pmb guncel degil (oz/arac/uret.sh)"
+# ---- 0b) Bolum 04: CALLI (OP 344) / TCALL (OP 345) akis ozellikleri SEM ilkellerinden turetilir (komut kimligi sabit kodlanmaz): OPCALL calli=3 tcall=1, OPFLOW calli=0 (akar) tcall=1 (sonlandirir)
+CC=$(mod tab < $TAB | awk '$1=="OPCALL"{print $(2+344), $(2+345)}'); CF=$(mod tab < $TAB | awk '$1=="OPFLOW"{print $(2+344), $(2+345)}')
+[ "$CC" = "3 1" ] && pass || fail "OPCALL calli/tcall: '$CC' (beklenen '3 1')"
+[ "$CF" = "0 1" ] && pass || fail "OPFLOW calli/tcall: '$CF' (beklenen '0 1')"
 # ---- 1) tablo + uretilmis ust bilgiler
 [ "$(mod dogrula < $TAB)" = "1" ] && pass || fail "komutlar.pmk gecerli degil: $(mod dogrula < $TAB)"
 mod kanon < $TAB | cmp -s - $TAB && pass || fail "komutlar.pmk kanonik yerlesimde degil (komut @@kanon)"
