@@ -1,0 +1,4 @@
+// kuyruk cagrisi (return f(...)) yok edicili yerel nesne varken eleme yapilmaz: her cerceve nesnesini cagri dondukten SONRA yok eder
+struct D { int id; ~D() { pi(600 + id); } };
+int tc(int n) { D d{n}; if (n == 0) return 0; return tc(n - 1); }
+int main() { pi(tc(3)); return 0; }

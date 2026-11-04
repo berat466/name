@@ -26,6 +26,12 @@ for (t, s_, u, f, f8, f16, a, b, c, d, e) in C: R.append(rec(3, [t, s_, u, f, f8
 N = ['i2f', 'u2f', 'f2i', 'f2u', 'rnd_f32', 'neg', 'fneg', 'not', 'feq', 'add_f80', 'sub_f80', 'mul_f80', 'div_f80', 'neg_f80', 'eq_f80', 'lt_f80', 'le_f80', 'ne_f80', 'tobool_f80', 'cv_f64_f80', 'cv_f80_f64', 'cv_f80_f32', 'cv_i64_f80', 'cv_u64_f80', 'cv_f80_i64', 'cv_f80_u64', 'pack_f80', 'lo64_f80', 'hi64_f80', 'add_f128', 'sub_f128', 'mul_f128', 'div_f128', 'neg_f128', 'eq_f128', 'lt_f128', 'le_f128', 'ne_f128', 'tobool_f128', 'cv_f64_f128', 'cv_f128_f64', 'cv_f128_f32', 'cv_i64_f128', 'cv_u64_f128', 'cv_f128_i64', 'cv_f128_u64', 'pack_f128', 'lo64_f128', 'hi64_f128', 'cv_f80_f128', 'cv_f128_f80'] + [''] * 13
 R.append(rec(4, N, []))
 R.append(rec(5, [], [4, 9, 24, 11, 1, 2, 3, 6, 7, 8, 23, 25, 255, 26]))
+# sinif 6 YASAM DONGUSU (Bolum 04 duzeltme: korutin bellegi, yigin nesnesi yok edicileri, alloca): sayilar [indeks = parametre]; yeri ve anlami LIFE_* adlariyla ifx.cx / src/ifade.cpp'de
+#  0 FR_HDR  blok basligi sozcuk sayisi (cerceve isaretcisinden geriye: [-2]=sinif+sihir, [-1]=nesil)      1 FR_CMIN en kucuk boyut sinifi (2^k sozcuk)     2 FR_CMAX en buyuk boyut sinifi
+#  3 FR_MAGIC blok sihiri (alt 8 bit sinif)    4 FR_GEN0 ilk nesil     5 FR_W_STATE 6 FR_W_YIELD 7 FR_W_FN 8 FR_W_FINAL 9 FR_W_DESTROY (cerceve baslik sozcuk indeksleri)   10 FR_W_PROMISE promise/yerel baslangici
+#  11 ST_DESTROYED  12 ST_DONE durum degerleri    13 AL_ALIGN alloca hizasi (sozcuk)    14 AL_GUARD alloca koruma sozcugu sayisi    15 AL_CANARY koruma deseni
+#  16 DT_REVERSE yok edicilerin sirasi (1 = bildirimin tersi)    17 DT_NRVO adlandirilmis donus nesnesi yok edilmez (1)    18 DT_TERMINATE yok edici istisna firlatirsa std::terminate (1)    19 DT_MAXLIVE islev basina en cok canli yok edilecek nesne
+R.append(rec(6, [], [2, 4, 26, 1129270784, 1, 0, 1, 2, 3, 4, 8, -2, -1, 2, 1, 6510615555426900570, 1, 1, 1, 64]))
 pay = [len(R)]
 for r in R: pay += r
 L = sys.stdin.read().rstrip('\n').split('\n')

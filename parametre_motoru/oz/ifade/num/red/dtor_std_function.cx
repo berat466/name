@@ -1,0 +1,3 @@
+// RED: E_DTOR  -- std::function yok edicili cagrilabilir nesne tutamaz (yok etme desteklenmiyor)
+struct T { int id; ~T() { pi(id); } int operator()() const { return id; } };
+int main() { T t{1}; std::function<int()> f = t; return f(); }

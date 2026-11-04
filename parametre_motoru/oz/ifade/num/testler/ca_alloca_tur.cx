@@ -1,0 +1,7 @@
+// alloca: coklu sozcuklu siniflar (int/double/long), long double, dizi satirli (int[4]); ceil(bayt/sizeof)*sozcuk ayrilir
+struct P { int a; double b; long c; };
+struct Q { long double x; char t; };
+long long sum(int n) { P* p = (P*)alloca(n * sizeof(P)); for (int i = 0; i < n; i++) { p[i].a = i; p[i].b = i * 0.5; p[i].c = i * 3; } long long s = 0; for (int i = 0; i < n; i++) s += p[i].a + (long long)p[i].b + p[i].c; return s; }
+long long ld(int n) { Q* q = (Q*)alloca(n * sizeof(Q)); for (int i = 0; i < n; i++) { q[i].x = i + 0.25L; q[i].t = (char)i; } long long s = 0; for (int i = 0; i < n; i++) s += (long long)(q[i].x * 4) + q[i].t; return s; }
+long long arr(int n) { int (*m)[4] = (int (*)[4])alloca(n * sizeof(int[4])); for (int i = 0; i < n; i++) for (int j = 0; j < 4; j++) m[i][j] = i * 4 + j; long long s = 0; for (int i = 0; i < n; i++) for (int j = 0; j < 4; j++) s += m[i][j]; return s; }
+int main() { pi(sum(10)); pi(ld(6)); pi(arr(5)); pi((long long)sizeof(P)); pi((long long)sizeof(Q)); return 0; }

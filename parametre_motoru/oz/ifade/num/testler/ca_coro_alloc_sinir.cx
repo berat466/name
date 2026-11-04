@@ -1,0 +1,15 @@
+// cerceve ayirici: her boyutta (1..300 sozcuk; 2^k sinirlari dahil) iki bitisik blok tam doldurulunca komsunun basligi (sihir+nesil) bozulmaz; serbest birakilip yeniden ayrilinca ayni blok doner
+std::coroutine_handle<> hh;
+int main() {
+  long long ok = 0; long long reuse = 0;
+  for (int nw = 1; nw <= 300; nw = nw + 1) {
+    long long* a = __falloc(nw); long long* b = __falloc(nw); long long* c = __falloc(nw);
+    long long gb = b[-1]; long long gc = c[-1]; long long kb = b[-2]; long long kc = c[-2];
+    for (int i = 0; i < nw; i = i + 1) a[i] = 7 + i;
+    if (b[-2] == kb && c[-2] == kc && b[-1] == gb && c[-1] == gc && (kb - (kb & 255)) == 1129270784) ok = ok + 1;
+    __ffree(a); long long* a2 = __falloc(nw); if (a2 == a) reuse = reuse + 1;
+    __ffree(a2); __ffree(b); __ffree(c);
+  }
+  pi(ok); pi(reuse);
+  return 0;
+}

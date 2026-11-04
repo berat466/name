@@ -1,0 +1,4 @@
+// RED: E_DTOR  -- statik ombur (global) yok edicili sinif nesnesi desteklenmiyor (program sonunda yok etme yok)
+struct T { int id; ~T() { pi(id); } };
+T g{1};
+int main() { return 0; }

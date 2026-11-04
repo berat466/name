@@ -1,0 +1,11 @@
+// deger parametresi, doner nesne (NRVO), atilan gecici, dizi ve ic ice kapsam
+struct P { int id; ~P() { pi(300 + id); } };
+void take(P p) { pi(1); }
+P make(int i) { P p{i}; pi(2); return p; }
+int sum(P p, P q) { return p.id + q.id; }
+int main() {
+  P a{1}; take(a); take(make(2)); make(3); pi(4);
+  P b{5}; pi(sum(a, b)); pi(6);
+  { P arr[2]; arr[0].id = 7; arr[1].id = 8; pi(9); }
+  return 0;
+}

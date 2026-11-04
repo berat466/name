@@ -66,6 +66,7 @@ i128|oz/tur128|sabotaj_i128.sh
 tip|oz/tip|sabotaj_tip.sh
 ifade|oz/ifade|sabotaj_ifade.sh
 ifx|oz/ifade/num|sabotaj_ifx.sh
+yasam|oz/ifade/num|sabotaj_yasam.sh
 cfg|oz/cfg|sabotaj_cfg.sh
 native|oz/cfg|sabotaj_native.sh
 native_cagri|oz/cfg|sabotaj_native_cagri.sh

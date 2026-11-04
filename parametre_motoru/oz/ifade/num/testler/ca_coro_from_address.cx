@@ -1,0 +1,11 @@
+// from_address / tutamak donusumu nesli tasir: ham adresten kurulan ve P'li -> bos tutamaga cevrilen tutamaklar gecerlidir
+struct T { struct promise_type { int v; T get_return_object() { T t; t.h = std::coroutine_handle<promise_type>::from_promise(*this); return t; } std::suspend_always initial_suspend() { return std::suspend_always(); } std::suspend_always final_suspend() noexcept { return std::suspend_always(); } void return_value(int x) { v = x; } void unhandled_exception() { } }; std::coroutine_handle<promise_type> h; };
+T f(int a) { co_return a * 3; }
+int main() {
+  T t = f(5);
+  std::coroutine_handle<> h2 = std::coroutine_handle<>::from_address(t.h.address());
+  pi(h2.done()); h2.resume(); pi(h2.done()); pi(t.h.promise().v);
+  T u = f(7); std::coroutine_handle<> hv = u.h; hv.resume(); pi(u.h.promise().v); hv.destroy();
+  std::coroutine_handle<T::promise_type> h3 = std::coroutine_handle<T::promise_type>::from_address(t.h.address()); pi(h3.promise().v); h3.destroy();
+  return 0;
+}

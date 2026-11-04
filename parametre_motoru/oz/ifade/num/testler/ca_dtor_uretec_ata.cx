@@ -1,0 +1,13 @@
+// std::generator atamasi tasima gibidir: hedefin eski cercevesi geri verilir, saghtaki gecici sahipligi devreder; acikca yok edilmis (eski) nesne kapsam sonunda baskasinin cercevesini yok etmez
+long long dcount = 0;
+struct L { int id; ~L() { dcount = dcount + 1; } };
+std::generator<int> gen(int n) { L a{n}; for (int i = 0; i < 3; i = i + 1) co_yield n + i; }
+int main() {
+  std::generator<int> arr[2];
+  { std::generator<int> a = gen(1); a.next(); a.destroy(); arr[1] = gen(2); arr[1].next(); }
+  pi(dcount); pi(arr[1].value());
+  arr[1].next(); pi(arr[1].value());
+  arr[0] = gen(5); arr[0].next(); arr[0] = gen(6); pi(dcount);
+  arr[0].next(); pi(arr[0].value());
+  return 0;
+}

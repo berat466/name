@@ -1,0 +1,4 @@
+// RED: E_DTOR  -- kosullu degerlendirilen ifadede yok edicili gecici sinif nesnesi desteklenmiyor
+struct T { int id; ~T() { pi(id); } int get() const { return id; } };
+T mk(int i) { T t{i}; return t; }
+int main() { int c = 1; int x = c ? mk(1).get() : 0; pi(x); return 0; }

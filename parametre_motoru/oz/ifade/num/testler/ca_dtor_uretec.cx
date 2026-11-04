@@ -1,0 +1,17 @@
+// std::generator nesnesi kapsam sonunda cerceveyi geri verir (acik destroy sonrasi ikinci kez yok edilmez); yerel nesneler duraklama noktasina gore yok edilir
+long long dcount = 0; long long dsum = 0;
+struct L { int id; ~L() { dcount = dcount + 1; dsum = dsum + id; } };
+std::generator<int> gen(int n) { L a{n}; for (int i = 0; i < 3; i = i + 1) { L b{n + 10 + i}; co_yield i; } }
+int main() {
+  long long* p0 = (long long*)__alloc(1);
+  for (int r = 0; r < 2000; r = r + 1) { std::generator<int> g = gen(r % 7); g.next(); if (r % 3 == 0) g.next(); }
+  long long* p1 = (long long*)__alloc(1);
+  pi(dcount); pi(dsum); pi((long long)(p1 - p0) < 128);
+  dcount = 0; dsum = 0;
+  { std::generator<int> g = gen(1); pi(g.next()); pi(g.value()); pi(g.next()); pi(g.value()); pi(dcount); }
+  pi(dcount); pi(dsum);
+  dcount = 0; dsum = 0;
+  { std::generator<int> g = gen(2); g.next(); g.destroy(); pi(dcount); pi(dsum); }
+  pi(dcount); pi(dsum);
+  return 0;
+}

@@ -1,0 +1,20 @@
+// std::generator kopyasi cerceveyi sahiplenmez: degerle gecirilen / kopyalanan uretec asil nesneyle birlikte guvenle kullanilir, cerceve bir kez geri verilir
+long long dcount = 0;
+struct L { int id; ~L() { dcount = dcount + 1; } };
+std::generator<int> gen(int n) { L a{n}; for (int i = 0; i < 4; i = i + 1) co_yield n + i; }
+int take(std::generator<int> g) { int s = 0; g.next(); s = s + g.value(); return s; }
+int main() {
+  long long* p0 = (long long*)__alloc(1);
+  for (int r = 0; r < 500; r = r + 1) {
+    std::generator<int> g = gen(r);
+    int a = take(g);
+    std::generator<int> h = g;
+    h.next();
+    int b = h.value();
+    g.next();
+    if (a + b + g.value() < 0) pi(0 - 1);
+  }
+  long long* p1 = (long long*)__alloc(1);
+  pi(dcount); pi((long long)(p1 - p0) < 128);
+  return 0;
+}

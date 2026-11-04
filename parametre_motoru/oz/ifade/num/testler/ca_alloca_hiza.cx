@@ -1,0 +1,17 @@
+// alloca: sonuc 16 bayt (2 sozcuk) hizali (degisen cerceve boyutlarinda), ayrilan alan tam boyutlu (ardisik alloca farki), 0 bayt gecerli
+struct P { int a; double b; long c; };
+long long chk(int d, int n) { int pad[7]; pad[0] = d; char* p = (char*)alloca(n); long long* q = (long long*)alloca(n * 8 + 8); q[0] = pad[0]; return ((long long)p & 15) + ((long long)q & 15) + q[0] - d; }
+int main() {
+  long long bad = 0;
+  for (int i = 0; i < 400; i = i + 1) bad = bad + chk(i, (i * 7) % 33);
+  pi(bad);
+  int* a = (int*)alloca(40); int* b = (int*)alloca(8);
+  pi(((long long)b - (long long)a) / 8);
+  P* pp = (P*)alloca(7 * sizeof(P)); long long* nx = (long long*)alloca(16);
+  pi(((long long)nx - (long long)pp) / 8);
+  char* z = (char*)alloca(0); char* z2 = (char*)alloca(0);
+  pi(((long long)z2 - (long long)z) / 8);
+  char* c1 = (char*)alloca(10); char* c2 = (char*)alloca(1);
+  pi(((long long)c2 - (long long)c1) / 8);
+  return 0;
+}

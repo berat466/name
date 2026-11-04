@@ -1,0 +1,4 @@
+// RED: E_DTOR  -- kosulda yok edicili gecici sinif nesnesi desteklenmiyor
+struct T { int id; ~T() { pi(id); } int get() const { return id; } };
+T mk(int i) { T t{i}; return t; }
+int main() { if (mk(1).get() == 1) pi(2); return 0; }

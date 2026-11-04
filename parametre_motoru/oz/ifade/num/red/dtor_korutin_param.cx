@@ -1,0 +1,5 @@
+// RED: E_COROUTINE  -- promise'li korutin parametreleri tek sozcuklu degerler olmali (yok edicili sinif parametresi dahil)
+struct T { int id; ~T() { pi(id); } };
+struct Task { struct promise_type { Task get_return_object() { Task t; t.h = std::coroutine_handle<promise_type>::from_promise(*this); return t; } std::suspend_always initial_suspend() { return std::suspend_always(); } std::suspend_always final_suspend() noexcept { return std::suspend_always(); } void return_void() { } void unhandled_exception() { } }; std::coroutine_handle<promise_type> h; };
+Task f(T t) { co_return; }
+int main() { T a{1}; Task k = f(a); return 0; }

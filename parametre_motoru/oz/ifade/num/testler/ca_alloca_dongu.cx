@@ -1,0 +1,14 @@
+// dongu icinde alloca: bloklar birikir (cikista toplu serbest), ust uste binmez, ic ice cagrilarin alloca'si cagiranin verisini bozmaz; her cikista koruma zinciri denetlenir
+long long inner(int n) { long long* t = (long long*)alloca(n * 8); for (int i = 0; i < n; i = i + 1) t[i] = n * 1000 + i; long long s = 0; for (int i = 0; i < n; i = i + 1) s = s + t[i]; return s; }
+long long outer(int k) {
+  long long* blk[20]; int len[20]; long long tot = 0;
+  for (int j = 0; j < 20; j = j + 1) { len[j] = 3 + (j * k) % 9; blk[j] = (long long*)alloca(len[j] * 8); for (int i = 0; i < len[j]; i = i + 1) blk[j][i] = j * 100 + i; tot = tot + inner(5 + j % 4); }
+  long long chk = 0;
+  for (int j = 0; j < 20; j = j + 1) for (int i = 0; i < len[j]; i = i + 1) chk = chk + (blk[j][i] == j * 100 + i);
+  return tot * 1000 + chk;
+}
+int main() {
+  long long a = 0; for (int k = 1; k <= 300; k = k + 1) a = a + outer(k);
+  pi(a);
+  return 0;
+}

@@ -1,0 +1,3 @@
+// TRAP: OOB
+std::generator<int> sq(int n) { for (int i = 1; i <= n; i = i + 1) co_yield i * i; }
+int main() { std::generator<int> g = sq(3); pi(g.next()); g.destroy(); pi(1); g.destroy(); pi(2); return 0; }

@@ -77,6 +77,16 @@ python3 $D/kural_degistir.py '*' mul add < $TAB > $T/tab3.pmk && c=$(run_tab $T/
 [ "$a" = "10 4 21 " ] && pass || fail "kural: ana tablo cikti '$a'"
 [ "$b" = "4 4 21 " ] && pass || fail "kural: '+' -> sub degisikligi davranisa yansimadi ('$b')"
 [ "$c" = "10 4 10 " ] && pass || fail "kural: '*' -> add degisikligi davranisa yansimadi ('$c')"
+# 2c) yasam dongusu parametreleri (bolum 12 sinif 6): yok etme sirasi (DT_REVERSE) ve alloca hizasi (AL_ALIGN) TABLO sayilariyla degisir; kaynak/ikili yeniden uretilmez
+printf 'struct A { int id; ~A() { pi(id); } };\nint main() { A a{1}; A b{2}; A c{3}; return 0; }\n' > $T/lc.cx
+printf 'int main() { long long bad = 0; for (int i = 0; i < 64; i = i + 1) { char* p = (char*)alloca(i + 1); bad = bad + (((long long)p & 31) != 0); } pi(bad); return 0; }\n' > $T/la.cx
+$PM ifade $T/lc.cx --pmx1 $T/lc.pmx > /dev/null 2>&1; $PM ifade $T/la.cx --pmx1 $T/la.pmx > /dev/null 2>&1
+run_tab2() { { cat $1; imzayap $1; echo; cat $2; } | $T/ifx.elf > $T/lq.pma && $T/bag/asm.elf < $T/lq.pma > $T/lq.pmb && $PM run $T/lq.pmb | tr '\n' ' '; }
+python3 $D/yasam_degistir.py 16 0 < $TAB > $T/tabl1.pmk; python3 $D/yasam_degistir.py 13 4 < $TAB > $T/tabl2.pmk
+[ "$(run_tab2 $TAB $T/lc.pmx)" = "3 2 1 " ] && pass || fail "yasam: ana tabloda yok etme sirasi ters degil"
+[ "$(run_tab2 $T/tabl1.pmk $T/lc.pmx)" = "1 2 3 " ] && pass || fail "yasam: DT_REVERSE=0 davranisa yansimadi"
+[ "$(run_tab2 $T/tabl2.pmk $T/la.pmx)" = "0 " ] && pass || fail "yasam: AL_ALIGN=4 alloca hizasina yansimadi"
+[ "$(run_tab2 $TAB $T/la.pmx)" != "0 " ] && pass || fail "yasam: AL_ALIGN=2 ile 32 bayt hiza kendiliginden saglanmamali (parametre etkisiz)"
 # 2b) tur notu bozulursa tipdogr reddetmeli (denetimin gercekligi)
 { cat $TAB; cat $IMZ; echo; cat $T/k.pmx; } | $T/ifx.elf > $T/k2.pma; $T/bag/asm.elf < $T/k2.pma > $T/k2.pmb && $T/bag/coz.elf < $T/k2.pmb > $T/k2.l
 grep -a '^;;PMT1' $T/k2.pma | sed 's/^;;PMT1 //' > $T/k2.t

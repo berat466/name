@@ -1,0 +1,4 @@
+// RED: E_DTOR  -- statik yerel yok edicili sinif nesnesi desteklenmiyor (program sonunda yok etme yok)
+struct T { int id; ~T() { pi(id); } };
+int f() { static T s{1}; return s.id; }
+int main() { return f(); }

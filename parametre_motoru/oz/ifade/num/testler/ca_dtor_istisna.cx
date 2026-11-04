@@ -1,0 +1,9 @@
+// istisna yayilimi sirasinda yok ediciler (ters sirayla, her cagri cercevesinde) + yakalama + yeniden firlatma
+struct G { int id; ~G() { pi(100 + id); } };
+void thrower(int n) { G a{n}; G a2{n + 10}; if (n > 2) throw n; pi(30 + n); }
+void mid(int n) { G b{50}; thrower(n); pi(40); }
+int main() {
+  for (int i = 1; i <= 4; i = i + 1) { try { G c{70 + i}; mid(i); pi(60); } catch (int e) { pi(90 + e); } pi(i); }
+  try { try { G d{80}; throw 7; } catch (int e) { G h{81}; pi(1000 + e); throw; } } catch (int e) { pi(2000 + e); }
+  return 0;
+}

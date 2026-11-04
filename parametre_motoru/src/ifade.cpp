@@ -355,11 +355,11 @@ struct Parser {
     handleDone.insert(nm);
     if (!arg.empty() && !fwdDone.count(arg)) { fwdDone.insert(arg); int f = a.mk(N_CLASS, line); a[f].s = arg; a[f].i = 1; a[f].j = 1; preHoist.push_back(f); }
     string self = nm;
-    string txt = self + " { public: void* f; void resume() { __co_resume(f); } bool done() const { return __co_done(f); } void destroy() { __co_destroy(f); } void* address() const { return f; } "
+    string txt = self + " { public: void* f; long long g; void resume() { __co_resume(f, g); } bool done() const { return __co_done(f, g); } void destroy() { __co_destroy(f, g); } void* address() const { return f; } "
       "explicit operator bool() const { return f != nullptr; } ";
-    if (arg.empty()) txt += "static " + self + " from_address(void* a) { " + self + " h; h.f = a; return h; } };";
-    else txt += "static " + self + " from_address(void* a) { " + self + " h; h.f = a; return h; } " + arg + "& promise() const { return *(" + arg + "*)__co_promise(f); } "
-      "static " + self + " from_promise(" + arg + "& pr) { " + self + " h; h.f = __co_frame(&pr); return h; } operator std::coroutine_handle__v() const { std::coroutine_handle__v h; h.f = f; return h; } };";
+    if (arg.empty()) txt += "static " + self + " from_address(void* a) { " + self + " h; h.f = a; h.g = __co_gen(a); return h; } };";
+    else txt += "static " + self + " from_address(void* a) { " + self + " h; h.f = a; h.g = __co_gen(a); return h; } " + arg + "& promise() const { return *(" + arg + "*)__co_promise(f, g); } "
+      "static " + self + " from_promise(" + arg + "& pr) { " + self + " h; h.f = __co_frame(&pr); h.g = __co_gen(h.f); return h; } operator std::coroutine_handle__v() const { std::coroutine_handle__v h; h.f = f; h.g = g; return h; } };";
     if (!arg.empty()) instHandle("", line);   // doniusum hedefi
     Lexer lx(txt); lx.run(); Parser pp(a, lx.out); pp.classes = classes; pp.alias = alias; pp.classes.insert(nm);
     int c = pp.classDef(true); classes.insert(nm); a[c].i = 0; preHoist.push_back(c);   // class (public)
@@ -850,9 +850,9 @@ struct Parser {
       (void)cexpr;
       // statik uye islevler: sinif adiyla niteliklenmis serbest islev (Bolum 04.033 coroutine_handle::from_promise); statik veri uyesi desteklenmez
       if (isP("~")) {   // yok edici: yalniz bos govdeli (iz sirasi yok); sanal yok edici sinifi polimorfik yapar
-        p++; string dn = "~" + ident(); expect("("); expect(")"); int64_t fl = 0; if (acceptId("noexcept")) fl |= 4;
-        int f = a.mk(N_FUNC, mline); a[f].s = dn; int ps = mk(N_PARAMS); int rt = a.mk(N_TY, mline); a[rt].i = Y_VOID; int bl = mk(N_BLOCK);
-        if (isP("=")) { p++; if (!acceptId("default")) fail("E_PARSE", "= default bekleniyordu", mline); expect(";"); } else { expect("{"); if (!isP("}")) fail("E_PARSE", "yok edici govdesi bos olmali (yok edici cagrilari desteklenmiyor)", mline); expect("}"); }
+        p++; string dn = "~" + ident(); expect("("); expect(")"); int64_t fl = 4; if (acceptId("noexcept")) fl |= 4;   // yok edici dolayli noexcept (istisna kacarsa std::terminate)
+        int f = a.mk(N_FUNC, mline); a[f].s = dn; int ps = mk(N_PARAMS); int rt = a.mk(N_TY, mline); a[rt].i = Y_VOID; int bl;
+        if (isP("=")) { p++; if (!acceptId("default")) fail("E_PARSE", "= default bekleniyordu", mline); expect(";"); bl = mk(N_BLOCK); } else bl = block();   // Bolum 04 duzeltme: yok edici govdesi (kapsam sonunda ifx cagirir)
         a[f].kid = {rt, ps, bl}; a[f].i = fl | virt; a[c].kid.push_back(f); continue;
       }
       if (isId("operator")) {   // donusum isleci: operator T() const
@@ -2737,10 +2737,24 @@ const char* kPrelude = "int __getc(); void __puti(long long); void __putc(int); 
 // istisna onsozu: yalniz kaynakta 'try' varsa eklenir (std::exception / bad_cast / bad_typeid gercek sinif tanimlari; sayisal derleyici bunlari siradan sinif olarak derler)
 const char* kPreludeExc = "class std::exception { public: virtual const char* what() const noexcept { return \"std::exception\"; } }; class std::bad_cast : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_cast\"; } }; class std::bad_typeid : std::exception { public: virtual const char* what() const noexcept { return \"std::bad_typeid\"; } }; class std::bad_function_call : std::exception { public: virtual const char* what() const noexcept { return \"bad_function_call\"; } }; ";
 // Bolum 04.033: korutin onsozu (std::suspend_always / std::suspend_never + __co_* ic islevleri); yalniz kaynakta ilgili sozcuk varsa eklenir
-const char* kPreludeCo = "void __co_resume(void* f); bool __co_done(void* f); void __co_destroy(void* f); void* __co_promise(void* f); void* __co_frame(void* p); void __co_mark(); "
-  "class std::suspend_always { public: bool await_ready() const noexcept { return false; } void await_suspend(std::coroutine_handle<>) const noexcept { } void await_resume() const noexcept { } }; "
-  "class std::suspend_never { public: bool await_ready() const noexcept { return true; } void await_suspend(std::coroutine_handle<>) const noexcept { } void await_resume() const noexcept { } }; ";
-bool hasCoWords(const string& src) { Lexer l0(src); l0.run(); for (auto& tk : l0.out) if (tk.k == TK_ID && (tk.s == "coroutine_handle" || tk.s == "suspend_always" || tk.s == "suspend_never" || tk.s == "promise_type")) return true; return false; }
+// Korutin cerceve bellegi (YASAM DONGUSU parametreleri komutlar.pmk bolum 12 sinif 6'dan gelir: kLife[]): sinif boyutlu serbest listeli blok ayirici (motorun `alloc` ilkelinin ustunde).
+// Blok:  [-HDR]=sihir|sinif  [-HDR+1]=nesil  [0..]=cerceve.  Serbest birakma nesli artirir ve blogu sinif listesine koyar; gecersiz/eski tutamak __cochk'ta tuzaga duser.
+std::string coPrelude() {
+  auto L = [](int i) { return std::to_string(kLife[i]); };
+  string hdr = L(0), cmin = L(1), cmax = L(2), magic = L(3), gen0 = L(4);
+  string t = "void __co_resume(void* f, long long g); bool __co_done(void* f, long long g); void __co_destroy(void* f, long long g); void* __co_promise(void* f, long long g); void* __co_frame(void* p); long long __co_gen(void* f); void __co_mark(); void __trap(); ";
+  t += "long long __cofl[" + std::to_string(kLife[2] + 1) + "]; ";
+  t += "long long* __falloc(long long nw) { long long k = " + cmin + "; long long sz = 1; sz = sz << k; while (sz < nw + " + hdr + ") { sz = sz * 2; k = k + 1; } if (k > " + cmax + ") __trap(); "
+       "long long* b = (long long*)__cofl[k]; if (b != nullptr) { __cofl[k] = b[" + hdr + "]; long long i = " + hdr + "; while (i < sz) { b[i] = 0; i = i + 1; } } else { b = (long long*)__alloc(sz); b[1] = " + gen0 + "; } "
+       "b[0] = " + magic + " + k; return b + " + hdr + "; } ";
+  t += "void __ffree(long long* f) { long long* b = f - " + hdr + "; long long k = b[0] - " + magic + "; b[1] = b[1] + 1; b[0] = 0; b[" + hdr + "] = __cofl[k]; __cofl[k] = (long long)b; } ";
+  t += "long long* __cochk(void* fv, long long g) { long long* f = (long long*)fv; if (f == nullptr) __trap(); long long* b = f - " + hdr + "; long long m = b[0]; if (m - (m & 255) != " + magic + ") __trap(); if (b[1] != g) __trap(); return f; } ";
+  t += "long long __covalid(void* fv, long long g) { long long* f = (long long*)fv; if (f == nullptr) return 0; long long* b = f - " + hdr + "; long long m = b[0]; if (m - (m & 255) != " + magic + ") return 0; if (b[1] != g) return 0; return 1; } ";
+  t += "class std::suspend_always { public: bool await_ready() const noexcept { return false; } void await_suspend(std::coroutine_handle<>) const noexcept { } void await_resume() const noexcept { } }; "
+       "class std::suspend_never { public: bool await_ready() const noexcept { return true; } void await_suspend(std::coroutine_handle<>) const noexcept { } void await_resume() const noexcept { } }; ";
+  return t;
+}
+bool hasCoWords(const string& src) { Lexer l0(src); l0.run(); for (auto& tk : l0.out) if (tk.k == TK_ID && (tk.s == "coroutine_handle" || tk.s == "generator" || tk.s == "suspend_always" || tk.s == "suspend_never" || tk.s == "promise_type")) return true; return false; }
 bool usesF128(const string& src) { Lexer l0(src); l0.run(); for (auto& tk : l0.out) if (tk.k == TK_ID && tk.s == "__float128") return true; return false; }
 bool hasTryWord(const string& src) { for (size_t i = 0; i + 3 < src.size(); i++) if (!src.compare(i, 3, "try") && (i == 0 || !(isalnum((unsigned char)src[i-1]) || src[i-1] == '_')) && !(isalnum((unsigned char)src[i+3]) || src[i+3] == '_')) return true; return false; }
 bool slurp(const string& f, string& out) { FILE* fp = fopen(f.c_str(), "rb"); if (!fp) return false; char b[65536]; size_t n; out.clear(); while ((n = fread(b, 1, sizeof b, fp)) > 0) out.append(b, n); fclose(fp); return true; }
@@ -2763,7 +2777,7 @@ int ifade_main(int argc, char** argv) {
       ast = pmx_decode(v, root);
     } else {
       string src; if (!slurp(file, src)) fail("E_DOSYA", "kaynak okunamadi: " + file);
-      string full = string(kPrelude) + (usesF128(src) ? "void pq(__float128); " : "") + (hasTryWord(src) ? kPreludeExc : "") + (hasCoWords(src) ? kPreludeCo : "") + src;
+      string full = string(kPrelude) + (usesF128(src) ? "void pq(__float128); " : "") + (hasTryWord(src) ? kPreludeExc : "") + (hasCoWords(src) ? coPrelude() : string()) + src;
       Lexer lx(full); lx.run(); Parser ps(ast, lx.out); root = ps.topLevel();
       vector<int64_t> nums = pmx_encode(ast, root);
       if (!pmxOut.empty()) { FILE* fp = fopen(pmxOut.c_str(), "wb"); if (!fp) fail("E_DOSYA", "yazilamadi: " + pmxOut); for (size_t i = 0; i < nums.size(); i++) fprintf(fp, "%lld%c", (long long)nums[i], i + 1 == nums.size() ? '\n' : ' '); fclose(fp); }

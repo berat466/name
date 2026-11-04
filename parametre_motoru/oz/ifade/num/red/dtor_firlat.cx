@@ -1,0 +1,3 @@
+// RED: E_DTOR  -- yok edicili sinif nesnesi firlatilamaz (istisna nesnesinin yok edilmesi desteklenmiyor)
+struct T { int id; ~T() { pi(id); } };
+int main() { try { T t{1}; throw t; } catch (...) { pi(2); } return 0; }

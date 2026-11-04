@@ -1,0 +1,16 @@
+// gecici nesneler: const& parametreye baglanan, uye islev cagrilan, atilan; kopya silme (T x = mk()); atama; istisna sirasinda gecici
+struct T { int id; ~T() { pi(400 + id); } int get() const { return id; } void boom() { throw 5; } };
+T mk(int i) { T t{i}; return t; }
+int use(const T& t) { return t.id; }
+int main() {
+  pi(use(mk(1)));
+  pi(mk(2).get());
+  mk(3); pi(T{4}.get());
+  T x = mk(5); pi(x.get());
+  T y{6}; y = mk(7); pi(y.get());
+  try { mk(12).boom(); pi(9999); } catch (int e) { pi(e); }
+  pi(8);
+  { const T& r = mk(20); pi(r.get()); pi(10); }
+  pi(11);
+  return 0;
+}

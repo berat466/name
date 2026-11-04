@@ -1,0 +1,22 @@
+// break / continue / switch / do-while / ic ice dongu / erken return: her cikis yolunda tam bir kez yok etme
+struct D { int id; ~D() { pi(500 + id); } };
+int g(int k) {
+  D top{1};
+  for (int i = 0; i < 4; i = i + 1) {
+    D o{10 + i};
+    for (int j = 0; j < 3; j = j + 1) {
+      D in{20 + j};
+      if (j == 1) continue;
+      if (i == 2 && j == 2) break;
+      if (i == 3) { D r{30}; if (k) return 99; }
+      pi(1000 + i * 10 + j);
+    }
+    if (i == 1) continue;
+    pi(2000 + i);
+  }
+  switch (k) { case 0: { D s{40}; pi(7); break; } case 1: { D s{41}; pi(8); break; } default: pi(9); }
+  int c = 0; do { D w{50 + c}; c = c + 1; if (c == 2) break; } while (c < 5);
+  while (c < 4) { D w2{60 + c}; c = c + 1; if (c == 3) continue; pi(3000 + c); }
+  return c;
+}
+int main() { pi(g(0)); pi(g(1)); pi(g(2)); return 0; }

@@ -24,7 +24,7 @@ mut cagri_pencere 's/wc: add t, fb, need\n    gt z, t, nr/wc: add t, fb, need\n 
 mut okuma_bayrak 's/andi t, kf, 1\n    jnz t, srd/andi t, kf, 2\n    jnz t, srd/'
 mut yazma_bayrak 's/andi t, kf, 2\n    jz t, s2n/andi t, kf, 1\n    jz t, s2n/'
 mut kosullu_atlama 's/eqi z, fw, 3\n    jz z, s7/eqi z, fw, 2\n    jz z, s7/'
-mut temizle 's/eqi z, cc, 1\n    jz z, s4/eqi z, cc, 2\n    jz z, s4/'
+mut temizle 's/eqi z, cc, 2\n    jnz z, s4\n    call x, clrfrom, fb/eqi z, cc, 2\n    jz z, s4\n    call x, clrfrom, fb/'
 mut hedef_yuvasi 's/add a, op, OPTGT\n    ld tgs, a, 0/mov tgs, 0/'
 mut arite_host 's/shq:\n    add a, fa, ARITY/shq:\n    add a, fa, FNP/'
 # (jtab 'ip+1+n kod icinde' siniri ayri mutantlanmaz: her girdi ileri jmp ve son komut sonlandirici olmak zorunda oldugundan merdiven islevden tasamaz -> sinir savunma amaclidir, karar degistirmez)

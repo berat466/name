@@ -146,6 +146,14 @@ Mimari [Kesin]: yeni motor komutları yalnız tabloda (CALLI, TCALL: OP+SEM+PRIM
 | constexpr/consteval/constinit 04.026–028 | `cx` sabit değerlendirici (tür duyarlı, taşma = sabit değil), dizi boyutu/case/static_assert/constinit ilk değeri veri imgesinde | `ca_constexpr2/3`, `red/cx_*` |
 | extern "C"/bağlama 04.029/031 | `extern "C"` (aşırı yükleme yok), `static`, extern bildirim/tanım birleştirme, E_LINKAGE/E_UNDEF, yerel `static` (bir kez ilklenir) | `ca_linkage`, `red/lk_*` |
 | ABI 04.016 | SysV sınıflandırıcı `__abi_class`, 16 parametre, yığınla geçen argümanlar | `ca_abi_args`, `ca_abi_class` |
-| alloca 04.032 | `alloca(n)`, dönüşte `__sp = fp` ile serbest | `ca_alloca`, `trap/fn_alloca_*` |
-| Korutin 04.033 | promise_type'lı kullanıcı korutinleri, iç içe sınıflar, `std::coroutine_handle`, awaiter protokolü (simetrik aktarım dahil), `std::generator::destroy` | `ca_coro_*`, `trap/coro_*`, `red/coro_*` |
+| alloca 04.032 | `alloca(bayt)`; (T*) dönüşümünde ceil(bayt/sizeof(T))×sözcük(T), 16 bayt hiza, koruma zinciri; dönüşte `__sp = fp` ile serbest (düzeltme turu) | `ca_alloca`, `trap/fn_alloca_*` |
+| Korutin 04.033 | promise_type'lı kullanıcı korutinleri, iç içe sınıflar, `std::coroutine_handle`, awaiter protokolü (simetrik aktarım dahil), `std::generator::destroy`; çerçeve belleği gerçek ayır/serbest bırak + nesil denetimi + yok etme yolunda yerel nesne/promise yok edicileri (düzeltme turu) | `ca_coro_*`, `trap/coro_*`, `red/coro_*` |
 | Altyapı | ayrıştırıcı: iç içe sınıf, statik üye işlev, yerel `static/constexpr`, `co_await` ifadesi, `__abi_class`, `alloca`; kuru geçiş tekrarı + `note_win`; `valid.pmb`/`gen2.pmb` sınırları büyütüldü; tipdogr durum dizisi 12 M | `dogrula_ifx.sh`, öz-barındırma sabit noktası |
+
+### Bölüm 04 düzeltme turu (b4bedf6 sonrası; 4 gerçek eksik kapatıldı — ayrıntı ve kanıt eşlemesi: `BOLUM_04_KAPANIS_RAPORU.md` §8)
+| Eksik | Çözüm | Kanıt |
+|---|---|---|
+| Host `putf` ELF yazmaç ezme (motor hatası) | RT çerçevesi çağıran çerçeve sonunda (`host_rt`/`host_rtr`, `CURNR8`), derinlik kaydı; `tests/ek` gizlemesi kaldırıldı | `oz/elf2/dogrula_hostrt.sh`, `sabotaj_hostrt.sh`, `tests/` (bag külliyatı dahil) |
+| Korutin belleği serbest bırakılmıyordu | boyut sınıflı serbest listeli blok ayırıcı (`alloc` üstünde), nesil+sihir ile doğrulanan 2 sözcüklü tutamak, `destroy` gerçekten geri verir, `std::generator` kapsam sonunda geri verir | `ca_coro_bellek_*`, `ca_coro_nesil`, `trap/coro_*`, `sabotaj_yasam.py` |
+| Yok ediciler çağrılmıyordu | gövdeli yok edici; kapsam sonu/return/break/continue/istisna/korutin yok etme; geçici nesneler, NRVO, argüman geçicileri; kurallar tablo parametresi | `ca_dtor_*`, `trap/dtor_*`, `red/dtor_*`, `dogrula_ifx.sh` 2c |
+| alloca bir-sözcük/bayt=sözcük, hizasız, korumasız | tür-bilinçli tam boyut, 16 bayt hiza, koruma sözcüğü zinciri (çıkışta denetim), taşma/negatif/sınır tuzakları | `ca_alloca_*`, `trap/fn_alloca_*` |

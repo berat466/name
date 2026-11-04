@@ -1,0 +1,3 @@
+// TRAP: OOB
+int f(int n) { char* p = (char*)alloca(n); p[n] = 7; throw 3; return 0; }
+int main() { pi(0); try { f(4); } catch (int e) { pi(e); } pi(2); return 0; }

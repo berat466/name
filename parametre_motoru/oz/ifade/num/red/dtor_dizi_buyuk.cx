@@ -1,0 +1,3 @@
+// RED: E_DTOR  -- yok edicili sinif dizisi cok buyuk (en cok 64 eleman)
+struct T { int id; ~T() { pi(id); } };
+int main() { T arr[100]; arr[0].id = 1; return 0; }

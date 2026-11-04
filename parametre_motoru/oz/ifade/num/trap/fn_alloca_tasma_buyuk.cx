@@ -1,0 +1,2 @@
+// TRAP: OOB
+int main() { pi(0); long long n = 4611686018427387904LL; char* p = (char*)alloca(n); p[0] = 1; pi(1); return 0; }

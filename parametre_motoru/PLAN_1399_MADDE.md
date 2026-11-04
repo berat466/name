@@ -22,7 +22,7 @@ DURUM İŞARETLERİ
 🔵 Daha yeni rapora göre tamamlandı; depoda doğrula.
 ❌ Yapılmadı veya tam işlevi kanıtlanmadı.
 
-SAYIM: 41 bölüm / 1399 kontrol / 173 🟢 / 38 🔵 / 1188 ❌ (3 Kasım 2026; Bölüm 01, 02, 03 ve 04 tamamlandı: 04.001–033 fonksiyonlar ve çağrı modeli — 04.007–009 🔵→🟢 (ret/call/halt yerel şablonları, `cagri` paketi), 04.010–033 ❌→🟢; ayrıntı ve sınırlar BOLUM_04_KAPANIS_RAPORU.md; sıradaki bölüm 05, başlatılmadı; Windows ABI kapsam dışı).
+SAYIM: 41 bölüm / 1399 kontrol / 173 🟢 / 38 🔵 / 1188 ❌ (3 Kasım 2026; Bölüm 01, 02, 03 ve 04 tamamlandı: 04.001–033 fonksiyonlar ve çağrı modeli — 04.007–009 🔵→🟢 (ret/call/halt yerel şablonları, `cagri` paketi), 04.010–033 ❌→🟢; ilk kapanıştan sonraki düzeltme turu (korutin belleği gerçek serbest bırakma + nesil denetimi, yok edici yaşam döngüsü, alloca boyut/hiza/koruma, host RT yazmaç ezme hatası) BOLUM_04_KAPANIS_RAPORU.md §8'de; ayrıntı ve sınırlar aynı raporda; sıradaki bölüm 05, başlatılmadı; Windows ABI kapsam dışı).
 
 =======================================================================
 TAM BÖLÜM TABLOSU — EKSİKSİZ

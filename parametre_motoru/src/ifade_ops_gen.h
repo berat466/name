@@ -46,3 +46,5 @@
   X(4, 15, 0, "->") \
   X(5, 2, 1, "?:") \
   X(6, 1, 0, ",")
+// komutlar.pmk bolum 12 sinif 6 (YASAM DONGUSU)
+static const long long kLife[] = {2LL, 4LL, 26LL, 1129270784LL, 1LL, 0LL, 1LL, 2LL, 3LL, 4LL, 8LL, -2LL, -1LL, 2LL, 1LL, 6510615555426900570LL, 1LL, 1LL, 1LL, 64LL};

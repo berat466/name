@@ -1,0 +1,21 @@
+// ayni anda yasayan 64 cerceve ust uste binmez; ters/karisik sirada yok edilip yeniden olusturulunca ayni bloklar kullanilir (yigin buyumesi sinirli), degerler korunur
+struct T { struct promise_type { int v; T get_return_object() { T t; t.h = std::coroutine_handle<promise_type>::from_promise(*this); return t; } std::suspend_always initial_suspend() { return std::suspend_always(); } std::suspend_always final_suspend() noexcept { return std::suspend_always(); } void return_value(int x) { v = x; } void unhandled_exception() { } }; std::coroutine_handle<promise_type> h; };
+T f(int a) { co_return a + 1000; }
+int main() {
+  T ts[64]; long long* p0 = (long long*)__alloc(1);
+  for (int i = 0; i < 64; i = i + 1) ts[i] = f(i);
+  for (int i = 0; i < 64; i = i + 1) ts[i].h.resume();
+  long long ok = 0; for (int i = 0; i < 64; i = i + 1) if (ts[i].h.promise().v == i + 1000) ok = ok + 1;
+  pi(ok);
+  long long* p1 = (long long*)__alloc(1);
+  for (int i = 63; i >= 0; i = i - 2) ts[i].h.destroy();
+  for (int i = 0; i < 64; i = i + 2) ts[i].h.destroy();
+  for (int i = 0; i < 64; i = i + 1) ts[i] = f(i + 5);
+  for (int i = 0; i < 64; i = i + 1) ts[i].h.resume();
+  ok = 0; for (int i = 0; i < 64; i = i + 1) if (ts[i].h.promise().v == i + 1005) ok = ok + 1;
+  pi(ok);
+  long long* p2 = (long long*)__alloc(1);
+  pi((long long)(p2 - p1) < 8);
+  for (int i = 0; i < 64; i = i + 1) ts[i].h.destroy();
+  return 0;
+}
