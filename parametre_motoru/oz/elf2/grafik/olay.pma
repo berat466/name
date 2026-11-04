@@ -1,0 +1,31 @@
+; poll: olaylar kare sayaci olayin karesine ulasinca teslim edilir; her turda bir kare sun, tum hazir olaylari yaz
+memory 2000
+func main() {
+    mov i, 0
+lp: host f, frame
+    host puti, f
+    host putc, 58
+pl: host e, poll
+    jz e, pd
+    andi k, e, 65535
+    host puti, k
+    shri h, e, 32
+    host putc, 47
+    host puti, h
+    host putc, 32
+    jmp pl
+pd: host putc, 10
+    mov p, 1
+    mov w, 8
+    mov hh, 4
+    host r, present, p, w, hh
+    jnz r, fin
+    addi i, i, 1
+    lti c, i, 12
+    jnz c, lp
+fin: host f, frame
+    host puti, f
+    host putc, 10
+    ret 0
+}
+entry main

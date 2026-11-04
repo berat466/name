@@ -1,0 +1,2 @@
+// RED: E_LINKAGE  -- global farkli turle yeniden bildirildi
+extern int x; double x = 1.0; int main(){ return 0; }

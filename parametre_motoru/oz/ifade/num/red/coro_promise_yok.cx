@@ -1,0 +1,2 @@
+// RED: E_COROUTINE  -- donus sinifinin promise_type ic sinifi yok
+struct T { int x; }; T f() { co_return; } int main() { return 0; }

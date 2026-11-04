@@ -1,0 +1,2 @@
+// RED: E_TYPE  -- range-for: dizi ya da begin/end
+int main() { int x = 5; for (int v : x) { } return 0; }

@@ -1,0 +1,6 @@
+func main() {
+    host putc, 'o'
+    host putc, 10
+    div x, 1, 0
+    host puti, x
+}

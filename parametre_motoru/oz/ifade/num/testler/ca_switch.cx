@@ -1,0 +1,50 @@
+// 03.008: switch/case/default -- seyrek/yogun, aralik (case a ... b), dusme (fallthrough), negatif, ic ice, dongu icinde break/continue, ilklendirici, Duff cihazi
+int seyrek(int x) { switch (x) { case 1: return 10; case 100: return 20; case 1000: return 30; case -5: return 40; case 100000: return 50; default: return -1; } }
+int yogun(int x) { switch (x) { case 0: return 5; case 1: return 6; case 2: return 7; case 3: return 8; case 4: return 9; case 5: return 10; case 6: return 11; case 7: return 12; default: return 0; } }
+int aralik(int x) { switch (x) { case 0 ... 9: return 1; case 10 ... 99: return 2; case 100: return 3; case 200 ... 299: return 4; default: return 0; } }
+int dusme(int x) { int r = 0; switch (x) { case 1: r = r + 1; case 2: r = r + 10; case 3: r = r + 100; break; case 4: r = r + 1000; default: r = r + 10000; } return r; }
+int ortada(int x) { switch (x) { case 1: return 1; default: return 99; case 2: return 2; } }
+int bos(int x) { switch (x) { } return x; }
+int sadece_default(int x) { switch (x) { default: return 7; } }
+int karakter(char c) { switch (c) { case 'a': case 'e': case 'i': case 'o': case 'u': return 1; case 'y': return 2; default: return 0; } }
+unsigned isaretsiz(unsigned u) { switch (u) { case 0u: return 1u; case 4000000000u: return 2u; case 4294967295u: return 3u; default: return 0u; } }
+long long uzun(long long v) { switch (v) { case 5000000000LL: return 1; case -5000000000LL: return 2; case 0: return 3; default: return 0; } }
+int ic_ice(int a, int b) {
+  switch (a) {
+    case 1: switch (b) { case 1: return 11; case 2: return 12; default: return 10; }
+    case 2: { switch (b) { case 1: return 21; } return 20; }
+    default: return 0;
+  }
+}
+int main() {
+  for (int i = -6; i <= 8; i = i + 1) { pi(yogun(i)); }
+  pi(seyrek(1)); pi(seyrek(100)); pi(seyrek(1000)); pi(seyrek(-5)); pi(seyrek(100000)); pi(seyrek(7)); pi(seyrek(2));
+  pi(aralik(0)); pi(aralik(9)); pi(aralik(10)); pi(aralik(99)); pi(aralik(100)); pi(aralik(250)); pi(aralik(300)); pi(aralik(-1));
+  for (int i = 0; i <= 5; i = i + 1) pi(dusme(i));
+  pi(ortada(1)); pi(ortada(2)); pi(ortada(3)); pi(bos(9)); pi(sadece_default(1));
+  pi(karakter('a')); pi(karakter('u')); pi(karakter('y')); pi(karakter('z'));
+  pi(isaretsiz(0)); pi(isaretsiz(4000000000u)); pi(isaretsiz(4294967295u)); pi(isaretsiz(5));
+  pi(uzun(5000000000LL)); pi(uzun(-5000000000LL)); pi(uzun(0)); pi(uzun(1));
+  pi(ic_ice(1, 1)); pi(ic_ice(1, 2)); pi(ic_ice(1, 3)); pi(ic_ice(2, 1)); pi(ic_ice(2, 2)); pi(ic_ice(3, 1));
+  // dongu icinde: break switch'i, continue donguyu ilerletir
+  int s = 0;
+  for (int i = 0; i < 12; i = i + 1) {
+    switch (i % 5) { case 0: continue; case 1: s = s + 1; break; case 2: s = s + 20; case 3: s = s + 300; break; default: if (i > 8) break; s = s + 4000; }
+    s = s + 100000;
+  }
+  pi(s);
+  // while icinde switch + break
+  int k = 0; int steps = 0;
+  while (1) { steps = steps + 1; switch (k) { case 0: k = 3; break; case 3: k = 7; break; case 7: k = 9; break; default: k = -1; } if (k < 0) break; }
+  pi(steps);
+  // ilklendirici + bildirim govdede blok icinde
+  switch (int q = 4 * 5; q) { case 20: { int z = q + 1; pi(z); break; } default: pi(0); }
+  // Duff cihazi
+  int dst[10]; int src[10]; for (int i = 0; i < 10; i = i + 1) { src[i] = i * i; dst[i] = 0; }
+  { int n = 10; int* t = dst; int* f = src; int cnt = (n + 3) / 4;
+    switch (n % 4) { case 0: do { *t = *f; t = t + 1; f = f + 1; case 3: *t = *f; t = t + 1; f = f + 1; case 2: *t = *f; t = t + 1; f = f + 1; case 1: *t = *f; t = t + 1; f = f + 1; } while (--cnt > 0); } }
+  int sum = 0; for (int i = 0; i < 10; i = i + 1) sum = sum + dst[i]; pi(sum);
+  // yogun switch (atlama tablosu) icinde geri 'continue' : tablo girdileri geri atlayan bir jmp'ye zincirlenir
+  { int n = 0; int tot = 0; while (n < 40) { n = n + 1; switch (n % 8) { case 0: tot = tot + 1; continue; case 1: tot = tot + 2; break; case 2: continue; case 3: tot = tot + 4; break; case 4: continue; case 5: tot = tot + 8; break; case 6: continue; default: tot = tot + 16; } tot = tot + 100; } pi(tot); }
+  return 0;
+}

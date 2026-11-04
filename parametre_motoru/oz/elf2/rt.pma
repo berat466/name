@@ -1,0 +1,658 @@
+; rt.pma -- ELF calisma zamani kutuphanesi: sanal cerceve tamponu ana makineleri present / poll / frame ve cikis raporu.
+; gen2 bunu uygulama fonksiyonlarinin SONUNA ekler (ayricalikli fonksiyonlar): `host present/poll/frame` komutlari bu islevlere cagri olur.
+; Ayricalikli fonksiyonlarda: ld/st adresi RT bolgesini de kapsar (indeks -65536..-1 = RT bolgesi, N.. = kare kopyasi), host present = write(fd, indeks, bayt) sistem cagrisi,
+; yakit kontrolu YOK. Sabit (ldk) kullanilmaz: 64 bit sabitler RT durum bloguna uretici tarafindan yazilir.
+; RT durum bloku (indeks -65536+k): 0 N(bellek sozcugu) 1 kare 2 zincir 3 son 4 fw 5 fh 6 olay_sirasi 7 cik 8 azami_kare 9 ascii_K 10 bayrak(1 rapor, 2 PPM) 11 olay_sayisi
+;   12 FNV_asal 13 FNV_baslangic 14 tampon_bayt 15 tampon_fd 16..40 sayi_isleme 64.. olaylar (kare, kod) ciftleri; 61440.. cikis tamponu (4096 sozcuk)
+memory 16
+entry rt_main
+
+func rt_main() {
+    ret 0
+}
+
+func rt_present(ptr, w, h) {
+    mov rb, -65536
+    ld n, rb, 0
+    jz w, bad
+    jz h, bad
+    lti z, w, 0
+    jnz z, bad
+    lti z, h, 0
+    jnz z, bad
+    gti z, w, 4096
+    jnz z, bad
+    gti z, h, 4096
+    jnz z, bad
+    jz ptr, bad
+    lti z, ptr, 0
+    jnz z, bad
+    gt z, ptr, n
+    jnz z, bad
+    mul wh, w, h
+    sub rem, n, ptr
+    gt z, wh, rem
+    jnz z, bad
+    st w, rb, 4
+    st h, rb, 5
+    ld prime, rb, 12
+    ld hh, rb, 13
+    andi b, w, 255
+    xor hh, hh, b
+    mul hh, hh, prime
+    shri t, w, 8
+    andi b, t, 255
+    xor hh, hh, b
+    mul hh, hh, prime
+    andi b, h, 255
+    xor hh, hh, b
+    mul hh, hh, prime
+    shri t, h, 8
+    andi b, t, 255
+    xor hh, hh, b
+    mul hh, hh, prime
+    mov i, 0
+lp: ge z, i, wh
+    jnz z, done
+    add a, ptr, i
+    ld px, a, 0
+    andi px, px, 16777215
+    add a, n, i
+    st px, a, 0
+    andi b, px, 255
+    xor hh, hh, b
+    mul hh, hh, prime
+    shri t, px, 8
+    andi b, t, 255
+    xor hh, hh, b
+    mul hh, hh, prime
+    shri t, px, 16
+    andi b, t, 255
+    xor hh, hh, b
+    mul hh, hh, prime
+    addi i, i, 1
+    jmp lp
+done: st hh, rb, 3
+    ld ch, rb, 2
+    xor ch, ch, hh
+    mul ch, ch, prime
+    st ch, rb, 2
+    ld fr, rb, 1
+    addi fr, fr, 1
+    st fr, rb, 1
+    ld q, rb, 7
+    jnz q, one
+    ld mk, rb, 8
+    jz mk, zero
+    ge z, fr, mk
+    jnz z, one
+zero: ret 0
+one: ret 1
+bad: ret -1
+}
+
+func rt_poll() {
+    mov rb, -65536
+    ld nx, rb, 6
+    ld nev, rb, 11
+    ge z, nx, nev
+    jnz z, none
+    shli o, nx, 1
+    add a, rb, o
+    ld kare, a, 64
+    ld fr, rb, 1
+    gt z, kare, fr
+    jnz z, none
+    ld code, a, 65
+    addi nx, nx, 1
+    st nx, rb, 6
+    mov one, 1
+    shli t, one, 32
+    or t, t, code
+    ret t
+none: ret 0
+}
+
+func rt_frame() {
+    mov rb, -65536
+    ld fr, rb, 1
+    ret fr
+}
+
+; ---- cikis raporu: kare raporu (stderr), PPM (fd 3), ASCII (stdout) ----
+func rt_end() {
+    mov rb, -65536
+    ld fl, rb, 10
+    andi rep, fl, 1
+    jz rep, noreport
+    mov two, 2
+    st two, rb, 15
+    call x, ws4, 101, 107, 114, 97
+    call x, ws4, 110, 58, 32, 107
+    call x, ws4, 97, 114, 101, 61
+    ld fr, rb, 1
+    call x, wnum, fr
+    call x, ws4, 32, 98, 111, 121
+    call x, ws4, 117, 116, 61, 0
+    ld fw, rb, 4
+    call x, wnum, fw
+    call x, wb, 120
+    ld fh, rb, 5
+    call x, wnum, fh
+    call x, ws4, 32, 122, 105, 110
+    call x, ws4, 99, 105, 114, 61
+    ld ch, rb, 2
+    call x, whex, ch
+    call x, ws4, 32, 115, 111, 110
+    call x, wb, 61
+    ld ls, rb, 3
+    call x, whex, ls
+    call x, wb, 10
+    call x, flush
+noreport:
+    ld fw, rb, 4
+    jz fw, finish
+    ld fh, rb, 5
+    ld n, rb, 0
+    mul wh, fw, fh
+    ld fl, rb, 10
+    andi pp, fl, 2
+    jz pp, ppd2
+    ; ---- PPM (fd 3)
+    mov three, 3
+    st three, rb, 15
+    call x, ws4, 80, 54, 10, 0
+    call x, wnum, fw
+    call x, wb, 32
+    call x, wnum, fh
+    call x, ws4, 10, 50, 53, 53
+    call x, wb, 10
+    mov i, 0
+pp: ge z, i, wh
+    jnz z, ppd
+    add a, n, i
+    ld px, a, 0
+    shri t, px, 16
+    call x, wb, t
+    shri t, px, 8
+    call x, wb, t
+    call x, wb, px
+    addi i, i, 1
+    jmp pp
+ppd: call x, flush
+ppd2:
+    ; ---- ASCII (stdout)
+    ld k, rb, 9
+    jz k, finish
+    lti z, k, 0
+    jnz z, finish
+    mov one, 1
+    st one, rb, 15
+    mov y, 0
+ay: ge z, y, fh
+    jnz z, aend
+    mov xx, 0
+ax: ge z, xx, fw
+    jnz z, axd
+    mul t, y, fw
+    add t, t, xx
+    add t, t, n
+    mov a, t
+    ld px, a, 0
+    shri r1, px, 16
+    andi r1, r1, 255
+    shri g1, px, 8
+    andi g1, g1, 255
+    andi b1, px, 255
+    mov m, r1
+    le z, g1, m
+    jnz z, m1
+    mov m, g1
+m1: le z, b1, m
+    jnz z, m2
+    mov m, b1
+m2: mov ch2, 46
+    lti z, m, 128
+    jnz z, m3
+    mov ch2, 35
+m3: call x, wb, ch2
+    add xx, xx, k
+    jmp ax
+axd: call x, wb, 10
+    add y, y, k
+    jmp ay
+aend: call x, flush
+finish: ret 0
+}
+
+
+; ---- putf: "%.15g" (glibc ile ayni), TAM dogru yuvarlama: deger = mant * 2^e2 buyuk sayi N/D olarak olceklenir, 15 basamak cikarilir, yarim -> cifte yuvarlanir.
+; Buyuk sayi: s[b] = limb sayisi, s[b+1+i] = i. limb (32 bit, 64 bit sozcukte). Bolge: RT sozcuk 60096.. (olaylar <= 30000 oldugundan 60064'e kadar); N=-5440, D=N+80, T=N+160.
+; Basamaklar RT sozcuk 41..55. Cikti wb tamponuna yazilir, sonda stdout'a (fd 1) bosaltilir.
+func rt_putf(bits) {
+    mov rb, -65536
+    mov one, 1
+    st one, rb, 15
+    shri sg, bits, 63
+    shri ex, bits, 52
+    andi ex, ex, 2047
+    shli mm, bits, 12
+    shri mm, mm, 12
+    jz sg, pos
+    call x, wb, 45
+pos: eqi z, ex, 2047
+    jz z, fin
+    jnz mm, isnan
+    call x, ws4, 105, 110, 102, 0
+    jmp done
+isnan: call x, ws4, 110, 97, 110, 0
+    jmp done
+fin: or t, ex, mm
+    jnz t, nz
+    call x, wb, 48
+    jmp done
+nz: jz ex, subn
+    shli t, one, 52
+    or mant, mm, t
+    addi e2, ex, -1075
+    jmp have
+subn: mov mant, mm
+    mov e2, -1074
+have: mov bl, 0
+    mov t, mant
+bl1: jz t, bl2
+    shri t, t, 1
+    addi bl, bl, 1
+    jmp bl1
+bl2: add t, e2, bl
+    addi t, t, -1
+    muli t, t, 1233
+    sari x0, t, 12
+    mov nb, -5440
+    addi db, nb, 80
+    addi tb, nb, 160
+    call x, bn_setu, nb, mant
+    call x, bn_setu, db, one
+    lti z, e2, 0
+    jz z, p2n
+    neg t, e2
+    call x, bn_pow2, db, t
+    jmp sc
+p2n: call x, bn_pow2, nb, e2
+sc: lti z, x0, 0
+    jz z, sp
+    neg t, x0
+    call x, bn_pow10, nb, t
+    jmp adj
+sp: call x, bn_pow10, db, x0
+adj: mov ten, 10
+a1: call x, bn_copy, tb, db
+    call x, bn_mul, tb, ten
+    call c, bn_cmp, nb, tb
+    lti z, c, 0
+    jnz z, a2
+    call x, bn_mul, db, ten
+    addi x0, x0, 1
+    jmp a1
+a2: call c, bn_cmp, nb, db
+    gei z, c, 0
+    jnz z, a3
+    call x, bn_mul, nb, ten
+    addi x0, x0, -1
+    jmp a2
+a3: mov i, 0
+g1: gei z, i, 15
+    jnz z, g4
+    mov dg, 0
+g2: call c, bn_cmp, nb, db
+    lti z, c, 0
+    jnz z, g3
+    call x, bn_sub, nb, db
+    addi dg, dg, 1
+    jmp g2
+g3: add t, rb, i
+    st dg, t, 41
+    call x, bn_mul, nb, ten
+    addi i, i, 1
+    jmp g1
+g4: call x, bn_copy, tb, db
+    mov five, 5
+    call x, bn_mul, tb, five
+    call c, bn_cmp, nb, tb
+    lti z, c, 0
+    jnz z, nord
+    jnz c, up
+    ld t, rb, 55
+    andi t, t, 1
+    jz t, nord
+up: mov i, 14
+    mov zr, 0
+u1: add t, rb, i
+    ld dg, t, 41
+    addi dg, dg, 1
+    eqi z, dg, 10
+    jz z, u2
+    st zr, t, 41
+    addi i, i, -1
+    gei z, i, 0
+    jnz z, u1
+    mov dg, 1
+    st dg, rb, 41
+    addi x0, x0, 1
+    jmp nord
+u2: st dg, t, 41
+nord: mov k, 15
+z1: addi t, k, -1
+    add a, rb, t
+    ld dg, a, 41
+    jnz dg, z2
+    mov k, t
+    jmp z1
+z2: lti z, x0, -4
+    jnz z, expf
+    gei z, x0, 15
+    jnz z, expf
+    lti z, x0, 0
+    jnz z, negx
+    mov i, 0
+f1: gt z, i, x0
+    jnz z, f2
+    mov dg, 0
+    ge z, i, k
+    jnz z, f1w
+    add a, rb, i
+    ld dg, a, 41
+f1w: addi c, dg, 48
+    call x, wb, c
+    addi i, i, 1
+    jmp f1
+f2: addi i, x0, 1
+    ge z, i, k
+    jnz z, done
+    call x, wb, 46
+f3: ge z, i, k
+    jnz z, done
+    add a, rb, i
+    ld dg, a, 41
+    addi c, dg, 48
+    call x, wb, c
+    addi i, i, 1
+    jmp f3
+negx: call x, ws4, 48, 46, 0, 0
+    neg t, x0
+    addi t, t, -1
+nz1: jz t, nz2
+    call x, wb, 48
+    addi t, t, -1
+    jmp nz1
+nz2: mov i, 0
+nz3: ge z, i, k
+    jnz z, done
+    add a, rb, i
+    ld dg, a, 41
+    addi c, dg, 48
+    call x, wb, c
+    addi i, i, 1
+    jmp nz3
+expf: ld dg, rb, 41
+    addi c, dg, 48
+    call x, wb, c
+    lei z, k, 1
+    jnz z, e1
+    call x, wb, 46
+    mov i, 1
+e0: ge z, i, k
+    jnz z, e1
+    add a, rb, i
+    ld dg, a, 41
+    addi c, dg, 48
+    call x, wb, c
+    addi i, i, 1
+    jmp e0
+e1: call x, wb, 101
+    mov ax, x0
+    lti z, x0, 0
+    jz z, e2p
+    call x, wb, 45
+    neg ax, x0
+    jmp e3
+e2p: call x, wb, 43
+e3: lti z, ax, 10
+    jz z, e4
+    call x, wb, 48
+e4: call x, wnum, ax
+done: call x, flush
+    ret 0
+}
+
+
+; ---- yardimcilar (tamponlu bayt yazici) ----
+func wb(b) {
+    mov rb, -65536
+    ld c, rb, 14
+    shri w, c, 3
+    andi s, c, 7
+    shli s, s, 3
+    andi bb, b, 255
+    shl v, bb, s
+    add a, rb, w
+    jnz s, mrg
+    st v, a, 61440
+    jmp adv
+mrg: ld old, a, 61440
+    or v, v, old
+    st v, a, 61440
+adv: addi c, c, 1
+    st c, rb, 14
+    lti z, c, 32768
+    jnz z, ok
+    call x, flush
+ok: ret 0
+}
+
+func flush() {
+    mov rb, -65536
+    ld c, rb, 14
+    jz c, fe
+    ld fd, rb, 15
+    mov wi, -4096
+    host r, present, fd, wi, c
+    mov zero, 0
+    st zero, rb, 14
+fe: ret 0
+}
+
+func ws4(a, b, c, d) {
+    jz a, e1
+    call x, wb, a
+e1: jz b, e2
+    call x, wb, b
+e2: jz c, e3
+    call x, wb, c
+e3: jz d, e4
+    call x, wb, d
+e4: ret 0
+}
+
+func wnum(v) {
+    mov rb, -65536
+    mov n, 0
+d1: divi q, v, 10
+    muli t, q, 10
+    sub r, v, t
+    addi r, r, 48
+    add a, rb, n
+    st r, a, 16
+    addi n, n, 1
+    mov v, q
+    jnz v, d1
+d2: jz n, d9
+    addi n, n, -1
+    add a, rb, n
+    ld c, a, 16
+    call x, wb, c
+    jmp d2
+d9: ret 0
+}
+
+func whex(v) {
+    mov i, 15
+h1: lti z, i, 0
+    jnz z, h9
+    shli sh, i, 2
+    shr t, v, sh
+    andi nb, t, 15
+    lti z, nb, 10
+    jz z, h2
+    addi c, nb, 48
+    jmp h3
+h2: addi c, nb, 87
+h3: call x, wb, c
+    addi i, i, -1
+    jmp h1
+h9: ret 0
+}
+func bn_mul(b, k) {
+    ld len, b, 0
+    mov i, 0
+    mov c, 0
+ml: ge z, i, len
+    jnz z, md
+    add a, b, i
+    ld v, a, 1
+    mul v, v, k
+    add v, v, c
+    shli t, v, 32
+    shri t, t, 32
+    st t, a, 1
+    shri c, v, 32
+    addi i, i, 1
+    jmp ml
+md: jz c, mdone
+    add a, b, len
+    st c, a, 1
+    addi len, len, 1
+    st len, b, 0
+mdone: ret 0
+}
+
+func bn_pow2(b, n) {
+    mov big, 1073741824
+l1: lti z, n, 30
+    jnz z, l2
+    call x, bn_mul, b, big
+    addi n, n, -30
+    jmp l1
+l2: jz n, l3
+    mov one, 1
+    shl m, one, n
+    call x, bn_mul, b, m
+l3: ret 0
+}
+
+func bn_pow10(b, n) {
+    mov big, 1000000000
+l1: lti z, n, 9
+    jnz z, l2
+    call x, bn_mul, b, big
+    addi n, n, -9
+    jmp l1
+l2: jz n, l3
+    mov m, 1
+l4: jz n, l5
+    muli m, m, 10
+    addi n, n, -1
+    jmp l4
+l5: call x, bn_mul, b, m
+l3: ret 0
+}
+
+func bn_cmp(a, b) {
+    ld la, a, 0
+    ld lb, b, 0
+    lt z, la, lb
+    jnz z, less
+    lt z, lb, la
+    jnz z, more
+    mov i, la
+c1: jz i, same
+    addi i, i, -1
+    add p, a, i
+    ld x, p, 1
+    add q, b, i
+    ld y, q, 1
+    lt z, x, y
+    jnz z, less
+    lt z, y, x
+    jnz z, more
+    jmp c1
+same: ret 0
+less: ret -1
+more: ret 1
+}
+
+func bn_sub(a, b) {
+    ld la, a, 0
+    ld lb, b, 0
+    mov i, 0
+    mov br, 0
+    mov one, 1
+    shli big, one, 32
+s1: ge z, i, la
+    jnz z, s5
+    add p, a, i
+    ld x, p, 1
+    mov y, 0
+    ge z, i, lb
+    jnz z, s2
+    add q, b, i
+    ld y, q, 1
+s2: sub x, x, y
+    sub x, x, br
+    mov br, 0
+    lti z, x, 0
+    jz z, s4
+    mov br, 1
+    add x, x, big
+s4: st x, p, 1
+    addi i, i, 1
+    jmp s1
+s5: jz la, s7
+    addi t, la, -1
+    add p, a, t
+    ld x, p, 1
+    jnz x, s7
+    mov la, t
+    jmp s5
+s7: st la, a, 0
+    ret 0
+}
+
+func bn_copy(d, s) {
+    ld len, s, 0
+    mov i, 0
+cp: gt z, i, len
+    jnz z, cd
+    add p, s, i
+    ld v, p, 0
+    add q, d, i
+    st v, q, 0
+    addi i, i, 1
+    jmp cp
+cd: ret 0
+}
+
+func bn_setu(b, v) {
+    shli lo, v, 32
+    shri lo, lo, 32
+    shri hi, v, 32
+    st lo, b, 1
+    st hi, b, 2
+    mov len, 0
+    jz lo, h1
+    mov len, 1
+h1: jz hi, h2
+    mov len, 2
+h2: st len, b, 0
+    ret 0
+}

@@ -1,0 +1,2 @@
+// RED: E_UNSEQ
+int main() { int i = 1; int j = (i = 2) + i; return j; }

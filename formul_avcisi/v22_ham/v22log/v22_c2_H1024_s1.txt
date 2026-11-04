@@ -1,0 +1,62 @@
+V22 c=2 H=1024 tohum=1 gamma=4 lambda=10 alpha0=0.2 T0=0.01 (4 cekirdek) ; TUM modeller egitim-yalniz (W0,D egitimden); dogrulama kontrol, test bagimsiz
+RIDGE sure=1.681s ; CE duzeltme (gradyan+D) sure=5.779s ; cozum artigi ||A D - F^T G||/||F^T G||=3.261e-07 (A=F^TF+lambda I)
+L0 (sabit alpha=0.2 T=0.01): egitim=5.11761 (PPL 166.94) dogrulama=5.41787 (PPL 225.40) test=5.34006 (PPL 208.53) ; a_analitik(egitim) = -<D,F^TG>/n = -88.2781
+SONLU_FARK egitim h=0.0005 a=-87.6413 b=-3033.88
+SONLU_FARK egitim h=0.001 a=-85.8777 b=-3004.35
+SONLU_FARK egitim h=0.0025 a=-77.2804 b=-2992.63
+SONLU_FARK dogrulama h=0.0005 a=-18.1502 b=158.447
+SONLU_FARK dogrulama h=0.001 a=-17.5441 b=256.842
+SONLU_FARK dogrulama h=0.0025 a=-14.9011 b=386.065
+KATSAYI egitim: L0=5.11761 a=-85.8777 (analitik -88.2781) b=-3004.35 (h=0.001) ; en kucuk CE (ikinci derece) = 6.34499 eta* = -0.02858 ; dogrulama: L0=5.41787 a=-17.5441 b=256.842 en kucuk CE=4.81868 eta*=0.06831
+EGRI eta | egitim CE | dogrulama CE | test CE | 2.derece tahmin(egitim)
+EGRI 0 | 5.11761 | 5.41787 | 5.34006 | 5.11761
+EGRI 0.0005 | 5.07341 | 5.40881 | 5.33229 | 5.07429
+EGRI 0.001 | 5.03023 | 5.40045 | 5.32606 | 5.03023
+EGRI 0.0015 | 4.98921 | 5.39318 | 5.32147 | 4.98541
+EGRI 0.002 | 4.95079 | 5.38700 | 5.31814 | 4.93984
+EGRI 0.003 | 4.88199 | 5.37756 | 5.31409 | 4.84645
+EGRI 0.004 | 4.82358 | 5.37150 | 5.31254 | 4.75006
+EGRI 0.005 | 4.77430 | 5.36821 | 5.31256 | 4.65066
+EGRI 0.006 | 4.73236 | 5.36698 | 5.31363 | 4.54826
+EGRI 0.0075 | 4.68026 | 5.36723 | 5.31656 | 4.38903
+EGRI 0.01 | 4.61684 | 5.37056 | 5.32193 | 4.10861
+EGRI 0.0125 | 4.57608 | 5.37581 | 5.32791 | 3.80942
+EGRI 0.015 | 4.55322 | 5.38416 | 5.33575 | 3.49145
+EGRI 0.02 | 4.54585 | 5.40543 | 5.35526 | 2.79918
+EGRI 0.025 | 4.57152 | 5.42878 | 5.37883 | 2.03180
+EGRI 0.03 | 4.61671 | 5.45558 | 5.40375 | 1.18932
+EGRI 0.04 | 4.72661 | 5.51118 | 5.44723 | -0.72098
+HEDEF|EGITIM_DENKLEMI|PPL=190|CE_hedef=5.24702|L0=5.11761|a=-85.8777|b=-3004.35|durum=L0<=hedef: hedef bu veride zaten saglandi (eta=0)|eta_hesap=0|ikinci_derece_min_CE=nan (PPL nan)|yukselen_kok=nan
+UYGULA|EGITIM_DENKLEMI|PPL=190|eta_kullanilan=0|tahmin_CE(egitim)=5.11761|egitim CE=5.11761 PPL=166.94|dogr CE=5.41787 PPL=225.40|test CE=5.34006 PPL=208.53 top1=0.1572|tahmin-gercek(egitim)=+0.00000|dogr-kalibre(alpha=0.2,T=0.01): test CE=5.34006 PPL=208.53 top1=0.1572 top5=0.2996
+HEDEF|EGITIM_DENKLEMI|PPL=175|CE_hedef=5.16479|L0=5.11761|a=-85.8777|b=-3004.35|durum=L0<=hedef: hedef bu veride zaten saglandi (eta=0)|eta_hesap=0|ikinci_derece_min_CE=nan (PPL nan)|yukselen_kok=nan
+UYGULA|EGITIM_DENKLEMI|PPL=175|eta_kullanilan=0|tahmin_CE(egitim)=5.11761|egitim CE=5.11761 PPL=166.94|dogr CE=5.41787 PPL=225.40|test CE=5.34006 PPL=208.53 top1=0.1572|tahmin-gercek(egitim)=+0.00000|dogr-kalibre(alpha=0.2,T=0.01): test CE=5.34006 PPL=208.53 top1=0.1572 top5=0.2996
+HEDEF|EGITIM_DENKLEMI|PPL=150|CE_hedef=5.01064|L0=5.11761|a=-85.8777|b=-3004.35|durum=kok var (yalniz buyuk kok pozitif)|eta_hesap=0.00121961|ikinci_derece_min_CE=nan (PPL nan)|yukselen_kok=nan
+UYGULA|EGITIM_DENKLEMI|PPL=150|eta_kullanilan=0.00121961|tahmin_CE(egitim)=5.01064|egitim CE=5.01191 PPL=150.19|dogr CE=5.39712 PPL=220.77|test CE=5.32386 PPL=205.17 top1=0.1578|tahmin-gercek(egitim)=-0.00127|dogr-kalibre(alpha=0.2,T=0.01): test CE=5.32386 PPL=205.17 top1=0.1578 top5=0.3050
+HEDEF|EGITIM_DENKLEMI|PPL=137|CE_hedef=4.91998|L0=5.11761|a=-85.8777|b=-3004.35|durum=kok var (yalniz buyuk kok pozitif)|eta_hesap=0.0022154|ikinci_derece_min_CE=nan (PPL nan)|yukselen_kok=nan
+UYGULA|EGITIM_DENKLEMI|PPL=137|eta_kullanilan=0.0022154|tahmin_CE(egitim)=4.91998|egitim CE=4.93507 PPL=139.08|dogr CE=5.38466 PPL=218.03|test CE=5.31701 PPL=203.77 top1=0.1558|tahmin-gercek(egitim)=-0.01509|dogr-kalibre(alpha=0.2,T=0.01): test CE=5.31701 PPL=203.77 top1=0.1558 top5=0.3064
+HEDEF|EGITIM_DENKLEMI|PPL=100|CE_hedef=4.60517|L0=5.11761|a=-85.8777|b=-3004.35|durum=kok var (yalniz buyuk kok pozitif)|eta_hesap=0.00544789|ikinci_derece_min_CE=nan (PPL nan)|yukselen_kok=nan
+UYGULA|EGITIM_DENKLEMI|PPL=100|eta_kullanilan=0.00544789|tahmin_CE(egitim)=4.60517|egitim CE=4.75471 PPL=116.13|dogr CE=5.36746 PPL=214.32|test CE=5.31293 PPL=202.94 top1=0.1522|tahmin-gercek(egitim)=-0.14954|dogr-kalibre(alpha=0.25,T=0.01): test CE=5.31072 PPL=202.50 top1=0.1502 top5=0.3046
+HEDEF|DOGRULAMA_DENKLEMI|PPL=190|CE_hedef=5.24702|L0=5.41787|a=-17.5441|b=256.842|durum=kok var (en kucuk pozitif)|eta_hesap=0.0105533|ikinci_derece_min_CE=4.81868 (PPL 123.80)|yukselen_kok=nan
+UYGULA|DOGRULAMA_DENKLEMI|PPL=190|eta_kullanilan=0.0105533|tahmin_CE(dogr)=5.24702|egitim CE=4.60610 PPL=100.09|dogr CE=5.37158 PPL=215.20|test CE=5.32314 PPL=205.03 top1=0.1444|tahmin-gercek(dogr)=-0.12455|dogr-kalibre(alpha=0.2,T=0.01): test CE=5.32314 PPL=205.03 top1=0.1444 top5=0.3010
+HEDEF|DOGRULAMA_DENKLEMI|PPL=175|CE_hedef=5.16479|L0=5.41787|a=-17.5441|b=256.842|durum=kok var (en kucuk pozitif)|eta_hesap=0.0163926|ikinci_derece_min_CE=4.81868 (PPL 123.80)|yukselen_kok=nan
+UYGULA|DOGRULAMA_DENKLEMI|PPL=175|eta_kullanilan=0.0163926|tahmin_CE(dogr)=5.16479|egitim CE=4.54682 PPL=94.33|dogr CE=5.39022 PPL=219.25|test CE=5.34077 PPL=208.67 top1=0.1343|tahmin-gercek(dogr)=-0.22543|dogr-kalibre(alpha=0.2,T=0.01): test CE=5.34077 PPL=208.67 top1=0.1343 top5=0.2924
+HEDEF|DOGRULAMA_DENKLEMI|PPL=150|CE_hedef=5.01064|L0=5.41787|a=-17.5441|b=256.842|durum=kok var (en kucuk pozitif)|eta_hesap=0.029645|ikinci_derece_min_CE=4.81868 (PPL 123.80)|yukselen_kok=nan
+UYGULA|DOGRULAMA_DENKLEMI|PPL=150|eta_kullanilan=0.029645|tahmin_CE(dogr)=5.01064|egitim CE=4.61311 PPL=100.80|dogr CE=5.45356 PPL=233.59|test CE=5.40202 PPL=221.85 top1=0.1094|tahmin-gercek(dogr)=-0.44292|dogr-kalibre(alpha=0.15,T=0.01): test CE=5.39872 PPL=221.12 top1=0.1135 top5=0.2797
+HEDEF|DOGRULAMA_DENKLEMI|PPL=137|CE_hedef=4.91998|L0=5.41787|a=-17.5441|b=256.842|durum=kok var (en kucuk pozitif)|eta_hesap=0.0402208|ikinci_derece_min_CE=4.81868 (PPL 123.80)|yukselen_kok=nan
+UYGULA|DOGRULAMA_DENKLEMI|PPL=137|eta_kullanilan=0.0402208|tahmin_CE(dogr)=4.91998|egitim CE=4.72907 PPL=113.19|dogr CE=5.51217 PPL=247.69|test CE=5.44824 PPL=232.35 top1=0.0932|tahmin-gercek(dogr)=-0.59219|dogr-kalibre(alpha=0.2,T=0.02): test CE=5.42969 PPL=228.08 top1=0.1213 top5=0.2715
+HEDEF|DOGRULAMA_DENKLEMI|PPL=100|CE_hedef=4.60517|L0=5.41787|a=-17.5441|b=256.842|durum=ULASILAMAZ (diskriminant<0)|eta_hesap=nan|ikinci_derece_min_CE=4.81868 (PPL 123.80)|yukselen_kok=nan
+UYGULA|DOGRULAMA_DENKLEMI|PPL=100|eta_kullanilan=0.068307 (ULASILAMAZ -> ikinci derece minimum)|tahmin_CE(dogr)=4.81868|egitim CE=4.98012 PPL=145.49|dogr CE=5.60221 PPL=271.03|test CE=5.55369 PPL=258.19 top1=0.0693|tahmin-gercek(dogr)=-0.78354|dogr-kalibre(alpha=0.15,T=0.02): test CE=5.48899 PPL=242.01 top1=0.0924 top5=0.2568
+GERCEK_EGRI_KESISIM|egitim|PPL=190|CE_hedef=5.24702|gercek_egri_min_CE=4.54585 (PPL 94.24) eta=0.02|hedefi_kesen_eta=0
+GERCEK_EGRI_KESISIM|egitim|PPL=175|CE_hedef=5.16479|gercek_egri_min_CE=4.54585 (PPL 94.24) eta=0.02|hedefi_kesen_eta=0
+GERCEK_EGRI_KESISIM|egitim|PPL=150|CE_hedef=5.01064|gercek_egri_min_CE=4.54585 (PPL 94.24) eta=0.02|hedefi_kesen_eta=0.00123882
+UYGULA_GERCEK_KOK|egitim egrisinin kesisimi (yalniz degerlendirme, agirlik guncellemesi yok)|PPL=150|eta=0.00123882|egitim CE=5.01033 PPL=149.95|dogr CE=5.39684 PPL=220.71|test CE=5.32368 PPL=205.14 top1=0.1578
+GERCEK_EGRI_KESISIM|egitim|PPL=137|CE_hedef=4.91998|gercek_egri_min_CE=4.54585 (PPL 94.24) eta=0.02|hedefi_kesen_eta=0.0024478
+UYGULA_GERCEK_KOK|egitim egrisinin kesisimi (yalniz degerlendirme, agirlik guncellemesi yok)|PPL=137|eta=0.0024478|egitim CE=4.91866 PPL=136.82|dogr CE=5.38232 PPL=217.53|test CE=5.31596 PPL=203.56 top1=0.1552
+GERCEK_EGRI_KESISIM|egitim|PPL=100|CE_hedef=4.60517|gercek_egri_min_CE=4.54585 (PPL 94.24) eta=0.02|hedefi_kesen_eta=0.0107158
+UYGULA_GERCEK_KOK|egitim egrisinin kesisimi (yalniz degerlendirme, agirlik guncellemesi yok)|PPL=100|eta=0.0107158|egitim CE=4.60314 PPL=99.80|dogr CE=5.37189 PPL=215.27|test CE=5.32351 PPL=205.10 top1=0.1438
+GERCEK_EGRI_KESISIM|dogrulama|PPL=190|CE_hedef=5.24702|gercek_egri_min_CE=5.36698 (PPL 214.21) eta=0.006|hedefi_kesen_eta=nan
+GERCEK_EGRI_KESISIM|dogrulama|PPL=175|CE_hedef=5.16479|gercek_egri_min_CE=5.36698 (PPL 214.21) eta=0.006|hedefi_kesen_eta=nan
+GERCEK_EGRI_KESISIM|dogrulama|PPL=150|CE_hedef=5.01064|gercek_egri_min_CE=5.36698 (PPL 214.21) eta=0.006|hedefi_kesen_eta=nan
+GERCEK_EGRI_KESISIM|dogrulama|PPL=137|CE_hedef=4.91998|gercek_egri_min_CE=5.36698 (PPL 214.21) eta=0.006|hedefi_kesen_eta=nan
+GERCEK_EGRI_KESISIM|dogrulama|PPL=100|CE_hedef=4.60517|gercek_egri_min_CE=5.36698 (PPL 214.21) eta=0.006|hedefi_kesen_eta=nan
+SURE Ridge=1.681s CE duzeltme=5.779s ; katsayi(L0,a,b) icin ek: 1 analitik nokta carpimi + 2 egitim CE degerlendirmesi (+-h) ; TOPLAM=63.9s tepe_RAM=1560MB

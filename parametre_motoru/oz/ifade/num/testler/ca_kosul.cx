@@ -1,0 +1,40 @@
+// 03.001 / 03.017: if/else zincirleri, kisa devre (yan etki sayilari), !, sabit kosullar, ?:, ilklendiricili if
+int sayac = 0;
+int say(int v) { sayac = sayac + 1; return v; }
+int sinif(int n) { if (n < 0) return -1; else if (n == 0) return 0; else if (n < 10) return 1; else if (n < 100) return 2; else return 3; }
+int main() {
+  for (int n = -2; n <= 150; n = n + 25) pi(sinif(n));
+  // && ve || degerlendirme sayilari
+  sayac = 0; if (say(0) && say(1)) pi(1); else pi(0); pi(sayac);
+  sayac = 0; if (say(1) && say(1)) pi(1); else pi(0); pi(sayac);
+  sayac = 0; if (say(1) || say(0)) pi(1); else pi(0); pi(sayac);
+  sayac = 0; if (say(0) || say(0)) pi(1); else pi(0); pi(sayac);
+  sayac = 0; if ((say(1) && say(0)) || (say(0) || say(1))) pi(1); else pi(0); pi(sayac);
+  sayac = 0; if (!(say(1) && say(1)) || say(1)) pi(1); else pi(0); pi(sayac);
+  sayac = 0; if (say(0) && say(1) && say(1)) pi(1); else pi(0); pi(sayac);
+  sayac = 0; if (say(1) || say(1) || say(1)) pi(1); else pi(0); pi(sayac);
+  sayac = 0; if (!say(0)) pi(1); else pi(0); pi(sayac);
+  // sabit kosullar: degerlendirilmeyen operand yan etki uretmez
+  sayac = 0; if (0 && say(1)) pi(1); else pi(0); pi(sayac);
+  sayac = 0; if (1 || say(1)) pi(1); else pi(0); pi(sayac);
+  sayac = 0; if (1 && say(1)) pi(1); else pi(0); pi(sayac);
+  sayac = 0; if (0 || say(0)) pi(1); else pi(0); pi(sayac);
+  // dongu kosullarinda kisa devre
+  int i = 0; sayac = 0; while (i < 5 && say(i) >= 0) i = i + 1; pi(i); pi(sayac);
+  int j = 0; sayac = 0; do { j = j + 1; } while (j < 3 || say(j) < 0); pi(j); pi(sayac);
+  int c = 0; for (int q = 0; q < 10 && c < 4; q = q + 1) c = c + 1; pi(c);
+  // karisik tipler: isaretci, double, bool
+  int v = 3; int* p = &v; int* np = 0; double d = 0.5; bool b = false;
+  if (p && *p == 3) pi(1); else pi(0);
+  if (np && *np == 3) pi(1); else pi(0);
+  if (np || p) pi(1); else pi(0);
+  if (d && !b) pi(1); else pi(0);
+  if (!d || b) pi(1); else pi(0);
+  // ?: ile kosullar, ilklendiricili if
+  int m = (v > 2 && v < 5) ? 11 : 22; pi(m);
+  if (int r = v * 2; r > 5) pi(r); else pi(-r);
+  if (int r = v - 5; r > 0) pi(r); else pi(-r);
+  // bagli else
+  if (v > 0) if (v > 10) pi(100); else pi(200);
+  return 0;
+}

@@ -1,0 +1,20 @@
+V27 c=2 H=512 tohum=1 gamma1=1 lambda=10 gamma2(F2..F4)=0.5 mod=BK (4 cekirdek); yalniz egitim; dogrusal okuma (alpha,eps dogrulamayla)
+KIMLIK|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|kimlik sayisi=2 X satir-norm RMS=1.8634 ; F1 girdisinde kimlik olcegi=21.0822 (kimlik blogu enerjisi=X enerjisi) ; F2..F4 girdisinde kimlik olcegi=11.3137 (blok enerjisi=1, X ve F bloklari gibi) ; seyrek boyut=8098 (yogun acilmadi)
+OLCEK|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|F2 girdisi|X(genislik 192): ham satir-norm RMS=1.8634 uygulanan olcek=0.5366 ; F1(genislik 128): ham satir-norm RMS=1.0625 uygulanan olcek=0.9412 ; toplam giris boyutu=320
+OLCEK|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|F3 girdisi|X(genislik 192): ham satir-norm RMS=1.8634 uygulanan olcek=0.5366 ; F1(genislik 128): ham satir-norm RMS=1.0625 uygulanan olcek=0.9412 ; F2(genislik 128): ham satir-norm RMS=0.6534 uygulanan olcek=1.5304 ; toplam giris boyutu=448
+OLCEK|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|F4 girdisi|X(genislik 192): ham satir-norm RMS=1.8634 uygulanan olcek=0.5366 ; F1(genislik 128): ham satir-norm RMS=1.0625 uygulanan olcek=0.9412 ; F2(genislik 128): ham satir-norm RMS=0.6534 uygulanan olcek=1.5304 ; F3(genislik 128): ham satir-norm RMS=0.8024 uygulanan olcek=1.2463 ; toplam giris boyutu=576
+ZINCIR|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|asamalar=4 genislik(her asama; ilk=+bias)=129 128 128 128 |hazirlik (ozellik+gram+RHS)=1.12s
+CHOL_COZUM|lam=10|cholesky+cozum suresi=0.082s
+KATEGORI|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|Y|F1..F4(ORTAK tek ridge) lam=10 sID=16|trigram baglami GORULDU|n=3392|test CE=5.0430 PPL=154.9 top1=0.1427
+KATEGORI|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|Y|F1..F4(ORTAK tek ridge) lam=10 sID=16|trigram baglami gorulmedi (yalniz bigram)|n=1588|test CE=4.9994 PPL=148.3 top1=0.1448
+ASAMA|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|hedef=Y|F1..F4(ORTAK tek ridge) lam=10 sID=16|eklenen=128 kumulatif=0|kalan hata (Y: ||Y-Yhat||^2/n egit/dogr/test)=0.9553/0.9649/0.9607|Q acik varyans dogr/test=0.0000/0.0000 (onceki asamaya gore ek: +0.0000/+0.0000)|dogrusal okuma alpha=0.75 eps=1e-05|egitim PPL=79.2|dogr PPL=161.1|test CE=5.0291 PPL=152.80 top1=0.1434 top5=0.3428|egitim-dogr CE=0.7096|asama sure=3.71s
+CHOL_COZUM|lam=20|cholesky+cozum suresi=0.058s
+KATEGORI|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|Y|F1..F4(ORTAK tek ridge) lam=20 sID=16|trigram baglami GORULDU|n=3392|test CE=5.0463 PPL=155.4 top1=0.1400
+KATEGORI|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|Y|F1..F4(ORTAK tek ridge) lam=20 sID=16|trigram baglami gorulmedi (yalniz bigram)|n=1588|test CE=5.0036 PPL=149.0 top1=0.1379
+ASAMA|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|hedef=Y|F1..F4(ORTAK tek ridge) lam=20 sID=16|eklenen=128 kumulatif=0|kalan hata (Y: ||Y-Yhat||^2/n egit/dogr/test)=0.9584/0.9656/0.9618|Q acik varyans dogr/test=0.0000/0.0000 (onceki asamaya gore ek: +0.0000/+0.0000)|dogrusal okuma alpha=0.75 eps=1e-05|egitim PPL=84.8|dogr PPL=161.7|test CE=5.0327 PPL=153.35 top1=0.1394 top5=0.3390|egitim-dogr CE=0.6452|asama sure=5.23s
+CHOL_COZUM|lam=40|cholesky+cozum suresi=0.066s
+KATEGORI|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|Y|F1..F4(ORTAK tek ridge) lam=40 sID=16|trigram baglami GORULDU|n=3392|test CE=5.0540 PPL=156.7 top1=0.1377
+KATEGORI|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|Y|F1..F4(ORTAK tek ridge) lam=40 sID=16|trigram baglami gorulmedi (yalniz bigram)|n=1588|test CE=5.0122 PPL=150.2 top1=0.1335
+ASAMA|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|hedef=Y|F1..F4(ORTAK tek ridge) lam=40 sID=16|eklenen=128 kumulatif=0|kalan hata (Y: ||Y-Yhat||^2/n egit/dogr/test)=0.9616/0.9667/0.9632|Q acik varyans dogr/test=0.0000/0.0000 (onceki asamaya gore ek: +0.0000/+0.0000)|dogrusal okuma alpha=0.8 eps=1e-05|egitim PPL=88.5|dogr PPL=163.6|test CE=5.0407 PPL=154.58 top1=0.1363 top5=0.3337|egitim-dogr CE=0.6139|asama sure=2.47s
+ZINCIR_BITTI|ORTAK_RIDGE_V29_KIMLIK_SIRALI(4x128)|toplam=13.7s tepe_RAM=870MB
+TOPLAM sure=13.8s tepe_RAM=870MB

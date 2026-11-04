@@ -1,0 +1,2 @@
+// RED: E_LINKAGE  -- once C++ baglantili islev sonra extern C
+int f(int a); extern "C" int f(int a); int main(){ return 0; }

@@ -1,0 +1,12 @@
+eski(V51b) train token 40000 val 5000 test 5000 | unk orani train 0.0486 val 0.0810 test 0.0904
+   val satirlari: (w_{t-2},w_{t-1}) cifti egitimde GORULDU 0.667
+   val satirlari: 3-gram baglam egitimde GORULDU 0.222
+   val satirlari: 4-gram baglam egitimde GORULDU 0.041
+   val satirlari: (w_{t-1},y) cifti egitimde goruldu 0.666 (-> ham P_w hedefe sifir kutle 0.334)
+   8-gram ortusme: val 2 / 4930 ; test 1 / 4930
+yeni(V53) train token 113500 val 5000 test 5000 | unk orani train 0.0750 val 0.0810 test 0.0904
+   val satirlari: (w_{t-2},w_{t-1}) cifti egitimde GORULDU 0.782
+   val satirlari: 3-gram baglam egitimde GORULDU 0.336
+   val satirlari: 4-gram baglam egitimde GORULDU 0.082
+   val satirlari: (w_{t-1},y) cifti egitimde goruldu 0.782 (-> ham P_w hedefe sifir kutle 0.218)
+   8-gram ortusme: val 2 / 4930 ; test 1 / 4930

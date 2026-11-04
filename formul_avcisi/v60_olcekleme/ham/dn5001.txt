@@ -1,0 +1,107 @@
+V34_MOD|FAST=1 RHS_GRUPLARI=1 CHOL_BLOKLARI=1
+V33_MOD|cekirdekler=OPENBLAS (sgemm/dpotrf/dtrsm/dgemm)|OpenMP=4|OpenBLAS iplik=4
+ZAMAN|veri dosyalarini okuma=0.154s
+ZAMAN|expand_s (X'e fark bloku ekleme)=0.209s
+V27 c=2 H=512 tohum=1 gamma1=1 lambda=1 gamma2(F2..F4)=0.5 mod=Z (4 cekirdek); yalniz egitim; dogrusal okuma (alpha,eps dogrulamayla)
+ZAMAN|n-gram ogretici sayimlari+EM (yalniz kategori/rapor icin; agirlik uretimi DEGIL)=0.000s
+V51_CEKIRDEK|K tablolari (5 OOF + 1 tam) + s(K) 64D + sabit 64->512 esleme: tek sefer, sure=7.60s ; kapilar g_F=0.15 g_P=0 ridge_K=0 GERCEK_CEKIRDEK ; U std~1 (egitimden)
+V49_DONUSUM|mod=2 (1=olcek s=2, 2=A+A^2+A^3 (170 taban), 3=A+A^2+AB (128 taban))|ozellik sayisi=512 (sabit sutun disinda; kapasite ayni)|hedef olcek (A ortalama std)=0.1849 ; sutun RMS araligi 0.1068..0.4042|donusum sure=0.92s
+V45_DAGILIM|beta_w: min=0.900 q25=0.900 medyan=0.900 q75=0.900 maks=0.900 (kelime=5001) ; komsu agirligi a_wv: min=0.0000 medyan=0.0989 maks=0.7089 ; kelime basina en buyuk agirlik ortalamasi=0.113 (tekdüze=0.100)
+V39_HAVUZ|dugum=5001 (bagli=5001) knn=10 beta=0.9 GERCEK_BAGLANTI|baglanti hesabi+karisim sure=8.80s ; baglantilar yalniz egitim etiketlerinden ; F kapasitesi ayni (513)
+V31_ZINCIR_OZELLIK|V31_KIMLIK+1F(1x512)|hazirlik=10.64s
+V31_HAZIRLIK|F bloku=513 sutun (yogun), C blogu=37193 seyrek sutun (yogun one-hot veri matrisi YOK; C^TC yalniz son-kelime grup bloklari: 66.2 MB, yogun 37193x37193 YOK)|sure=0.12s
+V53H_HASH|Fc|b714d077330cde66|604962432 bayt
+V53H_HASH|AFF|feebe08ad7ba8a5b|2105352 bayt
+V53H_HASH|RF|feb994bd93395b28|20524104 bayt
+V53H_Y0|yogun Y0 = 37193 x 5001 = 1.86e+08 eleman ; yapisal sifir-olmayan (grup,y) konumlari = 1.464e+07 eleman (7.87%) ; Y0 cozum islemi (sum sg^2 * sutun): yogun 4.14e+10 -> yoluk 1.15e+10 madd (3.6x az)
+V53H_GRUP|en buyuk 5 grup=1288 1210 1010 888 817 ; sum sg^2=8.27e+06 ; sum sg^3/3=2.34e+09 ; buyuk(>=128) grup sayisi=32
+V42_REZIDU|V53h hizli yol|40 grupta (A_g+Lambda)[Y0|X]-[R_C|A_CF] en buyuk bagil rezidu=3.70e-13 (KABUL)
+V53H_HASH|ACCB|cc0560c0bcc8f576|66196168 bayt
+V53H_HASH|ACF|84169467a8632838|152640072 bayt
+V53H_HASH|RC|e0b253ddcd60f8aa|1488017544 bayt
+V53H_HASH|Y0f|2901de9cd3d67213|744008772 bayt
+V53H_HASH|X|3438584c458db97f|152640072 bayt
+V53H_HASH|T|cba6f5a0c8901b66|2105352 bayt
+V53H_HASH|U|6f1e32c07a6f1538|20524104 bayt
+V53H_SONUC|VAL CE=5.079437 PPL=160.684 Top1=0.1581 Top5=0.3524|alpha_Q=0.2 okuma alpha=0.85 eps=1e-05
+V53H_HASH|WC|ae4f49ac585cd385|744008772 bayt
+V53H_HASH|WF|8ad91d59286b5c1d|10262052 bayt
+V53H_HASH|Zval|e2ad102881f02932|737187408 bayt
+TH|d1 rezidu denetimi (model hazir disi)|1.636
+TH|e1a val logit+okuma secimi|1.624
+TH|e1b val Q-karisim alpha secimi+metrik|2.320
+TH|f0 hazirlik toplam (ozellik+K+gram F)|10.637
+TH|f1 F1 olusturma (yon+gemm, v35 yolu)|0.913
+TH|f1a make_w1x (yonler)|0.015
+TH|f1b features (gemm+tanh)|0.876
+TH|f1b1 F tahsis+sifirlama|0.261
+TH|f1b2 gemm|0.336
+TH|f1b3 tanh dongusu|0.279
+TH|f2 V51 K-tablolari+kapi|7.609
+TH|f3 V39 graf|0.000
+TH|f4 V39 ortalama|0.089
+TH|f5 V39 karisim|0.172
+TH|f6 F^T F (AFF)|0.625
+TH|f7 F^T Y (RF)|0.301
+TH|g1 v31solve basi->sayim oncesi (cat+AFF/RF+id+ayirma)|0.125
+TH|g10 Schur cozumu W_F (Cholesky 513 + V sag taraf)|0.075
+TH|g11 W_C toplam|0.655
+TH|g11a sgemm X*WF|0.542
+TH|g11b Y0 ekleme/isaret|0.114
+TH|g1a cat (F birlestirme)|0.000
+TH|g1b slot id uretimi|0.079
+TH|g2 sayim hazirlik (grup/yoluk/tampon)|0.884
+TH|g3 sayim (ACC,ACF,RC)|0.301
+TH|g4 grup Cholesky (CPU-toplam)|0.462
+TH|g45 grup cozum duvar suresi (Cholesky+Y0+X+Xf)|2.010
+TH|g4a buyuk grup Cholesky duvar|0.453
+TH|g4b buyuk grup cozum duvar|1.415
+TH|g4b1 buyuk: Rm tahsis+doldurma|0.071
+TH|g4b2 buyuk: karo cozum|1.296
+TH|g4b3 buyuk: putback|0.046
+TH|g4c kucuk grup duvar|0.054
+TH|g5 Y0 cozum (CPU-toplam, tahsisli)|1.079
+TH|g6 X cozum (CPU-toplam, tahsisli)|0.539
+TH|g8 T=ACF'X (dgemm)|0.176
+TH|g9 U=ACF'Y0|1.654
+TH|g9a Y0d kurulum|0.284
+TH|g9b dgemm U|1.253
+TH|k0 6 tablo dongusu toplam|6.543
+TH|k1 v51 graf (6 tablo toplam)|4.698
+TH|k2 v51 qtab (6 tablo toplam)|0.645
+TH|k3 Cfull+fold|0.000
+TH|k4 Et,Sf,make_s,stdz|0.567
+TH|k5 proj gemm|0.033
+TH|k6 um/us|0.198
+TH|k7 ustd|0.005
+TH|k8 gate atanh/tanh|0.181
+TH|kg1 norm|0.258
+TH|kg2 sgemm|4.258
+TH|kg2a S tahsis|0.000
+TH|kg3 topk|0.141
+TH|kq1 nw|0.109
+TH|kq2 Qt tahsis|0.604
+TH|m1 run_chain basi (program basindan)|0.442
+TH|m1b buildrank|0.190
+TH|m2 v31solve sayim oncesi (program basindan)|11.393
+TH|q1 Q_havuz tablosu|0.238
+TH|v0 V49 oncesi (program basindan)|9.416
+TH|v1 V49 toplam|0.923
+TH|v2 V49 mu/sd|0.216
+TH|v3 V49 cm/cs|0.200
+TH|v4 V49 apply|0.063
+FAZ|onhazir+okuma+F1|1.540|4.141|2.69
+FAZ|OOF/Q: K-tablolari+kapi|7.614|26.425|3.47
+FAZ|V39 havuz|0.262|0.744|2.84
+FAZ|V49 donusumu|0.923|2.108|2.28
+FAZ|Gram: F^T F|0.629|2.469|3.92
+FAZ|Gram: F^T Y|0.301|1.047|3.48
+FAZ|Gram: slot sayimi (ACC,ACF,RC)|2.498|3.344|1.34
+FAZ|grup Cholesky + Y0 + X|2.010|7.313|3.64
+FAZ|[denetim: rezidu - model disi]|1.636|1.642|1.00
+FAZ|T=ACF'X + U=ACF'Y0|1.829|7.115|3.89
+FAZ|Schur: W_F|0.076|0.264|3.50
+FAZ|W_C = Y0 - X W_F|0.655|2.480|3.78
+FAZ|[Q oncesi bosluk]|11.363|10.487|0.92
+FAZ|Q_havuz tablosu|0.238|0.567|2.39
+V53H_MODEL_HAZIR|29.937 s (okuma sonrasi: ozellik+Gram/RHS+Cholesky/Y0/X+Schur+W+Q tablosu)|tepe RSS=4253 MB

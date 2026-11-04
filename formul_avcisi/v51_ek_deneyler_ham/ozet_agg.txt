@@ -1,0 +1,32 @@
+### Bagimsiz kapi izgarasi (rho=0, temiz havuz tabani; hucre: dogr CE (alpha) / test PPL; alpha dogrulamayla)
+| g_F \ g_P | 0 | 0.05 | 0.15 | 0.30 |
+|---|---|---|---|---|
+| 0 | 4.8318 (0.2) / 119.71 | 4.8319 (0.2) / 119.76 | 4.8319 (0.2) / 119.75 | 4.8320 (0.2) / 119.74 |
+| 0.05 | 4.8288 (0.2) / 119.27 | 4.8289 (0.2) / 119.29 | 4.8292 (0.2) / 119.35 | 4.8295 (0.2) / 119.43 |
+| 0.15 | 4.8242 (0.2) / 118.91 | 4.8243 (0.2) / 118.95 | 4.8244 (0.2) / 119.08 | 4.8250 (0.2) / 119.35 |
+| 0.30 | 4.8262 (0.2) / 119.37 | 4.8264 (0.2) / 119.40 | 4.8267 (0.2) / 119.47 | 4.8283 (0.2) / 119.73 |
+
+Grid en iyi dogrulama CE: (4.8242, '0.15', '0', '118.91', '0.2')
+
+### Eslem tohumlari (E, g=0.15, ridge-K; C-satiri)
+eslem tohumu 1 : alpha=0.1 dogr CE=4.8227 test PPL=118.70 Top1=0.1618 Top5=0.3685 | alpha=0 dogr CE=4.8261
+eslem tohumu 2 : alpha=0.1 dogr CE=4.8236 test PPL=119.29 Top1=0.1618 Top5=0.3677 | alpha=0 dogr CE=4.8273
+eslem tohumu 3 : alpha=0.1 dogr CE=4.8237 test PPL=119.07 Top1=0.1596 Top5=0.3675 | alpha=0 dogr CE=4.8271
+
+### Kapilar karistirilmis, final gercek (SG_*) vs gercek (R_*) vs tam karisik (S_*)
+- B gF=0.15 
+    gercek      : a=0.2 val=4.8242 test=118.91 a=0val=4.8527 sabit0.2=('4.8242', '118.91') 
+    kapi-karisik: a=0.2 val=4.8319 test=119.63 a=0val=4.8701 sabit0.2=('4.8319', '119.63') 
+    tam-karisik : a=0 val=4.8701 test=124.71 a=0val=4.8701 sabit0.2=('4.9634', '137.84')
+- C gP=0.05 
+    gercek      : a=0.2 val=4.8319 test=119.76 a=0val=4.8751 sabit0.2=('4.8319', '119.76') 
+    kapi-karisik: a=0.2 val=4.8319 test=119.73 a=0val=4.8750 sabit0.2=('4.8319', '119.73') 
+    tam-karisik : a=0 val=4.8750 test=125.46 a=0val=4.8750 sabit0.2=('4.9674', '138.42')
+- D g=0.05/0.05 
+    gercek      : a=0.2 val=4.8289 test=119.29 a=0val=4.8663 sabit0.2=('4.8289', '119.29') 
+    kapi-karisik: a=0.2 val=4.8314 test=119.61 a=0val=4.8732 sabit0.2=('4.8314', '119.61') 
+    tam-karisik : a=0 val=4.8732 test=125.14 a=0val=4.8732 sabit0.2=('4.9657', '138.19')
+- E g=0.15 (C-satiri) 
+    gercek      : a=0.1 val=4.8221 test=118.98 a=0val=4.8253 sabit0.2=('4.8279', '119.51') 
+    kapi-karisik: a=0.3 val=4.8907 test=126.91 a=0val=4.9518 sabit0.2=('4.8954', '127.78') 
+    tam-karisik : a=0 val=4.9518 test=135.85 a=0val=4.9518 sabit0.2=('5.0605', '152.11')

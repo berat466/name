@@ -1,0 +1,2 @@
+// RED: E_UNDECL  -- try dis kapsamda tanimlanan degisken catch icinde yok (ad kapsami)
+int main() { try { int x = 1; throw x; } catch (int e) { return x; } return 0; }

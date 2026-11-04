@@ -1,0 +1,63 @@
+; jtab (2): merdiven ILERI jmp'lerdir ama bir kol (A2) tablonun ONUNE geri atlar (yakit denetimi); buyuk/negatif 64-bit dizinler, n=1 tablo, cagrilan islevde jtab
+func sel(x) {
+S: jtab x, 3
+  jmp A0
+  jmp A1
+  jmp A2
+  ldi d, 100
+  ret d
+A0: ldi r, 10
+  ret r
+A1: ldi r, 20
+  ret r
+A2: addi x, x, -2
+  jmp S
+}
+func one(x) {
+  jtab x, 1
+  jmp Z
+  ldi r, 7
+  ret r
+Z: ldi r, 5
+  ret r
+}
+func main() {
+  ldi k, -3
+L: call r, sel, k
+  host puti, r
+  host putc, 32
+  addi k, k, 1
+  lti c, k, 6
+  jnz c, L
+  host putc, 10
+  ldi k, 65536
+  mul k, k, k
+  call r, sel, k
+  host puti, r
+  host putc, 32
+  addi k, k, 1
+  call r, sel, k
+  host puti, r
+  host putc, 32
+  ldi k, 1073741824
+  mul k, k, k
+  add k, k, k
+  add k, k, k
+  add k, k, k
+  call r, sel, k
+  host puti, r
+  host putc, 32
+  addi k, k, -1
+  call r, sel, k
+  host puti, r
+  host putc, 10
+  ldi k, -1
+M: call r, one, k
+  host puti, r
+  host putc, 32
+  addi k, k, 1
+  lti c, k, 3
+  jnz c, M
+  host putc, 10
+  halt
+}

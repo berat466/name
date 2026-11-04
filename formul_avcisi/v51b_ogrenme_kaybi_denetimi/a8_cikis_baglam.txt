@@ -1,0 +1,46 @@
+== GIRDI/BAGLAM TEMSIL CAKISMALARI
+   gomme tablosu: normu 0 olan kelime 0 ; norm<0.5: 0 ; tum normlar medyan 1.000
+   farkli kelimeler arasi kosinus >0.99: 0 cift ; >0.95: 0 cift ; her kelimenin en yakin baska kelimeyle medyan kosinus 0.577
+   gomme kalitesi sayima bagli mi: sayim<5 kelimelerde norm medyan 1.000 vs sayim>=100: 1.000
+   C blogu temsil tipleri (egitim): pair slotu yok -> satir yalniz (w_{t-1}, sabit): 53.8% satir; bu satirlarda w_{t-2} bilgisi C'de YOK (yalniz X/F'te).
+   train: farkli (w_{t-2},w_{t-1}) cifti 19646 / 39840 satir ; C'de ayni vektore (yalniz kelime slotu) inen satir 53.8% ; pair slotu olan 46.2%
+   val: farkli (w_{t-2},w_{t-1}) cifti 3516 / 4980 satir ; C'de ayni vektore (yalniz kelime slotu) inen satir 56.6% ; pair slotu olan 43.4%
+   test: farkli (w_{t-2},w_{t-1}) cifti 3456 / 4980 satir ; C'de ayni vektore (yalniz kelime slotu) inen satir 54.6% ; pair slotu olan 45.4%
+   w_{t-3} ve daha eski kelimeler: hicbir blokta yok (c=2). Ek: UNK (id0) hem baglamda hem hedefte tek sinif: egitim baglamlarinin 4.9%'inde w_{t-1}=UNK
+
+== CIKIS ANALIZI (model: lamF=3000, ORTAK rho=0; okuma a=0.85 eps=1e-5; son karisim alpha=0.2)
+
+  [train] satir 39840
+   z<0: 30.3% ; z<eps(1e-5): 43.1% ; z>1: 0.0000% ; hedef sinif z_y<eps: 0.0% satir ; z toplam ort 0.998 ; kirpmayla EKLENEN kutle (Sum max(z,eps)-Sum z) ort 0.030 ; negatif kutle ort 0.023
+   CE(okuma): 3.7918 ; z_y<eps olan satirlar CE payi 0.0% (satir payi 0.0%) ; bu satirlarda ort CE 6.457 vs digerleri 3.792
+   Top-1 / Top-5 doğruluk: ham z (kirpmasiz) 0.1650 / 0.4372 ; okuma P (kirpma+unigram) 0.1640 / 0.4240
+   okumanin (kirpma+unigram karisimi) argmax degistirdigi satir: 2.6% ; top-5 kumesini degistirdigi satir: 23.7%
+   en iyi 5. skoru da eps altinda (top-5 siralamasi kirpmayla belirlenen) satir: 0.00%
+
+  [val] satir 4980
+   z<0: 29.8% ; z<eps(1e-5): 43.6% ; z>1: 0.0000% ; hedef sinif z_y<eps: 4.3% satir ; z toplam ort 0.998 ; kirpmayla EKLENEN kutle (Sum max(z,eps)-Sum z) ort 0.027 ; negatif kutle ort 0.019
+   CE(okuma): 4.8527 ; z_y<eps olan satirlar CE payi 8.9% (satir payi 4.3%) ; bu satirlarda ort CE 10.107 vs digerleri 4.619
+   Top-1 / Top-5 doğruluk: ham z (kirpmasiz) 0.1506 / 0.3554 ; okuma P (kirpma+unigram) 0.1516 / 0.3560
+   okumanin (kirpma+unigram karisimi) argmax degistirdigi satir: 2.2% ; top-5 kumesini degistirdigi satir: 22.0%
+   en iyi 5. skoru da eps altinda (top-5 siralamasi kirpmayla belirlenen) satir: 0.00%
+   P_son: CE 4.8242 ; Top-1 0.1510 ; Top-5 0.3558 ; argmax P_model->P_son degisen 10.1%
+   UNK (id0) hedefli satir 8.1% ; UNK satirlari CE 2.761 vs diger 5.006 ; CE payi 4.6% ; UNK Top-1 dogru 46.2%
+   birbirinden ayirt edilemeyen: P1/P2<1.05 olan satir 8.5% ; top-5 olasilik kutlesi medyan 0.275
+   top-5 icinde hic gorunmeyen sinif: 1695 / 2001 (84.7%)
+
+  [test] satir 4980
+   z<0: 30.1% ; z<eps(1e-5): 44.1% ; z>1: 0.0000% ; hedef sinif z_y<eps: 4.0% satir ; z toplam ort 0.998 ; kirpmayla EKLENEN kutle (Sum max(z,eps)-Sum z) ort 0.027 ; negatif kutle ort 0.019
+   CE(okuma): 4.8104 ; z_y<eps olan satirlar CE payi 8.5% (satir payi 4.0%) ; bu satirlarda ort CE 10.207 vs digerleri 4.585
+   Top-1 / Top-5 doğruluk: ham z (kirpmasiz) 0.1627 / 0.3697 ; okuma P (kirpma+unigram) 0.1635 / 0.3701
+   okumanin (kirpma+unigram karisimi) argmax degistirdigi satir: 2.4% ; top-5 kumesini degistirdigi satir: 22.0%
+   en iyi 5. skoru da eps altinda (top-5 siralamasi kirpmayla belirlenen) satir: 0.00%
+   P_son: CE 4.7783 ; Top-1 0.1612 ; Top-5 0.3703 ; argmax P_model->P_son degisen 10.7%
+   UNK (id0) hedefli satir 9.0% ; UNK satirlari CE 2.799 vs diger 4.975 ; CE payi 5.3% ; UNK Top-1 dogru 42.0%
+   birbirinden ayirt edilemeyen: P1/P2<1.05 olan satir 9.2% ; top-5 olasilik kutlesi medyan 0.274
+   top-5 icinde hic gorunmeyen sinif: 1715 / 2001 (85.7%)
+
+  OKUMA DUYARLILIGI (val CE; mevcut tanim degismeden eps/a taramasi):
+   eps=1e-07: a=0.70:4.8773 a=0.85:4.8580 a=0.95:4.8850 a=1.00:5.0514
+   eps=1e-05: a=0.70:4.8775 a=0.85:4.8527 a=0.95:4.8644 a=1.00:4.8992
+   eps=0.001: a=0.70:5.3593 a=0.85:5.3780 a=0.95:5.4099 a=1.00:5.4371
+   eps=0.01: a=0.70:6.0662 a=0.85:6.2905 a=0.95:6.5419 a=1.00:6.7620

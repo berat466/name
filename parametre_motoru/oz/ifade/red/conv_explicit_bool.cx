@@ -1,0 +1,3 @@
+// RED: E_CONV
+// GPP: red
+struct F { explicit operator bool() const { return true; } }; int main() { F f; bool b = f; return b; }

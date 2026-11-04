@@ -1,0 +1,4 @@
+func main() {
+    ld x, 99999999, 0
+    host puti, x
+}

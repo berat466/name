@@ -1,0 +1,2 @@
+// TRAP: DIV0
+int main() { pi(10); pi(100 / 0); return 0; }

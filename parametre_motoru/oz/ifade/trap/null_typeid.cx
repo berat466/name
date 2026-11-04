@@ -1,0 +1,2 @@
+// TRAP: OOB
+struct B { virtual ~B() {} }; int main() { B* p = 0; pi(3); return typeid(*p) == typeid(B); }

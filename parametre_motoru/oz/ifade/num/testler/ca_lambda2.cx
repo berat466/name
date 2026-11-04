@@ -1,0 +1,32 @@
+struct P { int x; int y; };
+struct C {
+  int v; int step;
+  int get() { return v; }
+  int run(int n) {
+    auto a = [this](int x) { return v + x + get(); };
+    auto b = [=](int x) { return v * x + step; };
+    auto c = [&](int x) { v = v + x; return v; };
+    int r = a(n) + b(n); r = r + c(n); return r;
+  }
+  int viathis() { auto f = [this]() { return this->v + 1; }; return f(); }
+};
+int twice(int (*f)(int), int x) { return f(f(x)); }
+int main() {
+  C o; o.v = 3; o.step = 10; pi(o.run(2)); pi(o.v); pi(o.viathis());
+  int a = 1, b = 2;
+  auto swap2 = [&a, &b]() { int t = a; a = b; b = t; };
+  swap2(); pi(a); pi(b);
+  auto mk = [](int base) { return [base](int x) { return base + x; }; };
+  auto add10 = mk(10); pi(add10(5)); auto add20 = mk(20); pi(add20(5)); pi(add10(1));
+  auto fact = [](int n) { int r = 1; for (int i = 2; i <= n; i++) r *= i; return r; };
+  pi(fact(5)); pi(fact(10));
+  auto cmp = [](const int& x, const int& y) { return x < y; };
+  pi(cmp(1, 2)); pi(cmp(2, 1));
+  auto fa = [](auto& x) { x = x + 1; }; int q = 5; fa(q); pi(q); double dd = 1.5; fa(dd); pd(dd);
+  pi(twice([](int x) { return x * 3; }, 2));
+  auto g1 = [](int x) { return x; }; auto g2 = g1; pi(g2(9));
+  int arr[3] = {1, 2, 3}; auto sumarr = [&arr]() { int s = 0; for (int i = 0; i < 3; i++) s += arr[i]; return s; }; pi(sumarr());
+  P pp; pp.x = 3; pp.y = 4; auto len2 = [pp]() { return pp.x * pp.x + pp.y * pp.y; }; pi(len2());
+  auto retp = [](int a, int b) { P r; r.x = a; r.y = b; return r; }; P rr = retp(7, 8); pi(rr.x); pi(rr.y);
+  return 0;
+}

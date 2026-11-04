@@ -1,0 +1,12 @@
+./tek_hamle_v3 hafiza cyon_rbias 1024 1 /tmp/mnist_bin 0,1	/tmp/v3final/hafiza_cyon_rbias_1024_s1_kosu1.txt	rc=0	wall_s=41.89	user_cpu_s=141.81	sys_cpu_s=1.33	maxrss_MB=421
+./tek_hamle_v3 hafiza cyon_rbias 1024 2 /tmp/mnist_bin 0,1	/tmp/v3final/hafiza_cyon_rbias_1024_s2_kosu1.txt	rc=0	wall_s=37.61	user_cpu_s=127.30	sys_cpu_s=1.16	maxrss_MB=421
+./tek_hamle_v3 hafiza cyon_rbias 1024 3 /tmp/mnist_bin 0,1	/tmp/v3final/hafiza_cyon_rbias_1024_s3_kosu1.txt	rc=0	wall_s=37.42	user_cpu_s=126.68	sys_cpu_s=1.13	maxrss_MB=421
+./tek_hamle_v3 hafiza cyon_rbias 1024 1 /tmp/mnist_bin 0,1	/tmp/v3final/hafiza_cyon_rbias_1024_s1_kosu2.txt	rc=0	wall_s=39.72	user_cpu_s=135.22	sys_cpu_s=1.22	maxrss_MB=421
+./tek_hamle_v3 hafiza cyon_rbias 1024 2 /tmp/mnist_bin 0,1	/tmp/v3final/hafiza_cyon_rbias_1024_s2_kosu2.txt	rc=0	wall_s=37.58	user_cpu_s=127.67	sys_cpu_s=1.15	maxrss_MB=421
+./tek_hamle_v3 hafiza cyon_rbias 1024 3 /tmp/mnist_bin 0,1	/tmp/v3final/hafiza_cyon_rbias_1024_s3_kosu2.txt	rc=0	wall_s=37.51	user_cpu_s=127.10	sys_cpu_s=1.22	maxrss_MB=421
+./tek_hamle_v3 yon cyon_rbias 1024 1	/tmp/v3final/yon_cyon_rbias_1024_s1_kosu2.txt	rc=0	wall_s=19.59	user_cpu_s=71.73	sys_cpu_s=0.37	maxrss_MB=332
+./tek_hamle_v3 yon cyon_rbias 1024 2	/tmp/v3final/yon_cyon_rbias_1024_s2_kosu2.txt	rc=0	wall_s=19.69	user_cpu_s=72.46	sys_cpu_s=0.32	maxrss_MB=332
+./tek_hamle_v3 yon cyon_rbias 1024 3	/tmp/v3final/yon_cyon_rbias_1024_s3_kosu2.txt	rc=0	wall_s=18.89	user_cpu_s=69.60	sys_cpu_s=0.34	maxrss_MB=332
+./tek_hamle_v3 yon cyon_rbias 2048 1	/tmp/v3final/yon_cyon_rbias_2048_s1_kosu2.txt	rc=0	wall_s=57.43	user_cpu_s=210.83	sys_cpu_s=1.13	maxrss_MB=553
+./tek_hamle_v3 yon cyon_rbias 2048 2	/tmp/v3final/yon_cyon_rbias_2048_s2_kosu2.txt	rc=0	wall_s=58.60	user_cpu_s=215.05	sys_cpu_s=1.24	maxrss_MB=553
+./tek_hamle_v3 yon cyon_rbias 2048 3	/tmp/v3final/yon_cyon_rbias_2048_s3_kosu2.txt	rc=0	wall_s=57.28	user_cpu_s=209.92	sys_cpu_s=1.19	maxrss_MB=554

@@ -1,0 +1,207 @@
+; U1 bilesen arayuzu (1 pencere, 6 bilesen). Durum: st (alan), nz = st!=0 bit maskesi (bit 6 hep 1), fo = odak.
+sahne 64 48
+kare 60
+arkaplan 0x101018
+global fo = 0
+global nz = 64
+global et = 0
+global nf = 0
+global a1 = 0
+global a2 = 0
+global rr = 0
+global s0 = 0
+global s1 = 0
+global s2 = 0
+global s3 = 0
+global s4 = 0
+global s5 = 0
+
+sablon bas adet 1
+  ciz dikdortgen 4, 4, 50, 3, 0xFFC040
+son
+
+sablon bil adet 6
+  alan kd rastgele 0 2 11
+  alan t14 rastgele 0 2 14
+  alan r13 rastgele 0 59 13
+  alan st sabit 0
+  alan d sabit 0
+  alan ac sabit 0
+  alan b sabit 0
+  alan nb sabit 0
+  alan cr sabit 0
+  alan bw sabit 0
+  alan cx mod 2 4 26
+  alan cy bol 2 10 10
+  alan bx mod 2 5 26
+  alan by bol 2 12 10
+  kural d = max i 1
+  kural d = r13 % d
+  kural d = 6 eger t14 != 0
+  kural d = 6 eger i == 0
+  kural ac = nz >> d
+  kural ac = ac & 1
+  kural cr = 0x89A6C3 eger kd == 0 ve ac == 1
+  kural cr = 0x445361 eger kd == 0 ve ac == 0
+  kural cr = 0xD3304E eger kd == 1 ve ac == 1
+  kural cr = 0x691827 eger kd == 1 ve ac == 0
+  kural cr = 0xDE3B98 eger kd == 2 ve ac == 1
+  kural cr = 0x6F1D4C eger kd == 2 ve ac == 0
+  kural bw = st * 3
+  kural bw = min bw 22
+  ciz dikdortgen cx, cy, 24, 8, cr
+  ciz dikdortgen bx, by, bw, 4, 0xE0E0E0
+son
+
+sablon foc adet 1
+  alan fx sabit 0
+  alan fy sabit 0
+  kural fx = fo % 2
+  kural fx = fx * 26
+  kural fx = fx + 4
+  kural fy = fo / 2
+  kural fy = fy * 10
+  kural fy = fy + 9
+  ciz dikdortgen fx, fy, 24, 1, 0xFFFFFF
+son
+
+; Her tus icin TEK blok (ayni tus kodunda ikinci blok yok sayiliyor); ornekler sirayla islenir,
+; son ornek (i == 5) nihai secimi yapar.
+; ---- tus 1: onceki etkin bilesen ----
+girdi 1 bil
+  kural d = max i 1
+  kural d = r13 % d
+  kural d = 6 eger t14 != 0
+  kural d = 6 eger i == 0
+  kural ac = nz >> d
+  kural ac = ac & 1
+  kural b = 1 << i
+  kural b = b * ac
+  kural et = 0 eger i == 0
+  kural et = et | b
+  kural a1 = et >> fo
+  kural a2 = 6 - fo
+  kural a2 = et << a2
+  kural rr = a1 | a2
+  kural rr = rr & 63
+  kural nf = fo
+  kural nf = fo + 1 eger rr & 2 != 0
+  kural nf = fo + 2 eger rr & 4 != 0
+  kural nf = fo + 3 eger rr & 8 != 0
+  kural nf = fo + 4 eger rr & 16 != 0
+  kural nf = fo + 5 eger rr & 32 != 0
+  kural nf = nf % 6
+  kural fo = nf eger i == 5
+son
+
+; ---- tus 2: sonraki etkin bilesen ----
+girdi 2 bil
+  kural d = max i 1
+  kural d = r13 % d
+  kural d = 6 eger t14 != 0
+  kural d = 6 eger i == 0
+  kural ac = nz >> d
+  kural ac = ac & 1
+  kural b = 1 << i
+  kural b = b * ac
+  kural et = 0 eger i == 0
+  kural et = et | b
+  kural a1 = et >> fo
+  kural a2 = 6 - fo
+  kural a2 = et << a2
+  kural rr = a1 | a2
+  kural rr = rr & 63
+  kural nf = fo
+  kural nf = fo + 5 eger rr & 32 != 0
+  kural nf = fo + 4 eger rr & 16 != 0
+  kural nf = fo + 3 eger rr & 8 != 0
+  kural nf = fo + 2 eger rr & 4 != 0
+  kural nf = fo + 1 eger rr & 2 != 0
+  kural nf = nf % 6
+  kural fo = nf eger i == 5
+son
+
+; ---- tus 3: j-2 ----
+girdi 3 bil
+  kural d = max i 1
+  kural d = r13 % d
+  kural d = 6 eger t14 != 0
+  kural d = 6 eger i == 0
+  kural ac = nz >> d
+  kural ac = ac & 1
+  kural b = 1 << i
+  kural b = b * ac
+  kural et = 0 eger i == 0
+  kural et = et | b
+  kural nf = fo + 4
+  kural nf = nf % 6
+  kural a1 = et >> nf
+  kural a1 = a1 & 1
+  kural fo = nf eger a1 == 1 ve i == 5
+son
+
+; ---- tus 4: j+2 ----
+girdi 4 bil
+  kural d = max i 1
+  kural d = r13 % d
+  kural d = 6 eger t14 != 0
+  kural d = 6 eger i == 0
+  kural ac = nz >> d
+  kural ac = ac & 1
+  kural b = 1 << i
+  kural b = b * ac
+  kural et = 0 eger i == 0
+  kural et = et | b
+  kural nf = fo + 2
+  kural nf = nf % 6
+  kural a1 = et >> nf
+  kural a1 = a1 & 1
+  kural fo = nf eger a1 == 1 ve i == 5
+son
+
+; ---- tus 5: etkinlestir ----
+girdi 5 bil
+  kural d = max i 1
+  kural d = r13 % d
+  kural d = 6 eger t14 != 0
+  kural d = 6 eger i == 0
+  kural ac = nz >> d
+  kural ac = ac & 1
+  kural b = 1 << i
+  kural nb = 127 ^ b
+  kural st = st ^ 1 eger i == fo ve ac == 1 ve kd != 2
+  kural st = st + 2 eger i == fo ve ac == 1 ve kd == 2
+  kural st = min st 10 eger kd == 2
+  kural nz = nz | b eger st != 0
+  kural nz = nz & nb eger st == 0
+son
+
+; ---- tus 6: yalniz tip 0 (tur 1) ----
+girdi 6 bil
+  kural d = max i 1
+  kural d = r13 % d
+  kural d = 6 eger t14 != 0
+  kural d = 6 eger i == 0
+  kural ac = nz >> d
+  kural ac = ac & 1
+  kural b = 1 << i
+  kural nb = 127 ^ b
+  kural st = st ^ 1 eger i == fo ve ac == 1 ve kd == 1
+  kural nz = nz | b eger st != 0
+  kural nz = nz & nb eger st == 0
+son
+
+; ---- tus 9: hepsini sifirla ----
+girdi 9 bil
+  kural st = 0
+  kural nz = 64
+son
+
+topla s0 toplam bil st eger i == 0
+topla s1 toplam bil st eger i == 1
+topla s2 toplam bil st eger i == 2
+topla s3 toplam bil st eger i == 3
+topla s4 toplam bil st eger i == 4
+topla s5 toplam bil st eger i == 5
+
+yazdir 0, fo, s0, s1, s2, s3, s4, s5

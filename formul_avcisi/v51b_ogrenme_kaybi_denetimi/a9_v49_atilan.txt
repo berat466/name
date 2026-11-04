@@ -1,0 +1,12 @@
+== V49 ATILAN YONLER (duz F + gate g_F=0.15, V49 donusumu YOK; 512 ayri taban yon)
+   duz F, 512 yon: val CE (ORTAK, okuma sabit) 4.8483   [V49 B (170x3) ayni olcumde: 4.8527]
+   duz F ilk 172 yon: 4.8616
+   duz F ilk 342 yon: 4.8510
+   duz F ilk 512 yon: 4.8483
+   duz F, V49'un ATTIGI 340 yon (170..509) tek basina: 4.8516
+   lamF=1000 duz F 512: 4.8507 ; ilk 172: 4.8524
+   lamF=3000 duz F 512: 4.8483 ; ilk 172: 4.8616
+   lamF=10000 duz F 512: 4.8610 ; ilk 172: 4.8861
+   duz F Schur: df(3000) = 17.5 ; PR 6.10 ; rank(>1e-3) 77
+   F agirliklari: |W|<1e-3*maks olan oge orani 28.1% ; satir normu (sutun) medyan/maks 0.00631 / 0.0101
+   C agirliklari (kelime/cift/sabit): |W_C|<1e-3*maks olan oge orani 97.5% ; kelime slotu satir normu medyan 0.0229, cift slotu medyan 0.0266

@@ -1,0 +1,4 @@
+// TRAP: OOB
+struct B { virtual int f() { return 1; } }; struct D : B {};
+int g() { B b; B& r = b; D& d = dynamic_cast<D&>(r); return d.f(); }
+int main() { pi(1); try { pi(g()); } catch (int e) { pi(-1); } pi(2); return 0; }

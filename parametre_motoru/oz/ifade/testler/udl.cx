@@ -1,0 +1,24 @@
+// 02.025: kullanici tanimli sabitler (UDL): tamsayi, karakter, dize. Ondalik UDL long double ister: long double desteklenmedigi icin ret (red/udl_ondalik.cx)
+struct Len { double m; };
+struct Cnt { unsigned long long n; };
+Len operator""_m(unsigned long long x) { Len l; l.m = (double)x; return l; }
+Cnt operator""_n(unsigned long long x) { Cnt c; c.n = x * 2; return c; }
+long long operator""_k(unsigned long long x) { return (long long)x * 1000; }
+int operator""_ch(char c) { return c - 'a'; }
+unsigned long operator""_len(const char* s, unsigned long n) { unsigned long k = 0; for (unsigned long i = 0; i < n; i++) k += (unsigned char)s[i]; return k * 1000 + n; }
+const char* operator""_id(const char* s, unsigned long) { return s; }
+long long operator""_neg(unsigned long long x) { return -(long long)x; }
+Len operator+(Len a, Len b) { Len r; r.m = a.m + b.m; return r; }
+int main() {
+  Len a = 1500_m; pd(a.m);
+  Len b = 20_m; pd(b.m);
+  Len c = a + b + 3_m + 1_m; pd(c.m);
+  pi(5_k); pi(12_k + 3_k);
+  pi('c'_ch); pi('z'_ch - 'a'_ch);
+  pi("abc"_len);
+  pi(""_len);
+  const char* id = "hello"_id; pc(id[0]); pc(id[4]); pc(10);
+  pi(7_neg); pi(0x10_k); pi(0b101_k); pi(010_k); pi(1'000_k);
+  Cnt n = 21_n; pi(n.n);
+  return 0;
+}

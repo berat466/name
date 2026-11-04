@@ -1,0 +1,15 @@
+b=14 N=100000
+(1) ardisik 1..100000 int64  [us/ tum dizi, ns/eleman]
+  A dogrudan skaler (derleyici vektorlestirebilir):    26.57 us  0.266 ns
+  A dogrudan AVX-512 vpmullq                  :    27.21 us  0.272 ns
+  B ilerleyen skaler (s+=b)                   :    23.68 us  0.237 ns
+  B ilerleyen AVX-512 (8 serit, 1 zincir)     :    21.87 us  0.219 ns
+  B ilerleyen AVX-512 (32 serit, 4 zincir)    :    20.70 us  0.207 ns
+(1b) ardisik 1..100000 double: A dogrudan 23.61 us (0.236 ns/el) | B ilerleyen s+=b 123.61 us (1.236 ns/el) | farkli eleman=0 (b tam sayi -> tam)
+(2) rastgele    100 istek: A dogrudan 0.05 us | B ilerleyen (siralama 0.35 us + farklardan ilerle 0.06 us; farklar yine carpilir) | esit
+(2) rastgele   1000 istek: A dogrudan 0.16 us | B ilerleyen (siralama 10.54 us + farklardan ilerle 0.86 us; farklar yine carpilir) | esit
+(2) rastgele  10000 istek: A dogrudan 1.96 us | B ilerleyen (siralama 89.52 us + farklardan ilerle 14.92 us; farklar yine carpilir) | esit
+(2) rastgele 100000 istek: A dogrudan 40.65 us | B ilerleyen (siralama 1823.43 us + farklardan ilerle 297.95 us; farklar yine carpilir) | esit
+(3) ortak carpan: m=100000 bagimsiz b*x_i dizisi 43.49 us (turetilebilecek ilerleyen iliski yok) | toplam sum b*x_i: dogrudan 52.59 us -> b*sum(x_i) 11.54 us (esit=1)
+(4) bagimsiz a_i*c_i m=100000: dogrudan 70.85 us (0.708 ns/el); ilerleyen yontemin kullanabilecegi onceki sonuc iliskisi yok
+(5) P=b*c, m=100000 kullanim: her seferinde 61.50 us | bir kez + tasi 37.72 us | esit=1 (derleyici bunu zaten disari alir: volatile c ile bile)

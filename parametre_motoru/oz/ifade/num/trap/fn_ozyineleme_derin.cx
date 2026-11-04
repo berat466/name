@@ -1,0 +1,2 @@
+// TRAP: OOB
+int f(int d) { int a[16]; a[0] = d; return f(d + 1) + a[0]; } int main() { pi(1); pi(f(0)); return 0; }

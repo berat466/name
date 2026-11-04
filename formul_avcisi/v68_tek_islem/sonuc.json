@@ -1,0 +1,35 @@
+{
+ "V66_kurali": {
+  "R2": -0.015792894689278247,
+  "RMSE": 1.040428074644899
+ },
+ "ikili_kontrast+ayni_kural": {
+  "R2": 0.051956895694809324,
+  "RMSE": 1.0051329706611372,
+  "ozellik_sayisi": 820
+ },
+ "V66_kurali_2_uygulama(artik)": {
+  "R2": 0.11632599460407056,
+  "RMSE": 0.9704105672301943
+ },
+ "teshis": {
+  "en_buyuk_ozdeger": 2.5981658770475202,
+  "en_kucuk_ozdeger": 0.026460920334739083,
+  "kosul_sayisi": 98.18879480304892,
+  "sinyal_enerjisinin_en_kucuk_5_ozdegerdeki_payi": 0.5212248201186448,
+  "ozdeger_20_alti_sayisi": 20
+ },
+ "teshis_adim_R2": {
+  "1": 0.007724569968815431,
+  "10": 0.22360785096985725,
+  "100": 0.9308523614676729,
+  "1000": 0.999999999901653,
+  "10000": 1.0,
+  "100000": 1.0
+ },
+ "teshis_R2_0.95_icin_tam_batch_adim": 113,
+ "referans_ridge_zinciri(yalniz karsilastirma)": {
+  "R2": 0.9999999991463673,
+  "RMSE": 3.0160949705220938e-05
+ }
+}

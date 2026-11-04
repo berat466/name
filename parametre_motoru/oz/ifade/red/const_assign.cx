@@ -1,0 +1,3 @@
+// RED: E_CONST
+// GPP: red
+int main() { const int a = 1; a = 2; return a; }

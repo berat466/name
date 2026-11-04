@@ -1,0 +1,42 @@
+sahne 160 96
+kare 100
+arkaplan 0x101018
+global sec = 0
+global v0 = 0
+global v1 = 0
+global v2 = 0
+global v3 = 0
+sablon cubuk adet 4
+  alan v dogrusal 4 4
+  alan y dogrusal 8 22
+  alan w sabit 0
+  alan renk sabit 0
+  kural w = v * 7
+  kural renk = 0x4080C0
+  kural renk = 0xFFC040 eger i == sec
+  ciz dikdortgen 8, y, w, 14, renk
+son
+girdi 1
+  kural sec = sec + 3
+  kural sec = sec % 4
+son
+girdi 2
+  kural sec = sec + 1
+  kural sec = sec % 4
+son
+girdi 3 cubuk
+  kural v = v + 1 eger i == sec
+  kural v = min v 20
+son
+girdi 4 cubuk
+  kural v = v - 1 eger i == sec
+  kural v = max v 0
+son
+girdi 5 cubuk
+  kural v = 0
+son
+topla v0 toplam cubuk v eger i == 0
+topla v1 toplam cubuk v eger i == 1
+topla v2 toplam cubuk v eger i == 2
+topla v3 toplam cubuk v eger i == 3
+yazdir sec, v0, v1, v2, v3

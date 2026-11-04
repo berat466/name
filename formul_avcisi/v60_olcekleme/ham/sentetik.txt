@@ -1,0 +1,5 @@
+OLCEKLEME_TESTI|V=1500 token=60000 nnz=39595 (satir basina 26.4; dolu oran 1.760e-02)|uretim=0.01s|seyrek kNN=0.009s flop=0.010 GF dokunulan_cift=1990428 (V^2'nin 88.463%)|yogun V^3 esdegeri=6.8 GF|oran=1.53e-03|tepe RAM=5 MB
+DOGRULAMA|yogun naif (ayni toplama sirasi) ile karsilastirma: farkli satir=0 / 1500 (BIT-ESDEGER)
+OLCEKLEME_TESTI|V=10000 token=600000 nnz=372264 (satir basina 37.2; dolu oran 3.723e-03)|uretim=0.11s|seyrek kNN=0.366s flop=0.477 GF dokunulan_cift=90895458 (V^2'nin 90.895%)|yogun V^3 esdegeri=2000.0 GF|oran=2.39e-04|tepe RAM=18 MB
+OLCEKLEME_TESTI|V=50000 token=3000000 nnz=1854862 (satir basina 37.1; dolu oran 7.419e-04)|uretim=0.60s|seyrek kNN=8.155s flop=8.646 GF dokunulan_cift=2032831752 (V^2'nin 81.313%)|yogun V^3 esdegeri=250000.0 GF|oran=3.46e-05|tepe RAM=74 MB
+OLCEKLEME_TESTI|V=100000 token=6000000 nnz=3684840 (satir basina 36.8; dolu oran 3.685e-04)|uretim=1.25s|seyrek kNN=29.350s flop=30.143 GF dokunulan_cift=7581014026 (V^2'nin 75.810%)|yogun V^3 esdegeri=2000000.0 GF|oran=1.51e-05|tepe RAM=143 MB

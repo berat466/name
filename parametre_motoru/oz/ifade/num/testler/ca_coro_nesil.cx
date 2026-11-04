@@ -1,0 +1,4 @@
+// cerceve blogu yok edilince ayni adres yeniden kullanilir ama NESIL artar (eski tutamaklar bu yuzden gecersizdir)
+struct T { struct promise_type { int v; T get_return_object() { T t; t.h = std::coroutine_handle<promise_type>::from_promise(*this); return t; } std::suspend_always initial_suspend() { return std::suspend_always(); } std::suspend_always final_suspend() noexcept { return std::suspend_always(); } void return_value(int x) { v = x; } void unhandled_exception() { } }; std::coroutine_handle<promise_type> h; };
+T f(int a) { co_return a; }
+int main() { T t1 = f(1); void* a1 = t1.h.address(); long long g1 = t1.h.g; t1.h.destroy(); T t2 = f(2); pi(a1 == t2.h.address()); pi(g1 != t2.h.g); pi(t2.h.g - g1); return 0; }

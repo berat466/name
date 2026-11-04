@@ -1,0 +1,2 @@
+// RED: E_CONV
+void f() {} int main() { int x = f(); return x; }

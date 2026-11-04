@@ -1,0 +1,2 @@
+// RED: E_REINTERP  -- bool gosterimi: bayt gorunumu yok
+int main() { bool b = true; unsigned char& u = reinterpret_cast<unsigned char&>(b); return u; }

@@ -1,0 +1,55 @@
+V16 c=2 H=512 tohum=1 s=32 V=2001 K=256 egitim=39840 dogrulama=4980 test=4980 (4 cekirdek)
+  [A] gamma=0.5 lambda=1 en_iyi_val_CE=6.4854
+  [1] gamma=0.5 lambda=1 en_iyi_val_CE=6.6181
+  [2] gamma=0.5 lambda=1 en_iyi_val_CE=6.4881
+  [A] gamma=0.5 lambda=10 en_iyi_val_CE=6.4641
+  [1] gamma=0.5 lambda=10 en_iyi_val_CE=6.6285
+  [2] gamma=0.5 lambda=10 en_iyi_val_CE=6.4892
+  [A] gamma=0.5 lambda=100 en_iyi_val_CE=6.5306
+  [1] gamma=0.5 lambda=100 en_iyi_val_CE=6.4886
+  [2] gamma=0.5 lambda=100 en_iyi_val_CE=6.4699
+  [A] gamma=0.5 lambda=1000 en_iyi_val_CE=6.6758
+  [1] gamma=0.5 lambda=1000 en_iyi_val_CE=6.4878
+  [2] gamma=0.5 lambda=1000 en_iyi_val_CE=6.5022
+  [A] gamma=1 lambda=1 en_iyi_val_CE=6.5538
+  [1] gamma=1 lambda=1 en_iyi_val_CE=6.7016
+  [2] gamma=1 lambda=1 en_iyi_val_CE=6.5646
+  [A] gamma=1 lambda=10 en_iyi_val_CE=6.5376
+  [1] gamma=1 lambda=10 en_iyi_val_CE=6.7086
+  [2] gamma=1 lambda=10 en_iyi_val_CE=6.5562
+  [A] gamma=1 lambda=100 en_iyi_val_CE=6.5439
+  [1] gamma=1 lambda=100 en_iyi_val_CE=6.5960
+ESDEGERLIK[1]: max_i( max_v - min_v ) of (Z_C - c1*Z_A) = 1.915e-05  (0 ise C = A'nin olcek+satir-sabiti; softmax'ta sabit iptal)
+  [2] gamma=1 lambda=100 en_iyi_val_CE=6.5586
+ESDEGERLIK[2]: max_i( max_v - min_v ) of (Z_C - c1*Z_A) = 1.449e-05  (0 ise C = A'nin olcek+satir-sabiti; softmax'ta sabit iptal)
+  [A] gamma=1 lambda=1000 en_iyi_val_CE=6.6312
+  [1] gamma=1 lambda=1000 en_iyi_val_CE=6.5115
+  [2] gamma=1 lambda=1000 en_iyi_val_CE=6.5108
+  [A] gamma=2 lambda=1 en_iyi_val_CE=6.6182
+  [1] gamma=2 lambda=1 en_iyi_val_CE=6.7632
+  [2] gamma=2 lambda=1 en_iyi_val_CE=6.6309
+  [A] gamma=2 lambda=10 en_iyi_val_CE=6.6052
+  [1] gamma=2 lambda=10 en_iyi_val_CE=6.7624
+  [2] gamma=2 lambda=10 en_iyi_val_CE=6.6220
+  [A] gamma=2 lambda=100 en_iyi_val_CE=6.5937
+  [1] gamma=2 lambda=100 en_iyi_val_CE=6.6926
+  [2] gamma=2 lambda=100 en_iyi_val_CE=6.6222
+  [A] gamma=2 lambda=1000 en_iyi_val_CE=6.6257
+  [1] gamma=2 lambda=1000 en_iyi_val_CE=6.5597
+  [2] gamma=2 lambda=1000 en_iyi_val_CE=6.5484
+  [A] gamma=4 lambda=1 en_iyi_val_CE=6.6564
+  [1] gamma=4 lambda=1 en_iyi_val_CE=6.8040
+  [2] gamma=4 lambda=1 en_iyi_val_CE=6.6721
+  [A] gamma=4 lambda=10 en_iyi_val_CE=6.6397
+  [1] gamma=4 lambda=10 en_iyi_val_CE=6.7988
+  [2] gamma=4 lambda=10 en_iyi_val_CE=6.6588
+  [A] gamma=4 lambda=100 en_iyi_val_CE=6.6251
+  [1] gamma=4 lambda=100 en_iyi_val_CE=6.7240
+  [2] gamma=4 lambda=100 en_iyi_val_CE=6.6527
+  [A] gamma=4 lambda=1000 en_iyi_val_CE=6.6374
+  [1] gamma=4 lambda=1000 en_iyi_val_CE=6.5942
+  [2] gamma=4 lambda=1000 en_iyi_val_CE=6.5783
+OZET|A|s=32|c=2|H=512|tohum=1|gam=0.5|lam=10|T=0.02|valCE=6.4641|CE=6.3583|PPL=577.26|top1=0.1307|top5=0.3133|agirlik_uretim_sn=0.44
+OZET|1|s=32|c=2|H=512|tohum=1|gam=0.5|lam=1000|T=0.1|valCE=6.4878|CE=6.3957|PPL=599.28|top1=0.1096|top5=0.2839|agirlik_uretim_sn=0.41
+OZET|2|s=32|c=2|H=512|tohum=1|gam=0.5|lam=100|T=0.07|valCE=6.4699|CE=6.3519|PPL=573.60|top1=0.1241|top5=0.3050|agirlik_uretim_sn=0.42
+TOPLAM sure=114.5s arama=108.7s tepe_RAM=338MB

@@ -1,0 +1,173 @@
+; fmtc.pma -- bicim tablosu (fmt.txt) -> sozluk (awk yerine). stdin: satirlar "AD metin" ('#' yorum, bos satir yok sayilir).
+; Metinde '|' satir ayiricisi (bayt 10) olur. stdout: "F_AD indeks" satirlari, "STO baslangic..." ve "STRT bayt..." (her metin 0 ile biter).
+memory 4194304
+entry main
+space IB 1100000
+space SO 8192
+space G 16
+
+func err(code) {
+    host putc, 72
+    host putc, 65
+    host putc, 84
+    host putc, 65
+    host putc, 58
+    host putc, 32
+    host puti, code
+    host putc, 10
+    mov z, 0
+    div x, 1, z
+    ret 0
+}
+
+; bir satir [p,e): kayit mi? kayitsa ad sonu (bosluk konumu) dondurur, degilse -1
+func record(p, e) {
+    ge z, p, e
+    jz z, a1
+    ret -1
+a1: add a, p, IB
+    ld c, a, 0
+    eqi z, c, 35
+    jz z, a2
+    ret -1
+a2: ret p
+}
+
+func main() {
+    mov n, 0
+r1: host ch, getc
+    lti z, ch, 0
+    jnz z, r2
+    gei z, n, 1048576
+    jz z, r1a
+    call x, err, 1
+r1a: add a, n, IB
+    st ch, a, 0
+    addi n, n, 1
+    jmp r1
+r2: ; gecis 1: ad dizinleri ve baslangic konumlari
+    mov p, 0
+    mov nrec, 0
+    mov pos, 0
+g1: ge z, p, n
+    jnz z, g9
+    mov e, p
+g2: ge z, e, n
+    jnz z, g3
+    add a, e, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, g3
+    addi e, e, 1
+    jmp g2
+g3: call rr, record, p, e
+    lti z, rr, 0
+    jnz z, gnext
+    ; ad: bosluga kadar
+    mov k, p
+g4: ge z, k, e
+    jnz z, g5
+    add a, k, IB
+    ld c, a, 0
+    eqi z, c, 32
+    jnz z, g5
+    eqi z, c, 9
+    jnz z, g5
+    addi k, k, 1
+    jmp g4
+g5: ; "F_" + ad + " " + indeks
+    host putc, 70
+    host putc, 95
+    mov q, p
+g6: ge z, q, k
+    jnz z, g7
+    add a, q, IB
+    ld c, a, 0
+    host putc, c
+    addi q, q, 1
+    jmp g6
+g7: host putc, 32
+    host puti, nrec
+    host putc, 10
+    gei z, nrec, 8192
+    jz z, g7a
+    call x, err, 2
+g7a: add a, nrec, SO
+    st pos, a, 0
+    ; metin = k+1 .. e (bosluk atlanan tek karakter)
+    addi t, k, 1
+    ge z, t, e
+    jnz z, g8
+g7b: ge z, t, e
+    jnz z, g8
+    addi pos, pos, 1
+    addi t, t, 1
+    jmp g7b
+g8: addi pos, pos, 1
+    addi nrec, nrec, 1
+gnext: addi p, e, 1
+    jmp g1
+g9: ; STO
+    host putc, 83
+    host putc, 84
+    host putc, 79
+    mov i, 0
+s1: ge z, i, nrec
+    jnz z, s9
+    host putc, 32
+    add a, i, SO
+    ld v, a, 0
+    host puti, v
+    addi i, i, 1
+    jmp s1
+s9: host putc, 10
+    ; STRT
+    host putc, 83
+    host putc, 84
+    host putc, 82
+    host putc, 84
+    mov p, 0
+t1: ge z, p, n
+    jnz z, t9
+    mov e, p
+t2: ge z, e, n
+    jnz z, t3
+    add a, e, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, t3
+    addi e, e, 1
+    jmp t2
+t3: call rr, record, p, e
+    lti z, rr, 0
+    jnz z, tnext
+    mov k, p
+t4: ge z, k, e
+    jnz z, t5
+    add a, k, IB
+    ld c, a, 0
+    eqi z, c, 32
+    jnz z, t5
+    eqi z, c, 9
+    jnz z, t5
+    addi k, k, 1
+    jmp t4
+t5: addi q, k, 1
+t6: ge z, q, e
+    jnz z, t7
+    add a, q, IB
+    ld c, a, 0
+    eqi z, c, 124
+    jz z, t6a
+    mov c, 10
+t6a: host putc, 32
+    host puti, c
+    addi q, q, 1
+    jmp t6
+t7: host putc, 32
+    host puti, 0
+tnext: addi p, e, 1
+    jmp t1
+t9: host putc, 10
+    ret 0
+}

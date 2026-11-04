@@ -1,0 +1,8 @@
+; jtab merdiven girdisi GERI atlayamaz (ELF sablonu sabit boyutlu ileri jmp; yakit varyanti boyutu bozardi)
+func main() {
+  ldi i, 1
+P: addi i, i, -1
+  jtab i, 1
+  jmp P
+  halt
+}

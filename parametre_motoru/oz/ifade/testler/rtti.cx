@@ -1,0 +1,33 @@
+// 02.018 / 02.020: typeid, dynamic_cast, sanal dagitim
+struct B { int b; virtual int who() { return 1; } virtual ~B() {} };
+struct D1 : B { int d1; int who() override { return 2; } };
+struct D2 : B { int who() override { return 3; } };
+struct DD : D1 { int who() override { return 4; } };
+struct Plain { int p; };
+int main() {
+  B b; D1 d1; D2 d2; DD dd;
+  B* pb = &d1; B* pc = &dd; B* pn = &b;
+  pi(pb->who()); pi(pc->who()); pi(pn->who());
+  B& rb = d2; pi(rb.who());
+  pi(typeid(b) == typeid(B)); pi(typeid(*pb) == typeid(D1)); pi(typeid(*pb) == typeid(B)); pi(typeid(*pc) == typeid(DD));
+  pi(typeid(*pb) != typeid(*pc)); pi(typeid(rb) == typeid(D2));
+  pi(typeid(int) == typeid(int)); pi(typeid(int) == typeid(long)); pi(typeid(const int) == typeid(int)); pi(typeid(int*) == typeid(int));
+  pi(typeid(d1) == typeid(D1)); pi(typeid(Plain) == typeid(Plain));
+  Plain pl; Plain* pp = &pl; pi(typeid(*pp) == typeid(Plain)); pi(typeid(pl) == typeid(pl));
+  pi(typeid(1 + 2) == typeid(int)); pi(typeid(1.0) == typeid(double)); pi(typeid(1.0f) == typeid(float));
+  D1* x = dynamic_cast<D1*>(pb); pi(x != 0); pi(x == &d1);
+  D2* y = dynamic_cast<D2*>(pb); pi(y == 0);
+  D1* z = dynamic_cast<D1*>(pc); pi(z != 0);               // DD, D1'den turemis
+  DD* w = dynamic_cast<DD*>(pb); pi(w == 0);
+  B* up = dynamic_cast<B*>(&dd); pi(up == pc);
+  B* nul = 0; pi(dynamic_cast<D1*>(nul) == 0);
+  D1& r1 = dynamic_cast<D1&>(*pb); pi(r1.who());
+  pi(dynamic_cast<DD&>(*pc).who());
+  const B* cb = pb; const D1* cd = dynamic_cast<const D1*>(cb); pi(cd != 0);
+  void* vp = dynamic_cast<void*>(pc); pi(vp == (void*)&dd);
+  d1.b = 5; d1.d1 = 6; pi(dynamic_cast<D1*>(pb)->d1 + pb->b);
+  pi(dynamic_cast<D2*>(pn) == 0); pi(dynamic_cast<B*>(pn) == pn);
+  B* arr[3] = {&b, &d1, &d2}; int s = 0; for (int i = 0; i < 3; i++) s = s * 10 + arr[i]->who(); pi(s);
+  int cnt = 0; for (int i = 0; i < 3; i++) if (dynamic_cast<D1*>(arr[i])) cnt++; pi(cnt);
+  return 0;
+}

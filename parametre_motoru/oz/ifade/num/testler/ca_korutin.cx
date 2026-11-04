@@ -1,0 +1,34 @@
+// 03.014: korutin askiya alma/surdurme -- std::generator<T>: co_yield, co_await (askiya al), co_return, yerel degiskenler askida korunur, ic ice ureteciler, dongu/switch/try icinde yield
+std::generator<int> kareler(int n) { for (int i = 1; i <= n; i = i + 1) co_yield i * i; }
+std::generator<long long> fib() { long long a = 0, b = 1; while (true) { co_yield a; long long t = a + b; a = b; b = t; } }
+std::generator<int> aralik(int lo, int hi) { int i = lo; while (i < hi) { co_yield i; i = i + 1; } }
+std::generator<int> cift_filtre(int n) { for (int v : aralik(0, n)) { if (v % 2) continue; co_yield v; } }
+std::generator<int> geri(int n) { if (n <= 0) co_return; co_yield n; for (int v : geri(n - 1)) co_yield v; }
+std::generator<int> erken(int lim) { int s = 0; for (int i = 1; ; i = i + 1) { s = s + i; if (s > lim) co_return; co_yield s; } }
+std::generator<int> secimli(int n) { for (int i = 0; i < n; i = i + 1) { switch (i % 3) { case 0: co_yield 100 + i; break; case 1: co_await i; co_yield 200 + i; break; default: continue; } } }
+std::generator<int> hata_ureten(int n) { for (int i = 0; i < n; i = i + 1) { if (i == 2) throw 77; co_yield i; } }
+std::generator<double> yarimlar(int n) { double d = 1.0; for (int i = 0; i < n; i = i + 1) { co_yield d; d = d / 2; } }
+std::generator<char> harfler(const char* s) { int i = 0; while (s[i]) { co_yield s[i]; i = i + 1; } }
+int main() {
+  for (int v : kareler(5)) pi(v);
+  int c = 0; for (long long x : fib()) { if (c++ >= 12) break; pi(x); }
+  for (int v : cift_filtre(10)) pi(v);
+  for (int v : geri(4)) pi(v);
+  for (int v : erken(30)) pi(v);
+  for (int v : secimli(7)) pi(v);
+  // elle surdurme: iki uretec ic ice (araya giren)
+  std::generator<int> a = aralik(0, 3); std::generator<int> b = aralik(10, 13);
+  while (true) { bool x = a.next(); bool y = b.next(); if (!x && !y) break; if (x) pi(a.value()); if (y) pi(b.value()); }
+  pi(a.done()); pi(b.done());
+  // bitmis uretecte next() 0 doner
+  pi(a.next());
+  // istisna: korutin icinden yayilir, sonrasinda uretec bitmis sayilir
+  std::generator<int> h = hata_ureten(5);
+  try { while (h.next()) pi(h.value()); } catch (int e) { pi(e); }
+  pi(h.done());
+  for (double d : yarimlar(4)) pd(d);
+  for (char ch : harfler("abc")) pc(ch); pc(10);
+  // parametreler askida korunur
+  std::generator<int> g2 = kareler(3); pi(g2.next()); pi(g2.value()); int sum = 0; while (g2.next()) sum = sum + g2.value(); pi(sum);
+  return 0;
+}

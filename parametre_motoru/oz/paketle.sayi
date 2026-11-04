@@ -1,0 +1,43 @@
+# paketle.sayi -- bir PMY1 tablosu: sayi listesini (metin, stdin) baytlara (stdout) cevirir. TAM 64 BIT.
+# Girdi: bosluklarla ayrilmis N (0..2^64-1) ve zN (isaretli, -2^63..2^63-1; zigzag); '#' satir sonuna kadar yorum. Cikti: LEB128.
+# Hatali ya da tasan simge (ornek "-5", "5a", "z", 18446744073709551616) -> DIV0 tuzagi (cikis kodu 2).
+# yerel: 0=c (okunan bayt) 1=deger 2=eksi 3=z-bayragi 4=basamak sayisi 5=basamak 7=tuzak 8=sifir
+# sabitler: M = 1<<63 ; C = 0x1999999999999999 = (429496729<<32)|2576980377 ; MASKE = (1<<57)-1
+80 77 89 49   0 0 0 0   0 0 0 0 0 0 0 0 0
+# ILK blok: 2 komut
+2
+1 4 0 18                                   # c = oku
+3 15 16 4 0 1 z0  1                        # surde c >= 0 : 1 komut
+  2 15 11 4 0 1 z35                        # eger c == '#'
+    1  3 15 19 15 16 4 0 1 z0 15 12 4 0 1 z10  1  1 4 0 18      #  se: surde (c>=0 ve c!=10) { c = oku }
+    1                                                           #  yoksa: 1 komut
+      2 15 14 4 0 1 z32                                         #   eger c <= 32
+        1  1 4 0 18                                             #    se: c = oku
+        12                                                      #    yoksa: 12 komut (simge)
+          1 4 1 1 z0                                            #     deger = 0
+          1 4 2 1 z0                                            #     eksi = 0
+          1 4 3 1 z0                                            #     z = 0
+          1 4 4 1 z0                                            #     basamak sayisi = 0
+          2 15 11 4 0 1 z122   2  1 4 3 1 z1  1 4 0 18   0      #     eger c == 'z' : z = 1; c = oku
+          2 15 11 4 0 1 z45    2  1 4 2 1 z1  1 4 0 18   0      #     eger c == '-' : eksi = 1; c = oku
+          3 15 19 15 16 4 0 1 z48 15 14 4 0 1 z57  5            #     surde c in 0..9 : 5 komut
+            1 4 5 15 2 4 0 1 z48                                #       d = c - 48
+            2 15 20  15 15 15 8 4 1 15 9 1 z1 1 z63  15 8 15 7 15 9 1 z429496729 1 z32 1 z2576980377 15 9 1 z1 1 z63   15 19 15 11 4 1 15 7 15 9 1 z429496729 1 z32 1 z2576980377  15 15 4 5 1 z5
+              1  1 4 7 15 4 1 z1 4 8    0                       #       deger*10+d 2^64'u asacaksa tuzak (isaretsiz karsilastirma: ^ (1<<63) ile)
+            1 4 1 15 1 15 3 4 1 1 z10 4 5                       #       deger = deger*10 + d
+            1 4 4 15 1 4 4 1 z1                                 #       basamak++
+          1 4 0 18                                              #       c = oku
+          2 15 20 15 20 15 11 4 4 1 z0 15 19 15 12 4 2 1 z0 15 11 4 3 1 z0 15 19 15 15 4 0 1 z32 15 12 4 0 1 z35
+            1  1 4 7 15 4 1 z1 4 8    0                         #     gecersizse: tuzak (1 / 0)
+          2 15 19 15 12 4 3 1 z0 17 4 2 15 19 15 13 4 1 1 z0 15 12 4 1 15 9 1 z1 1 z63 15 13 4 1 1 z0
+            1  1 4 7 15 4 1 z1 4 8    0                         #     z ise ve aralik disiysa tuzak
+          2 15 12 4 3 1 z0                                      #     eger z != 0 (zigzag)
+            2
+              2 15 12 4 2 1 z0  1  1 4 1 15 2 1 z0 4 1  0                                   # eksi ise deger = 0 - deger
+              1 4 1 15 8 15 9 4 1 1 z1 15 10 4 1 1 z63                                      # deger = (deger<<1) ^ (deger>>63)
+            0
+          3 15 20 15 13 4 1 1 z0 15 16 4 1 1 z128  2           #     surde deger < 0 veya >= 128 : LEB128
+            9 15 7 15 6 4 1 1 z127 1 z128                       #       karakter (deger & 127) | 128
+            1 4 1 15 6 15 10 4 1 1 z7 15 2 15 9 1 z1 1 z57 1 z1                              #       deger = (deger >> 7) & ((1<<57)-1)
+          9 4 1                                                 #     karakter deger
+0                                                               # SON bos

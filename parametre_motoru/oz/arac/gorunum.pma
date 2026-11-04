@@ -1,0 +1,3739 @@
+; gorunum.pma -- PMO1 SAYISAL NESNE GORUNUMU (okunabilir gorunum <-> sayilar). Metinsiz zincirin "istege bagli okunabilir gorunum ve duzenleme" halkasi.
+; Asil kaynak: sayisal nesne (PMO1, .pmo). Bu arac nesneyi okunabilir metne (PMV) cevirir ve duzenlenmis metni AYNI sayilara geri yazar (bayt-bayt: gor -> yaz kimlik).
+; stdin ilk satir "@@mod":
+;   @@gor    : sozluk satirlari ("komut @@tab" ciktisi) , istege bagli "@@ADLAR" + sidecar satirlari (func AD / space AD OFSET), "@@NESNE" , PMO1 sayilari  -> gorunum (PMV)
+;   @@yaz    : sozluk satirlari , "@@GORUNUM" , gorunum metni                                                                                         -> PMO1 sayilari
+;   @@adlar  : gorunum metni                                                                                                                          -> sidecar (func AD / space AD OFSET satirlari)
+; Hata: "HATA: kod" + DIV0 tuzagi (cikis kodu != 0). Hicbir hatada kismi cikti yazilmaz (once sessiz gecis, sonra yazim).
+; PMV bicimi ve hata kodlari: oz/nesne/GORUNUM.md ; bagimsiz referans: oz/nesne/ref/pmo_ref.py (ayni gorunum, ayni nesne, ayni hata kodu).
+; G[] dizini: 0 ikinci donus | 1 girdi uzunlugu | 2 sessiz | 3 yeni konum | 4 OPCOUNT | 5 HOSTCOUNT | 6 ad sayisi | 7 NMB kullanim | 8 nk | 9 nb | 10 liste tabani LB | 11 NT |
+;   12 flag | 13 mem | 14 entry | 15 ncon | 16 consts liste konumu | 17 ndata | 18 data liste konumu | 19 bss | 20 nf | 21 nh | 22 ndata liste konumu | 23 bss liste konumu |
+;   24 tuketilen bagil kayit | 25 NL (liste uzunlugu) | 26 nsp (sidecar space) | 27 nsf (sidecar func) | 28 sozluk anahtar bitleri | 29 nkf | 30 islev tablo baslangici |
+;   31 nops-sayisi | 32 nkd-sayisi | 33 govde baslangici | 34 mod
+memory 16777216
+entry main
+space IB 4200000
+space NMB 65536
+space NS 4100
+space NL 4100
+space NOPSV 4100
+space KD 12300
+space KF 300
+space TK 1100000
+space TNEG 1100000
+space KK 4100
+space KNS 4100
+space KNL 4100
+space NC 300000
+space HD 524300
+space RP 65600
+space RK 65600
+space RC 65600
+space RX 65600
+space HDI 4100
+space HDK 4100
+space FIS 4100
+space FNC 4100
+space FNP 4100
+space FNR 4100
+space FNS 4100
+space FNL 4100
+space FNB 1100000
+space HKI 4100
+space SFS 4100
+space SFL 4100
+space SPS 4100
+space SPL 4100
+space SPO 4100
+space LT 524300
+space TS 4100
+space TL 4100
+space CV 524300
+space DVV 524300
+space DHK 524300
+space LBS 262200
+space LBL 262200
+space LBI 262200
+space FBP 4100
+space RSC 4100
+space RSO 65600
+space KS 4100
+space RTK 4100
+space RTC 4100
+space CB 64
+space G 128
+
+func fail(code) {
+    host putc, 72
+    host putc, 65
+    host putc, 84
+    host putc, 65
+    host putc, 58
+    host putc, 32
+    host puti, code
+    host putc, 10
+    mov z, 0
+    div x, 1, z
+    ret 0
+}
+
+; ---------- cikti (sessiz gecis: G[2] != 0 ise hicbir sey yazilmaz) ----------
+func pc(c) {
+    ld q, G, 2
+    jnz q, e
+    host putc, c
+e:  ret 0
+}
+func pn(v) {
+    ld q, G, 2
+    jnz q, e
+    host puti, v
+e:  ret 0
+}
+; isaretsiz 64 bit onluk
+func pu(v) {
+    ld q, G, 2
+    jnz q, e
+    lti z, v, 0
+    jnz z, big
+    host puti, v
+    ret 0
+big: shri t, v, 1
+    divi q, t, 5
+    muli t, q, 10
+    sub r, v, t
+    host puti, q
+    addi r, r, 48
+    host putc, r
+e:  ret 0
+}
+; veri dizesi d (NUL sonlu)
+func pdat(d) {
+    ld q, G, 2
+    jnz q, e
+    mov i, 0
+s1: add a, d, i
+    ld c, a, 0
+    jz c, e
+    host putc, c
+    addi i, i, 1
+    jmp s1
+e:  ret 0
+}
+; base[o, o+l) karakterleri
+func pbuf(base, o, l) {
+    ld q, G, 2
+    jnz q, e
+    mov i, 0
+s1: ge z, i, l
+    jnz z, e
+    add a, o, i
+    add a, a, base
+    ld c, a, 0
+    host putc, c
+    addi i, i, 1
+    jmp s1
+e:  ret 0
+}
+
+; ---------- sayi bicimleme / ayristirma ----------
+; v'yi CB[0..] ondalik karakter olarak yaz; uns=1: isaretsiz 64 bit, uns=0: isaretli. uzunluk doner
+func fmtnum(v, uns) {
+    mov ng, 0
+    jnz uns, f1
+    lti z, v, 0
+    jz z, f1
+    mov ng, 1
+    neg v, v
+f1: mov n, 0
+f2: lti z, v, 0
+    jnz z, f3
+    divi q, v, 10
+    jmp f4
+f3: shri t, v, 1
+    divi q, t, 5
+f4: muli t, q, 10
+    sub r, v, t
+    addi r, r, 48
+    add a, n, CB
+    addi a, a, 32
+    st r, a, 0
+    addi n, n, 1
+    mov v, q
+    jnz v, f2
+    ; CB[0..] = (eksi) + ters sirali basamaklar (CB[32..32+n) basamaklar ters)
+    mov o, 0
+    jz ng, f5
+    mov m, 45
+    st m, CB, 0
+    mov o, 1
+f5: mov i, 0
+f6: ge z, i, n
+    jnz z, f7
+    sub j, n, i
+    addi j, j, -1
+    add a, j, CB
+    addi a, a, 32
+    ld m, a, 0
+    add a, o, i
+    add a, a, CB
+    st m, a, 0
+    addi i, i, 1
+    jmp f6
+f7: add r, o, n
+    ret r
+}
+
+; IB[p, p+n) kanonik ondalik sayi mi? mod 0: isaretli, 1: isaretsiz (eksi varsa aralik hatasi), 2: PMO jetonu (eksi varsa isaretli, yoksa isaretsiz).
+; Soz dizimi hatasi (bos, rakam disi, bas sifir, "-0") -> fail(ecs); 64 bit araligi disi -> fail(ecr). Degeri doner (64 bit sarmali)
+func parsenum(p, n, mode, ecs, ecr) {
+    mov ng, 0
+    lei z, n, 0
+    jz z, q0
+    call x, fail, ecs
+q0: add a, p, IB
+    ld c, a, 0
+    eqi z, c, 45
+    jz z, q1
+    mov ng, 1
+q1: mov i, ng
+    ge z, i, n
+    jz z, q2
+    call x, fail, ecs
+q2: ; bas sifir ve -0
+    add a, p, i
+    add a, a, IB
+    ld c, a, 0
+    eqi z, c, 48
+    jz z, q3
+    sub t, n, i
+    eqi z, t, 1
+    jnz z, q2b
+    call x, fail, ecs
+q2b: jz ng, q3
+    call x, fail, ecs
+q3: mov v, 0
+    mov nd, 0
+q4: ge z, i, n
+    jnz z, q5
+    add a, p, i
+    add a, a, IB
+    ld c, a, 0
+    lti z, c, 48
+    jnz z, q4f
+    gti z, c, 57
+    jnz z, q4f
+    muli v, v, 10
+    addi c, c, -48
+    add v, v, c
+    addi nd, nd, 1
+    addi i, i, 1
+    jmp q4
+q4f: call x, fail, ecs
+q5: gti z, nd, 20
+    jz z, q6
+    call x, fail, ecr
+q6: jz ng, q7
+    neg v, v
+q7: ; aralik: yeniden bicimle ve karsilastir
+    eqi z, mode, 1
+    jz z, q8
+    jz ng, q8
+    call x, fail, ecr
+q8: mov uns, 0
+    jnz ng, q9
+    eqi z, mode, 0
+    jnz z, q9
+    mov uns, 1
+q9: call l, fmtnum, v, uns
+    ne z, l, n
+    jz z, q10
+    call x, fail, ecr
+q10: mov i, 0
+q11: ge z, i, n
+    jnz z, q12
+    add a, i, CB
+    ld c1, a, 0
+    add a, p, i
+    add a, a, IB
+    ld c2, a, 0
+    ne z, c1, c2
+    jz z, q11a
+    call x, fail, ecr
+q11a: addi i, i, 1
+    jmp q11
+q12: ret v
+}
+
+; hosgorulu (sozluk) sayi: p'de bosluk atla, [-]rakamlar; G[3] = yeni konum
+func lnum(p, n) {
+    mov v, 0
+    mov ng, 0
+l1: ge z, p, n
+    jnz z, l9
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 32
+    jnz z, l1a
+    eqi z, c, 9
+    jz z, l2
+l1a: addi p, p, 1
+    jmp l1
+l2: eqi z, c, 45
+    jz z, l3
+    mov ng, 1
+    addi p, p, 1
+l3: ge z, p, n
+    jnz z, l8
+    add a, p, IB
+    ld c, a, 0
+    lti z, c, 48
+    jnz z, l8
+    gti z, c, 57
+    jnz z, l8
+    muli v, v, 10
+    addi c, c, -48
+    add v, v, c
+    addi p, p, 1
+    jmp l3
+l8: jz ng, l9
+    neg v, v
+l9: st p, G, 3
+    ret v
+}
+
+; ---------- girdi ----------
+func readall() {
+    mov n, 0
+r1: host ch, getc
+    lti z, ch, 0
+    jnz z, r2
+    gei z, n, 4200000
+    jz z, r1a
+    call x, fail, 1
+r1a: add a, n, IB
+    st ch, a, 0
+    addi n, n, 1
+    jmp r1
+r2: st n, G, 1
+    ret n
+}
+
+; IB[o, o+l) == veri dizesi d (NUL sonlu) ?
+func streq(o, l, d) {
+    mov i, 0
+q1: add a, d, i
+    ld c, a, 0
+    jz c, q2
+    ge z, i, l
+    jnz z, no
+    add b, o, i
+    add b, b, IB
+    ld e, b, 0
+    ne z, e, c
+    jnz z, no
+    addi i, i, 1
+    jmp q1
+q2: eq z, i, l
+    jz z, no
+    ret 1
+no: ret 0
+}
+
+; IB[o1, o1+l1) == base2[o2, o2+l2) ?  (base2: bir dizi)
+func eqbuf(o1, l1, base2, o2, l2) {
+    ne z, l1, l2
+    jnz z, no
+    mov i, 0
+q1: ge z, i, l1
+    jnz z, yes
+    add a, o1, i
+    add a, a, IB
+    ld c1, a, 0
+    add a, o2, i
+    add a, a, base2
+    ld c2, a, 0
+    ne z, c1, c2
+    jnz z, no
+    addi i, i, 1
+    jmp q1
+yes: ret 1
+no: ret 0
+}
+
+; base1[o1, o1+l1) == base2[o2, o2+l2) ?
+func eqbb(base1, o1, l1, base2, o2, l2) {
+    ne z, l1, l2
+    jnz z, no
+    mov i, 0
+q1: ge z, i, l1
+    jnz z, yes
+    add a, o1, i
+    add a, a, base1
+    ld c1, a, 0
+    add a, o2, i
+    add a, a, base2
+    ld c2, a, 0
+    ne z, c1, c2
+    jnz z, no
+    addi i, i, 1
+    jmp q1
+yes: ret 1
+no: ret 0
+}
+
+; ssinif: karakter bosluk/tab/CR mi (satir sonu degil)
+func issp(c) {
+    eqi z, c, 32
+    jnz z, y
+    eqi z, c, 9
+    jnz z, y
+    eqi z, c, 13
+    jnz z, y
+    ret 0
+y:  ret 1
+}
+
+; kimlik karakteri: harf ya da alt cizgi (ilk) / harf rakam alt cizgi
+func idchar(c, first) {
+    gei z, c, 65
+    jz z, d1
+    lei z, c, 90
+    jnz z, y
+d1: gei z, c, 97
+    jz z, d2
+    lei z, c, 122
+    jnz z, y
+d2: eqi z, c, 95
+    jnz z, y
+    jnz first, n
+    gei z, c, 48
+    jz z, n
+    lei z, c, 57
+    jnz z, y
+n:  ret 0
+y:  ret 1
+}
+
+; base[o, o+l) gecerli kimlik mi
+func isident(base, o, l) {
+    lti z, l, 1
+    jnz z, no
+    mov i, 0
+q1: ge z, i, l
+    jnz z, yes
+    add a, o, i
+    add a, a, base
+    ld c, a, 0
+    eqi first, i, 0
+    call k, idchar, c, first
+    jz k, no
+    addi i, i, 1
+    jmp q1
+yes: ret 1
+no: ret 0
+}
+
+; ---------- sozluk ----------
+data D_OPCOUNT = "OPCOUNT\0"
+data D_OPNAMES = "OPNAMES\0"
+data D_NOPS = "NOPS\0"
+data D_KIND = "KIND\0"
+data D_KFLAGS = "KFLAGS\0"
+data D_HOSTCOUNT = "HOSTCOUNT\0"
+
+; p'den baslayarak sozluk satirlari; "@@" ile baslayan satirda durur (G[3] = o satirin konumu). Doldurur: NMB/NS/NL (OPNAMES), NOPSV, KD, KF, G[4], G[5], G[6], G[28]
+func dictparse(p, n) {
+    mov nmb, 0
+    mov nnops, 0
+    mov nkd, 0
+    mov nkf, 0
+    mov found, 0
+d0: ge z, p, n
+    jnz z, d9
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, d0n
+    call w, issp, c
+    jz w, d1
+d0n: addi p, p, 1
+    jmp d0
+d1: eqi z, c, 64
+    jz z, d2
+    addi a, p, 1
+    add a, a, IB
+    ld c1, a, 0
+    eqi z, c1, 64
+    jnz z, d9
+d2: mov s0, p
+d2a: ge z, p, n
+    jnz z, d2b
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, d2b
+    call w, issp, c
+    jnz w, d2b
+    addi p, p, 1
+    jmp d2a
+d2b: sub l, p, s0
+    mov key, 0
+    call r, streq, s0, l, D_OPCOUNT
+    jz r, k2
+    mov key, 1
+k2: call r, streq, s0, l, D_OPNAMES
+    jz r, k3
+    mov key, 2
+k3: call r, streq, s0, l, D_NOPS
+    jz r, k4
+    mov key, 3
+k4: call r, streq, s0, l, D_KIND
+    jz r, k5
+    mov key, 4
+k5: call r, streq, s0, l, D_KFLAGS
+    jz r, k6
+    mov key, 5
+k6: call r, streq, s0, l, D_HOSTCOUNT
+    jz r, k7
+    mov key, 6
+k7: jz key, skipl
+    ; bu anahtar bulundu
+    addi sh, key, -1
+    mov bit, 1
+    shl bit, bit, sh
+    or found, found, bit
+    mov first, 1
+v1: ; satir sonuna kadar sayilar
+    ge z, p, n
+    jnz z, v9
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, v9
+    call w, issp, c
+    jz w, v2
+    addi p, p, 1
+    jmp v1
+v2: call v, lnum, p, n
+    ld p, G, 3
+    eqi z, key, 1
+    jz z, v3
+    st v, G, 4
+    jmp v1
+v3: eqi z, key, 6
+    jz z, v4
+    st v, G, 5
+    jmp v1
+v4: eqi z, key, 2
+    jz z, v5
+    gei z, nmb, 65536
+    jz z, v4a
+    call x, fail, 2
+v4a: add a, nmb, NMB
+    st v, a, 0
+    addi nmb, nmb, 1
+    jmp v1
+v5: eqi z, key, 3
+    jz z, v6
+    gei z, nnops, 4096
+    jz z, v5a
+    call x, fail, 2
+v5a: add a, nnops, NOPSV
+    st v, a, 0
+    addi nnops, nnops, 1
+    jmp v1
+v6: eqi z, key, 4
+    jz z, v7
+    gei z, nkd, 12288
+    jz z, v6a
+    call x, fail, 2
+v6a: add a, nkd, KD
+    st v, a, 0
+    addi nkd, nkd, 1
+    jmp v1
+v7: ; KFLAGS
+    gei z, nkf, 256
+    jz z, v7a
+    call x, fail, 2
+v7a: add a, nkf, KF
+    st v, a, 0
+    addi nkf, nkf, 1
+    jmp v1
+v9: jmp d0
+skipl: ; bilinmeyen anahtar: satirin sonuna kadar atla
+sk1: ge z, p, n
+    jnz z, d0
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, d0
+    addi p, p, 1
+    jmp sk1
+d9: st p, G, 3
+    st found, G, 28
+    ; zorunlu anahtarlar
+    eqi z, found, 63
+    jnz z, d10
+    call x, fail, 2
+d10: st nkf, G, 29
+    st nnops, G, 31
+    st nkd, G, 32
+    st nmb, G, 7
+    ld oc, G, 4
+    ld hc, G, 5
+    gti z, oc, 4096
+    jz z, d11
+    call x, fail, 2
+d11: gti z, hc, 4096
+    jz z, d12
+    call x, fail, 2
+d12: lti z, oc, 0
+    jz z, d12a
+    call x, fail, 2
+d12a: lti z, hc, 0
+    jz z, d13
+    call x, fail, 2
+d13: ; adlari bol
+    mov i, 0
+    mov nn, 0
+    mov st0, 0
+d14: ge z, i, nmb
+    jnz z, d16
+    add a, i, NMB
+    ld c, a, 0
+    jnz c, d15
+    ; ad bitti
+    add a, nn, NS
+    st st0, a, 0
+    sub l, i, st0
+    add a, nn, NL
+    st l, a, 0
+    addi nn, nn, 1
+    addi st0, i, 1
+d15: addi i, i, 1
+    jmp d14
+d16: st nn, G, 6
+    add t, oc, hc
+    lt z, nn, t
+    jz z, d17
+    call x, fail, 2
+d17: lt z, nnops, oc
+    jz z, d18
+    call x, fail, 2
+d18: muli t, oc, 3
+    lt z, nkd, t
+    jz z, d19
+    call x, fail, 2
+d19: ret 0
+}
+
+; kind kimliginin bayraklari
+func kflags(k) {
+    lti z, k, 0
+    jnz z, z0
+    ld nk, G, 29
+    ge z, k, nk
+    jnz z, z0
+    add a, k, KF
+    ld f, a, 0
+    ret f
+z0: ret 0
+}
+
+; (op, j) isleneninin sinifi: 1 yazmac, 2 dogrudan sayi, 3 etiket, 4 islev, 5 sabit havuzu, 6 host, 0 duz sayi
+func opclass(op, j) {
+    muli a, op, 3
+    add a, a, j
+    add a, a, KD
+    ld kd, a, 0
+    call f, kflags, kd
+    andi t, f, 3
+    jz t, c1
+    ret 1
+c1: andi t, f, 4
+    jz t, c2
+    ret 2
+c2: andi t, f, 8
+    jz t, c3
+    ret 3
+c3: andi t, f, 16
+    jz t, c4
+    ret 4
+c4: andi t, f, 32
+    jz t, c5
+    ret 5
+c5: andi t, f, 128
+    jz t, c6
+    ret 6
+c6: ret 0
+}
+
+; ======================= gor: PMO1 -> gorunum =======================
+data D_BSS = "bss\0"
+
+; sidecar satirlari (IB[p, n)): "func AD" / "space AD OFSET"; bos satirlar atlanir. G[26] = nsp, G[27] = nsf. Gecersiz -> fail(14)
+func adlarparse(p, n) {
+    mov nsf, 0
+    mov nsp, 0
+a0: ge z, p, n
+    jnz z, a9
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, a0n
+    call w, issp, c
+    jz w, a1
+a0n: addi p, p, 1
+    jmp a0
+a1: ; birinci jeton
+    mov s0, p
+a1a: ge z, p, n
+    jnz z, a1b
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, a1b
+    call w, issp, c
+    jnz w, a1b
+    addi p, p, 1
+    jmp a1a
+a1b: sub l0, p, s0
+    ; ikinci jeton
+a2: ge z, p, n
+    jnz z, a2e
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, a2e
+    call w, issp, c
+    jz w, a2e
+    addi p, p, 1
+    jmp a2
+a2e: mov s1, p
+a2a: ge z, p, n
+    jnz z, a2b
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, a2b
+    call w, issp, c
+    jnz w, a2b
+    addi p, p, 1
+    jmp a2a
+a2b: sub l1, p, s1
+    ; ucuncu jeton
+a3: ge z, p, n
+    jnz z, a3e
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, a3e
+    call w, issp, c
+    jz w, a3e
+    addi p, p, 1
+    jmp a3
+a3e: mov s2, p
+a3a: ge z, p, n
+    jnz z, a3b
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, a3b
+    call w, issp, c
+    jnz w, a3b
+    addi p, p, 1
+    jmp a3a
+a3b: sub l2, p, s2
+    ; satir sonunda baska jeton var mi
+a4: ge z, p, n
+    jnz z, a5
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, a5
+    call w, issp, c
+    jz w, a4bad
+    addi p, p, 1
+    jmp a4
+a4bad: call x, fail, 14
+a5: call r, streq, s0, l0, D_FUNC
+    jz r, a6
+    ; func AD
+    jz l1, a4bad2
+    jnz l2, a4bad2
+    gei z, nsf, 4096
+    jz z, a5a
+    call x, fail, 5
+a5a: add a, nsf, SFS
+    st s1, a, 0
+    add a, nsf, SFL
+    st l1, a, 0
+    addi nsf, nsf, 1
+    jmp a0
+a6: call r, streq, s0, l0, D_SPACE
+    jz r, a4bad2
+    jz l1, a4bad2
+    jz l2, a4bad2
+    gei z, nsp, 4096
+    jz z, a6a
+    call x, fail, 5
+a6a: call v, parsenum, s2, l2, 1, 14, 14
+    add a, nsp, SPS
+    st s1, a, 0
+    add a, nsp, SPL
+    st l1, a, 0
+    add a, nsp, SPO
+    st v, a, 0
+    addi nsp, nsp, 1
+    jmp a0
+a4bad2: call x, fail, 14
+a9: st nsf, G, 27
+    st nsp, G, 26
+    ret 0
+}
+data D_FUNC = "func\0"
+data D_SPACE = "space\0"
+
+; PMO jetonlari (IB[p, n)) -> TK; G[11] = adet
+func loadtok(p, n) {
+    mov nt, 0
+t0: ge z, p, n
+    jnz z, t9
+    add a, p, IB
+    ld c, a, 0
+    lei z, c, 32
+    jz z, t1
+    addi p, p, 1
+    jmp t0
+t1: mov s0, p
+t1a: ge z, p, n
+    jnz z, t1b
+    add a, p, IB
+    ld c, a, 0
+    lei z, c, 32
+    jnz z, t1b
+    addi p, p, 1
+    jmp t1a
+t1b: sub l, p, s0
+    call v, parsenum, s0, l, 2, 3, 3
+    gei z, nt, 1100000
+    jz z, t2
+    call x, fail, 5
+t2: add a, nt, TK
+    st v, a, 0
+    add a, s0, IB
+    ld c, a, 0
+    eqi ng, c, 45
+    add a, nt, TNEG
+    st ng, a, 0
+    addi nt, nt, 1
+    jmp t0
+t9: st nt, G, 11
+    ret nt
+}
+
+; liste sayisi okuyucusu: G[35] = sonraki liste konumu; deger doner, konumu G[0]'a koyar
+func nxt(u) {
+    ld li, G, 35
+    ld nl, G, 25
+    ge z, li, nl
+    jz z, n1
+    call x, fail, 3
+n1: ld lb, G, 10
+    add a, lb, li
+    add a, a, TK
+    ld v, a, 0
+    lti z, v, 0
+    jz z, n2
+    jnz u, n2
+    add a, lb, li
+    add a, a, TNEG
+    ld ng, a, 0
+    jnz ng, n2
+    call x, fail, 12
+n2: st li, G, 0
+    addi li, li, 1
+    st li, G, 35
+    ret v
+}
+
+; liste konumundaki sayi
+func lv(i) {
+    ld lb, G, 10
+    add a, lb, i
+    add a, a, TK
+    ld v, a, 0
+    ret v
+}
+
+; v yer tutucu mu: 0 degil, 1 skaler (+), 2 skaler (-), 3 dizi basligi; anahtar G[0]'da
+func sentinel(v) {
+    ld nk, G, 8
+    mov s1, 1845493760
+    sub d, v, s1
+    lti z, d, 0
+    jnz z, a2
+    ge z, d, nk
+    jnz z, a2
+    add a, d, KK
+    ld k, a, 0
+    jnz k, a2
+    st d, G, 0
+    ret 1
+a2: neg w, v
+    sub d, w, s1
+    lti z, d, 0
+    jnz z, a3
+    ge z, d, nk
+    jnz z, a3
+    add a, d, KK
+    ld k, a, 0
+    jnz k, a3
+    st d, G, 0
+    ret 2
+a3: mov s2, 1879048192
+    sub d, v, s2
+    lti z, d, 0
+    jnz z, nn
+    andi t, d, 65535
+    jnz t, nn
+    shri k, d, 16
+    ge z, k, nk
+    jnz z, nn
+    add a, k, KK
+    ld kd, a, 0
+    eqi z, kd, 1
+    jz z, nn
+    st k, G, 0
+    ret 3
+nn: ret 0
+}
+
+; yapiyi ayristir ve dogrula (sessiz); p = PMO jeton baslangici degil, TK hazir olmali
+func parse_all() {
+    ld nt, G, 11
+    lti z, nt, 4
+    jz z, h1
+    call x, fail, 3
+h1: ld t0, TK, 0
+    eqi z, t0, 1347243825
+    jz z, hbad
+    ld t1, TK, 1
+    eqi z, t1, 1
+    jnz z, h2
+hbad: call x, fail, 4
+h2: ld nk, TK, 2
+    ld nb, TK, 3
+    lti z, nk, 0
+    jnz z, h3
+    gti z, nk, 4096
+    jnz z, h3
+    lti z, nb, 0
+    jnz z, h3
+    gti z, nb, 65536
+    jz z, h4
+h3: call x, fail, 5
+h4: st nk, G, 8
+    st nb, G, 9
+    mov p, 4
+    mov ncp, 0
+    mov i, 0
+k0: ge z, i, nk
+    jnz z, k9
+    addi t, p, 3
+    gt z, t, nt
+    jz z, k1
+    call x, fail, 3
+k1: add a, p, TK
+    ld kd, a, 0
+    addi a, a, 1
+    ld base, a, 0
+    addi a, a, 1
+    ld ln, a, 0
+    addi p, p, 3
+    lti z, ln, 1
+    jnz z, kbad
+    gti z, ln, 64
+    jnz z, kbad
+    add t, p, ln
+    gt z, t, nt
+    jz z, k2
+kbad: call x, fail, 3
+k2: mov j, 0
+k3: ge z, j, ln
+    jnz z, k4
+    add a, p, j
+    add a, a, TK
+    ld c, a, 0
+    lti z, c, 32
+    jnz z, kbad7
+    gti z, c, 126
+    jnz z, kbad7
+    add a, ncp, j
+    add a, a, NC
+    st c, a, 0
+    addi j, j, 1
+    jmp k3
+kbad7: call x, fail, 7
+k4: add a, i, KNS
+    st ncp, a, 0
+    add a, i, KNL
+    st ln, a, 0
+    addi p, p, 0
+    add p, p, ln
+    call k, isident, NC, ncp, ln
+    jnz k, k5
+    call x, fail, 7
+k5: eqi z, kd, 0
+    jz z, k6
+    mov s1, 1845493760
+    add s1, s1, i
+    eq z, base, s1
+    jnz z, k8
+    call x, fail, 6
+k6: eqi z, kd, 1
+    jz z, k7
+    eqi z, base, 1
+    jnz z, k8
+k7: call x, fail, 6
+k8: add a, i, KK
+    st kd, a, 0
+    add ncp, ncp, ln
+    addi i, i, 1
+    jmp k0
+k9: ; ad tekrari ve "bss"
+    mov i, 0
+u0: ge z, i, nk
+    jnz z, u9
+    add a, i, KNS
+    ld si, a, 0
+    add a, i, KNL
+    ld li2, a, 0
+    ; "bss" mi
+    eqi z, li2, 3
+    jz z, u1
+    add a, si, NC
+    ld b0, a, 0
+    ld b1, a, 1
+    ld b2, a, 2
+    eqi z, b0, 98
+    jz z, u1
+    eqi z, b1, 115
+    jz z, u1
+    eqi z, b2, 115
+    jz z, u1
+    call x, fail, 7
+u1: addi j, i, 1
+u2: ge z, j, nk
+    jnz z, u8
+    add a, j, KNS
+    ld sj, a, 0
+    add a, j, KNL
+    ld lj, a, 0
+    call e, eqbb, NC, si, li2, NC, sj, lj
+    jz e, u3
+    call x, fail, 7
+u3: addi j, j, 1
+    jmp u2
+u8: addi i, i, 1
+    jmp u0
+u9: ; bagil kayitlar
+    mov i, 0
+r0: ge z, i, nb
+    jnz z, r9
+    addi t, p, 3
+    gt z, t, nt
+    jz z, r1
+    call x, fail, 3
+r1: add a, p, TK
+    ld ps, a, 0
+    addi a, a, 1
+    ld ky, a, 0
+    addi a, a, 1
+    ld cf, a, 0
+    add a, i, RP
+    st ps, a, 0
+    add a, i, RK
+    st ky, a, 0
+    add a, i, RC
+    st cf, a, 0
+    addi p, p, 3
+    addi i, i, 1
+    jmp r0
+r9: st p, G, 10
+    sub nl, nt, p
+    st nl, G, 25
+    gti z, nl, 524288
+    jz z, r10
+    call x, fail, 5
+r10: mov i, 0
+q0: ge z, i, nb
+    jnz z, q9
+    add a, i, RP
+    ld ps, a, 0
+    add a, i, RK
+    ld ky, a, 0
+    add a, i, RC
+    ld cf, a, 0
+    lti z, ps, 0
+    jnz z, qbad8
+    ge z, ps, nl
+    jnz z, qbad8
+    lti z, ky, 0
+    jnz z, qbad8
+    ge z, ky, nk
+    jnz z, qbad8
+    jz cf, qbad8
+    add a, ky, KK
+    ld kd, a, 0
+    eqi z, kd, 1
+    jnz z, q1
+    call x, fail, 9
+q1: add a, ps, HD
+    ld h, a, 0
+q2: jz h, q3
+    addi n1, h, -1
+    add a, n1, RK
+    ld k2, a, 0
+    ne z, k2, ky
+    jnz z, q2n
+    call x, fail, 9
+q2n: add a, n1, RX
+    ld h, a, 0
+    jmp q2
+q3: add a, ps, HD
+    ld h, a, 0
+    add a, i, RX
+    st h, a, 0
+    addi t, i, 1
+    add a, ps, HD
+    st t, a, 0
+    addi i, i, 1
+    jmp q0
+qbad8: call x, fail, 8
+q9: ; ---- liste
+    mov zr, 0
+    st zr, G, 35
+    call flag, nxt, 0
+    call mem, nxt, 0
+    call ent, nxt, 0
+    st flag, G, 12
+    st mem, G, 13
+    st ent, G, 14
+    eqi z, flag, 0
+    jnz z, g1
+    eqi z, flag, 1
+    jnz z, g1
+g1b: call x, fail, 12
+g1: lti z, mem, 0
+    jnz z, g1b
+    lti z, ent, 0
+    jnz z, g1b
+    call ncon, nxt, 0
+    lti z, ncon, 0
+    jnz z, g1b
+    gti z, ncon, 524288
+    jnz z, g1b
+    st ncon, G, 15
+    ld li, G, 35
+    st li, G, 16
+    mov i, 0
+c0: ge z, i, ncon
+    jnz z, c9
+    call v, nxt, 1
+    ld ps, G, 0
+    add a, ps, HD
+    ld h, a, 0
+    jz h, c1
+    call x, fail, 8
+c1: ld lb, G, 10
+    add a, lb, ps
+    add a, a, TNEG
+    ld ng, a, 0
+    jz ng, c2
+    call x, fail, 12
+c2: addi i, i, 1
+    jmp c0
+c9: ld li, G, 35
+    st li, G, 22
+    call nd, nxt, 0
+    lti z, nd, 0
+    jnz z, g1b
+    gti z, nd, 524288
+    jnz z, g1b
+    st nd, G, 17
+    ld li, G, 35
+    st li, G, 18
+    mov nh, 0
+    mov i, 0
+d0: ge z, i, nd
+    jnz z, d9
+    call v, nxt, 0
+    ld ps, G, 0
+    add a, ps, HD
+    ld h, a, 0
+    jz h, d1
+    call x, fail, 8
+d1: call sk, sentinel, v
+    eqi z, sk, 3
+    jz z, d8
+    ld ky, G, 0
+    add a, ky, HKI
+    ld hk, a, 0
+    jz hk, d2
+    call x, fail, 11
+d2: addi t, i, 1
+    st t, a, 0
+    add a, nh, HDI
+    st i, a, 0
+    add a, nh, HDK
+    st ky, a, 0
+    addi nh, nh, 1
+d8: addi i, i, 1
+    jmp d0
+d9: st nh, G, 21
+    ld li, G, 35
+    st li, G, 23
+    call bss, nxt, 0
+    call nf, nxt, 0
+    st bss, G, 19
+    st nf, G, 20
+    lti z, bss, 0
+    jnz z, g1b
+    lti z, nf, 0
+    jnz z, g1b
+    gti z, nf, 524288
+    jnz z, g1b
+    gti z, nf, 4096
+    jz z, e0
+    call x, fail, 5
+e0: ; veri sayisi konumundaki bagil kayitlar = tam olarak basliklar (katsayi 1)
+    ld ndp, G, 22
+    add a, ndp, HD
+    ld h, a, 0
+    mov m, 0
+e1: jz h, e5
+    addi n1, h, -1
+    add a, n1, RK
+    ld ky, a, 0
+    add a, n1, RC
+    ld cf, a, 0
+    eqi z, cf, 1
+    jnz z, e2
+    call x, fail, 8
+e2: add a, ky, HKI
+    ld hk, a, 0
+    jnz hk, e3
+    call x, fail, 8
+e3: addi m, m, 1
+    add a, n1, RX
+    ld h, a, 0
+    jmp e1
+e5: eq z, m, nh
+    jnz z, e6
+    call x, fail, 8
+e6: st m, G, 37
+    ; islevler
+    mov f, 0
+f0: ge z, f, nf
+    jnz z, f9
+    call np, nxt, 0
+    call nr, nxt, 0
+    call nc, nxt, 0
+    lti z, np, 0
+    jnz z, g1b
+    lti z, nr, 0
+    jnz z, g1b
+    lti z, nc, 0
+    jnz z, g1b
+    gti z, nc, 524288
+    jnz z, g1b
+    add a, f, FNP
+    st np, a, 0
+    add a, f, FNR
+    st nr, a, 0
+    add a, f, FNC
+    st nc, a, 0
+    ld li, G, 35
+    add a, f, FIS
+    st li, a, 0
+    mov i, 0
+i0: ge z, i, nc
+    jnz z, i9
+    call op, nxt, 0
+    ld ps0, G, 0
+    lti z, op, 0
+    jnz z, g1b
+    ld oc, G, 4
+    ge z, op, oc
+    jnz z, g1b
+    add a, ps0, HD
+    ld h, a, 0
+    jz h, i1
+    call x, fail, 8
+i1: add a, op, NOPSV
+    ld nops, a, 0
+    mov j, 0
+i2: ge z, j, nops
+    jnz z, i8
+    call v, nxt, 0
+    ld ps, G, 0
+    mov s1, -2147483648
+    lt z, v, s1
+    jnz z, i3
+    mov s1, 2147483647
+    gt z, v, s1
+    jz z, i7
+i3: add a, ps, HD
+    ld h, a, 0
+    jnz h, i7
+    call x, fail, 12
+i7: addi j, j, 1
+    jmp i2
+i8: addi i, i, 1
+    jmp i0
+i9: addi f, f, 1
+    jmp f0
+f9: ; adlar (flag 1: listede; yoksa sidecar/varsayilan)
+    ld flag, G, 12
+    ld nsf, G, 27
+    mov pos, 0
+    eqi z, flag, 1
+    jz z, n0
+    mov f, 0
+n1l: ge z, f, nf
+    jnz z, n9
+    call ln, nxt, 0
+    lti z, ln, 1
+    jnz z, nbad
+    gti z, ln, 256
+    jnz z, nbad
+    add a, f, FNS
+    st pos, a, 0
+    add a, f, FNL
+    st ln, a, 0
+    mov j, 0
+n1c: ge z, j, ln
+    jnz z, n1d
+    call c, nxt, 0
+    lti z, c, 33
+    jnz z, nbad
+    gti z, c, 126
+    jnz z, nbad
+    add a, pos, FNB
+    st c, a, 0
+    addi pos, pos, 1
+    addi j, j, 1
+    jmp n1c
+n1d: add a, f, FNS
+    ld s0, a, 0
+    call k, isident, FNB, s0, ln
+    jnz k, n1n
+nbad: call x, fail, 13
+n1n: addi f, f, 1
+    jmp n1l
+n0: ; flag 0
+    jz nsf, n5
+    ne z, nsf, nf
+    jz z, n2
+    call x, fail, 14
+n2: mov f, 0
+n3: ge z, f, nf
+    jnz z, n9
+    add a, f, SFS
+    ld s0, a, 0
+    add a, f, SFL
+    ld ln, a, 0
+    call k, isident, IB, s0, ln
+    jnz k, n4
+    call x, fail, 14
+n4: add a, f, FNS
+    st pos, a, 0
+    add a, f, FNL
+    st ln, a, 0
+    mov j, 0
+n4c: ge z, j, ln
+    jnz z, n4d
+    add a, s0, j
+    add a, a, IB
+    ld c, a, 0
+    add a, pos, FNB
+    st c, a, 0
+    addi pos, pos, 1
+    addi j, j, 1
+    jmp n4c
+n4d: addi f, f, 1
+    jmp n3
+n5: ; varsayilan f<indeks>
+    mov f, 0
+n6: ge z, f, nf
+    jnz z, n9
+    add a, f, FNS
+    st pos, a, 0
+    add a, pos, FNB
+    mov c, 102
+    st c, a, 0
+    addi pos, pos, 1
+    call l, fmtnum, f, 0
+    mov j, 0
+n7: ge z, j, l
+    jnz z, n8
+    add a, j, CB
+    ld c, a, 0
+    add a, pos, FNB
+    st c, a, 0
+    addi pos, pos, 1
+    addi j, j, 1
+    jmp n7
+n8: addi l, l, 1
+    add a, f, FNL
+    st l, a, 0
+    addi f, f, 1
+    jmp n6
+n9: ; liste sonu
+    ld li, G, 35
+    ld nl, G, 25
+    eq z, li, nl
+    jnz z, n10
+    call x, fail, 3
+n10: ; islev adlari benzersiz
+    mov i, 0
+x0: ge z, i, nf
+    jnz z, x9
+    add a, i, FNS
+    ld si, a, 0
+    add a, i, FNL
+    ld li2, a, 0
+    addi j, i, 1
+x1: ge z, j, nf
+    jnz z, x8
+    add a, j, FNS
+    ld sj, a, 0
+    add a, j, FNL
+    ld lj, a, 0
+    call e, eqbb, FNB, si, li2, FNB, sj, lj
+    jz e, x2
+    call x, fail, 14
+x2: addi j, j, 1
+    jmp x1
+x8: addi i, i, 1
+    jmp x0
+x9: ; sidecar bolgeleri
+    ld nsp, G, 26
+    mov prev, -1
+    mov i, 0
+s0l: ge z, i, nsp
+    jnz z, s9
+    add a, i, SPS
+    ld s0, a, 0
+    add a, i, SPL
+    ld ln, a, 0
+    add a, i, SPO
+    ld so, a, 0
+    call k, isident, IB, s0, ln
+    jz k, sbad
+    eqi z, ln, 3
+    jz z, s1b
+    add a, s0, IB
+    ld b0, a, 0
+    ld b1, a, 1
+    ld b2, a, 2
+    eqi z, b0, 98
+    jz z, s1b
+    eqi z, b1, 115
+    jz z, s1b
+    eqi z, b2, 115
+    jnz z, sbad
+s1b: ; anahtar adlariyla cakisma
+    mov j, 0
+s2l: ge z, j, nk
+    jnz z, s3
+    add a, j, KNS
+    ld sj, a, 0
+    add a, j, KNL
+    ld lj, a, 0
+    call e, eqbuf, s0, ln, NC, sj, lj
+    jnz e, sbad
+    addi j, j, 1
+    jmp s2l
+s3: le z, so, prev
+    jnz z, sbad
+    ld bs, G, 19
+    gt z, so, bs
+    jnz z, sbad
+    mov prev, so
+    addi i, i, 1
+    jmp s0l
+sbad: call x, fail, 14
+s9: ; ad tekrari (bolgeler)
+    mov i, 0
+y0: ge z, i, nsp
+    jnz z, y9
+    add a, i, SPS
+    ld si, a, 0
+    add a, i, SPL
+    ld li2, a, 0
+    addi j, i, 1
+y1: ge z, j, nsp
+    jnz z, y8
+    add a, j, SPS
+    ld sj, a, 0
+    add a, j, SPL
+    ld lj, a, 0
+    call e, eqbuf, si, li2, IB, sj, lj
+    jz e, y2
+    call x, fail, 14
+y2: addi j, j, 1
+    jmp y1
+y8: addi i, i, 1
+    jmp y0
+y9: ret 0
+}
+
+; ---------- gorunum yazimi ----------
+func pkey(k) {
+    add a, k, KNS
+    ld s, a, 0
+    add a, k, KNL
+    ld l, a, 0
+    call x, pbuf, NC, s, l
+    ret 0
+}
+func pfn(f) {
+    add a, f, FNS
+    ld s, a, 0
+    add a, f, FNL
+    ld l, a, 0
+    call x, pbuf, FNB, s, l
+    ret 0
+}
+; op / host adi (NMB ad dizini)
+func pname(i) {
+    add a, i, NS
+    ld s, a, 0
+    add a, i, NL
+    ld l, a, 0
+    call x, pbuf, NMB, s, l
+    ret 0
+}
+func poff(d) {
+    jz d, e
+    call x, pc, 43
+    call x, pn, d
+e:  ret 0
+}
+data S_HDR = "; PMO1 gorunumu (gor): sayisal nesnenin okunabilir hali; yaz ile sayilara donusur\0"
+data S_PMO = "pmo 1\0"
+data S_FLAGS = "flags \0"
+data S_MEMORY = "memory \0"
+data S_ENTRY = "entry \0"
+data S_KEY = "key \0"
+data S_SCALAR = " scalar\0"
+data S_ARRAY = " array\0"
+data S_CONST = "const\0"
+data S_DATA = "data\0"
+data S_ARRAYL = "  array \0"
+data S_WORDS = "  words\0"
+data S_CMT = "   ; \"\0"
+data S_BSSL = "bss \0"
+data S_SPACE = "space \0"
+data S_FUNC = "func \0"
+data S_END = "end\0"
+
+; ilk m baslik gercekten damgali (stp) anahtarlar mi
+func firstm(m, stp) {
+    ld nh, G, 21
+    gt z, m, nh
+    jnz z, no
+    mov h, 0
+l1: ge z, h, m
+    jnz z, yes
+    add a, h, HDK
+    ld k, a, 0
+    add a, k, KS
+    ld s, a, 0
+    ne z, s, stp
+    jnz z, no
+    addi h, h, 1
+    jmp l1
+yes: ret 1
+no: ret 0
+}
+
+; duz sayi alani: yer tutucu ise $ANAHTAR / -$ANAHTAR
+func numtok(v) {
+    call sk, sentinel, v
+    ld ky, G, 0
+    jnz sk, n1
+    call x, pn, v
+    ret 0
+n1: eqi z, sk, 3
+    jz z, n2
+    call x, fail, 10
+n2: eqi z, sk, 2
+    jz z, n3
+    call x, pc, 45
+n3: call x, pc, 36
+    call x, pkey, ky
+    ret 0
+}
+
+func consttok(v) {
+    lti z, v, 0
+    jnz z, plain
+    call sk, sentinel, v
+    ld ky, G, 0
+    jz sk, plain
+    eqi z, sk, 1
+    jnz z, c1
+    call x, fail, 10
+c1: call x, pc, 36
+    call x, pkey, ky
+    ret 0
+plain: call x, pu, v
+    ret 0
+}
+
+; dogrudan sayi isleneni (konum ps): bagil kayit varsa baglayici ifadesi
+func immtok(v, ps) {
+    add a, ps, HD
+    ld h, a, 0
+    jnz h, r0
+    call x, numtok, v
+    ret 0
+r0: call sk, sentinel, v
+    jz sk, r1
+    call x, fail, 9
+r1: ld stp, G, 38
+    addi stp, stp, 1
+    st stp, G, 38
+    mov m, 0
+    mov allone, 1
+    mov n1, h
+r2: jz n1, r3
+    addi n2, n1, -1
+    add a, n2, RK
+    ld ky, a, 0
+    add a, n2, RC
+    ld cf, a, 0
+    add a, ky, KS
+    st stp, a, 0
+    add a, m, RTK
+    st ky, a, 0
+    add a, m, RTC
+    st cf, a, 0
+    eqi z, cf, 1
+    jnz z, r2a
+    mov allone, 0
+r2a: addi m, m, 1
+    add a, n2, RX
+    ld n1, a, 0
+    jmp r2
+r3: ld cn, G, 24
+    add cn, cn, m
+    st cn, G, 24
+    ld nh, G, 21
+    ld nd, G, 17
+    jz allone, raw
+    call fm, firstm, m, stp
+    jz fm, raw
+    ; &bss / &BOLGE
+    ne z, m, nh
+    jnz z, b1
+    addi t, nd, 1
+    lt z, v, t
+    jnz z, b1
+    sub off, v, nd
+    addi off, off, -1
+    ld nsp, G, 26
+    mov best, -1
+    mov i, 0
+sb: ge z, i, nsp
+    jnz z, sbe
+    add a, i, SPO
+    ld so, a, 0
+    gt z, so, off
+    jnz z, sbe
+    mov best, i
+    addi i, i, 1
+    jmp sb
+sbe: call x, pc, 38
+    lti z, best, 0
+    jz z, sbn
+    call x, pdat, D_BSS
+    call x, poff, off
+    ret 0
+sbn: add a, best, SPS
+    ld s0, a, 0
+    add a, best, SPL
+    ld l0, a, 0
+    call x, pbuf, IB, s0, l0
+    add a, best, SPO
+    ld so, a, 0
+    sub d, off, so
+    call x, poff, d
+    ret 0
+b1: ; &ANAHTAR (m. baslik)
+    ge z, m, nh
+    jnz z, b2
+    add a, m, HDI
+    ld hi, a, 0
+    addi t, hi, 1
+    lt z, v, t
+    jnz z, b2
+    call x, pc, 38
+    add a, m, HDK
+    ld ky, a, 0
+    call x, pkey, ky
+    sub d, v, hi
+    addi d, d, -1
+    call x, poff, d
+    ret 0
+b2: ; ~ANAHTAR (m-1. basligin hemen sonrasi)
+    addi mm, m, -1
+    add a, mm, HDI
+    ld hi, a, 0
+    addi t, hi, 2
+    lt z, v, t
+    jnz z, raw
+    call x, pc, 126
+    add a, mm, HDK
+    ld ky, a, 0
+    call x, pkey, ky
+    sub d, v, hi
+    addi d, d, -2
+    call x, poff, d
+    ret 0
+raw: ; v{K*c|K*c}  (anahtar sirasiyla)
+    mov i, 0
+o1: addi t, m, -1
+    ge z, i, t
+    jnz z, o9
+    mov j, i
+    addi k2, i, 1
+o2: ge z, k2, m
+    jnz z, o3
+    add a, k2, RTK
+    ld x1, a, 0
+    add a, j, RTK
+    ld x2, a, 0
+    lt z, x1, x2
+    jz z, o2n
+    mov j, k2
+o2n: addi k2, k2, 1
+    jmp o2
+o3: ; i ile j yer degistir
+    add a, i, RTK
+    ld x1, a, 0
+    add b, j, RTK
+    ld x2, b, 0
+    st x2, a, 0
+    st x1, b, 0
+    add a, i, RTC
+    ld x1, a, 0
+    add b, j, RTC
+    ld x2, b, 0
+    st x2, a, 0
+    st x1, b, 0
+    addi i, i, 1
+    jmp o1
+o9: call x, pn, v
+    call x, pc, 123
+    mov i, 0
+o10: ge z, i, m
+    jnz z, o11
+    jz i, o10a
+    call x, pc, 124
+o10a: add a, i, RTK
+    ld ky, a, 0
+    call x, pkey, ky
+    call x, pc, 42
+    add a, i, RTC
+    ld cf, a, 0
+    call x, pn, cf
+    addi i, i, 1
+    jmp o10
+o11: call x, pc, 125
+    ret 0
+}
+
+; veri sozcuklerini [a, b) 16'sarli satirlarla yaz
+func flushrun(a0, b0) {
+    ld ds, G, 18
+    mov i, a0
+f1: ge z, i, b0
+    jnz z, f9
+    addi e, i, 16
+    gt z, e, b0
+    jz z, f2
+    mov e, b0
+f2: call x, pdat, S_WORDS
+    mov allok, 1
+    mov anynz, 0
+    mov j, i
+f3: ge z, j, e
+    jnz z, f5
+    call x, pc, 32
+    add t, ds, j
+    call v, lv, t
+    call x, numtok, v
+    jz v, f4
+    mov anynz, 1
+    lti z, v, 32
+    jnz z, f4b
+    gti z, v, 126
+    jz z, f4
+f4b: mov allok, 0
+f4: addi j, j, 1
+    jmp f3
+f5: jz allok, f8
+    jz anynz, f8
+    call x, pdat, S_CMT
+    mov j, i
+f6: ge z, j, e
+    jnz z, f7
+    add t, ds, j
+    call v, lv, t
+    jnz v, f6a
+    call x, pc, 92
+    call x, pc, 48
+    jmp f6n
+f6a: call x, pc, v
+f6n: addi j, j, 1
+    jmp f6
+f7: call x, pc, 34
+f8: call x, pc, 10
+    mov i, e
+    jmp f1
+f9: ret 0
+}
+
+; bir islev: baslik, etiketler, komutlar
+func genfunc(f) {
+    call x, pc, 10
+    call x, pdat, S_FUNC
+    call x, pfn, f
+    call x, pc, 32
+    add a, f, FNP
+    ld v, a, 0
+    call x, pn, v
+    call x, pc, 32
+    add a, f, FNR
+    ld v, a, 0
+    call x, pn, v
+    call x, pc, 10
+    add a, f, FNC
+    ld nc, a, 0
+    add a, f, FIS
+    ld ip0, a, 0
+    ; etiket isaretlerini temizle
+    mov i, 0
+    mov zr, 0
+c0: gt z, i, nc
+    jnz z, c1
+    add a, i, LT
+    st zr, a, 0
+    addi i, i, 1
+    jmp c0
+c1: ; etiket hedeflerini isaretle
+    mov ip, ip0
+    mov i, 0
+m0: ge z, i, nc
+    jnz z, m9
+    call op, lv, ip
+    add a, op, NOPSV
+    ld nops, a, 0
+    mov j, 0
+m1: ge z, j, nops
+    jnz z, m8
+    call c, opclass, op, j
+    eqi z, c, 3
+    jz z, m7
+    add t, ip, j
+    addi t, t, 1
+    call v, lv, t
+    lti z, v, 0
+    jnz z, m7
+    gt z, v, nc
+    jnz z, m7
+    mov one, 1
+    add a, v, LT
+    st one, a, 0
+m7: addi j, j, 1
+    jmp m1
+m8: addi ip, ip, 1
+    add ip, ip, nops
+    addi i, i, 1
+    jmp m0
+m9: ; yaz
+    mov ip, ip0
+    mov i, 0
+p0: gt z, i, nc
+    jnz z, p9
+    add a, i, LT
+    ld l, a, 0
+    jz l, p1
+    call x, pc, 76
+    call x, pn, i
+    call x, pc, 58
+    call x, pc, 10
+p1: ge z, i, nc
+    jnz z, p9
+    call x, pc, 32
+    call x, pc, 32
+    call op, lv, ip
+    call x, pname, op
+    add a, op, NOPSV
+    ld nops, a, 0
+    mov j, 0
+p2: ge z, j, nops
+    jnz z, p8
+    jz j, p2a
+    call x, pc, 44
+p2a: call x, pc, 32
+    add ps, ip, j
+    addi ps, ps, 1
+    call v, lv, ps
+    call c, opclass, op, j
+    eqi z, c, 2
+    jnz z, p3
+    add a, ps, HD
+    ld h, a, 0
+    jz h, p3
+    call x, fail, 8
+p3: eqi z, c, 1
+    jz z, q2
+    call x, pc, 114
+    call x, pn, v
+    jmp pe
+q2: eqi z, c, 2
+    jz z, q3
+    call x, immtok, v, ps
+    jmp pe
+q3: eqi z, c, 3
+    jz z, q4
+    lti z, v, 0
+    jnz z, q3a
+    gt z, v, nc
+    jnz z, q3a
+    call x, pc, 76
+    call x, pn, v
+    jmp pe
+q3a: call x, pc, 64
+    call x, pn, v
+    jmp pe
+q4: eqi z, c, 4
+    jz z, q5
+    lti z, v, 0
+    jnz z, q4a
+    ld nf, G, 20
+    ge z, v, nf
+    jnz z, q4a
+    call x, pfn, v
+    jmp pe
+q4a: call x, pc, 35
+    call x, pn, v
+    jmp pe
+q5: eqi z, c, 5
+    jz z, q6
+    call x, pc, 99
+    call x, pn, v
+    jmp pe
+q6: eqi z, c, 6
+    jz z, q7
+    lti z, v, 0
+    jnz z, q7
+    ld hc, G, 5
+    ge z, v, hc
+    jnz z, q7
+    ld oc, G, 4
+    add t, oc, v
+    call x, pname, t
+    jmp pe
+q7: call x, pn, v
+pe: eqi z, c, 2
+    jnz z, pe2
+    call sk, sentinel, v
+    jz sk, pe2
+    call x, fail, 10
+pe2: addi j, j, 1
+    jmp p2
+p8: call x, pc, 10
+    addi ip, ip, 1
+    add ip, ip, nops
+    addi i, i, 1
+    jmp p0
+p9: call x, pdat, S_END
+    call x, pc, 10
+    ret 0
+}
+
+; tum gorunum (quiet=1: yalniz dogrulama)
+func genview(quiet) {
+    st quiet, G, 2
+    ld cn, G, 37
+    st cn, G, 24
+    call x, pdat, S_HDR
+    call x, pc, 10
+    call x, pdat, S_PMO
+    call x, pc, 10
+    call x, pdat, S_FLAGS
+    ld v, G, 12
+    call x, pn, v
+    call x, pc, 10
+    call x, pdat, S_MEMORY
+    ld v, G, 13
+    call x, pn, v
+    call x, pc, 10
+    call x, pdat, S_ENTRY
+    ld ent, G, 14
+    ld nf, G, 20
+    ge z, ent, nf
+    jnz z, e1
+    call x, pfn, ent
+    jmp e2
+e1: call x, pc, 35
+    call x, pn, ent
+e2: call x, pc, 10
+    ld nk, G, 8
+    mov i, 0
+k0: ge z, i, nk
+    jnz z, k9
+    call x, pdat, S_KEY
+    call x, pkey, i
+    add a, i, KK
+    ld kd, a, 0
+    jnz kd, k1
+    call x, pdat, S_SCALAR
+    jmp k2
+k1: call x, pdat, S_ARRAY
+k2: call x, pc, 10
+    addi i, i, 1
+    jmp k0
+k9: call x, pdat, S_CONST
+    ld nco, G, 15
+    ld cs, G, 16
+    mov i, 0
+c0: ge z, i, nco
+    jnz z, c9
+    call x, pc, 32
+    add t, cs, i
+    call v, lv, t
+    call x, consttok, v
+    addi i, i, 1
+    jmp c0
+c9: call x, pc, 10
+    call x, pdat, S_DATA
+    call x, pc, 10
+    ld nd, G, 17
+    ld ds, G, 18
+    mov i, 0
+    mov rs, 0
+d0: ge z, i, nd
+    jnz z, d9
+    add t, ds, i
+    call v, lv, t
+    call sk, sentinel, v
+    ld ky, G, 0
+    eqi z, sk, 3
+    jz z, d8
+    call x, flushrun, rs, i
+    call x, pdat, S_ARRAYL
+    call x, pkey, ky
+    call x, pc, 10
+    addi rs, i, 1
+d8: addi i, i, 1
+    jmp d0
+d9: call x, flushrun, rs, nd
+    call x, pdat, S_BSSL
+    ld v, G, 19
+    call x, pn, v
+    call x, pc, 10
+    ld nsp, G, 26
+    mov i, 0
+s0: ge z, i, nsp
+    jnz z, s9
+    call x, pdat, S_SPACE
+    add a, i, SPS
+    ld s1, a, 0
+    add a, i, SPL
+    ld l1, a, 0
+    call x, pbuf, IB, s1, l1
+    call x, pc, 32
+    add a, i, SPO
+    ld v, a, 0
+    call x, pn, v
+    call x, pc, 10
+    addi i, i, 1
+    jmp s0
+s9: mov f, 0
+f0: ge z, f, nf
+    jnz z, f9
+    call x, genfunc, f
+    addi f, f, 1
+    jmp f0
+f9: ld cn, G, 24
+    ld nb, G, 9
+    eq z, cn, nb
+    jnz z, f10
+    call x, fail, 8
+f10: ret 0
+}
+
+; ======================= yaz: gorunum -> PMO1 =======================
+; G dizini (yaz): 8 nk | 21 nh | 33 govde | 40 bagil-kayit-yazma-kapali | 41 liste konumu | 42 satirdaki sayi | 43 nrel | 44 entry jetonu baslangic | 45 uzunluk |
+;   46 etiket sayisi | 47 nco | 48 nd | 49 bss | 50 mem | 51 flag | 52 nf | 53 nimm (bagil kayit adedi, gecici) | 54 entry degeri | 55 ndpos | 56 nsp
+data D_PMO2 = "pmo\0"
+data D_FLAGS2 = "flags\0"
+data D_MEMORY2 = "memory\0"
+data D_ENTRY2 = "entry\0"
+data D_KEY2 = "key\0"
+data D_CONST2 = "const\0"
+data D_DATA2 = "data\0"
+data D_ARRAY2 = "array\0"
+data D_WORDS2 = "words\0"
+data D_BSS2 = "bss\0"
+data D_SPACE2 = "space\0"
+data D_FUNC2 = "func\0"
+data D_END2 = "end\0"
+data D_SCALAR2 = "scalar\0"
+data D_ARRAYK2 = "array\0"
+data D_ONE = "1\0"
+data D_ZERO = "0\0"
+
+; sonraki bos olmayan satir: jetonlar TS/TL'de; ntok doner (0 = dosya sonu); G[3] = sonraki konum
+func getline(p, n) {
+g0: ge z, p, n
+    jnz z, geof
+    mov nt, 0
+g1: ge z, p, n
+    jnz z, gdone
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, g8
+    eqi z, c, 59
+    jnz z, gcm
+    lei z, c, 32
+    jnz z, g1n
+    eqi z, c, 44
+    jnz z, g1n
+    mov s0, p
+g2: ge z, p, n
+    jnz z, g3
+    add a, p, IB
+    ld c, a, 0
+    lei z, c, 32
+    jnz z, g3
+    eqi z, c, 44
+    jnz z, g3
+    eqi z, c, 59
+    jnz z, g3
+    addi p, p, 1
+    jmp g2
+g3: gei z, nt, 4096
+    jz z, g3a
+    call x, fail, 5
+g3a: add a, nt, TS
+    st s0, a, 0
+    sub l, p, s0
+    add a, nt, TL
+    st l, a, 0
+    addi nt, nt, 1
+    jmp g1
+g1n: addi p, p, 1
+    jmp g1
+gcm: ge z, p, n
+    jnz z, gdone
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, g8
+    addi p, p, 1
+    jmp gcm
+g8: addi p, p, 1
+gdone: jnz nt, gret
+    jmp g0
+gret: st p, G, 3
+    ret nt
+geof: st p, G, 3
+    ret 0
+}
+
+; jeton i, veri dizesi d'ye esit mi
+func tokeq(i, d) {
+    add a, i, TS
+    ld s, a, 0
+    add a, i, TL
+    ld l, a, 0
+    call r, streq, s, l, d
+    ret r
+}
+
+; sonraki satir d ile baslamali (yoksa fail(40)); ntok doner, G[3] ilerler
+func need(p, n, d) {
+    call nt, getline, p, n
+    jnz nt, n1
+    call x, fail, 40
+n1: call r, tokeq, 0, d
+    jnz r, n2
+    call x, fail, 40
+n2: ret nt
+}
+
+; anahtar adi (IB[s, s+l)) -> indeks ya da -1
+func kfind(s, l) {
+    ld nk, G, 8
+    mov k, 0
+k1: ge z, k, nk
+    jnz z, kno
+    add a, k, KNS
+    ld o, a, 0
+    add a, k, KNL
+    ld m, a, 0
+    call e, eqbuf, s, l, NC, o, m
+    jnz e, kyes
+    addi k, k, 1
+    jmp k1
+kyes: ret k
+kno: ret -1
+}
+func spfind(s, l) {
+    ld ns, G, 56
+    mov k, 0
+k1: ge z, k, ns
+    jnz z, kno
+    add a, k, SPS
+    ld o, a, 0
+    add a, k, SPL
+    ld m, a, 0
+    call e, eqbuf, s, l, IB, o, m
+    jnz e, kyes
+    addi k, k, 1
+    jmp k1
+kyes: ret k
+kno: ret -1
+}
+func ffind(s, l) {
+    ld nf, G, 52
+    mov k, 0
+k1: ge z, k, nf
+    jnz z, kno
+    add a, k, FNS
+    ld o, a, 0
+    add a, k, FNL
+    ld m, a, 0
+    call e, eqbuf, s, l, IB, o, m
+    jnz e, kyes
+    addi k, k, 1
+    jmp k1
+kyes: ret k
+kno: ret -1
+}
+
+; IB[s, s+l) yalniz rakam mi (en az 1)
+func isdig(s, l) {
+    lei z, l, 0
+    jnz z, no
+    mov i, 0
+d1: ge z, i, l
+    jnz z, yes
+    add a, s, i
+    add a, a, IB
+    ld c, a, 0
+    lti z, c, 48
+    jnz z, no
+    gti z, c, 57
+    jnz z, no
+    addi i, i, 1
+    jmp d1
+yes: ret 1
+no: ret 0
+}
+
+; duz alan jetonu: $ANAHTAR | -$ANAHTAR | sayi (isaretli).  fail 46 / 30 / 31 / 47
+func refval(s, l) {
+    add a, s, IB
+    ld c, a, 0
+    eqi z, c, 36
+    jnz z, r1
+    eqi z, c, 45
+    jz z, rnum
+    lti z, l, 2
+    jnz z, rnum
+    addi a, s, 1
+    add a, a, IB
+    ld c1, a, 0
+    eqi z, c1, 36
+    jz z, rnum
+r1: ; $ANAHTAR / -$ANAHTAR
+    mov ng, 0
+    mov o, s
+    eqi z, c, 45
+    jz z, r2
+    mov ng, 1
+    addi o, o, 1
+r2: addi o, o, 1
+    add t, s, l
+    sub l2, t, o
+    call k, kfind, o, l2
+    lti z, k, 0
+    jnz z, rbad
+    call ok, isident, IB, o, l2
+    jz ok, rbad
+    add a, k, KK
+    ld kd, a, 0
+    jnz kd, rbad
+    mov s1, 1845493760
+    add v, s1, k
+    jz ng, rout
+    neg v, v
+rout: ret v
+rbad: call x, fail, 46
+rnum: call v, parsenum, s, l, 0, 30, 31
+    call sk, sentinel, v
+    jz sk, rok
+    call x, fail, 47
+rok: ret v
+}
+
+; ---------- yazim (liste) ----------
+func put(v) {
+    ld q, G, 2
+    jnz q, p1
+    ld cnt, G, 42
+    jz cnt, p0
+    host putc, 32
+p0: host puti, v
+p1: ld cnt, G, 42
+    addi cnt, cnt, 1
+    st cnt, G, 42
+    ld ps, G, 41
+    addi ps, ps, 1
+    st ps, G, 41
+    ret 0
+}
+func putu(v) {
+    ld q, G, 2
+    jnz q, p1
+    ld cnt, G, 42
+    jz cnt, p0
+    host putc, 32
+p0: lti z, v, 0
+    jnz z, big
+    host puti, v
+    jmp p1
+big: shri t, v, 1
+    divi q2, t, 5
+    muli t, q2, 10
+    sub r, v, t
+    host puti, q2
+    addi r, r, 48
+    host putc, r
+p1: ld cnt, G, 42
+    addi cnt, cnt, 1
+    st cnt, G, 42
+    ld ps, G, 41
+    addi ps, ps, 1
+    st ps, G, 41
+    ret 0
+}
+func endline() {
+    ld q, G, 2
+    jnz q, e
+    host putc, 10
+e:  mov zr, 0
+    st zr, G, 42
+    ret 0
+}
+func addrel(ps, k, cf) {
+    ld off, G, 40
+    jnz off, e
+    ld nr, G, 43
+    gei z, nr, 65536
+    jz z, a1
+    call x, fail, 5
+a1: add a, nr, RP
+    st ps, a, 0
+    add a, nr, RK
+    st k, a, 0
+    add a, nr, RC
+    st cf, a, 0
+    addi nr, nr, 1
+    st nr, G, 43
+e:  ret 0
+}
+
+; ---------- ayristirma ----------
+func yparse(p, n) {
+    call nt, need, p, n, D_PMO2
+    ld p, G, 3
+    eqi z, nt, 2
+    jz z, e41
+    call r, tokeq, 1, D_ONE
+    jnz r, y1
+e41: call x, fail, 41
+y1: call nt, need, p, n, D_FLAGS2
+    ld p, G, 3
+    eqi z, nt, 2
+    jz z, e42
+    call r, tokeq, 1, D_ZERO
+    jnz r, y1a
+    call r, tokeq, 1, D_ONE
+    jnz r, y1b
+e42: call x, fail, 42
+y1a: mov flag, 0
+    jmp y2
+y1b: mov flag, 1
+y2: st flag, G, 51
+    call nt, need, p, n, D_MEMORY2
+    ld p, G, 3
+    eqi z, nt, 2
+    jnz z, y2a
+    call x, fail, 43
+y2a: ld s, TS, 1
+    ld l, TL, 1
+    call mem, parsenum, s, l, 1, 30, 31
+    st mem, G, 50
+    call nt, need, p, n, D_ENTRY2
+    ld p, G, 3
+    eqi z, nt, 2
+    jnz z, y3
+    call x, fail, 44
+y3: ld s, TS, 1
+    ld l, TL, 1
+    st s, G, 44
+    st l, G, 45
+    ; ---- anahtarlar
+    mov nk, 0
+    mov ncp, 0
+k0: call nt, getline, p, n
+    jz nt, k9
+    call r, tokeq, 0, D_KEY2
+    jz r, k9
+    ld p, G, 3
+    eqi z, nt, 3
+    jz z, kbad
+    ld s, TS, 1
+    ld l, TL, 1
+    call ok, isident, IB, s, l
+    jz ok, kbad
+    gti z, l, 64
+    jnz z, kbad
+    call r, tokeq, 1, D_BSS2
+    jnz r, kbad
+    ld s2, TS, 2
+    ld l2, TL, 2
+    call r, streq, s2, l2, D_SCALAR2
+    jnz r, k1s
+    call r, streq, s2, l2, D_ARRAYK2
+    jnz r, k1a
+kbad: call x, fail, 45
+k1s: mov kd, 0
+    jmp k2
+k1a: mov kd, 1
+k2: st nk, G, 8
+    call dup, kfind, s, l
+    gei z, dup, 0
+    jnz z, kbad
+    gei z, nk, 4097
+    jz z, k3
+    call x, fail, 5
+k3: mov j, 0
+k4: ge z, j, l
+    jnz z, k5
+    add a, s, j
+    add a, a, IB
+    ld c, a, 0
+    add a, ncp, j
+    add a, a, NC
+    st c, a, 0
+    addi j, j, 1
+    jmp k4
+k5: add a, nk, KNS
+    st ncp, a, 0
+    add a, nk, KNL
+    st l, a, 0
+    add a, nk, KK
+    st kd, a, 0
+    add ncp, ncp, l
+    addi nk, nk, 1
+    st nk, G, 8
+    jmp k0
+k9: gti z, nk, 4096
+    jz z, c0
+    call x, fail, 5
+c0: ; ---- sabitler
+    call nt, need, p, n, D_CONST2
+    ld p, G, 3
+    mov nco, 0
+    mov i, 1
+c1: ge z, i, nt
+    jnz z, c9
+    add a, i, TS
+    ld s, a, 0
+    add a, i, TL
+    ld l, a, 0
+    add a, s, IB
+    ld ch, a, 0
+    eqi z, ch, 36
+    jnz z, c2
+    eqi z, ch, 45
+    jz z, c3
+    ; "-" ile baslayan: -$ANAHTAR ise ref, degilse sayi
+    lti z, l, 2
+    jnz z, c3
+    addi a, s, 1
+    add a, a, IB
+    ld c1, a, 0
+    eqi z, c1, 36
+    jz z, c3
+c2: call v, refval, s, l
+    lti z, v, 0
+    jz z, c5
+    call x, fail, 46
+c3: call v, parsenum, s, l, 1, 30, 31
+    lti z, v, 0
+    jnz z, c5
+    call sk, sentinel, v
+    jz sk, c5
+    call x, fail, 47
+c5: gei z, nco, 524288
+    jz z, c6
+    call x, fail, 5
+c6: add a, nco, CV
+    st v, a, 0
+    addi nco, nco, 1
+    addi i, i, 1
+    jmp c1
+c9: st nco, G, 47
+    ; ---- veri
+    call nt, need, p, n, D_DATA2
+    ld p, G, 3
+    mov nd, 0
+    mov nh, 0
+d0: call nt, getline, p, n
+    jz nt, d9
+    call r, tokeq, 0, D_ARRAY2
+    jnz r, d1
+    call r, tokeq, 0, D_WORDS2
+    jnz r, d5
+    jmp d9
+d1: ld p, G, 3
+    eqi z, nt, 2
+    jz z, dbad
+    ld s, TS, 1
+    ld l, TL, 1
+    call k, kfind, s, l
+    lti z, k, 0
+    jnz z, dbad
+    add a, k, KK
+    ld kd, a, 0
+    eqi z, kd, 1
+    jz z, dbad
+    add a, k, HKI
+    ld hk, a, 0
+    jnz hk, dbad
+    gei z, nd, 524288
+    jz z, d2
+    call x, fail, 5
+d2: addi t, nd, 1
+    add a, k, HKI
+    st t, a, 0
+    add a, nh, HDI
+    st nd, a, 0
+    add a, nh, HDK
+    st k, a, 0
+    addi nh, nh, 1
+    add a, nd, DVV
+    mov zr, 0
+    st zr, a, 0
+    addi t, k, 1
+    add a, nd, DHK
+    st t, a, 0
+    addi nd, nd, 1
+    jmp d0
+dbad: call x, fail, 48
+d5: ld p, G, 3
+    mov i, 1
+d6: ge z, i, nt
+    jnz z, d0
+    add a, i, TS
+    ld s, a, 0
+    add a, i, TL
+    ld l, a, 0
+    call v, refval, s, l
+    gei z, nd, 524288
+    jz z, d7
+    call x, fail, 5
+d7: add a, nd, DVV
+    st v, a, 0
+    mov zr, 0
+    add a, nd, DHK
+    st zr, a, 0
+    addi nd, nd, 1
+    addi i, i, 1
+    jmp d6
+d9: st nd, G, 48
+    st nh, G, 21
+    ; ---- bss
+    call nt, need, p, n, D_BSS2
+    ld p, G, 3
+    eqi z, nt, 2
+    jnz z, b1
+    call x, fail, 49
+b1: ld s, TS, 1
+    ld l, TL, 1
+    call bss, parsenum, s, l, 1, 30, 31
+    st bss, G, 49
+    ; ---- bolgeler
+    mov nsp, 0
+s0: call nt, getline, p, n
+    jz nt, s9
+    call r, tokeq, 0, D_SPACE2
+    jz r, s9
+    ld p, G, 3
+    eqi z, nt, 3
+    jz z, sbad
+    ld s, TS, 1
+    ld l, TL, 1
+    call ok, isident, IB, s, l
+    jz ok, sbad
+    call r, tokeq, 1, D_BSS2
+    jnz r, sbad
+    call k, kfind, s, l
+    gei z, k, 0
+    jnz z, sbad
+    st nsp, G, 56
+    call k, spfind, s, l
+    gei z, k, 0
+    jnz z, sbad
+    ld s2, TS, 2
+    ld l2, TL, 2
+    call so, parsenum, s2, l2, 1, 30, 31
+    gt z, so, bss
+    jnz z, sbad
+    gei z, nsp, 4096
+    jz z, s1
+    call x, fail, 5
+s1: add a, nsp, SPS
+    st s, a, 0
+    add a, nsp, SPL
+    st l, a, 0
+    add a, nsp, SPO
+    st so, a, 0
+    addi nsp, nsp, 1
+    st nsp, G, 56
+    jmp s0
+sbad: call x, fail, 66
+s9: st nsp, G, 56
+    ; ---- islevler
+    mov f, 0
+f0: call nt, getline, p, n
+    jz nt, f9
+    call r, tokeq, 0, D_FUNC2
+    jz r, f9
+    ld p, G, 3
+    eqi z, nt, 4
+    jz z, fbad
+    ld s, TS, 1
+    ld l, TL, 1
+    call ok, isident, IB, s, l
+    jnz ok, f1
+fbad: call x, fail, 50
+f1: ld s2, TS, 2
+    ld l2, TL, 2
+    call np, parsenum, s2, l2, 1, 30, 31
+    ld s3, TS, 3
+    ld l3, TL, 3
+    call nr, parsenum, s3, l3, 1, 30, 31
+    gei z, f, 4096
+    jz z, f2
+    call x, fail, 5
+f2: add a, f, FNS
+    st s, a, 0
+    add a, f, FNL
+    st l, a, 0
+    add a, f, FNP
+    st np, a, 0
+    add a, f, FNR
+    st nr, a, 0
+    add a, f, FBP
+    st p, a, 0
+    mov ni, 0
+fb0: call nt, getline, p, n
+    jnz nt, fb1
+    call x, fail, 51
+fb1: ld p, G, 3
+    call r, tokeq, 0, D_END2
+    jz r, fb2
+    eqi z, nt, 1
+    jnz z, fb9
+    call x, fail, 51
+fb2: ; etiket satiri: tek jeton, ':' ile biter
+    eqi z, nt, 1
+    jz z, fb3
+    ld s, TS, 0
+    ld l, TL, 0
+    add a, s, l
+    addi a, a, -1
+    add a, a, IB
+    ld c, a, 0
+    eqi z, c, 58
+    jnz z, fb0
+fb3: addi ni, ni, 1
+    jmp fb0
+fb9: add a, f, FNC
+    st ni, a, 0
+    addi f, f, 1
+    jmp f0
+f9: st f, G, 52
+    ; fazla satir
+    call nt, getline, p, n
+    jz nt, g1
+    call x, fail, 52
+g1: ; islev adi tekrari
+    mov i, 0
+u0: ge z, i, f
+    jnz z, u9
+    add a, i, FNS
+    ld si, a, 0
+    add a, i, FNL
+    ld li2, a, 0
+    addi j, i, 1
+u1: ge z, j, f
+    jnz z, u8
+    add a, j, FNS
+    ld sj, a, 0
+    add a, j, FNL
+    ld lj, a, 0
+    call e, eqbb, IB, si, li2, IB, sj, lj
+    jz e, u2
+    call x, fail, 53
+u2: addi j, j, 1
+    jmp u1
+u8: addi i, i, 1
+    jmp u0
+u9: ; entry
+    ld s, G, 44
+    ld l, G, 45
+    add a, s, IB
+    ld c, a, 0
+    eqi z, c, 35
+    jz z, e1
+    addi s, s, 1
+    addi l, l, -1
+    call ent, parsenum, s, l, 1, 30, 31
+    jmp e3
+e1: call ent, ffind, s, l
+    gei z, ent, 0
+    jnz z, e3
+    call x, fail, 54
+e3: st ent, G, 54
+    ret 0
+}
+
+; ---------- dogrudan sayi isleneni ----------
+; ayarlar: G[53] = bagil kayit adedi, RTK/RTC dolu. Python referansindaki imm() ile ayni.
+func relall() {
+    ld nh, G, 21
+    mov h, 0
+a1: ge z, h, nh
+    jnz z, a9
+    add a, h, HDK
+    ld k, a, 0
+    add a, h, RTK
+    st k, a, 0
+    mov one, 1
+    add a, h, RTC
+    st one, a, 0
+    addi h, h, 1
+    jmp a1
+a9: st nh, G, 53
+    ret 0
+}
+; veri indeksi j'den once gelen basliklar (+ istege bagli anahtar k >= 0)
+func relpre(j, extra) {
+    ld nh, G, 21
+    mov h, 0
+    mov m, 0
+a1: ge z, h, nh
+    jnz z, a9
+    add a, h, HDI
+    ld hi, a, 0
+    ge z, hi, j
+    jnz z, a9
+    add a, h, HDK
+    ld k, a, 0
+    add a, m, RTK
+    st k, a, 0
+    mov one, 1
+    add a, m, RTC
+    st one, a, 0
+    addi m, m, 1
+    addi h, h, 1
+    jmp a1
+a9: lti z, extra, 0
+    jnz z, a10
+    add a, m, RTK
+    st extra, a, 0
+    mov one, 1
+    add a, m, RTC
+    st one, a, 0
+    addi m, m, 1
+a10: st m, G, 53
+    ret 0
+}
+
+; ident [A-Za-z_][A-Za-z0-9_]* en uzun onek: IB[s+from ..) icinde bitis (goreli indeks; from ise baslamadiysa from)
+func identrun(s, l, from) {
+    mov j, from
+    ge z, j, l
+    jnz z, e
+    add a, s, j
+    add a, a, IB
+    ld c, a, 0
+    call k, idchar, c, 1
+    jz k, e
+    addi j, j, 1
+r1: ge z, j, l
+    jnz z, e
+    add a, s, j
+    add a, a, IB
+    ld c, a, 0
+    call k, idchar, c, 0
+    jz k, e
+    addi j, j, 1
+    jmp r1
+e:  ret j
+}
+
+func immv(s, l) {
+    mov zr, 0
+    st zr, G, 53
+    add a, s, IB
+    ld c, a, 0
+    mov o, 0
+    eqi z, c, 45
+    jz z, i1
+    mov o, 1
+i1: ; regex 1: -?$ident  |  -?[0-9]+
+    add a, s, o
+    add a, a, IB
+    ld c, a, 0
+    eqi z, c, 36
+    jz z, i2
+    addi f1, o, 1
+    call j, identrun, s, l, f1
+    eq z, j, l
+    jz z, i3
+    gt z, j, f1
+    jz z, i3
+    call v, refval, s, l
+    ret v
+i2: sub l1, l, o
+    add s1, s, o
+    call dg, isdig, s1, l1
+    jz dg, i3
+    call v, refval, s, l
+    ret v
+i3: ; regex 2: [&~]ident([+-][0-9]+)?
+    add a, s, IB
+    ld c, a, 0
+    eqi z, c, 38
+    jnz z, j1
+    eqi z, c, 126
+    jz z, k1
+j1: mov sg, c
+    call j, identrun, s, l, 1
+    gti z, j, 1
+    jz z, k1
+    ; kalan
+    mov off, 0
+    eq z, j, l
+    jnz z, j2
+    add a, s, j
+    add a, a, IB
+    ld sc, a, 0
+    eqi z, sc, 43
+    jnz z, j1a
+    eqi z, sc, 45
+    jz z, k1
+j1a: add s2, s, j
+    addi s2, s2, 1
+    sub l2, l, j
+    addi l2, l2, -1
+    call dg, isdig, s2, l2
+    jz dg, k1
+    call off, parsenum, s2, l2, 0, 30, 31
+    eqi z, sc, 45
+    jz z, j2
+    neg off, off
+j2: ; adi
+    mov nm0, 1
+    addi nl, j, -1
+    ld nd, G, 48
+    eqi z, sg, 38
+    jz z, j5
+    add t0, s, nm0
+    call r, streq, t0, nl, D_BSS2
+    jz r, j3
+    call x, relall
+    addi v, nd, 1
+    add v, v, off
+    ret v
+j3: add t0, s, nm0
+    call sp, spfind, t0, nl
+    lti z, sp, 0
+    jnz z, j5
+    call x, relall
+    add a, sp, SPO
+    ld so, a, 0
+    addi v, nd, 1
+    add v, v, so
+    add v, v, off
+    ret v
+j5: add t0, s, nm0
+    call k, kfind, t0, nl
+    lti z, k, 0
+    jnz z, j6
+    add a, k, HKI
+    ld hk, a, 0
+    jnz hk, j7
+j6: call x, fail, 55
+j7: addi jj, hk, -1
+    eqi z, sg, 38
+    jz z, j8
+    mov mone, -1
+    call x, relpre, jj, mone
+    addi v, jj, 1
+    add v, v, off
+    ret v
+j8: call x, relpre, jj, k
+    addi v, jj, 2
+    add v, v, off
+    ret v
+k1: ; regex 3: -?[0-9]+{...}
+    mov q, 0
+k2: ge z, q, l
+    jnz z, k9
+    add a, s, q
+    add a, a, IB
+    ld c, a, 0
+    eqi z, c, 123
+    jnz z, k3
+    addi q, q, 1
+    jmp k2
+k3: add a, s, l
+    addi a, a, -1
+    add a, a, IB
+    ld c, a, 0
+    eqi z, c, 125
+    jz z, k9
+    ; onek -?[0-9]+
+    mov o, 0
+    add a, s, IB
+    ld c, a, 0
+    eqi z, c, 45
+    jz z, k4
+    mov o, 1
+k4: sub l1, q, o
+    add s1, s, o
+    call dg, isdig, s1, l1
+    jz dg, k9
+    ; { ile } arasinda '}' olmamali
+    addi z0, q, 1
+    addi z1, l, -1
+k5: ge z, z0, z1
+    jnz z, k6
+    add a, s, z0
+    add a, a, IB
+    ld c, a, 0
+    eqi z, c, 125
+    jnz z, k9
+    addi z0, z0, 1
+    jmp k5
+k6: call v, parsenum, s, q, 0, 30, 31
+    ; ogeler
+    addi p0, q, 1
+    mov m, 0
+k7: ; oge [p0, e): '|' ya da '}' (son) kadar
+    mov e, p0
+k7a: ge z, e, z1
+    jnz z, k7b
+    add a, s, e
+    add a, a, IB
+    ld c, a, 0
+    eqi z, c, 124
+    jnz z, k7b
+    addi e, e, 1
+    jmp k7a
+k7b: ; oge = [p0, e)
+    call j, identrun, s, l, p0
+    gt z, j, p0
+    jz z, kbad
+    ge z, j, e
+    jnz z, kbad
+    add a, s, j
+    add a, a, IB
+    ld c, a, 0
+    eqi z, c, 42
+    jz z, kbad
+    addi c0, j, 1
+    ; katsayi [c0, e): -?[1-9][0-9]*
+    ge z, c0, e
+    jnz z, kbad
+    add a, s, c0
+    add a, a, IB
+    ld c, a, 0
+    mov d0, c0
+    eqi z, c, 45
+    jz z, k8
+    addi d0, d0, 1
+    ge z, d0, e
+    jnz z, kbad
+    add a, s, d0
+    add a, a, IB
+    ld c, a, 0
+k8: eqi z, c, 48
+    jnz z, kbad
+    add sc, s, c0
+    sub lc, e, c0
+    sub kl, j, p0
+    add t0, s, p0
+    call ky, kfind, t0, kl
+    lti z, ky, 0
+    jnz z, kbad
+    add a, ky, KK
+    ld kd, a, 0
+    eqi z, kd, 1
+    jz z, kbad
+    ; ayni anahtar iki kez olmamali
+    mov w, 0
+k8a: ge z, w, m
+    jnz z, k8b
+    add a, w, RTK
+    ld kw, a, 0
+    eq z, kw, ky
+    jnz z, kbad
+    addi w, w, 1
+    jmp k8a
+k8b: call cf, parsenum, sc, lc, 0, 56, 56
+    gei z, m, 4096
+    jz z, k8c
+    call x, fail, 56
+k8c: add a, m, RTK
+    st ky, a, 0
+    add a, m, RTC
+    st cf, a, 0
+    addi m, m, 1
+    ; sonraki oge
+    ge z, e, z1
+    jnz z, k9a
+    addi p0, e, 1
+    jmp k7
+kbad: call x, fail, 56
+k9a: st m, G, 53
+    call sk, sentinel, v
+    jz sk, k9b
+    call x, fail, 47
+k9b: ret v
+k9: call x, fail, 57
+    ret 0
+}
+
+; ---------- uretim ----------
+; islev f'nin etiket tablosunu kur (LBS/LBL/LBI); G[46] = adet. Python: ayni ad iki kez ya da gecersiz ad -> 58
+func buildlabels(f) {
+    mov zr, 0
+    st zr, G, 46
+    add a, f, FBP
+    ld p, a, 0
+    ld n, G, 1
+    mov ni, 0
+b0: call nt, getline, p, n
+    jnz nt, b1
+    ret 0
+b1: ld p, G, 3
+    call r, tokeq, 0, D_END2
+    jnz r, b9
+    eqi z, nt, 1
+    jz z, b3
+    ld s, TS, 0
+    ld l, TL, 0
+    add a, s, l
+    addi a, a, -1
+    add a, a, IB
+    ld c, a, 0
+    eqi z, c, 58
+    jz z, b3
+    addi l, l, -1
+    call ok, isident, IB, s, l
+    jnz ok, b2
+    call x, fail, 58
+b2: ld nlab, G, 46
+    mov w, 0
+b2a: ge z, w, nlab
+    jnz z, b2b
+    add a, w, LBS
+    ld s2, a, 0
+    add a, w, LBL
+    ld l2, a, 0
+    call e, eqbb, IB, s, l, IB, s2, l2
+    jz e, b2c
+    call x, fail, 58
+b2c: addi w, w, 1
+    jmp b2a
+b2b: gei z, nlab, 262144
+    jz z, b2d
+    call x, fail, 5
+b2d: add a, nlab, LBS
+    st s, a, 0
+    add a, nlab, LBL
+    st l, a, 0
+    add a, nlab, LBI
+    st ni, a, 0
+    addi nlab, nlab, 1
+    st nlab, G, 46
+    jmp b0
+b3: addi ni, ni, 1
+    jmp b0
+b9: ret 0
+}
+
+; etiket adi (IB[s,s+l)) -> komut indeksi ya da -1
+func labfind(s, l) {
+    ld nlab, G, 46
+    mov w, 0
+l1: ge z, w, nlab
+    jnz z, no
+    add a, w, LBS
+    ld s2, a, 0
+    add a, w, LBL
+    ld l2, a, 0
+    call e, eqbb, IB, s, l, IB, s2, l2
+    jnz e, yes
+    addi w, w, 1
+    jmp l1
+yes: add a, w, LBI
+    ld v, a, 0
+    ret v
+no: ret -1
+}
+
+; operand jetonu (IB[s,s+l)), sinif c, konum ps -> deger (kontroller dahil); bagil kayit adedi G[53]
+func opval(s, l, c, ps) {
+    mov zr, 0
+    st zr, G, 53
+    add a, s, IB
+    ld ch, a, 0
+    eqi z, c, 1
+    jz z, o2
+    ; yazmac: r-?[0-9]+
+    eqi z, ch, 114
+    jz z, ebad61
+    addi s1, s, 1
+    addi l1, l, -1
+    mov o, 0
+    lei z, l1, 0
+    jnz z, ebad61
+    add a, s1, IB
+    ld c1, a, 0
+    eqi z, c1, 45
+    jz z, o1a
+    mov o, 1
+o1a: add s2, s1, o
+    sub l2, l1, o
+    call dg, isdig, s2, l2
+    jz dg, ebad61
+    call v, parsenum, s1, l1, 0, 30, 31
+    jmp ofin
+ebad61: call x, fail, 61
+o2: eqi z, c, 2
+    jz z, o3
+    call v, immv, s, l
+    jmp ofin
+o3: eqi z, c, 3
+    jz z, o4
+    eqi z, ch, 64
+    jz z, o3a
+    addi s1, s, 1
+    addi l1, l, -1
+    call v, parsenum, s1, l1, 0, 30, 31
+    jmp ofin
+o3a: call v, labfind, s, l
+    gei z, v, 0
+    jnz z, ofin
+    call x, fail, 62
+o4: eqi z, c, 4
+    jz z, o5
+    eqi z, ch, 35
+    jz z, o4a
+    addi s1, s, 1
+    addi l1, l, -1
+    call v, parsenum, s1, l1, 0, 30, 31
+    jmp ofin
+o4a: call v, ffind, s, l
+    gei z, v, 0
+    jnz z, ofin
+    call x, fail, 63
+o5: eqi z, c, 5
+    jz z, o6
+    ; c-?[0-9]+
+    eqi z, ch, 99
+    jz z, ebad64
+    addi s1, s, 1
+    addi l1, l, -1
+    mov o, 0
+    lei z, l1, 0
+    jnz z, ebad64
+    add a, s1, IB
+    ld c1, a, 0
+    eqi z, c1, 45
+    jz z, o5a
+    mov o, 1
+o5a: add s2, s1, o
+    sub l2, l1, o
+    call dg, isdig, s2, l2
+    jz dg, ebad64
+    call v, parsenum, s1, l1, 0, 30, 31
+    jmp ofin
+ebad64: call x, fail, 64
+o6: eqi z, c, 6
+    jz z, o7
+    ; host adi ya da sayi
+    ld oc, G, 4
+    ld hc, G, 5
+    mov h, 0
+o6a: ge z, h, hc
+    jnz z, o6n
+    add t, oc, h
+    add a, t, NS
+    ld o1, a, 0
+    add a, t, NL
+    ld m1, a, 0
+    call e, eqbuf, s, l, NMB, o1, m1
+    jnz e, o6y
+    addi h, h, 1
+    jmp o6a
+o6y: mov v, h
+    jmp ofin
+o6n: call v, parsenum, s, l, 0, 30, 31
+    jmp ofin
+o7: call v, parsenum, s, l, 0, 30, 31
+ofin: eqi z, c, 2
+    jnz z, ofin2
+    call sk, sentinel, v
+    jz sk, ofin2
+    call x, fail, 47
+ofin2: mov lo, -2147483648
+    lt z, v, lo
+    jnz z, ebad65
+    mov hi, 2147483647
+    gt z, v, hi
+    jz z, ofin3
+ebad65: call x, fail, 65
+ofin3: ret v
+}
+
+; bir islevin liste yazimi
+func ygenfunc(f) {
+    call x, buildlabels, f
+    add a, f, FNP
+    ld v, a, 0
+    call x, putu, v
+    add a, f, FNR
+    ld v, a, 0
+    call x, putu, v
+    add a, f, FNC
+    ld ni, a, 0
+    call x, put, ni
+    call x, endline
+    add a, f, FBP
+    ld p, a, 0
+    ld n, G, 1
+g0: call nt, getline, p, n
+    ld p, G, 3
+    call r, tokeq, 0, D_END2
+    jnz r, g9
+    eqi z, nt, 1
+    jz z, g1
+    ld s, TS, 0
+    ld l, TL, 0
+    add a, s, l
+    addi a, a, -1
+    add a, a, IB
+    ld c, a, 0
+    eqi z, c, 58
+    jnz z, g0
+g1: ; komut: mnemonic
+    ld s, TS, 0
+    ld l, TL, 0
+    ld oc, G, 4
+    mov op, 0
+g2: ge z, op, oc
+    jnz z, gbad59
+    add a, op, NS
+    ld o1, a, 0
+    add a, op, NL
+    ld m1, a, 0
+    call e, eqbuf, s, l, NMB, o1, m1
+    jnz e, g3
+    addi op, op, 1
+    jmp g2
+gbad59: call x, fail, 59
+g3: add a, op, NOPSV
+    ld nops, a, 0
+    addi t, nt, -1
+    eq z, t, nops
+    jnz z, g4
+    call x, fail, 60
+g4: call x, put, op
+    mov j, 0
+g5: ge z, j, nops
+    jnz z, g8
+    addi ti, j, 1
+    add a, ti, TS
+    ld s, a, 0
+    add a, ti, TL
+    ld l, a, 0
+    ld ps, G, 41
+    call c, opclass, op, j
+    call v, opval, s, l, c, ps
+    ; bagil kayitlari kaydet (once ayiklanmis degerler) sonra yaz
+    ld m, G, 53
+    call x, put, v
+    mov w, 0
+g6: ge z, w, m
+    jnz z, g7
+    add a, w, RTK
+    ld k, a, 0
+    add a, w, RTC
+    ld cf, a, 0
+    call x, addrel, ps, k, cf
+    addi w, w, 1
+    jmp g6
+g7: addi j, j, 1
+    jmp g5
+g8: call x, endline
+    jmp g0
+g9: ret 0
+}
+
+func ygen() {
+    mov zr, 0
+    st zr, G, 41
+    st zr, G, 42
+    ld v, G, 51
+    call x, putu, v
+    ld v, G, 50
+    call x, putu, v
+    ld v, G, 54
+    call x, putu, v
+    call x, endline
+    ld nco, G, 47
+    call x, put, nco
+    mov i, 0
+c1: ge z, i, nco
+    jnz z, c9
+    add a, i, CV
+    ld v, a, 0
+    call x, putu, v
+    addi i, i, 1
+    jmp c1
+c9: call x, endline
+    ld ndpos, G, 41
+    ld nd, G, 48
+    ld nh, G, 21
+    call x, put, nd
+    mov h, 0
+h1: ge z, h, nh
+    jnz z, h9
+    add a, h, HDK
+    ld k, a, 0
+    mov one, 1
+    call x, addrel, ndpos, k, one
+    addi h, h, 1
+    jmp h1
+h9: mov i, 0
+d1: ge z, i, nd
+    jnz z, d9
+    add a, i, DHK
+    ld hk, a, 0
+    jz hk, d2
+    addi k, hk, -1
+    muli v, k, 65536
+    mov s2, 1879048192
+    add v, v, s2
+    call x, put, v
+    jmp d3
+d2: add a, i, DVV
+    ld v, a, 0
+    call x, put, v
+d3: addi i, i, 1
+    jmp d1
+d9: call x, endline
+    ld v, G, 49
+    call x, putu, v
+    call x, endline
+    ld nf, G, 52
+    call x, put, nf
+    call x, endline
+    mov f, 0
+f1: ge z, f, nf
+    jnz z, f9
+    call x, ygenfunc, f
+    addi f, f, 1
+    jmp f1
+f9: ld flag, G, 51
+    jz flag, n9
+    mov f, 0
+n1: ge z, f, nf
+    jnz z, n9
+    add a, f, FNS
+    ld s, a, 0
+    add a, f, FNL
+    ld l, a, 0
+    gti z, l, 256
+    jz z, n2
+    call x, fail, 67
+n2: call x, put, l
+    mov j, 0
+n3: ge z, j, l
+    jnz z, n4
+    add a, s, j
+    add a, a, IB
+    ld c, a, 0
+    call x, put, c
+    addi j, j, 1
+    jmp n3
+n4: call x, endline
+    addi f, f, 1
+    jmp n1
+n9: ld pos, G, 41
+    gti z, pos, 524288
+    jz z, n10
+    call x, fail, 5
+n10: ret 0
+}
+
+; yaz: sozluk + @@GORUNUM + gorunum -> PMO1
+func do_yaz(st0, n) {
+    call x, dictparse, st0, n
+    ld p, G, 3
+    call r, markis, p, n, MK_GOR
+    jnz r, y1
+    call x, fail, 2
+y1: ld q, G, 3
+    call x, yparse, q, n
+    ; gecis 1: sessiz (hatalar, bagil kayitlar)
+    mov one, 1
+    st one, G, 2
+    mov zr, 0
+    st zr, G, 40
+    st zr, G, 43
+    call x, ygen
+    ; gecis 2: baslik + anahtarlar + bagil kayitlar
+    st zr, G, 2
+    ld nk, G, 8
+    ld nb, G, 43
+    host puti, 1347243825
+    host putc, 32
+    host puti, 1
+    host putc, 32
+    host puti, nk
+    host putc, 32
+    host puti, nb
+    host putc, 10
+    mov k, 0
+k1: ge z, k, nk
+    jnz z, k9
+    add a, k, KK
+    ld kd, a, 0
+    host puti, kd
+    host putc, 32
+    jz kd, k2
+    host puti, 1
+    jmp k3
+k2: mov s1, 1845493760
+    add b, s1, k
+    host puti, b
+k3: host putc, 32
+    add a, k, KNL
+    ld l, a, 0
+    host puti, l
+    add a, k, KNS
+    ld o, a, 0
+    mov j, 0
+k4: ge z, j, l
+    jnz z, k5
+    host putc, 32
+    add a, o, j
+    add a, a, NC
+    ld c, a, 0
+    host puti, c
+    addi j, j, 1
+    jmp k4
+k5: host putc, 10
+    addi k, k, 1
+    jmp k1
+k9: ; bagil kayitlar: anahtara gore sayarak sirala (kararli: konum artan korunur)
+    mov i, 0
+    mov zr, 0
+r0: ge z, i, nk
+    jnz z, r1
+    add a, i, RSC
+    st zr, a, 0
+    addi i, i, 1
+    jmp r0
+r1: mov i, 0
+r2: ge z, i, nb
+    jnz z, r3
+    add a, i, RK
+    ld k, a, 0
+    add a, k, RSC
+    ld c, a, 0
+    addi c, c, 1
+    st c, a, 0
+    addi i, i, 1
+    jmp r2
+r3: ; onek toplamlari (RSC[k] -> baslangic)
+    mov i, 0
+    mov acc, 0
+r4: ge z, i, nk
+    jnz z, r5
+    add a, i, RSC
+    ld c, a, 0
+    st acc, a, 0
+    add acc, acc, c
+    addi i, i, 1
+    jmp r4
+r5: mov i, 0
+r6: ge z, i, nb
+    jnz z, r7
+    add a, i, RK
+    ld k, a, 0
+    add a, k, RSC
+    ld pp, a, 0
+    add b, pp, RSO
+    st i, b, 0
+    addi pp, pp, 1
+    st pp, a, 0
+    addi i, i, 1
+    jmp r6
+r7: mov i, 0
+r8: ge z, i, nb
+    jnz z, r9
+    add a, i, RSO
+    ld ix, a, 0
+    add a, ix, RP
+    ld ps, a, 0
+    add a, ix, RK
+    ld k, a, 0
+    add a, ix, RC
+    ld cf, a, 0
+    host puti, ps
+    host putc, 32
+    host puti, k
+    host putc, 32
+    host puti, cf
+    host putc, 10
+    addi i, i, 1
+    jmp r8
+r9: ; gecis 3: liste (kayit yok)
+    mov one, 1
+    st one, G, 40
+    call x, ygen
+    ret 0
+}
+
+; adlar: gorunumden sidecar (func AD / space AD OFSET)
+func do_adlar(st0, n) {
+    mov pass, 0
+a0: mov p, st0
+a1: call nt, getline, p, n
+    jz nt, a8
+    ld p, G, 3
+    jnz pass, a2
+    eqi z, nt, 4
+    jz z, a1
+    call r, tokeq, 0, D_FUNC2
+    jz r, a1
+    call x, pdat, S_FUNCL
+    ld s, TS, 1
+    ld l, TL, 1
+    call x, pbuf, IB, s, l
+    call x, pc, 10
+    jmp a1
+a2: eqi z, nt, 3
+    jz z, a1
+    call r, tokeq, 0, D_SPACE2
+    jz r, a1
+    call x, pdat, S_SPACE
+    ld s, TS, 1
+    ld l, TL, 1
+    call x, pbuf, IB, s, l
+    call x, pc, 32
+    ld s, TS, 2
+    ld l, TL, 2
+    call x, pbuf, IB, s, l
+    call x, pc, 10
+    jmp a1
+a8: eqi z, pass, 0
+    jz z, a9
+    mov pass, 1
+    jmp a0
+a9: ret 0
+}
+data S_FUNCL = "func \0"
+
+; ======================= ana program =======================
+data MGOR = "gor\0"
+data MYAZ = "yaz\0"
+data MADL = "adlar\0"
+data MK_ADLAR = "ADLAR\0"
+data MK_NESNE = "NESNE\0"
+data MK_GOR = "GORUNUM\0"
+
+; ilk satir "@@mod": 1 gor, 2 yaz, 3 adlar; G[34] = govde baslangici
+func getmode(n) {
+    lti z, n, 3
+    jnz z, bad
+    ld c0, IB, 0
+    eqi z, c0, 64
+    jz z, bad
+    add a, IB, 1
+    ld c1, a, 0
+    eqi z, c1, 64
+    jz z, bad
+    mov e, 2
+m1: ge z, e, n
+    jnz z, bad
+    add a, e, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, m2
+    addi e, e, 1
+    jmp m1
+m2: addi q, e, 1
+    st q, G, 33
+    ; mod adi IB[2, e); sonda CR olabilir
+    addi l, e, -2
+    jz l, bad
+    add a, e, IB
+    addi a, a, -1
+    ld cl, a, 0
+    eqi z, cl, 13
+    jz z, m2a
+    addi l, l, -1
+m2a: call r, streq, 2, l, MGOR
+    jz r, m3
+    ret 1
+m3: call r, streq, 2, l, MYAZ
+    jz r, m4
+    ret 2
+m4: call r, streq, 2, l, MADL
+    jz r, bad
+    ret 3
+bad: call x, fail, 2
+    ret 0
+}
+
+; p satir basinda; "@@" ile baslayan ilk satirin konumu (yoksa n)
+func findmark(p, n) {
+f1: ge z, p, n
+    jnz z, f9
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 64
+    jz z, f2
+    addi a, p, 1
+    add a, a, IB
+    ld c1, a, 0
+    eqi z, c1, 64
+    jnz z, f9
+f2: ; satir sonuna
+f3: ge z, p, n
+    jnz z, f9
+    add a, p, IB
+    ld c, a, 0
+    addi p, p, 1
+    eqi z, c, 10
+    jz z, f3
+    jmp f1
+f9: ret p
+}
+
+; p'de "@@AD" satiri: AD dizesi d ile eslesiyor mu; eslesirse satirdan sonraki konum G[3]'te
+func markis(p, n, d) {
+    ge z, p, n
+    jnz z, no
+    addi s0, p, 2
+    mov e, s0
+q1: ge z, e, n
+    jnz z, q2
+    add a, e, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, q2
+    addi e, e, 1
+    jmp q1
+q2: sub l, e, s0
+    ; CR
+    jz l, q3
+    addi a, e, -1
+    add a, a, IB
+    ld c, a, 0
+    eqi z, c, 13
+    jz z, q3
+    addi l, l, -1
+q3: call r, streq, s0, l, d
+    jz r, no
+    addi e, e, 1
+    gt z, e, n
+    jz z, q4
+    mov e, n
+q4: st e, G, 3
+    ret 1
+no: ret 0
+}
+
+func do_gor(st0, n) {
+    call x, dictparse, st0, n
+    ld p, G, 3
+    call r, markis, p, n, MK_ADLAR
+    jz r, g1
+    ld q, G, 3
+    call m, findmark, q, n
+    call x, adlarparse, q, m
+    mov p, m
+    call r, markis, p, n, MK_NESNE
+    jnz r, g2
+    call x, fail, 2
+g1: call r, markis, p, n, MK_NESNE
+    jnz r, g2
+    call x, fail, 2
+g2: ld q, G, 3
+    call x, loadtok, q, n
+    call x, parse_all
+    call x, genview, 1
+    call x, genview, 0
+    ret 0
+}
+
+func main() {
+    call n, readall
+    call md, getmode, n
+    ld st0, G, 33
+    eqi z, md, 1
+    jz z, m2
+    call x, do_gor, st0, n
+    ret 0
+m2: eqi z, md, 2
+    jz z, m3
+    call x, do_yaz, st0, n
+    ret 0
+m3: call x, do_adlar, st0, n
+    ret 0
+}

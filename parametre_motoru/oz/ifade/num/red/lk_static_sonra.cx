@@ -1,0 +1,2 @@
+// RED: E_LINKAGE  -- dis baglantili islev sonradan static
+int f(int a); static int f(int a) { return a; } int main(){ return f(1); }

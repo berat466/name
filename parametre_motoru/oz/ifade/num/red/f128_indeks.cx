@@ -1,0 +1,2 @@
+// RED: E_TYPE  -- __float128 dizi indeksi olamaz
+int main() { __float128 a = 1; int v[2] = {1, 2}; return v[a]; }

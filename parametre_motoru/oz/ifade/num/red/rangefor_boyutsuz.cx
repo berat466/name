@@ -1,0 +1,2 @@
+// RED: E_TYPE  -- range-for: boyutsuz dizi / isaretci
+int main() { int a[2] = {1, 2}; int* p = a; for (int v : p) { } return 0; }

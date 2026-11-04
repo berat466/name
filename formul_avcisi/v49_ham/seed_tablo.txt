@@ -1,0 +1,6 @@
+tohum 2 A secilen lamF=1000 rho=-0.25 val CE=4.8484 test PPL=120.98 top1=0.1606 top5=0.3679
+tohum 2 B secilen lamF=3000 rho=-0.25 val CE=4.8427 test PPL=120.94 top1=0.1600 top5=0.3677
+tohum 2 C secilen lamF=3000 rho=-0.25 val CE=4.8487 test PPL=122.09 top1=0.1614 top5=0.3687
+tohum 3 A secilen lamF=1000 rho=-0.25 val CE=4.8466 test PPL=121.19 top1=0.1612 top5=0.3667
+tohum 3 B secilen lamF=3000 rho=-0.25 val CE=4.8380 test PPL=120.87 top1=0.1602 top5=0.3657
+tohum 3 C secilen lamF=3000 rho=-0.25 val CE=4.8502 test PPL=122.47 top1=0.1610 top5=0.3679

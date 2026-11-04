@@ -1,0 +1,28 @@
+// 02.010: onek/sonek ++ --, kategoriler
+int g = 0;
+int bump() { return ++g; }
+int main() {
+  int i = 5;
+  pi(i++); pi(i); pi(++i); pi(i); pi(i--); pi(i); pi(--i); pi(i);
+  ++i = 50; pi(i);
+  (++i)++; pi(i);
+  char c = 127; c++; pi(c);
+  unsigned char u = 255; ++u; pi(u);
+  short s = -32768; s--; pi(s);
+  unsigned w = 0; --w; pi(w);
+  double d = 1.5; d++; pd(d); --d; pd(d);
+  float f = 0.5f; f++; pd(f);
+  int a[4] = {10, 20, 30, 40};
+  int *p = a;
+  pi(*p++); pi(*p); pi(*++p); pi(*p--); pi(*p);
+  pi((*p)++); pi(a[0]);
+  long long big = 9223372036854775806LL; big++; pi(big == 9223372036854775807LL);
+  unsigned long long ub = 18446744073709551615ULL; ub++; pi(ub);
+  i = 3; i = i++ + 1; pi(i);
+  int *q = a + 3; q--; pi(*q); pi(q - a);
+  pi(bump() + bump());
+  pi(g);
+  i = 10; int r = i++ * 2; pi(r); pi(i);
+  int m[2] = {1, 2}; int idx = 0; m[idx++] = 5; pi(m[0]); pi(idx);
+  return 0;
+}

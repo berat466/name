@@ -1,0 +1,2 @@
+// RED: E_REINTERP  -- bayt gorunumu: referansa baglama desteklenmiyor
+int main() { int a = 1; unsigned char* b = reinterpret_cast<unsigned char*>(&a); unsigned char& r = b[0]; return r; }

@@ -1,0 +1,23 @@
+// long double = x87 f80 (Bolum 01 f80 komutlari): sessiz f64 indirgemesi yok; hassasiyet f80'de korunur
+long double third() { return 1.0L / 3.0L; }
+long double sq(long double x) { return x * x; }
+long double addl(long double a, long double b) { return a + b; }
+struct P { long double v; int k; long double w; };
+int main() {
+  long double a = 1.0L, b = 3.0L; pl(a / b); pl(a / b * b); pl(a + b); pl(a - b); pl(a * b); pl(-a);
+  long double x = 0.1L; pl(x); pl(x + x + x); pl(x * 3); pl(0.3L); pi(x + x + x == 0.3L); pi(x + x + x < 0.3L); pi(x + x + x > 0.3L);
+  double d = 0.1; pi((long double)d == 0.1L); pi((double)x == 0.1); pl((long double)d);
+  pl(third()); pl(sq(1.5L)); pl(addl(1e18L, 1.0L)); pi(1e18L + 1.0L == 1e18L); pi((double)(1e18L + 1.0L) == 1e18);
+  int i = 12345; long double fi = i; pl(fi); long long big = 9007199254740993LL; pl((long double)big); pi((long double)big == 9007199254740993.0L); pi((double)big == 9007199254740993.0);
+  unsigned long long ub = 18446744073709551615ULL; pl((long double)ub);
+  pi((int)(a / b * 1000)); pi((long long)(2.5L * 4)); pi((unsigned char)(200.0L)); pi((bool)0.0L); pi((bool)x);
+  float f = 1.1f; pl(f); pl((long double)f * 2); double dd = x; pl(dd); pl((long double)dd);
+  pi(sizeof(long double)); pi(alignof(long double)); pi(sizeof(P)); pi(alignof(P)); pi(sizeof(a * b)); pi(sizeof(a + 1)); pi(sizeof(x * 2.0f));
+  long double arr[3] = {0.5L, 1.5L, 2.5L}; pl(arr[1]); long double* p = arr + 2; pl(*p); pi(p - arr); pl(arr[0] + arr[2]);
+  P s = {1.25L, 7, 2.5L}; pl(s.v); pi(s.k); pl(s.w); pl(s.v + s.w); P* ps = &s; ps->v += 1.0L; pl(ps->v); pi(sizeof(s));
+  long double c = 5; c += 2; c *= 3; c -= 1; c /= 4; pl(c); c++; pl(c); --c; pl(c); pl(c++); pl(++c);
+  pi(a < b ? 10 : 20); pl(a > b ? a : b); long double z = 0; pi(!z); pi(!a); pi(a && b); pi(z || z);
+  pi((a <=> b) < 0); pi((b <=> a) > 0); pi((a <=> a) == 0);
+  pl(1.0L / 0.0L + 0 * 0); pl(-(1.0L / 0.0L));
+  return 0;
+}

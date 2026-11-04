@@ -1,0 +1,12 @@
+// long double (f80) ile __float128 (f128) karisik islemler: ortak tur f128, daraltma yalniz acik donusumle
+int main() {
+  long double l = 0.1L; __float128 q = 0.1Q;
+  pq(l + q); pq(q - l); pq(l * q); pq(q / l); pi(l < q); pi(l == q); pi(q > l);
+  pq((__float128)l); pl((long double)q); pl(l);
+  long double l2 = q; pl(l2);
+  __float128 q2 = l; pq(q2);
+  long double big = 1.0e300L * 1.0e300L; pl(big); pq((__float128)big); pl((long double)((__float128)big * 1e100Q));
+  double d{(double)q}; pd(d); float ff = (float)q; pd(ff);
+  pi((long long)(q * 1e18Q)); pi((int)l);
+  return 0;
+}

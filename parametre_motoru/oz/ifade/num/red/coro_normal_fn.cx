@@ -1,0 +1,2 @@
+// RED: E_COROUTINE  -- co_return yalniz korutin icinde
+int f() { co_return; } int main() { return 0; }

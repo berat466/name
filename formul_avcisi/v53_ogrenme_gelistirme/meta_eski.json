@@ -1,0 +1,22 @@
+{
+ "V": 2001,
+ "d": 64,
+ "mod": "eskiemb",
+ "train_blok": 227,
+ "eski_train_blok": 80,
+ "ek_blok": 147,
+ "kullanilan_token": 123625,
+ "kitap_token": 123625,
+ "splits": {
+  "val": 5000,
+  "test": 5000,
+  "train": 113500
+ },
+ "8gram_ortusme": {
+  "val": 2,
+  "test": 0
+ },
+ "c2_val_n": 4980,
+ "c2_test_n": 4980,
+ "c2_train_n": 113046
+}

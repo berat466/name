@@ -1,0 +1,92 @@
+; KARSILASTIRMA: parcacik.pmt'nin elle yazilmis dongu surumu (ayni davranis, ayni uretec, ayni cizim sirasi).
+memory 60000
+space px 10000
+space py 10000
+space pv 10000
+space pc 10000
+space fb 19200
+
+func rnd(i, k, range, lo) {
+    mul h, i, 1664525
+    add h, h, k
+    and h, h, 16777215
+    mul h, h, 1664525
+    add h, h, 1013904223
+    and h, h, 16777215
+    shr h, h, 4
+    mod h, h, range
+    add h, h, lo
+    ret h
+}
+
+func main() {
+    mov i, 0
+il: lt  c, i, 10000
+    jz  c, id
+    call v, rnd, i, 1013916568, 160, 0
+    add p, px, i
+    st  v, p, 0
+    call v, rnd, i, 2027820791, 61, 0
+    add p, py, i
+    st  v, p, 0
+    call v, rnd, i, 3041725014, 3, 1
+    add p, pv, i
+    st  v, p, 0
+    call v, rnd, i, 4055629237, 12566464, 4210752
+    add p, pc, i
+    st  v, p, 0
+    add i, i, 1
+    jmp il
+id: mov f, 0
+fl: lt  c, f, 120
+    jz  c, fin
+    mov i, 0
+ul: lt  c, i, 10000
+    jz  c, ud
+    add a, pv, i
+    ld  v, a, 0
+    add v, v, 1
+    add b, py, i
+    ld  y, b, 0
+    add y, y, v
+    gt  c, y, 119
+    jz  c, nb
+    sub v, 0, v
+    mul v, v, 3
+    div v, v, 4
+    mov y, 119
+nb: st  v, a, 0
+    st  y, b, 0
+    add i, i, 1
+    jmp ul
+ud: mov i, 0
+cl: lt  c, i, 19200
+    jz  c, cd
+    add p, fb, i
+    st  16, p, 0
+    add i, i, 1
+    jmp cl
+cd: mov i, 0
+dl: lt  c, i, 10000
+    jz  c, dd
+    add b, py, i
+    ld  y, b, 0
+    lt  c, y, 0
+    jnz c, dn
+    add a, px, i
+    ld  x, a, 0
+    add a, pc, i
+    ld  col, a, 0
+    mul k, y, 160
+    add k, k, x
+    add p, fb, k
+    st  col, p, 0
+dn: add i, i, 1
+    jmp dl
+dd: host r, present, fb, 160, 120
+    jnz r, fin
+    add f, f, 1
+    jmp fl
+fin:
+    ret 0
+}

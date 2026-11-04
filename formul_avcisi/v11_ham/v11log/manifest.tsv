@@ -1,0 +1,14 @@
+./tek_hamle_v11 cift 2 512 1 seq	/tmp/v11log/cift_seq_c2_H512_s1.txt	rc=0	wall_s=18.77	user_cpu_s=64.95	sys_cpu_s=2.16	maxrss_MB=304
+./tek_hamle_v11 cift 2 512 1 ref	/tmp/v11log/cift_ref_c2_H512_s1.txt	rc=0	wall_s=19.66	user_cpu_s=67.80	sys_cpu_s=2.15	maxrss_MB=299
+./tek_hamle_v11 cift 2 512 1 bag	/tmp/v11log/cift_bag_c2_H512_s1.txt	rc=0	wall_s=19.01	user_cpu_s=65.89	sys_cpu_s=2.11	maxrss_MB=300
+./tek_hamle_v11 cift 2 512 1 pair	/tmp/v11log/cift_pair_c2_H512_s1.txt	rc=0	wall_s=18.69	user_cpu_s=64.47	sys_cpu_s=2.19	maxrss_MB=305
+./tek_hamle_v11 cift 2 512 1 seqpair	/tmp/v11log/cift_seqpair_c2_H512_s1.txt	rc=0	wall_s=19.31	user_cpu_s=67.09	sys_cpu_s=1.95	maxrss_MB=312
+./tek_hamle_v11 cift 2 1024 1 ref	/tmp/v11log/cift_ref_c2_H1024_s1.txt	rc=0	wall_s=37.44	user_cpu_s=130.89	sys_cpu_s=3.37	maxrss_MB=561
+./tek_hamle_v11 cift 2 1024 1 bag	/tmp/v11log/cift_bag_c2_H1024_s1.txt	rc=0	wall_s=35.83	user_cpu_s=126.05	sys_cpu_s=3.12	maxrss_MB=562
+./tek_hamle_v11 cift 2 1024 1 seq	/tmp/v11log/cift_seq_c2_H1024_s1.txt	rc=0	wall_s=35.89	user_cpu_s=127.14	sys_cpu_s=3.14	maxrss_MB=570
+./tek_hamle_v11 cift 2 1024 1 pair	/tmp/v11log/cift_pair_c2_H1024_s1.txt	rc=0	wall_s=37.02	user_cpu_s=130.51	sys_cpu_s=3.16	maxrss_MB=570
+./tek_hamle_v11 cift 2 1024 1 seqpair	/tmp/v11log/cift_seqpair_c2_H1024_s1.txt	rc=0	wall_s=37.55	user_cpu_s=132.61	sys_cpu_s=3.34	maxrss_MB=585
+./tek_hamle_v11 cift 2 1024 2 bag	/tmp/v11log/cift_bag_c2_H1024_s2.txt	rc=0	wall_s=35.88	user_cpu_s=127.07	sys_cpu_s=3.18	maxrss_MB=561
+./tek_hamle_v11 cift 2 1024 2 ref	/tmp/v11log/cift_ref_c2_H1024_s2.txt	rc=0	wall_s=38.07	user_cpu_s=134.05	sys_cpu_s=3.49	maxrss_MB=561
+./tek_hamle_v11 cift 2 1024 3 bag	/tmp/v11log/cift_bag_c2_H1024_s3.txt	rc=0	wall_s=35.87	user_cpu_s=126.71	sys_cpu_s=3.19	maxrss_MB=562
+./tek_hamle_v11 cift 2 1024 3 ref	/tmp/v11log/cift_ref_c2_H1024_s3.txt	rc=0	wall_s=35.95	user_cpu_s=128.11	sys_cpu_s=3.03	maxrss_MB=561

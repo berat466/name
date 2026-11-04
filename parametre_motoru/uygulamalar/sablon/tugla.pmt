@@ -1,0 +1,60 @@
+; Tugla kirma: 50 tugla TEK sablondan (izgara ureteci), top, raket, skor; hepsi veri.
+ekle std.pmt
+sahne 80 60
+kare 600
+arkaplan 0
+global skor = 0
+global kalan = 50
+
+sablon raket adet 1
+  alan x sabit 33
+  davran sinirla x 0 66
+  ciz dikdortgen x, 56, 14, 2, 0x40C0FF
+son
+
+sablon tugla adet 50
+  alan x mod 10 4 7
+  alan y bol 10 6 5
+  alan renk bol 10 0xFF5050 0x001800
+  ciz dikdortgen x, y, 6, 3, renk
+son
+
+sablon top adet 1
+  alan x sabit 40
+  alan y sabit 40
+  alan vx sabit 1
+  alan vy sabit -1
+  davran hareket x vx
+  davran hareket y vy
+  davran sek x vx 0 79
+  davran sekalt y vy 0
+  ciz dikdortgen x, y, 2, 2, 0xFFFF00
+son
+
+etkilesim top tugla eger b.canli == 1 ve a.x + 2 > b.x ve a.x < b.x + 6 ve a.y + 2 > b.y ve a.y < b.y + 3
+  kural b.canli = 0
+  kural a.vy = 0 - a.vy
+  kural skor = skor + 1
+son
+etkilesim top raket eger a.y >= 54 ve a.vy > 0 ve a.x >= b.x - 2 ve a.x <= b.x + 14
+  kural a.vy = 0 - a.vy
+  kural a.y = 54
+son
+etkilesim top raket eger a.y >= 58 ve a.vy > 0
+  kural skor = skor - 1
+  kural a.x = 40
+  kural a.y = 40
+  kural a.vy = -1
+son
+
+topla kalan say tugla eger canli == 1
+bitis eger kalan == 0
+
+girdi 1 raket
+  kural x = x - 3
+son
+girdi 2 raket
+  kural x = x + 3
+son
+
+yazdir skor, kalan, top.x, top.y

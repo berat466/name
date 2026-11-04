@@ -1,0 +1,26 @@
+// __float128 (binary128): 4 islem, karsilastirma, donusumler (tamsayi / float / double / long double), sabitler, islev parametre-donus, dizi, uye, global, ?:, bilesik atama, ++/--
+struct P { __float128 a; int k; __float128 b; };
+__float128 g = 0.1Q;
+__float128 yarim(__float128 x) { return x / 2; }
+__float128 topla(__float128 x, __float128 y) { return x + y; }
+int main() {
+  __float128 a = 1.5Q, b = 0.1Q, c = 3;
+  pq(a + b); pq(a - b); pq(a * b); pq(a / c); pq(-a); pq(g); pq(1.0Q / 3.0Q);
+  pq(a < b); pq(a > b); pq(a <= a); pq(a >= b); pq(a == a); pq(a != b);
+  int i = -7; unsigned u = 4000000000u; long long ll = -9000000000000000000LL; unsigned long long ull = 18000000000000000000ULL; short sh = -3; unsigned char uc = 200;
+  pq(i); pq(u); pq(ll); pq(ull); pq(sh); pq(uc); pq((__float128)2.5); pq((__float128)1.25f);
+  double d = 0.1; float f = 0.1f; long double ld = 0.1L;
+  pq(d); pq(f); pq(ld); pq(a + d); pq(a * f); pq(ld + b);
+  pi((int)(a * 3)); pi((long long)(b * 100000000000000000.0Q)); pi((unsigned)(c * 1000000000)); pi((long long)(-a));
+  pd((double)(1.0Q / 3.0Q)); pd((double)b); pd((double)(float)b); pl((long double)b); pl((long double)ld);
+  pi(a ? 1 : 0); pi((__float128)0 ? 1 : 0); pi(!b);
+  __float128 arr[3]; arr[0] = a; arr[1] = b; arr[2] = arr[0] * arr[1]; pq(arr[2]); pq(arr[0] + arr[1] + arr[2]);
+  P p; p.a = a; p.k = 5; p.b = yarim(a); pq(p.a); pq(p.b); pi(p.k); pq(topla(p.a, p.b));
+  __float128 x = 1; x += 2; x *= 3; x -= 0.5Q; x /= 4; pq(x); x++; pq(x); --x; pq(x);
+  pq(a > b ? a : b); pq(a < b ? a : b);
+  __float128 big = 1e4000Q; pq(big); pq(big * big); pq(-big * big); pq(1e-4000Q); pq(1e-4950Q * 1e-100Q);
+  __float128 z = 0; pq(z / z != z / z); pq(1 / z); pq(-1 / z);
+  pi(sizeof(__float128)); pi(alignof(__float128)); pi(sizeof(P)); pi(sizeof(arr));
+  pq(123456789012345678901234567890.0Q); pq(0.3333333333333333333333333333333333Q);
+  return 0;
+}

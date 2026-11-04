@@ -1,0 +1,15 @@
+tkanit_tam: WALL 21.963 USER 35.603 SYS 37.752 MAXRSS_KB 6168672  hazir=17.293 V
+tkanit_blok: WALL 19.697 USER 37.173 SYS 26.787 MAXRSS_KB 6168776  hazir=14.751 
+tkanit_zehir: WALL 17.731 USER 34.555 SYS 22.946 MAXRSS_KB 6168616  hazir=13.512
+ham/tkanit_blok.txt:V77_YOL|spekulatif_tek_gecis=1 S2_yeniden_kullan=1 bolmesiz_rank=1 T_ust_ucgen=1 RHS_sinif_siralama=
+ham/tkanit_blok.txt:V53H_HASH|T|edee6de385f9057b|2105352 bayt
+ham/tkanit_blok.txt:V53H_HASH|T_ust_ucgen|9e20a1136ce3c564|2105352 bayt
+ham/tkanit_blok.txt:V53H_HASH|WF|d54c462f219c825b|20522052 bayt
+ham/tkanit_tam.txt:V77_YOL|spekulatif_tek_gecis=1 S2_yeniden_kullan=1 bolmesiz_rank=1 T_ust_ucgen=0 RHS_sinif_siralama=1
+ham/tkanit_tam.txt:V53H_HASH|T|5eb9247a5661ec43|2105352 bayt
+ham/tkanit_tam.txt:V53H_HASH|T_ust_ucgen|414cf095da6aab5a|2105352 bayt
+ham/tkanit_tam.txt:V53H_HASH|WF|d54c462f219c825b|20522052 bayt
+ham/tkanit_zehir.txt:V77_YOL|spekulatif_tek_gecis=1 S2_yeniden_kullan=1 bolmesiz_rank=1 T_ust_ucgen=2 RHS_sinif_siralama
+ham/tkanit_zehir.txt:V53H_HASH|T|4563e6ad5df718bc|2105352 bayt
+ham/tkanit_zehir.txt:V53H_HASH|T_ust_ucgen|9e20a1136ce3c564|2105352 bayt
+ham/tkanit_zehir.txt:V53H_HASH|WF|d54c462f219c825b|20522052 bayt

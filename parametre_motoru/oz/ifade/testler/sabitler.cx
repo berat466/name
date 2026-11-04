@@ -1,0 +1,27 @@
+// 02.026 - 02.030: karakter/kacis, ham dize, bitisik dize, ikili/sekizli/onaltili, ayirac, sonekler
+void ps(const char* s) { while (*s) { pc(*s); s++; } pc('|'); pc(10); }
+int len(const char* s) { int n = 0; while (s[n]) n++; return n; }
+int main() {
+  pi('a'); pi('\n'); pi('\t'); pi('\\'); pi('\''); pi('"'); pi('\0'); pi('\x41'); pi('\101'); pi('\a'); pi('\b'); pi('\f'); pi('\r'); pi('\v'); pi('\?'); pi('\x7f'); pi('\177');
+  pi(sizeof('a')); pi('a' + 1); pi('\377'); pi((int)'\xff');
+  ps("tab\there"); ps("q\"uote"); ps("back\\slash"); ps("nul\0hidden"); pi(len("nul\0hidden")); pi(sizeof("nul\0hidden"));
+  ps("\x41\x42\103"); ps("a\x4a" "b"); ps("oct\101\60");
+  ps(R"(raw \n \t "quoted" ok)"); ps(R"xy(has )" inside)xy"); ps(R"(line1
+line2)");
+  pi(len(R"(\\\)")); pi(sizeof(R"(a\nb)"));
+  ps("ab" "cd" "ef"); ps("one" " " "two"); pi(sizeof("ab" "cd")); ps("x"
+     "y"
+     "z");
+  ps("tri" R"(\raw)" "mix"); ps("\x31" "2"); 
+  pi(0b1010); pi(0B11); pi(0777); pi(0x1F); pi(0Xff); pi(0xdeadBEEF); pi(017 + 0b11 + 0x11); pi(00); pi(0);
+  pi(1'000'000); pi(0xFF'FF); pi(0b1111'0000); pi(1'0'0); pi(0'7'7);
+  pi(sizeof(1)); pi(sizeof(1u)); pi(sizeof(1l)); pi(sizeof(1ul)); pi(sizeof(1ll)); pi(sizeof(1ull)); pi(sizeof(1U)); pi(sizeof(1L)); pi(sizeof(1LL)); pi(sizeof(1uLL)); pi(sizeof(1lu));
+  pi(sizeof(2147483647)); pi(sizeof(2147483648)); pi(sizeof(4294967295)); pi(sizeof(4294967296)); pi(sizeof(0x7FFFFFFF)); pi(sizeof(0x80000000)); pi(sizeof(0xFFFFFFFF)); pi(sizeof(0x100000000));
+  pi(sizeof(2147483648u)); pi(sizeof(9223372036854775807)); pi(sizeof(0xFFFFFFFFFFFFFFFF)); pi(sizeof(18446744073709551615u));
+  pi(0x80000000 > 0); pi(-2147483647 - 1 < 0); pi(0xFFFFFFFF == -1); pi(4294967295 == -1); pi(0xFFFFFFFFFFFFFFFF == -1);
+  pi(1.5e3 == 1500); pd(1.5e-3); pd(2.5f); pd(1e2); pd(.25); pd(5.); pd(0x1p4); pd(0x1.8p1); pd(1'0.5'0); pd(1.5E+2);
+  pi(sizeof(1.5)); pi(sizeof(1.5f)); pi(sizeof(1.5l)); pi(sizeof(1.5F)); pi(sizeof(1e3)); pi(sizeof(.5));
+  pi(9223372036854775807LL); pi(-9223372036854775807LL - 1); pi(18446744073709551615ULL == (unsigned long long)-1);
+  pi(100000000000 / 7); pi(0x7fffffff + 1LL);
+  return 0;
+}

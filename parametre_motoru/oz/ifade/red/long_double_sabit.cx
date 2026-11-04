@@ -1,0 +1,3 @@
+// RED: E_UNSUPPORTED
+// IFX: kabul (sayisal derleyici long double destekler; bu ret C++ referans on yuze ozgu)
+int main() { double d = 1.5l; return 0; }

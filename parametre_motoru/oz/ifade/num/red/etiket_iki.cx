@@ -1,0 +1,2 @@
+// RED: E_LABEL  -- etiket iki kez
+int main() { a: ; a: ; return 0; }

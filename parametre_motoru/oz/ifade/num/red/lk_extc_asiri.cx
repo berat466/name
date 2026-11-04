@@ -1,0 +1,2 @@
+// RED: E_LINKAGE  -- extern "C" islevler asiri yuklenemez
+extern "C" int f(int a) { return a; } extern "C" int f(double a) { return 1; } int main(){ return 0; }

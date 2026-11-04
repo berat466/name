@@ -1,0 +1,2 @@
+// RED: E_COROUTINE  -- co_return deger
+std::generator<int> g() { co_return 5; } int main() { return 0; }

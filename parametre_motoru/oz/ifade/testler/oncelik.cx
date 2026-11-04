@@ -1,0 +1,43 @@
+// 02.004 / 02.005: oncelik, birlesim, parantez
+int main() {
+  int a = 6, b = 3, c = 2;
+  pi(1 + 2 * 3);
+  pi((1 + 2) * 3);
+  pi(a - b - c);            // soldan
+  pi(a / b * c);
+  pi(a % 4 + 1);
+  pi(a << 1 + 1);           // + shift'ten siki
+  pi(a >> 1 << 2);
+  pi(a & 3 | 8 ^ 5);
+  pi(a | b & c);
+  pi(a ^ b & c);
+  pi(a < b == 0);           // iliski > esitlik
+  pi(a == 6 != 0);
+  pi(a > b && b > c || 0);
+  pi(0 || a && 0);
+  pi(-a * -b);
+  pi(- -a);
+  pi(!a == 0);
+  pi(~a & 0xF);
+  pi(a - -b);
+  pi(+a + +b);
+  pi(a = b = c);
+  pi(a);
+  pi(1 ? 2 : 3 ? 4 : 5);
+  pi(0 ? 2 : 0 ? 4 : 5);
+  pi((a, b, c * 10));
+  pi(2 * (3 + 4) * 5 - 6 / (1 + 1));
+  pi(((((7)))));
+  pi(1 + 2 << 3 > 4);
+  long long x = 1LL << 40;
+  pi(x + (x >> 1) * 2);
+  unsigned u = 5;
+  pi(u - 6 > 0);
+  pi(-1 < 0u);
+  pi(a > b ? a : b);
+  double d = 1.5;
+  pd(d * 2 + 1 / 4);
+  pd(d * 2 + 1 / 4.0);
+  pi(sizeof(int) * 2 + 1);
+  return 0;
+}

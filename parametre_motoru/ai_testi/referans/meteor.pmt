@@ -1,0 +1,40 @@
+ekle std.pmt
+sahne 160 120
+kare 600
+arkaplan 0x000020
+global skor = 0
+global can = 12
+
+sablon meteor adet 8
+  alan x dogrusal 10 18
+  alan y dogrusal 0 -14
+  alan hiz mod 3 2 1
+  davran hareket y hiz
+  ciz dikdortgen x, y, 8, 8, 0xC08040
+son
+sablon gemi adet 1
+  alan x sabit 76
+  davran sinirla x 0 152
+  ciz dikdortgen x, 110, 8, 6, 0x40FF40
+son
+
+etkilesim gemi meteor eger a.x < b.x + 8 ve a.x + 8 > b.x ve 110 < b.y + 8 ve 116 > b.y
+  kural can = can - 1
+  kural b.x = b.x + 37
+  kural b.x = b.x % 152
+  kural b.y = -8
+son
+etkilesim gemi meteor eger b.y > 119
+  kural skor = skor + 1
+  kural b.x = b.x + 37
+  kural b.x = b.x % 152
+  kural b.y = -8
+son
+bitis eger can == 0
+girdi 1 gemi
+  kural x = x - 4
+son
+girdi 2 gemi
+  kural x = x + 4
+son
+yazdir skor, can, gemi.x

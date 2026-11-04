@@ -1,0 +1,9 @@
+; iyilestirici tuzakli (OOB) yuklemeyi silmemeli: sonucu ezilse de tuzak gozlenebilir davranistir
+func main() {
+  ldi p, -5
+  ld a, p, 0
+  ldi a, 1
+  host puti, a
+  host putc, 10
+  halt
+}

@@ -1,0 +1,6 @@
+./tek_hamle_v19 2 512 1 1 1	/tmp/v19log/v19_c2_H512_s1.txt	rc=0	wall_s=18.49	user_cpu_s=60.42	sys_cpu_s=1.62	maxrss_MB=271
+./tek_hamle_v19 2 1024 1 4 10	/tmp/v19log/v19_c2_H1024_s1.txt	rc=0	wall_s=29.46	user_cpu_s=96.44	sys_cpu_s=3.32	maxrss_MB=457
+./tek_hamle_v19 2 1024 2 4 100	/tmp/v19log/v19_c2_H1024_s2.txt	rc=0	wall_s=27.35	user_cpu_s=93.58	sys_cpu_s=2.10	maxrss_MB=457
+./tek_hamle_v19 2 1024 3 2 1	/tmp/v19log/v19_c2_H1024_s3.txt	rc=0	wall_s=27.83	user_cpu_s=95.11	sys_cpu_s=2.46	maxrss_MB=457
+./tek_hamle_v19 2 512 2 2 1	/tmp/v19log/v19_c2_H512_s2.txt	rc=0	wall_s=16.71	user_cpu_s=57.61	sys_cpu_s=1.12	maxrss_MB=272
+./tek_hamle_v19 2 512 3 1 1	/tmp/v19log/v19_c2_H512_s3.txt	rc=0	wall_s=16.05	user_cpu_s=56.51	sys_cpu_s=1.03	maxrss_MB=271

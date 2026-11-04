@@ -1,0 +1,6 @@
+./tek_hamle_v20 2 1024 1 4 10	/tmp/v20log/v20_c2_H1024_s1.txt	rc=0	wall_s=30.00	user_cpu_s=104.55	sys_cpu_s=2.08	maxrss_MB=491
+./tek_hamle_v20 2 1024 2 4 100	/tmp/v20log/v20_c2_H1024_s2.txt	rc=0	wall_s=28.78	user_cpu_s=100.00	sys_cpu_s=1.95	maxrss_MB=491
+./tek_hamle_v20 2 1024 3 2 1	/tmp/v20log/v20_c2_H1024_s3.txt	rc=0	wall_s=29.24	user_cpu_s=105.00	sys_cpu_s=1.21	maxrss_MB=491
+./tek_hamle_v20 2 512 1 1 1	/tmp/v20log/v20_c2_H512_s1.txt	rc=0	wall_s=15.91	user_cpu_s=57.23	sys_cpu_s=0.67	maxrss_MB=329
+./tek_hamle_v20 2 512 2 2 1	/tmp/v20log/v20_c2_H512_s2.txt	rc=0	wall_s=16.32	user_cpu_s=58.99	sys_cpu_s=0.57	maxrss_MB=329
+./tek_hamle_v20 2 512 3 1 1	/tmp/v20log/v20_c2_H512_s3.txt	rc=0	wall_s=16.57	user_cpu_s=59.08	sys_cpu_s=0.74	maxrss_MB=329

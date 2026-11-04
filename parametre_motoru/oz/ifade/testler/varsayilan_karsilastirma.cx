@@ -1,0 +1,28 @@
+// 02.032: = default <=> ve == , uyeler arasi lexicographic, taban sinif
+struct P { int x; int y; auto operator<=>(const P&) const = default; };
+struct Q { int a; char b; bool c; std::strong_ordering operator<=>(const Q&) const = default; };
+struct F { double d; int i; auto operator<=>(const F&) const = default; };
+struct E { int a; bool operator==(const E&) const = default; };
+struct Base { int k; auto operator<=>(const Base&) const = default; };
+struct Der : Base { int m; auto operator<=>(const Der&) const = default; };
+struct Nest { P p; int z; auto operator<=>(const Nest&) const = default; };
+struct Ptrs { int* p; auto operator<=>(const Ptrs&) const = default; };
+struct OnlyEq { int a; int b; bool operator==(const OnlyEq&) const = default; };
+int main() {
+  P a = {1, 2}, b = {1, 3}, c = {0, 9}, d = {1, 2};
+  pi(a < b); pi(a > b); pi(a <= d); pi(a >= d); pi(a == d); pi(a != d); pi(c < a); pi(b > c); pi((a <=> b) < 0); pi((a <=> d) == 0); pi((c <=> a) < 0);
+  Q q1 = {1, 'a', true}, q2 = {1, 'a', false}; pi(q1 > q2); pi(q1 == q2); pi(q1 != q2); pi((q1 <=> q2) > 0);
+  F f1 = {1.0, 5}, f2 = {1.0, 6}, f3 = {2.0, 0}; pi(f1 < f2); pi(f3 > f2); pi(f1 == f1); pi((f1 <=> f2) < 0);
+  double zero = 0; F fn = {zero / zero, 1}; pi(fn < f1); pi(fn == fn); pi(fn != fn); pi((fn <=> f1) == std::partial_ordering::unordered);
+  E e1 = {3}, e2 = {3}, e3 = {4}; pi(e1 == e2); pi(e1 != e3); pi(e1 == e3);
+  Base b1 = {1}, b2 = {2}; pi(b1 < b2);
+  Der d1; d1.k = 1; d1.m = 5; Der d2; d2.k = 1; d2.m = 6; Der d3; d3.k = 0; d3.m = 99;
+  pi(d1 < d2); pi(d3 < d1); pi(d1 == d1); pi(d1 != d2); pi(d2 >= d1);
+  Nest n1 = {{1, 2}, 3}, n2 = {{1, 2}, 4}, n3 = {{1, 3}, 0}; pi(n1 < n2); pi(n2 < n3); pi(n3 > n1); pi(n1 == n1);
+  int v[2] = {1, 2}; Ptrs p1 = {v}, p2 = {v + 1}; pi(p1 < p2); pi(p1 == p1); pi(p2 > p1);
+  OnlyEq o1 = {1, 2}, o2 = {1, 2}, o3 = {1, 3}; pi(o1 == o2); pi(o1 != o3);
+  int count = 0; P arr[3] = {{3, 1}, {1, 5}, {2, 2}};
+  for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) if (arr[i] < arr[j]) count++;
+  pi(count);
+  return 0;
+}

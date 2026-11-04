@@ -1,0 +1,1 @@
+{"VMAX": 20001, "egitim_tur": 30876, "toplam_token": 1608009, "egitim_token": 1287000, "bloklar": {"val": 321, "test": 321, "train": 2574}, "n_20001": {"val": 159858, "test": 159858, "train": 1281852}, "unk_orani_egitim_20001": 0.008728826728826728}

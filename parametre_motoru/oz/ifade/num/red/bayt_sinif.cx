@@ -1,0 +1,2 @@
+// RED: E_REINTERP  -- sinif nesnesinin baytlarina bakis desteklenmiyor
+struct S { int a; int b; }; int main() { S s; s.a = 1; s.b = 2; unsigned char* p = reinterpret_cast<unsigned char*>(&s); return p[4]; }

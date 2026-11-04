@@ -1,0 +1,2 @@
+std::generator<int> sq(int n) { for (int i = 1; i <= n; i = i + 1) co_yield i * i; }
+int main() { std::generator<int> g = sq(5); pi(g.next()); pi(g.value()); pi(g.next()); pi(g.value()); g.destroy(); return 0; }

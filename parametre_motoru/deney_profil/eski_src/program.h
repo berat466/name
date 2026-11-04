@@ -1,0 +1,51 @@
+#pragma once
+#include <cstdio>
+#include <string>
+#include <vector>
+#include <stdexcept>
+#include "ops.h"
+
+struct Func {
+  std::string name;               // sokulmus (strip) ikilide bos
+  uint32_t nparams = 0, nregs = 0;
+  std::vector<Ins> code;
+};
+
+struct Program {
+  uint64_t mem_words = 65536;
+  uint32_t entry = 0;
+  std::vector<uint64_t> consts;
+  std::vector<int64_t> data;      // adres 1'den baslayarak bellege yerlesir
+  uint64_t bss = 0;               // veri sozcuklerinden sonra gelen sifir dolu alan (ikilide yalnizca sayi)
+  std::vector<Func> funcs;
+  bool has_names = false;
+};
+
+struct PmError : std::runtime_error { using std::runtime_error::runtime_error; };
+
+// ikili.cpp
+std::vector<uint8_t> encode_program(const Program& p, bool strip_names);
+Program decode_program(const uint8_t* data, size_t n);   // cozer VE dogrular; hatada PmError
+void validate_program(const Program& p);
+
+// asm.cpp
+Program assemble(const std::string& text);
+
+// dump.cpp
+std::string disassemble(const Program& p);
+
+// vm.cpp
+enum Trap { T_OK = 0, T_DIV0, T_OOB, T_STACK, T_DEPTH, T_FUEL, T_ALLOC, T_COUNT };
+extern const char* kTrapName[T_COUNT];
+struct IO {
+  std::string out;
+  FILE* in = nullptr;   // getc buradan okur; null ise girdi yok (EOF)
+};
+struct RunConfig {
+  uint64_t fuel = 4000000000ull;
+  uint64_t max_mem_words = Limits::kMaxMemWords;
+  size_t stack_words = 1u << 20;
+  size_t max_frames = 1u << 16;
+};
+struct RunResult { Trap trap = T_OK; int64_t value = 0; uint64_t steps = 0; uint32_t func = 0, pc = 0; };
+RunResult run_program(const Program& p, IO& io, const RunConfig& cfg);

@@ -1,0 +1,30 @@
+kare 1
+global g_toplam = 0
+global g_alarm = 0
+global g_enbuyuk = 0
+global g_enkucuk = 0
+global g_s3 = 0
+global g_s3a = 0
+global g_ilk = 0
+
+sablon olcum adet 5000
+  alan ham rastgele 100 500 41
+  alan sensor mod 8 0 1
+  alan zaman dogrusal 0 1
+  alan kal sabit 0
+  alan alarm sabit 0
+  kural kal = ham * 3
+  kural kal = kal / 2
+  kural kal = kal - 10
+  kural alarm = 0
+  kural alarm = 1 eger kal > 700
+son
+
+topla g_toplam toplam olcum kal
+topla g_alarm say olcum eger alarm == 1
+topla g_enbuyuk enbuyuk olcum kal
+topla g_enkucuk enkucuk olcum kal
+topla g_s3 toplam olcum kal eger sensor == 3
+topla g_s3a say olcum eger sensor == 3 ve alarm == 1
+topla g_ilk enkucuk olcum zaman eger alarm == 1
+yazdir g_toplam, g_alarm, g_enbuyuk, g_enkucuk, g_s3, g_s3a, g_ilk, g_toplam / 5000

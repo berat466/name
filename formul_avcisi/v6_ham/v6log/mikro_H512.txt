@@ -1,0 +1,8 @@
+V6 mod=mikro H=512 tohum=1 gamma=0.125 lambda=1 gorev=5 zorla_fb=0 maxit=60 (4 cekirdek)
+MIKRO|H=512|k|rank_k_guncelleme_sn|V4_dS+Cholesky_sn|oran(rank_k/V4)|W_goreli_fark(rank_k vs V4)
+MIKRO|512|4|0.00194|0.02028|0.10|3.55e-07
+MIKRO|512|16|0.00190|0.01976|0.10|2.16e-06
+MIKRO|512|64|0.01429|0.01976|0.72|1.56e-05
+MIKRO|512|256|0.08342|0.02387|3.49|1.16e-04
+MIKRO|512|1024|0.28756|0.02513|11.44|8.94e-04
+MIKRO|512|4096|1.01279|0.04026|25.16|5.42e-03

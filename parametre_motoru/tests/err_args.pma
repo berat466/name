@@ -1,0 +1,6 @@
+func f(a, b) {
+    ret a
+}
+func main() {
+    call r, f, 1
+}

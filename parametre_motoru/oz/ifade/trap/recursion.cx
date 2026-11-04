@@ -1,0 +1,2 @@
+// TRAP: OOB|STACK|DEPTH
+int f(int n) { return f(n + 1) + 1; } int main() { pi(1); return f(0); }

@@ -1,0 +1,3 @@
+// RED: E_CONSTCAST
+// GPP: red
+int main() { const int a = 1; int* p = static_cast<int*>(&a); return *p; }

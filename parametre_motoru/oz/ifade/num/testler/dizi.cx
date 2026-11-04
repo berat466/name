@@ -1,0 +1,20 @@
+// cekirdek: dizi, isaretci aritmetigi, sinir denetimi
+int sum(const int* p, int n) { int s = 0; for (int i = 0; i < n; i++) s += p[i]; return s; }
+int main() {
+  int a[5] = {1, 2, 3, 4, 5};
+  pi(a[0] + a[4]); pi(2[a]); pi(*(a + 3)); pi(*(3 + a));
+  int *p = a + 1; pi(p[1]); pi(p[-1]); pi(*(p + 2));
+  pi(p - a); pi(&a[4] - &a[1]);
+  pi(sum(a, 5)); pi(sum(a + 2, 2));
+  int m[2][3] = {{1, 2, 3}, {4, 5, 6}};
+  char s[] = "hello"; pi(sizeof(s)); pi(s[1]); s[0] = 'J'; pc(s[0]); pc(s[4]); pc(10);
+  const char* t = "xyz"; pi(t[2]); pi(*(t + 1));
+  double d[3] = {0.5, 1.5, 2.5}; pd(d[1] * 2);
+  unsigned char idx = 2; pi(a[idx]); long long li = 1; pi(a[li]); bool bi = true; pi(a[bi]);
+  a[2] = a[3] = 9; pi(a[2] + a[3]);
+  int z[6] = {1, 2}; pi(z[1]); pi(z[2]); pi(z[5]);
+  int *e = a + 5; pi(e - a); pi(e > p); pi(p < a);
+  int *np = 0; pi(np == 0); pi(!np);
+  pi(a == &a[0]); pi(&a[0] == a + 0);
+  return 0;
+}

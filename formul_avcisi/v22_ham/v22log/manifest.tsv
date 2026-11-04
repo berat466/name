@@ -1,0 +1,3 @@
+./tek_hamle_v22 2 1024 1 4 10	/tmp/v22log/v22_c2_H1024_s1.txt	rc=0	wall_s=63.96	user_cpu_s=142.96	sys_cpu_s=22.92	maxrss_MB=1560
+./tek_hamle_v22 2 1024 2 4 100	/tmp/v22log/v22_c2_H1024_s2.txt	rc=0	wall_s=66.71	user_cpu_s=146.78	sys_cpu_s=24.53	maxrss_MB=1560
+./tek_hamle_v22 2 1024 3 2 1	/tmp/v22log/v22_c2_H1024_s3.txt	rc=0	wall_s=66.71	user_cpu_s=143.04	sys_cpu_s=25.78	maxrss_MB=1560

@@ -1,0 +1,2 @@
+// RED: E_DEFAULT
+struct S { int x; auto operator<=>(const S&) const = default; }; struct T { S s; double d; std::strong_ordering operator<=>(const T&) const = default; }; int main() { return 0; }

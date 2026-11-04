@@ -1,0 +1,25 @@
+struct Task {
+  struct promise_type {
+    int value; int steps;
+    Task get_return_object() { Task t; t.h = std::coroutine_handle<promise_type>::from_promise(*this); return t; }
+    std::suspend_always initial_suspend() { return std::suspend_always(); }
+    std::suspend_always final_suspend() noexcept { return std::suspend_always(); }
+    void return_value(int v) { value = v; }
+    void unhandled_exception() { }
+  };
+  std::coroutine_handle<promise_type> h;
+};
+
+Task compute(int a, int b) {
+  int s = a + b;
+  co_return s * 2;
+}
+int main() {
+  Task t = compute(3, 4);
+  pi(t.h.done());
+  t.h.resume();
+  pi(t.h.done());
+  pi(t.h.promise().value);
+  t.h.destroy();
+  return 0;
+}

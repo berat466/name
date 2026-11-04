@@ -1,0 +1,35 @@
+// 02.034: degerlendirme sirasi (C++17 garantili olanlar) ve yan etkiler
+int t = 0;
+int tr(int id) { pi(id); return id; }
+int* trp(int* p, int id) { pi(id); return p; }
+int tri(int id, int v) { pi(id); return v; }
+struct O { int v; O& add(int x) { v += x; return *this; } O& mul(int x) { v *= x; return *this; } };
+O& orr(O& o, int id) { pi(id); return o; }
+int main() {
+  int a[4] = {0, 0, 0, 0}; int i = 0;
+  a[tr(1)] = tr(2);                       // C++17: sag operand once
+  pi(a[1]);
+  int x = (tr(5), tr(6));
+  pi(x);
+  bool b = tr(0) && tr(7);
+  b = tr(1) || tr(8);
+  b = tr(0) ? tr(9) : tr(10);
+  tr(11) << tr(12);                       // C++17: soldan saga
+  tr(40) >> tr(1);
+  int arr[3] = {7, 8, 9};
+  trp(arr, 20)[tri(21, 2)] = tri(22, 5);  // sag operand once, sonra sol: 22, 20, 21
+  pi(arr[2]);
+  O o = {1};
+  orr(o, 30).add(tr(31)).mul(tr(32));     // nesne ifadesi once, sonra argumanlar, zincir soldan saga
+  pi(o.v);
+  i = 5; i = i++ + 1; pi(i);              // C++17: iyi tanimli (onceki ornekte UB idi)
+  i = 2; i += i++ * 0 + 1;                // sag operand once
+  pi(i);
+  int k = 1; k = k++ ? k : 0; pi(k);
+  int m = 3; int n = (m = 4) + 1; pi(n); pi(m);
+  int p = 0; p = (p = 5, p + 1); pi(p);
+  int q = 10; q -= q - 3; pi(q);
+  int s = 1; s <<= s++ ; pi(s);
+  int r[3] = {1, 2, 3}; int idx = 0; r[idx] = idx + 5; pi(r[0]); int j2 = 1; r[j2++] = j2 * 10; pi(r[1]); pi(j2);
+  return 0;
+}

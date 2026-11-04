@@ -1,0 +1,7 @@
+OZET_V9|unigram|mod=cift_loc|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v15.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_loc|c=2|H=512|tohum=1|alpha=1.0|T=0.02|val_CE=6.4690|test_CE=6.3437|PPL=568.90|top1=0.1502|top5=0.3321|mse_olasilik=0.000523|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_loc|c=2|H=512|tohum=1|alpha=0|T=0.25|val_CE=5.6947|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_loc|c=2|H=512|tohum=1|alpha=0.2|T=0.01|val_CE=5.4782|test_CE=5.4046|PPL=222.42|top1=0.1488|top5=0.2773|mse_olasilik=0.000484|olasilik_toplami=1.000000
+CPU_SURE|cift_loc_c2_H512_s1|kalibrasyon_cpu_sn=4.58|duvar_sn=5.22|RAM_MB=340

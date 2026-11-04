@@ -1,0 +1,3 @@
+// RED: E_THIS
+// GPP: red
+int main() { return this == 0; }

@@ -1,0 +1,30 @@
+V20 c=2 H=512 tohum=1 gamma=1 lambda=1 alpha0=0.2 T0=0.01 (4 cekirdek)
+HIZ_AYRISTIRMA (tek gecis, egitim 39840 satir) [sn]: ORIJINAL   ileri_gemm=1.085 softmax+G=0.424 transpoz=0.148 geri_gemm(F^T G)=1.436 birikim=0.014 cholesky_cozum=0.040 | toplam=3.147
+HIZ_AYRISTIRMA (tek gecis, egitim 39840 satir) [sn]: OPTIMIZE   ileri_gemm=1.005 softmax+G=0.227 transpoz=0.146 geri_gemm(F^T G)=1.425 birikim=0.011 cholesky_cozum=0.048 | toplam=2.863
+SAYISAL_FARK optimize vs orijinal: ||G0-G1||/||G0||=2.556e-08 ; ||dW0-dW1||/||dW0||=4.281e-06 ; egitim CE toplam fark=0.000e+00
+RIDGE sure=0.310s ; ||F^T G||=2.847e+05 ; ||A^-1 F^T G||=344.2 ; ||W0||=10.72
+ETA TARAMASI (dogrulama): eta | kalibre CE | (alpha,T) | dogr. top1 | top5 | ham top1 | dW/W0
+  eta=0 | 5.4459 | a=0.2 T=0.01 | 0.1460 | 0.2715 | 0.1440 | 0.000
+  eta=0.001 | 5.4336 | a=0.2 T=0.01 | 0.1464 | 0.2757 | 0.1452 | 0.032
+  eta=0.003 | 5.4177 | a=0.2 T=0.01 | 0.1482 | 0.2783 | 0.1458 | 0.096
+  eta=0.005 | 5.4094 | a=0.25 T=0.01 | 0.1468 | 0.2849 | 0.1422 | 0.161
+  eta=0.0075 | 5.4036 | a=0.25 T=0.01 | 0.1410 | 0.2845 | 0.1376 | 0.241
+  eta=0.01 | 5.4027 | a=0.25 T=0.01 | 0.1402 | 0.2831 | 0.1349 | 0.321
+  eta=0.015 | 5.4091 | a=0.25 T=0.01 | 0.1311 | 0.2869 | 0.1237 | 0.482
+  eta=0.02 | 5.4182 | a=0.2 T=0.01 | 0.1237 | 0.2795 | 0.1147 | 0.642
+  eta=0.03 | 5.4453 | a=0.2 T=0.01 | 0.1141 | 0.2733 | 0.1044 | 0.963
+SECIM KURAL_A (en dusuk dogr. CE): eta=0.01 (CE 5.4027, dogr. top1 0.1402) | KURAL_B (CE ama dogr. top1 >= ridge-0.002): eta=0.005 (CE 5.4094, dogr. top1 0.1468) | ridge: CE 5.4459 top1 0.1460
+KELIME_GRUPLARI (egitim kitlesi): sik=44 tur, orta=284 tur, nadir=1673 tur
+OZET|RIDGE|c=2|H=512|tohum=1|gam=1|lam=1|eta=0|alpha=0.2|T=0.01|val_CE=5.4459|val_top1=0.1460|test_CE=5.3618|PPL=213.10|top1=0.1504|top5=0.2952
+OZET|V20_KURAL_A|c=2|H=512|tohum=1|gam=1|lam=1|eta=0.01|alpha=0.25|T=0.01|val_CE=5.4027|val_top1=0.1402|test_CE=5.3098|PPL=202.31|top1=0.1542|top5=0.3046|ham_top1=0.1506
+GECIS|V20_KURAL_A|kalibre top1: dogru->yanlis=142 yanlis->dogru=161 net=+19 | ham(argmax) top1: dogru->yanlis=160 yanlis->dogru=152 net=-8 | ridge ham top1=0.1522 yeni ham top1=0.1506
+GRUP|V20_KURAL_A|sik|n=2693|CE ridge=3.6184 yeni=3.6271 (fark +0.0087)|top1 ridge=0.2584 yeni=0.2492|top5 ridge=0.5169 yeni=0.5202
+GRUP|V20_KURAL_A|orta|n=1397|CE ridge=6.5237 yeni=6.3782 (fark -0.1455)|top1 ridge=0.0379 yeni=0.0694|top5 ridge=0.0558 yeni=0.0809
+GRUP|V20_KURAL_A|nadir|n=890|CE ridge=8.8133 yeni=8.7245 (fark -0.0887)|top1 ridge=0.0000 yeni=0.0000|top5 ridge=0.0000 yeni=0.0034
+OZET|V20_KURAL_B|c=2|H=512|tohum=1|gam=1|lam=1|eta=0.005|alpha=0.25|T=0.01|val_CE=5.4094|val_top1=0.1468|test_CE=5.3216|PPL=204.72|top1=0.1554|top5=0.3046|ham_top1=0.1560
+GECIS|V20_KURAL_B|kalibre top1: dogru->yanlis=80 yanlis->dogru=105 net=+25 | ham(argmax) top1: dogru->yanlis=78 yanlis->dogru=97 net=+19 | ridge ham top1=0.1522 yeni ham top1=0.1560
+GRUP|V20_KURAL_B|sik|n=2693|CE ridge=3.6184 yeni=3.6010 (fark -0.0174)|top1 ridge=0.2584 yeni=0.2555|top5 ridge=0.5169 yeni=0.5240
+GRUP|V20_KURAL_B|orta|n=1397|CE ridge=6.5237 yeni=6.4383 (fark -0.0854)|top1 ridge=0.0379 yeni=0.0616|top5 ridge=0.0558 yeni=0.0759
+GRUP|V20_KURAL_B|nadir|n=890|CE ridge=8.8133 yeni=8.7755 (fark -0.0378)|top1 ridge=0.0000 yeni=0.0000|top5 ridge=0.0000 yeni=0.0000
+SURE son-model duzeltme (gradyan egitim+dogrulama, optimize)=3.278s ; tek-gecis egitim gradyani orijinal=3.147s optimize=2.863s
+TOPLAM sure=15.8s tepe_RAM=329MB

@@ -1,0 +1,2 @@
+// RED: E_PTRARITH
+int main() { int a; void* p = &a; return (p + 1) != 0; }

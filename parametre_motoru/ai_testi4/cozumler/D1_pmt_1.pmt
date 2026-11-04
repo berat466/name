@@ -1,0 +1,49 @@
+; D1: 400 degerlik listenin istatistikleri. Siralama yok; 101 adaylik sayim tablosu (aday) ile.
+; Kare 0: sayimlar + ilk topla'lar; kare 1: onlara bagli (ortanca, tepe, ikinci buyuk, sapma toplami).
+kare 3
+global gmin = 0
+global gmax = 0
+global gtop = 0
+global gmed = 0
+global gmx = 0
+global gmod = 0
+global gfark = 0
+global gsad = 0
+global gsec = 0
+
+sablon veri adet 400
+  alan v rastgele -50 50 2
+  alan dev sabit 0
+  alan ad sabit 0
+  kural dev = v - gmed
+  kural dev = dev + 50
+  kural ad = 0 - dev
+  kural ad = max dev ad
+son
+
+sablon aday adet 101
+  alan c dogrusal -50 1
+  alan cnt sabit 0
+  alan cum sabit 0
+  kural cnt = 0
+  kural cum = 0
+son
+
+etkilesim aday veri eger b.v == a.c
+  kural a.cnt = a.cnt + 1
+son
+etkilesim aday veri eger b.v <= a.c
+  kural a.cum = a.cum + 1
+son
+
+topla gmin enkucuk veri v
+topla gmax enbuyuk veri v
+topla gtop toplam veri v
+topla gsad toplam veri ad
+topla gmed say aday eger cum <= 200
+topla gmx enbuyuk aday cnt
+topla gmod enkucuk aday c eger cnt == gmx
+topla gfark say aday eger cnt > 0
+topla gsec enbuyuk aday c eger cnt > 0 ve c < gmax
+
+yazdir gmin, gmax, gmed - 50, gtop / 400, gmod, gmx, gfark, gsad, gsec

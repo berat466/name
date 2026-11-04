@@ -1,0 +1,2 @@
+// RED: E_NARROW
+int main() { int x{3.5}; return x; }

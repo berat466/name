@@ -1,0 +1,6 @@
+t_f1x128_r1.txt hazirlik=0.40s hazirlik=1.07s baglanti hesabi+karisim sure=0.16s
+t_f1x128_r2.txt hazirlik=0.43s hazirlik=1.13s baglanti hesabi+karisim sure=0.22s
+t_f1x512_r1.txt hazirlik=0.90s hazirlik=2.25s baglanti hesabi+karisim sure=0.22s
+t_f1x512_r2.txt hazirlik=0.86s hazirlik=2.67s baglanti hesabi+karisim sure=0.19s
+t_f4x128_r1.txt hazirlik=1.29s hazirlik=2.52s baglanti hesabi+karisim sure=0.19s
+t_f4x128_r2.txt hazirlik=1.42s hazirlik=2.43s baglanti hesabi+karisim sure=0.22s

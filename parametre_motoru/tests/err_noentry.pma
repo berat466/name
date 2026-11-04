@@ -1,0 +1,3 @@
+func foo() {
+    ret 0
+}

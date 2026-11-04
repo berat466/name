@@ -1,0 +1,13 @@
+V11 mod=cift oz=ref c=2 H=512 tohum=1 V=2001 K=192 egitim=39840 dogrulama=4980 test=4980 (4 cekirdek)
+  gamma=1 lambda=1 en_iyi_T=0.03 val_CE=6.4764
+  gamma=1 lambda=10 en_iyi_T=0.02 val_CE=6.4676
+  gamma=1 lambda=100 en_iyi_T=0.02 val_CE=6.3935
+  gamma=1 lambda=1000 en_iyi_T=0.02 val_CE=6.4279
+  gamma=2 lambda=1 en_iyi_T=0.03 val_CE=6.4667
+  gamma=2 lambda=10 en_iyi_T=0.03 val_CE=6.4728
+  gamma=2 lambda=100 en_iyi_T=0.02 val_CE=6.4180
+  gamma=2 lambda=1000 en_iyi_T=0.02 val_CE=6.3757
+SECILEN gamma=2 lambda=1000 T=0.02 val_CE=6.3757
+TEST mse_ham=0.000482 mse_olasilik=0.000496 CE=6.2801 PPL=533.84 top1=0.1430 top5=0.3327
+SURE W1_uretim=0.001s tek_model_egitim(W1+istatistik(egitim+dogrulama)+1 Cholesky/cozum)=0.64s ayar_aramasi_dahil_toplam=19.58s
+OZET|cift_ref|c=2|H=512|tohum=1|gam=2|lam=1000|T=0.02|valCE=6.3757|mse_ham=0.000482|mse_olas=0.000496|CE=6.2801|PPL=533.84|top1=0.1430|top5=0.3327|egitim_sn=0.64|toplam_sn=19.58|RAM_MB=299

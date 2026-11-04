@@ -1,0 +1,8 @@
+./tek_hamle_v26 2 1024 1 4 10	/tmp/v26log/v26_c2_H1024_s1.txt	rc=0	wall_s=59.67	user_cpu_s=109.33	sys_cpu_s=6.88	maxrss_MB=792
+./tek_hamle_v26 2 1024 2 4 100	/tmp/v26log/v26_c2_H1024_s2.txt	rc=0	wall_s=61.87	user_cpu_s=111.03	sys_cpu_s=5.31	maxrss_MB=792
+./tek_hamle_v26 2 1024 3 2 1	/tmp/v26log/v26_c2_H1024_s3.txt	rc=0	wall_s=55.25	user_cpu_s=101.16	sys_cpu_s=4.80	maxrss_MB=792
+./tek_hamle_v26 2 512 1 1 1	/tmp/v26log/v26_c2_H512_s1.txt	rc=0	wall_s=37.18	user_cpu_s=65.00	sys_cpu_s=4.09	maxrss_MB=651
+./tek_hamle_v26c 2 1024 1 4 10 BDE	/tmp/v26log/v26c_c2_H1024_s1_BDE.txt	rc=0	wall_s=251.06	user_cpu_s=490.88	sys_cpu_s=18.45	maxrss_MB=1313
+./tek_hamle_v26 2 512 2 2 1	/tmp/v26log/v26_c2_H512_s2.txt	rc=0	wall_s=34.35	user_cpu_s=63.98	sys_cpu_s=3.37	maxrss_MB=651
+./tek_hamle_v26 2 512 3 1 1	/tmp/v26log/v26_c2_H512_s3.txt	rc=0	wall_s=35.62	user_cpu_s=62.65	sys_cpu_s=4.12	maxrss_MB=650
+./tek_hamle_v26c 2 512 1 1 1 BCD	/tmp/v26log/v26c_c2_H512_s1_BCD.txt	rc=0	wall_s=105.96	user_cpu_s=299.80	sys_cpu_s=6.49	maxrss_MB=1109

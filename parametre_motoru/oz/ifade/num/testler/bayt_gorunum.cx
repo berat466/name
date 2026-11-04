@@ -1,0 +1,21 @@
+// 02.022: reinterpret_cast bayt gorunumu -- nesnenin baytlarina 1 baytlik turle okuma/yazma (little-endian), dizi, double, geri donus
+int main() {
+  int a = 0x01020304;
+  unsigned char* b = reinterpret_cast<unsigned char*>(&a);
+  pi(b[0]); pi(b[1]); pi(b[2]); pi(b[3]);
+  b[1] = 0xAA; pi(a);
+  *b = 255; pi(a);
+  int neg = -2; unsigned char* nb = reinterpret_cast<unsigned char*>(&neg);
+  pi(nb[0]); pi(nb[3]); signed char* sn = reinterpret_cast<signed char*>(&neg); pi(sn[0]); pi(sn[3]);
+  unsigned arr[3] = {0x11223344u, 0x55667788u, 0x99AABBCCu};
+  unsigned char* ab = reinterpret_cast<unsigned char*>(arr);
+  int i = 0; int sum = 0; while (i < 12) { sum = sum + ab[i]; i = i + 1; } pi(sum);
+  pi(ab[4]); pi(ab[11]); ab[8] = 0; pi(arr[2] == 0x99AABB00u);
+  unsigned char* e = ab + 12; int cnt = 0; unsigned char* q = ab; while (q != e) { cnt = cnt + 1; q = q + 1; } pi(cnt); pi(e - ab);
+  double d = 1.0; unsigned char* db = reinterpret_cast<unsigned char*>(&d); pi(db[7]); pi(db[6]); pi(db[0]);
+  short s = -1; char* sb = reinterpret_cast<char*>(&s); pi(sb[0]); pi(sb[1]); sb[0] = 1; pi(s);
+  long long ll = 0x0102030405060708LL; unsigned char* lb = reinterpret_cast<unsigned char*>(&ll); pi(lb[0]); pi(lb[7]);
+  int* back = reinterpret_cast<int*>(b); pi(back == &a); pi(*back);
+  int x = 7; unsigned char* xb = reinterpret_cast<unsigned char*>(&x); if (xb[0] == 7) pi(1); else pi(0);
+  return 0;
+}

@@ -1,0 +1,38 @@
+// 03.013: desen eslestirme (__match): sabit, aralik, joker, baglama, secenek, koruma (if), yapi deseni, ilk eslesen kazanir
+struct Nokta { int x; int y; };
+struct Kutu { Nokta a; int tur; };
+int sinif(int n) {
+  int r = -1;
+  __match (n) {
+    case 0: r = 100;
+    case 1 | 2 | 3: r = 200;
+    case 10 ... 19: r = 300;
+    case int k if (k < 0): r = 400 + k;
+    case int k if (k % 2 == 0): r = 500 + k;
+    case _: r = 600;
+  }
+  return r;
+}
+int nokta(Nokta p) {
+  int r = 0;
+  __match (p) {
+    case {0, 0}: r = 1;
+    case {0, int y}: r = 10 + y;
+    case {int x, 0}: r = 20 + x;
+    case {int x, int y} if (x == y): r = 30;
+    case {_, _}: r = 40;
+  }
+  return r;
+}
+int kutu(Kutu k) {
+  int r = 0;
+  __match (k) { case {{1, 2}, 7}: r = 1; case {{int a, _}, 8}: r = a; case _: r = -1; }
+  return r;
+}
+int main() {
+  for (int i = -2; i < 22; i = i + 3) pi(sinif(i));
+  Nokta p; p.x = 0; p.y = 0; pi(nokta(p)); p.y = 5; pi(nokta(p)); p.x = 4; p.y = 0; pi(nokta(p)); p.x = 3; p.y = 3; pi(nokta(p)); p.y = 4; pi(nokta(p));
+  Kutu k; k.a.x = 1; k.a.y = 2; k.tur = 7; pi(kutu(k)); k.tur = 8; k.a.x = 55; pi(kutu(k)); k.tur = 9; pi(kutu(k));
+  int hit = 0; __match (hit) { case 5: pi(1); }  pi(hit);
+  return 0;
+}

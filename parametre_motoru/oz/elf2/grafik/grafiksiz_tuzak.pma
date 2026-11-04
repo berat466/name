@@ -1,0 +1,10 @@
+; present/poll/frame YOK: RT'siz cikis yolu (exitc); OOB tuzagi cikis kodu 2 ve mesaj
+memory 100
+func main() {
+    mov v, 5
+    host puti, v
+    mov q, 9999
+    ld z, q, 0
+    ret z
+}
+entry main

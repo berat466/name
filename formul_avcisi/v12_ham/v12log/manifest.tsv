@@ -1,0 +1,4 @@
+./tek_hamle_v12 cift 2 512 1 bag ABC	/tmp/v12log/cift_bag_c2_H512_s1.txt	rc=0	wall_s=107.47	user_cpu_s=358.08	sys_cpu_s=14.41	maxrss_MB=403
+./tek_hamle_v12 cift 2 512 2 ref AB	/tmp/v12log/cift_ref_c2_H512_s2.txt	rc=0	wall_s=70.75	user_cpu_s=236.35	sys_cpu_s=9.48	maxrss_MB=361
+./tek_hamle_v12 cift 2 512 3 ref AB	/tmp/v12log/cift_ref_c2_H512_s3.txt	rc=0	wall_s=70.53	user_cpu_s=238.16	sys_cpu_s=9.10	maxrss_MB=361
+./tek_hamle_v12 cift 2 1024 1 bag ABC	/tmp/v12log/cift_bag_c2_H1024_s1.txt	rc=0	wall_s=188.46	user_cpu_s=652.93	sys_cpu_s=18.75	maxrss_MB=815

@@ -1,0 +1,84 @@
+V21 c=2 H=1024 tohum=2 gamma=4 lambda=100 alpha0=0.2 T0=0.01 (4 cekirdek)
+RIDGE sure=1.265s ; CE duzeltme (gradyan+D, egitim) sure=5.934s
+KELIME_GRUPLARI (egitim kitlesi): sik=44 tur, orta=284 tur, nadir=1673 tur
+MASKE x ETA TARAMASI (dogrulama): maske | eta | kalibre CE | (alpha,T) | dogr. top1 | top5 | ham top1
+  A_V20 | eta=0 | 5.4203 | a=0.2 T=0.01 | 0.1490 | 0.2777 | 0.1478
+  A_V20 | eta=0.003 | 5.3825 | a=0.25 T=0.01 | 0.1482 | 0.2871 | 0.1448
+  A_V20 | eta=0.005 | 5.3699 | a=0.25 T=0.01 | 0.1462 | 0.2882 | 0.1396
+  A_V20 | eta=0.0075 | 5.3658 | a=0.25 T=0.01 | 0.1434 | 0.2869 | 0.1365
+  A_V20 | eta=0.01 | 5.3692 | a=0.25 T=0.01 | 0.1394 | 0.2867 | 0.1325
+  B_sik0 | eta=0 | 5.4203 | a=0.2 T=0.01 | 0.1490 | 0.2777 | 0.1478
+  B_sik0 | eta=0.003 | 5.4087 | a=0.2 T=0.01 | 0.1492 | 0.2779 | 0.1482
+  B_sik0 | eta=0.005 | 5.4026 | a=0.2 T=0.01 | 0.1494 | 0.2785 | 0.1482
+  B_sik0 | eta=0.0075 | 5.3969 | a=0.2 T=0.01 | 0.1484 | 0.2795 | 0.1470
+  B_sik0 | eta=0.01 | 5.3930 | a=0.2 T=0.01 | 0.1486 | 0.2807 | 0.1472
+  C_sik.25 | eta=0 | 5.4203 | a=0.2 T=0.01 | 0.1490 | 0.2777 | 0.1478
+  C_sik.25 | eta=0.003 | 5.4005 | a=0.2 T=0.01 | 0.1490 | 0.2801 | 0.1482
+  C_sik.25 | eta=0.005 | 5.3900 | a=0.2 T=0.01 | 0.1486 | 0.2817 | 0.1472
+  C_sik.25 | eta=0.0075 | 5.3801 | a=0.25 T=0.01 | 0.1488 | 0.2867 | 0.1476
+  C_sik.25 | eta=0.01 | 5.3737 | a=0.25 T=0.01 | 0.1496 | 0.2865 | 0.1464
+  D_sik.5 | eta=0 | 5.4203 | a=0.2 T=0.01 | 0.1490 | 0.2777 | 0.1478
+  D_sik.5 | eta=0.003 | 5.3937 | a=0.2 T=0.01 | 0.1498 | 0.2823 | 0.1482
+  D_sik.5 | eta=0.005 | 5.3802 | a=0.25 T=0.01 | 0.1486 | 0.2857 | 0.1454
+  D_sik.5 | eta=0.0075 | 5.3697 | a=0.25 T=0.01 | 0.1472 | 0.2882 | 0.1448
+  D_sik.5 | eta=0.01 | 5.3655 | a=0.25 T=0.01 | 0.1452 | 0.2898 | 0.1394
+  E_.25/.75/1 | eta=0 | 5.4203 | a=0.2 T=0.01 | 0.1490 | 0.2777 | 0.1478
+  E_.25/.75/1 | eta=0.003 | 5.4023 | a=0.2 T=0.01 | 0.1490 | 0.2807 | 0.1480
+  E_.25/.75/1 | eta=0.005 | 5.3923 | a=0.2 T=0.01 | 0.1484 | 0.2821 | 0.1476
+  E_.25/.75/1 | eta=0.0075 | 5.3820 | a=0.25 T=0.01 | 0.1498 | 0.2861 | 0.1480
+  E_.25/.75/1 | eta=0.01 | 5.3744 | a=0.25 T=0.01 | 0.1484 | 0.2869 | 0.1462
+SECIM GLOBAL_KURAL_A: maske=D_sik.5 eta=0.01 (val CE 5.3655 top1 0.1452) | GLOBAL_KURAL_B: maske=D_sik.5 eta=0.0075 (val CE 5.3697 top1 0.1472) | ridge val CE 5.4203 top1 0.1490
+OZET|RIDGE|-|eta=0|alpha=0.2|T=0.01|val_CE=5.4203|val_top1=0.1490|test_CE=5.3367|PPL=207.82|top1=0.1596|top5=0.2996|train_CE=5.1708|gap=0.2495
+OZET|MASKE_KURAL_A|A_V20|eta=0.0075|alpha=0.25|T=0.01|val_CE=5.3658|val_top1=0.1434|test_CE=5.2861|PPL=197.56|top1=0.1516|top5=0.3092|train_CE=4.7037|gap=0.6621
+GECIS|MASKE_KURAL_A|A_V20|kalibre top1: dogru->yanlis=163 yanlis->dogru=123 net=-40 | ham top1: dogru->yanlis=186 yanlis->dogru=126 net=-60
+GRUP|MASKE_KURAL_A|A_V20|sik|n=2693|CE ridge=3.6103 yeni=3.6329 (fark +0.0226)|top1 ridge=0.2674 yeni=0.2443|top5 ridge=0.5202 yeni=0.5206
+GRUP|MASKE_KURAL_A|A_V20|orta|n=1397|CE ridge=6.4597 yeni=6.3278 (fark -0.1319)|top1 ridge=0.0537 yeni=0.0644|top5 ridge=0.0651 yeni=0.0931
+GRUP|MASKE_KURAL_A|A_V20|nadir|n=890|CE ridge=8.7976 yeni=8.6530 (fark -0.1446)|top1 ridge=0.0000 yeni=0.0079|top5 ridge=0.0000 yeni=0.0090
+OZET|MASKE_KURAL_B|A_V20|eta=0.003|alpha=0.25|T=0.01|val_CE=5.3825|val_top1=0.1482|test_CE=5.2991|PPL=200.16|top1=0.1582|top5=0.3100|train_CE=4.9004|gap=0.4822
+GECIS|MASKE_KURAL_B|A_V20|kalibre top1: dogru->yanlis=71 yanlis->dogru=64 net=-7 | ham top1: dogru->yanlis=76 yanlis->dogru=64 net=-12
+GRUP|MASKE_KURAL_B|A_V20|sik|n=2693|CE ridge=3.6103 yeni=3.5887 (fark -0.0217)|top1 ridge=0.2674 yeni=0.2610|top5 ridge=0.5202 yeni=0.5299
+GRUP|MASKE_KURAL_B|A_V20|orta|n=1397|CE ridge=6.4597 yeni=6.4026 (fark -0.0571)|top1 ridge=0.0537 yeni=0.0580|top5 ridge=0.0651 yeni=0.0795
+GRUP|MASKE_KURAL_B|A_V20|nadir|n=890|CE ridge=8.7976 yeni=8.7425 (fark -0.0551)|top1 ridge=0.0000 yeni=0.0045|top5 ridge=0.0000 yeni=0.0067
+OZET|MASKE_KURAL_A|B_sik0|eta=0.01|alpha=0.2|T=0.01|val_CE=5.3930|val_top1=0.1486|test_CE=5.3113|PPL=202.61|top1=0.1594|top5=0.3026|train_CE=4.9702|gap=0.4228
+GECIS|MASKE_KURAL_A|B_sik0|kalibre top1: dogru->yanlis=38 yanlis->dogru=37 net=-1 | ham top1: dogru->yanlis=40 yanlis->dogru=39 net=-1
+GRUP|MASKE_KURAL_A|B_sik0|sik|n=2693|CE ridge=3.6103 yeni=3.6180 (fark +0.0077)|top1 ridge=0.2674 yeni=0.2636|top5 ridge=0.5202 yeni=0.5169
+GRUP|MASKE_KURAL_A|B_sik0|orta|n=1397|CE ridge=6.4597 yeni=6.3837 (fark -0.0760)|top1 ridge=0.0537 yeni=0.0558|top5 ridge=0.0651 yeni=0.0773
+GRUP|MASKE_KURAL_A|B_sik0|nadir|n=890|CE ridge=8.7976 yeni=8.7515 (fark -0.0461)|top1 ridge=0.0000 yeni=0.0067|top5 ridge=0.0000 yeni=0.0079
+OZET|MASKE_KURAL_B|B_sik0|eta=0.01|alpha=0.2|T=0.01|val_CE=5.3930|val_top1=0.1486|test_CE=5.3113|PPL=202.61|top1=0.1594|top5=0.3026|train_CE=4.9702|gap=0.4228
+GECIS|MASKE_KURAL_B|B_sik0|kalibre top1: dogru->yanlis=38 yanlis->dogru=37 net=-1 | ham top1: dogru->yanlis=40 yanlis->dogru=39 net=-1
+GRUP|MASKE_KURAL_B|B_sik0|sik|n=2693|CE ridge=3.6103 yeni=3.6180 (fark +0.0077)|top1 ridge=0.2674 yeni=0.2636|top5 ridge=0.5202 yeni=0.5169
+GRUP|MASKE_KURAL_B|B_sik0|orta|n=1397|CE ridge=6.4597 yeni=6.3837 (fark -0.0760)|top1 ridge=0.0537 yeni=0.0558|top5 ridge=0.0651 yeni=0.0773
+GRUP|MASKE_KURAL_B|B_sik0|nadir|n=890|CE ridge=8.7976 yeni=8.7515 (fark -0.0461)|top1 ridge=0.0000 yeni=0.0067|top5 ridge=0.0000 yeni=0.0079
+OZET|MASKE_KURAL_A|C_sik.25|eta=0.01|alpha=0.25|T=0.01|val_CE=5.3737|val_top1=0.1496|test_CE=5.2941|PPL=199.16|top1=0.1588|top5=0.3090|train_CE=4.7959|gap=0.5778
+GECIS|MASKE_KURAL_A|C_sik.25|kalibre top1: dogru->yanlis=81 yanlis->dogru=77 net=-4 | ham top1: dogru->yanlis=87 yanlis->dogru=80 net=-7
+GRUP|MASKE_KURAL_A|C_sik.25|sik|n=2693|CE ridge=3.6103 yeni=3.5995 (fark -0.0108)|top1 ridge=0.2674 yeni=0.2592|top5 ridge=0.5202 yeni=0.5240
+GRUP|MASKE_KURAL_A|C_sik.25|orta|n=1397|CE ridge=6.4597 yeni=6.3687 (fark -0.0910)|top1 ridge=0.0537 yeni=0.0623|top5 ridge=0.0651 yeni=0.0859
+GRUP|MASKE_KURAL_A|C_sik.25|nadir|n=890|CE ridge=8.7976 yeni=8.7349 (fark -0.0627)|top1 ridge=0.0000 yeni=0.0067|top5 ridge=0.0000 yeni=0.0090
+OZET|MASKE_KURAL_B|C_sik.25|eta=0.01|alpha=0.25|T=0.01|val_CE=5.3737|val_top1=0.1496|test_CE=5.2941|PPL=199.16|top1=0.1588|top5=0.3090|train_CE=4.7959|gap=0.5778
+GECIS|MASKE_KURAL_B|C_sik.25|kalibre top1: dogru->yanlis=81 yanlis->dogru=77 net=-4 | ham top1: dogru->yanlis=87 yanlis->dogru=80 net=-7
+GRUP|MASKE_KURAL_B|C_sik.25|sik|n=2693|CE ridge=3.6103 yeni=3.5995 (fark -0.0108)|top1 ridge=0.2674 yeni=0.2592|top5 ridge=0.5202 yeni=0.5240
+GRUP|MASKE_KURAL_B|C_sik.25|orta|n=1397|CE ridge=6.4597 yeni=6.3687 (fark -0.0910)|top1 ridge=0.0537 yeni=0.0623|top5 ridge=0.0651 yeni=0.0859
+GRUP|MASKE_KURAL_B|C_sik.25|nadir|n=890|CE ridge=8.7976 yeni=8.7349 (fark -0.0627)|top1 ridge=0.0000 yeni=0.0067|top5 ridge=0.0000 yeni=0.0090
+OZET|MASKE_KURAL_A|D_sik.5|eta=0.01|alpha=0.25|T=0.01|val_CE=5.3655|val_top1=0.1452|test_CE=5.2869|PPL=197.73|top1=0.1550|top5=0.3098|train_CE=4.7178|gap=0.6478
+GECIS|MASKE_KURAL_A|D_sik.5|kalibre top1: dogru->yanlis=129 yanlis->dogru=106 net=-23 | ham top1: dogru->yanlis=142 yanlis->dogru=107 net=-35
+GRUP|MASKE_KURAL_A|D_sik.5|sik|n=2693|CE ridge=3.6103 yeni=3.6173 (fark +0.0070)|top1 ridge=0.2674 yeni=0.2488|top5 ridge=0.5202 yeni=0.5217
+GRUP|MASKE_KURAL_A|D_sik.5|orta|n=1397|CE ridge=6.4597 yeni=6.3383 (fark -0.1215)|top1 ridge=0.0537 yeni=0.0680|top5 ridge=0.0651 yeni=0.0931
+GRUP|MASKE_KURAL_A|D_sik.5|nadir|n=890|CE ridge=8.7976 yeni=8.6883 (fark -0.1093)|top1 ridge=0.0000 yeni=0.0079|top5 ridge=0.0000 yeni=0.0090
+OZET|MASKE_KURAL_B|D_sik.5|eta=0.0075|alpha=0.25|T=0.01|val_CE=5.3697|val_top1=0.1472|test_CE=5.2901|PPL=198.37|top1=0.1566|top5=0.3108|train_CE=4.7873|gap=0.5825
+GECIS|MASKE_KURAL_B|D_sik.5|kalibre top1: dogru->yanlis=101 yanlis->dogru=86 net=-15 | ham top1: dogru->yanlis=110 yanlis->dogru=85 net=-25
+GRUP|MASKE_KURAL_B|D_sik.5|sik|n=2693|CE ridge=3.6103 yeni=3.6023 (fark -0.0080)|top1 ridge=0.2674 yeni=0.2551|top5 ridge=0.5202 yeni=0.5266
+GRUP|MASKE_KURAL_B|D_sik.5|orta|n=1397|CE ridge=6.4597 yeni=6.3632 (fark -0.0965)|top1 ridge=0.0537 yeni=0.0623|top5 ridge=0.0651 yeni=0.0880
+GRUP|MASKE_KURAL_B|D_sik.5|nadir|n=890|CE ridge=8.7976 yeni=8.7127 (fark -0.0849)|top1 ridge=0.0000 yeni=0.0067|top5 ridge=0.0000 yeni=0.0079
+OZET|MASKE_KURAL_A|E_.25/.75/1|eta=0.01|alpha=0.25|T=0.01|val_CE=5.3744|val_top1=0.1484|test_CE=5.2944|PPL=199.21|top1=0.1584|top5=0.3100|train_CE=4.8082|gap=0.5662
+GECIS|MASKE_KURAL_A|E_.25/.75/1|kalibre top1: dogru->yanlis=74 yanlis->dogru=68 net=-6 | ham top1: dogru->yanlis=81 yanlis->dogru=69 net=-12
+GRUP|MASKE_KURAL_A|E_.25/.75/1|sik|n=2693|CE ridge=3.6103 yeni=3.5949 (fark -0.0155)|top1 ridge=0.2674 yeni=0.2607|top5 ridge=0.5202 yeni=0.5254
+GRUP|MASKE_KURAL_A|E_.25/.75/1|orta|n=1397|CE ridge=6.4597 yeni=6.3832 (fark -0.0766)|top1 ridge=0.0537 yeni=0.0580|top5 ridge=0.0651 yeni=0.0859
+GRUP|MASKE_KURAL_A|E_.25/.75/1|nadir|n=890|CE ridge=8.7976 yeni=8.7277 (fark -0.0698)|top1 ridge=0.0000 yeni=0.0067|top5 ridge=0.0000 yeni=0.0101
+OZET|MASKE_KURAL_B|E_.25/.75/1|eta=0.01|alpha=0.25|T=0.01|val_CE=5.3744|val_top1=0.1484|test_CE=5.2944|PPL=199.21|top1=0.1584|top5=0.3100|train_CE=4.8082|gap=0.5662
+GECIS|MASKE_KURAL_B|E_.25/.75/1|kalibre top1: dogru->yanlis=74 yanlis->dogru=68 net=-6 | ham top1: dogru->yanlis=81 yanlis->dogru=69 net=-12
+GRUP|MASKE_KURAL_B|E_.25/.75/1|sik|n=2693|CE ridge=3.6103 yeni=3.5949 (fark -0.0155)|top1 ridge=0.2674 yeni=0.2607|top5 ridge=0.5202 yeni=0.5254
+GRUP|MASKE_KURAL_B|E_.25/.75/1|orta|n=1397|CE ridge=6.4597 yeni=6.3832 (fark -0.0766)|top1 ridge=0.0537 yeni=0.0580|top5 ridge=0.0651 yeni=0.0859
+GRUP|MASKE_KURAL_B|E_.25/.75/1|nadir|n=890|CE ridge=8.7976 yeni=8.7277 (fark -0.0698)|top1 ridge=0.0000 yeni=0.0067|top5 ridge=0.0000 yeni=0.0101
+GLOBAL_A_isaret maske=D_sik.5 eta=0.01 ; GLOBAL_B_isaret maske=D_sik.5 eta=0.0075
+SURE son-model CE duzeltme (gradyan egitim+dogrulama + D)=6.412s ; maske uygulama (tum tarama) ihmal edilebilir (yalniz Z0-eta*m*Zd)
+TOPLAM sure=44.1s tepe_RAM=1494MB

@@ -1,0 +1,3 @@
+bitti 2001 rc=0 153 s
+bitti 5001 rc=0 177 s
+bitti 6722 rc=0 215 s

@@ -1,0 +1,40 @@
+; present gecersiz argumanlari: her biri -1 dondurmeli, kare sayilmamali; sonra gecerli sunumlar ve frame()
+memory 5000
+func pr(p, w, h) {
+    host r, present, p, w, h
+    host puti, r
+    host putc, 32
+    host fr, frame
+    ret fr
+}
+func main() {
+    call x, pr, 0, 4, 4
+    call x, pr, 1, 0, 4
+    call x, pr, 1, 4, 0
+    call x, pr, 1, 4097, 1
+    call x, pr, 1, 1, 4097
+    call x, pr, 4999, 2, 2
+    call x, pr, 5000, 1, 1
+    call x, pr, 5001, 1, 1
+    call x, pr, 1, 5000, 1
+    call x, pr, -1, 4, 4
+    call x, pr, 1, -1, 4
+    call x, pr, 1, 4, -1
+    mov big, 1
+    shli big, big, 40
+    call x, pr, 1, big, big
+    call x, pr, 1, 4096, 4096
+    call x, pr, 1, 2000, 3
+    call x, pr, 4990, 10, 1
+    call x, pr, 4991, 10, 1
+    call x, pr, 1, 70, 70
+    call x, pr, 1, 70, 71
+    call x, pr, 1, 4, 4
+    call x, pr, 4984, 4, 4
+    call x, pr, 4985, 4, 4
+    host f, frame
+    host puti, f
+    host putc, 10
+    ret 0
+}
+entry main

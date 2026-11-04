@@ -1,0 +1,47 @@
+{
+ "A": {
+  "k": 1000,
+  "ms_1000_ornek_sgemm_float32": 3.05964900000788,
+  "ms_1000_ornek_sirali_cift_duyarlik": 502.2820420000045,
+  "ms_tek_tetikleyici": 0.8492789999934303,
+  "G_trig_vs_seq_maks_bagil": 2.7810446373113328e-14,
+  "G_trig_vs_sgemm32_maks_bagil": 4.9979137526568545e-06,
+  "RHS_trig_vs_seq_maks_bagil": 0.0,
+  "ACF_bagil": 0.0,
+  "sayac_esit": true,
+  "G_trig_vs_yuksek_duyarlik_40x40_bagil": 0.0,
+  "G_seq_vs_yuksek_duyarlik_40x40_bagil": 2.778301628814574e-14
+ },
+ "A2_k1024_sirali_vs_carpan_bit_esit": false,
+ "B": {
+  "n": 113046,
+  "benzersiz_F_satiri": 60265,
+  "benzersiz_oran": 0.5331015692726855,
+  "benzersiz_F_ve_y_cifti": 100299,
+  "ms_tam_gram_f64": 293.6483749999752,
+  "ms_sikistirilmis_gram_f64": 419.21255500000143,
+  "ms_tam_gram_f32": 149.32850899998584,
+  "ms_sikistirilmis_gram_f32": 67.81301899999903,
+  "gram_maks_bagil_fark": 4.3146816868906396e-05,
+  "gram_maks_mutlak_fark": 8.731149137020111e-11,
+  "en_cok_tekrar": 170
+ },
+ "C1_olcek": {
+  "G_bagil": 3.65150679015393e-15,
+  "aciklama": "tam: moment toplamlari (sum s, sum s^2) yeter"
+ },
+ "C2_gurultu": {
+  "sigma": 0.05,
+  "G_Frobenius_bagil_hata": 0.018001464856372124,
+  "ort_kose_yerine_ort_fark": 0.019168457270085183,
+  "aciklama": "beklenen etki = T*ff^T + T*sigma^2*I  (diyagonal ekleme = ridge); rastgele ornekle esit DEGIL, yalniz beklenen deger"
+ },
+ "C3_girdi_bozulma_sigma0.01": {
+  "sifirinci_mertebe_bagil_Frobenius_hata": 0.001571723748813565,
+  "birinci_mertebe_formul_bagil_Frobenius_hata": 0.0015366748904695694
+ },
+ "C3_girdi_bozulma_sigma0.05": {
+  "sifirinci_mertebe_bagil_Frobenius_hata": 0.009443343750171801,
+  "birinci_mertebe_formul_bagil_Frobenius_hata": 0.007444832423077362
+ }
+}

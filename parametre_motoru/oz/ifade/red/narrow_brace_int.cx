@@ -1,0 +1,2 @@
+// RED: E_NARROW
+int main() { long long l = 5; int x{l}; return x; }

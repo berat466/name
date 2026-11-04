@@ -1,0 +1,2 @@
+// RED: E_MAIN
+int f() { return 0; }

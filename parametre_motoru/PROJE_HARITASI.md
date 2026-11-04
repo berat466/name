@@ -1,0 +1,109 @@
+# Parametre Motoru — proje haritası
+
+Bu belge **neyin nerede olduğunu** anlatır (kalıcı harita). **Ne zaman ne yapıldığı** için `YAPILANLAR.md` (günlük); yol haritası için `CPP_YOL_HARITASI.md`; ayrıntılı tasarım ve sonuçlar için `OZ_BARINDIRMA.md`.
+
+## 1. Ana hedef (kesin tanım — mimari düzeltmesi)
+**Bizim asıl ürünümüz kendi bağımsız Sayısal Parametre Motorumuzdur (PMB1 / PMY1 / PMK1 / PMO1).**
+- Programların **kanonik kaynağı sayısal parametrelerdir.** Komutlar, fonksiyonlar, veri yapıları, bağlantılar, işlem anlamları ve dönüşüm kuralları bu mimaride temsil edilir. Okunabilir metin (`.pma`, `.pma.in`, görünüm `.pmv`) isteğe bağlı, kayıpsız bir görünümdür.
+- Motor kendi sayısal programlarını oluşturabilir, düzenleyebilir, doğrulayabilir, derleyebilir ve çalıştırabilir; başka bir programlama diline kalıcı olarak bağımlı olmayacak şekilde geliştirilir.
+- **Yeni, zorunlu bir metinsel programlama dili oluşturulmaz.** Biz C++, Python veya Rust'ın yerini alan yeni bir metinsel dil geliştirmiyoruz.
+- **Diğer diller (C++, Python, Rust, Java, C#, JavaScript…) motorun yerine geçmez;** yalnızca desteklenen *dış programlama dilleridir*. Rolleri uyumluluk ve aktarım katmanıdır: mevcut dillerle yazılmış uygulamaları ve kütüphaneleri sayısal parametre mimarisine aktarmak, farklı dillerin işlevlerini tek sayısal uygulama bütününde birleştirmek, dilin davranışını ve programın doğruluğunu korumak, kullanıcının ister doğrudan sayısal motorla ister mevcut dillerle çalışabilmesini sağlamak. **Kanonik kaynak her zaman sayısal parametre mimarimizdir.**
+- C++/Linux özelliklerinin desteklenmesi C++'ı ana motorumuz yapmak anlamına gelmez: bunlar sayısal motorun kazandığı yeteneklerdir.
+- Eski C++ `pm` **bağımsız doğrulama referansı** olarak kalır.
+
+**Geliştirme önceliği:** (1) kendi sayısal motorumuzun bütün yeteneklerini tamamlamak, (2) mevcut dillerle ve kütüphanelerle uyumluluğu genişletmek, (3) farklı donanımlara uyarlama, eniyileme ve gelişmiş hesaplama. Bu sıralama gerekli uyumluluk çalışmalarını engellemez; yalnızca projenin merkezinin değişmemesini sağlar.
+
+**Plan:** `PLAN_1399_MADDE.md` — 41 bölüm, 1.399 kontrol maddesi (numaralar değişmez). Bölümler numara sırasıyla işlenir; her bölüm tam bitirilip bütünleşik doğrulandıktan sonra durulur. Maddeler sayısal motorun kazanacağı yetenekler olarak değerlendirilir.
+
+## 2. Sayısal biçimler (hepsi sayı listesi)
+| Biçim | Ne | Nerede |
+|---|---|---|
+| **PMB1** | ikili program tablosu (komutlar, sabitler, veri); `pm liste` düz sayı listesine döner | `src/ikili.cpp`, çözücü/kodlayıcı `oz/coz.*`, `oz/yaz.*` |
+| **PMY1** | yapısal program tablosu (if/while/atama/ifade ağacı) | `src/yapisal.cpp`, dönüştürücü `oz/yap/` |
+| **PMK1** | kanonik komut tablosu: komut/host/operand türü, **anlamlar (SEM)**, mikro-işlemler (PRIM), takma komutlar (PSEUDO), yeniden yazma kuralları (REWRITE), x86 şablon simgeleri (TOKEN) ve şablonları (TEMPLATE) | `oz/komut/komutlar.pmk`, belge `oz/komut/KOMUT_TABLOSU.md` |
+| **PMO1** | sayısal araç nesnesi (taslak liste + bağıl kayıtlar); bağlayıcı tablodan ve nesneden PMB1 üretir | `oz/nesne/{asm,valid,gen2}.pmo`, `oz/arac/baglayici.*` |
+| **PMV** | PMO1'in okunabilir görünümü (düzenlenir, `yaz` ile aynı sayılara döner) | `oz/arac/gorunum.*`, `oz/nesne/duzenle.sh`, belge `oz/nesne/GORUNUM.md` |
+
+## 3. Üretim zinciri (kim kimi üretir)
+```
+komutlar.pmk ──komut @@tab──► sözlük ──┐
+                                         ├─ baglayici ─► PMB1 (asm.pmb, valid.pmb, gen2.pmb)
+asm/valid/gen2 .pmo (PMO1) ─────────────┘
+PMB1 ──gen2 (x86 şablonları + mikro-işlemler)──► bağımsız Linux x86-64 ELF
+PMB1 ──svm (SEM'i çalışma anında okur)──► yürütme
+.pmo ──gor──► .pmv ──düzenle──► yaz ──► .pmo        (istege bağlı okunabilir düzenleme)
+ELF takımı (oz/bag/*.elf) ──yenile.sh──► yeni ELF takımı   (pm'siz kendini yeniden üretme, A→B→A)
+```
+Önyükleme `pm`'i bir kez kullanır (`oz/bag/kur.sh`); sonrası ELF araçlarla `pm`'siz.
+
+## 4. Dizin haritası (`parametre_motoru/`)
+| Yol | İçerik |
+|---|---|
+| `src/` | **C++ `pm`** (bağımsız referans): `ifade.cpp` (Bölüm 02 ifade ön yüzü: lexer, ayrıştırıcı, PMX1, anlam, PMA üretimi), yükleyici, doğrulayıcı, VM (`vm.cpp`, `anlam.h`), native x86 (`native_x64.cpp`), `asm.cpp`, `yapisal.cpp`, `liste.cpp`; `ops_gen.h` komut tablosundan üretilir |
+| `tests/` | ana test koşucusu (`run_tests.sh`) ve 28 örnek program (`*.pma`, beklenen çıktı/tuzak) |
+| `uygulamalar/` | örnek uygulamalar (hayat, sahne, pong, şablonlar) |
+| `oz/komut/` | **PMK1 tablosu** (`komutlar.pmk`), belge, test (`dogrula_komut.sh`), sabotaj, rastgele tablo üreteci, geçiş araçları (`gecis/`) |
+| `oz/arac/` | küçük araçlar (PMA kaynak + `.pmb`): `doldur`, `opstab`, `fmtc`, `komut` (tabloyu işler), `baglayici` (PMO1 bağlar), `gorunum` (PMV), `paketle` |
+| `oz/asm/` | **assembler** (`asm.pma.in` metin kopyası, `asm.pmb`), kural ve ondalık testleri |
+| `oz/dogr/` | **PMB1 doğrulayıcı + analiz** (`valid.*`): kuralları SEM'den türetir |
+| `oz/elf/` | ilk ELF üretici (PMY1 olarak) ve OOB testi |
+| `oz/elf2/` | **gen2**: çok fonksiyonlu bağımsız ELF üretici (`gen2.pma.in`, `gen2.pmb`), çalışma zamanı kitaplığı `rt.*` (present/poll/frame/putf), testler: elf2, ondalık, grafik, mikro, **çağrı**, **hostrt** (host RT çağrısı: `dogrula_hostrt.sh`/`sabotaj_hostrt.sh`, girdiler `hostrt/*.l|*.pma`, `hostrt_ek/`) |
+| `oz/yap/` | PMY1 → `.pma` dönüştürücüsü |
+| `oz/sayisal/` | **svm**: SEM'i çalışma anında okuyup yürüten sayısal yürütücü |
+| `oz/nesne/` | **PMO1 nesneleri**, bağlayıcı/görünüm testleri, `duzenle.sh`, Python referansı (`ref/`) |
+| `oz/bag/` | pm'siz zincir: `kur.sh` (önyükleme), `yenile.sh` (kendini yeniden üretme), `*.elf` (git'e girmez), testler |
+| `oz/komut/gecis/cagri_ekle.py` | **Bölüm 04 motor ürünü:** `CALLI`/`TCALL` komutlarını yalnız tabloya ekler (OP+SEM+PRIM+x86 şablonu+OPSIG); `tests/calli_*`, `tests/tcall_*` ile sınanır; belge `oz/komut/KOMUT_TABLOSU.md` (Bölüm 04 bölümü), kapanış `BOLUM_04_KAPANIS_RAPORU.md` |
+| `oz/komut/gecis/host_rt_ekle.py`, `host_rt_derinlik.py`, `ifade_kural_ekle.py` (sınıf 6) | **Bölüm 04 düzeltme turu:** host RT şablonları (`host_rt`/`host_rtr`, `CURNR8`) ve komutlar.pmk bölüm 12 sınıf 6 (YAŞAM DÖNGÜSÜ sayısal parametreleri: korutin blok ayırıcı, nesil, yok etme sırası, alloca hiza/koruma); belge `oz/komut/KOMUT_TABLOSU.md` |
+| `oz/cfg/` | **Bölüm 03 ürünü — CFG iyileştirici:** `cfgopt.cx` (geliştirme görünümü) → `cfgopt.pmb` (sayısal program, ifx ile derlenir), `akis/` (elle yazılmış akış PMA testleri), `red/` (geçersiz jtab programları: doğrulayıcı reddi), `dogrula_cfg.sh`, `sabotaj_cfg.sh`, `sabotaj_native.sh` (yerel makine kodu BRX mutantları) |
+| `oz/ifade/num/` | **sayısal PMX1 derleyicisi (Bölüm 02–04 ürünü; denetim akışı, fonksiyonlar/çağrı modeli, lambda, constexpr, korutin promise/awaiter dahil):** `ifx.pmb` (kanonik, sayısal program; PMA + PMT1 tür notu üretir), `ifx.cx` (geliştirme görünümü), `ifx.sh`, `dogrula_ifx.sh`, `pmx_fuzz_ifx.py`, `sabotaj_ifx.sh`, testler (`testler/`: sınıf, RTTI, istisna, bayt görünümü, f80 …), ret (`red/`) ve tuzak (`trap/`) testleri; ret testleri; kural tablosu `komutlar.pmk` bölüm 12 |
+| `oz/ifade/` | **Bölüm 02 — C++ referans/uyumluluk ön yüzünün testleri:** `testler/*.cx` (olumlu, g++ oracle), `red/*.cx` (reddedilmesi gerekenler), `trap/*.cx` (çalışma zamanı tuzakları), rastgele UB'siz ifade üreteci, PMX1 fuzz, sabotaj. Derleyici: `src/ifade.cpp` (`pm ifade`); operatör tablosu `oz/komut/komutlar.pmk` bölüm 11 → `src/ifade_ops_gen.h` (`oz/komut/yenile_ifade.sh`) |
+| `oz/hizli.sh` | **hızlı test sistemi** (değişen dosyaya göre paketler, `--tam`) |
+| kökte `*_RAPORU.md`, `SARTNAME.md`, `YAPISAL.md` | önceki aşamaların raporları (bkz. §7) |
+| `../formul_avcisi/` | **bu motordan ayrı** önceki çalışma: formül arama ve tek-hamle ağırlık üretimi deneyleri (V1–V81 raporları) |
+| `../app_service/`, `../web_service/`, `../siber_savunma/` | motordan ayrı, depoda duran diğer klasörler (içerikleri bu belgede incelenmedi) |
+
+## 5. Test haritası (hangi test neyi korur)
+Hızlı çalıştırma: `oz/hizli.sh` (ilgili paketler + kritik denetimler), tam: `oz/hizli.sh --tam [--bag] [--sabotaj]`. Listeler: `oz/hizli.sh --alanlar`.
+| Paket | Betik | Korur |
+|---|---|---|
+| testler | `tests/run_tests.sh` | ana programlar: yorumlayıcı ↔ ikili ↔ native, çıktı/çıkış kodu/tuzak/yakıt |
+| asm, kural, ondalik | `oz/asm/dogrula_*.sh` | assembler = C++ `pm asm` (bayt-bayt), yeniden yazma kuralları, ondalık sabit |
+| valid | `oz/dogr/dogrula_valid.sh` | doğrulayıcı = C++ `listedogrula` (güvenlik kapısı) |
+| ikili | `oz/dogrula_ikili.sh` | PMB1 kodlayıcı/çözücü = C++ `liste/yazliste` |
+| yap | `oz/yap/dogrula_yap.sh` | PMY1 dönüştürücü |
+| elf, oob | `oz/elf/dogrula_*.sh` | ilk ELF üretici, bellek sınırı |
+| elf2 | `oz/elf2/dogrula_elf2.sh` | gen2 ELF = `pm run` (stdout, çıkış kodu, tuzak, yakıt), bağımsızlık, sabit nokta |
+| float, grafik, mikro, cagri | `oz/elf2/dogrula_*.sh` | SSE2 ondalık, ekran/girdi, SEM'den yerel üretim (zorlanmış), `call/ret/halt/host` mikro şablonları |
+| svm | `oz/sayisal/dogrula_svm.sh` | SEM yürütücüsü = `pm` |
+| komut | `oz/komut/dogrula_komut.sh` | PMK1 biçimi, kayıpsız çevirim, genişletme (yeni komutlar yalnız sayılarla) |
+| turler | `oz/komut/dogrula_turler.sh` | TYPES bölümü: tür özellikleri, limitler, LP64 ABI eşlemesi (C++ derleyici gerçekleriyle), dönüşüm kapsamı |
+| uyum | `oz/komut/dogrula_uyum.sh` | PMB1 geriye uyumluluk (komut kodu ≥ 255 kaçış kodlaması öncesi programlar bayt-bayt aynı) |
+| cfg | `oz/cfg/dogrula_cfg.sh` | CFG iyileştirici: pm = iyileştirilmiş pm = ELF = svm = `--native-strict`; valid + tipdogr; idempotent; yakıt tekdüzeliği; geçersiz akış reddi (DIV0 tuzağı); jtab merdiven kuralı (valid.elf = C++); asm/valid/gen2 iyileştirilmiş hâlleri aynı çıktı; çekirdek akış PMA testleri; sabotaj `sabotaj_cfg.sh`, `sabotaj_native.sh` |
+| ifx | `oz/ifade/num/dogrula_ifx.sh` | sayısal PMX1 derleyicisi (Bölüm 02–04; f80 + f128, denetim akışı, işlev/çağrı modeli, lambda, constexpr, korutin promise/awaiter): g++ = ifx.elf/pm → asm.elf → coz.elf → valid.elf → tipdogr (PMT1) → gen2.elf ELF = pm = svm; istisna, bayt görünümü, f80, trap, bozuk PMX1 fuzz, öz-barındırma sabit noktası; kural tablosu değişikliği davranışa yansır; dürüst ret; sabotaj `sabotaj_ifx.sh` |
+| ifade | `oz/ifade/dogrula_ifade.sh` | C++ ifade/operatör/sabit ön yüzü (`pm ifade`): g++ oracle = C++ `pm` = native ELF = svm; PMX1 sayısal AST (gidiş-dönüş, bozma/fuzz); olumsuz ve tuzak testleri; operatör tablosu tutarlılığı; sabotaj `sabotaj_ifade.sh` |
+| tip | `oz/tip/dogrula_tip.sh` | program düzeyi tür sistemi (PMT1 + TYPES imzaları → tipdogr) |
+| i128, kayan | `oz/tur128/dogrula_i128.sh`, `oz/kayan/dogrula_kayan.sh` | 128 bit tamsayı, f80/f128 yazılım kayan nokta, karmaşık sayılar: ELF = svm = C++ pm = bağımsız oracle (anlam: `oz/kayan/KAYAN_NOKTA.md`) |
+| tur, dar, donusum | `oz/elf2/dogrula_{tur,dar,donusum}.sh` | tamsayı/bool/bswap aileleri, f32/f16/bf16, dönüşüm matrisi: ELF = svm = C++ pm = bağımsız referans (C++ oracle / tam rasyonel Python) |
+| nesne, gorunum | `oz/nesne/dogrula_{nesne,gorunum}.sh` | bağlayıcı = metin yolu; PMV gor↔yaz kimliği, uçtan uca düzenleme; bağımsız Python referansı |
+| arac | `oz/arac/dogrula_arac.sh` | araçların ve ikililerin tazeliği |
+| bag, pmy2elf, yenile | `oz/bag/dogrula_*.sh` | pm'siz zincir, PMY1→ELF, kendini yeniden üretme |
+| hizli | `oz/dogrula_hizli.sh` | hızlı sistemin kendisi |
+Sabotaj (testlerin gerçekten yakaladığı): `oz/*/sabotaj_*.sh` (çağrı şablonları: `oz/elf2/sabotaj_cagri.sh`) (mutant üretir, testin başarısız olmasını bekler).
+
+## 6. Kurallar (çalışma biçimi)
+1. `PLAN_1399_MADDE.md` bölümleri numara sırasıyla; yalnızca sıradaki tamamlanmamış bölüm; bölüm bitince kapanış raporu ve DUR. 2. Tamamlananı yeniden yazma; mevcut testlerle koru; eski 🟢/🔵 işaretleri kanıt sayılmaz, depoda doğrula. 3. Bağımsız referans + hedefli test + regresyonla doğrula. 4. Kanıt varsa işaret ver, `YAPILANLAR.md`'ye ekle, commit/push; belgeyi koddan önce değiştirme. 5. Tek madde/demo/PoC ile bölüm tamamlandı sayılmaz; eksik varsa bölüm AÇIK kalır ve engel yazılır. 6. Yeni zorunlu metin dili, ayrı motor ya da mimari değişikliği yok.
+Tasarım ilkeleri: sayısal asıl kaynak; güvenlik ayrı, sürümlü katmanlar (henüz yok); genişletilebilirlik (yeni komut = tablo kaydı); doğrulayıcı kapısı kapatılamaz.
+
+## 7. Belge indeksi
+| Belge | Konu |
+|---|---|
+| `SARTNAME.md` | motorun şartnamesi (komutlar, biçimler) |
+| `RAPOR.md`, `PROFIL_RAPORU.md`, `KOD_URETIMI_RAPORU.md`, `NATIVE_RAPORU.md`, `UYGULAMA_RAPORU.md`, `SABLON_RAPORU.md` | ilk aşamalar: motor, profil, kod üretimi, makine kodu, uygulamalar, şablon katmanı |
+| `AI_TESTI_RAPORU.md`, `AI_SAYISAL_RAPORU.md`, `AI_YAPISAL_RAPORU.md`, `AI_BUYUK_OLCEK_RAPORU.md`, `YAPISAL.md` | AI'nın tabloyu doğrudan üretebilmesi deneyleri, PMY1 |
+| `OZ_BARINDIRMA.md` | öz-barındırma: bölüm 3–3n (PMB1 → ELF → kendini üretme → PMK1 → PMO1 → görünüm) ve dürüst sınırlar |
+| `oz/komut/KOMUT_TABLOSU.md` | PMK1 ayrıntısı |
+| `oz/nesne/GORUNUM.md` | PMV biçimi ve hata kodları |
+| `BOLUM_01_KAPANIS_RAPORU.md`, `BOLUM_02_KAPANIS_RAPORU.md` | bölüm kapanış raporları (kanıt, sınırlar, süreler) |
+| `PLAN_1399_MADDE.md` | **ana plan:** 41 bölüm / 1.399 kontrol maddesi ve durumları |
+| `CPP_YOL_HARITASI.md` | yol haritası (aşamalar); `PLAN_1399_MADDE.md` ile birlikte okunur |
+| `YAPILANLAR.md` | günlük: ne, ne zaman, hangi commit, hangi test |

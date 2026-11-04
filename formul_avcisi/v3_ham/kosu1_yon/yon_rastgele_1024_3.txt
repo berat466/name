@@ -1,0 +1,27 @@
+YON mod=rastgele H=1024 tohum=3  sigma_b(cift ciftlerinden)=0.000 ort_b=0.000
+  gamma=0.0625 lambda=   1 val=0.8840
+  gamma=0.0625 lambda=  10 val=0.8862
+  gamma=0.0625 lambda= 100 val=0.8868
+  gamma=0.0625 lambda=1000 val=0.8732
+  gamma=0.1250 lambda=   1 val=0.8956
+  gamma=0.1250 lambda=  10 val=0.8864
+  gamma=0.1250 lambda= 100 val=0.8876
+  gamma=0.1250 lambda=1000 val=0.8852
+  gamma=0.2500 lambda=   1 val=0.9366
+  gamma=0.2500 lambda=  10 val=0.9212
+  gamma=0.2500 lambda= 100 val=0.8958
+  gamma=0.2500 lambda=1000 val=0.8898
+  gamma=0.5000 lambda=   1 val=0.9440
+  gamma=0.5000 lambda=  10 val=0.9424
+  gamma=0.5000 lambda= 100 val=0.9362
+  gamma=0.5000 lambda=1000 val=0.9146
+  gamma=1.0000 lambda=   1 val=0.9482
+  gamma=1.0000 lambda=  10 val=0.9488
+  gamma=1.0000 lambda= 100 val=0.9478
+  gamma=1.0000 lambda=1000 val=0.9402
+  gamma=2.0000 lambda=   1 val=0.9482
+  gamma=2.0000 lambda=  10 val=0.9480
+  gamma=2.0000 lambda= 100 val=0.9468
+  gamma=2.0000 lambda=1000 val=0.9434
+SECILEN gamma=1.0000 lambda=10 val=0.9488  TEST=0.9330  tek_model=3.0s  arama_dahil_toplam=20.1s  RAM=332MB
+OZET|rastgele|1024|3|1.0000|10|0.9488|0.9330|3.0|20.1|332|0

@@ -1,0 +1,2 @@
+// RED: E_GOTO  -- goto try icine atlayamaz
+int main() { goto ic; try { ic: return 1; } catch (...) { } return 0; }

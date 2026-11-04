@@ -1,0 +1,28 @@
+V25 c=2 H=1024 tohum=1 gamma=4 lambda_V17=10 mod=BDE K(X boyutu)=192 (4 cekirdek); ogretici+agirlik: yalniz egitim; dogrulama secim; test bagimsiz
+NG|trigram|test(egitim sayimlari)|CE=4.9336|PPL=138.87|top1=0.1598|top5=0.3582
+NG|trigram|dogrulama|CE=4.9805|PPL=145.55|top1=0.1490|top5=0.3452
+SEYREK: egitimde 19646 farkli (u,w) cifti; en sik 2000 tanesi kimlik alir (en az 3 tekrar)
+SISTEM|B_F(H=1024)|mz=1025 P=0 toplam=1025|gram+RHS suresi=3.89s
+DEBUG|B_F(H=1024)|lam=10|||WY||=1.8355 |||RY||=45701.4531 |||S||=7.125e+06 S[0]=3.984e+04 S[1,1]=1.587e+04 S[1,0]=-1356
+LINREAD|B_F(H=1024)|Y|lambda=10|dogrusal okuma (softmax yok): alpha=0.5 eps=1e-05|dogr CE=5.2984|test CE=5.2711 PPL=194.63
+RES|B_F(H=1024)|Y|lambda=10|alpha=0.2|T=0.01|egitim CE=5.1176 PPL=166.9 top1=0.2204 top5=0.3279|dogr CE=5.4179 PPL=225.4 top1=0.1492 top5=0.2787|test CE=5.3401 PPL=208.53 top1=0.1572 top5=0.2996|dogr-egitim CE=0.3003|rel_hata e/d/t=1.8430/2.1826/2.1767|KL e/d/t=0.7831/0.7366/0.7279|baglam goruldu: CE=5.3829 top1=0.1619 (n=3392); yalniz bigram: CE=5.2485 top1=0.1474 (n=1588)|cozum suresi=0.5s
+LINREAD|B_F(H=1024)|Q|lambda=10|dogrusal okuma (softmax yok): alpha=0.8 eps=1e-05|dogr CE=5.2038|test CE=5.1653 PPL=175.10
+RES|B_F(H=1024)|Q|lambda=10|alpha=0.25|T=0.01|egitim CE=5.5077 PPL=246.6 top1=0.1459 top5=0.2517|dogr CE=5.4768 PPL=239.1 top1=0.1394 top5=0.2606|test CE=5.4111 PPL=223.87 top1=0.1438 top5=0.2783|dogr-egitim CE=-0.0310|rel_hata e/d/t=0.6254/0.5870/0.5801|KL e/d/t=0.7393/0.7042/0.6937|baglam goruldu: CE=5.4792 top1=0.1430 (n=3392); yalniz bigram: CE=5.2656 top1=0.1455 (n=1588)|cozum suresi=0.5s
+DEBUG|B_F(H=1024)|lam=100|||WY||=1.4374 |||RY||=45701.4531 |||S||=7.125e+06 S[0]=3.984e+04 S[1,1]=1.587e+04 S[1,0]=-1356
+LINREAD|B_F(H=1024)|Y|lambda=100|dogrusal okuma (softmax yok): alpha=0.5 eps=1e-05|dogr CE=5.2717|test CE=5.2444 PPL=189.51
+RES|B_F(H=1024)|Y|lambda=100|alpha=0.2|T=0.01|egitim CE=5.1692 PPL=175.8 top1=0.2126 top5=0.3192|dogr CE=5.4181 PPL=225.4 top1=0.1476 top5=0.2773|test CE=5.3431 PPL=209.16 top1=0.1548 top5=0.2980|dogr-egitim CE=0.2489|rel_hata e/d/t=1.5795/1.8126/1.8116|KL e/d/t=0.7805/0.7348/0.7251|baglam goruldu: CE=5.3890 top1=0.1580 (n=3392); yalniz bigram: CE=5.2450 top1=0.1480 (n=1588)|cozum suresi=0.6s
+LINREAD|B_F(H=1024)|Q|lambda=100|dogrusal okuma (softmax yok): alpha=0.8 eps=1e-05|dogr CE=5.1882|test CE=5.1503 PPL=172.48
+RES|B_F(H=1024)|Q|lambda=100|alpha=0.25|T=0.01|egitim CE=5.5224 PPL=250.2 top1=0.1436 top5=0.2490|dogr CE=5.4845 PPL=240.9 top1=0.1384 top5=0.2592|test CE=5.4182 PPL=225.47 top1=0.1422 top5=0.2771|dogr-egitim CE=-0.0379|rel_hata e/d/t=0.6294/0.5836/0.5765|KL e/d/t=0.7454/0.7086/0.6976|baglam goruldu: CE=5.4866 top1=0.1403 (n=3392); yalniz bigram: CE=5.2720 top1=0.1461 (n=1588)|cozum suresi=0.6s
+SISTEM|C2_F+w_kimligi+sik_cift(P=4001)|mz=1025 P=4001 toplam=5026|gram+RHS suresi=4.27s
+DEBUG|C2_F+w_kimligi+sik_cift(P=4001)|lam=10|||WY||=9.3644 |||RY||=45708.0311 |||S||=7.126e+06 S[0]=3.984e+04 S[1,1]=1.587e+04 S[1,0]=-1356
+LINREAD|C2_F+w_kimligi+sik_cift(P=4001)|Y|lambda=10|dogrusal okuma (softmax yok): alpha=0.5 eps=1e-05|dogr CE=5.1932|test CE=5.1647 PPL=174.99
+RES|C2_F+w_kimligi+sik_cift(P=4001)|Y|lambda=10|alpha=0.25|T=0.02|egitim CE=4.5092 PPL=90.8 top1=0.2718 top5=0.3946|dogr CE=5.3588 PPL=212.5 top1=0.1618 top5=0.2809|test CE=5.2885 PPL=198.05 top1=0.1695 top5=0.3024|dogr-egitim CE=0.8497|rel_hata e/d/t=1.7559/2.0516/2.0647|KL e/d/t=0.6634/0.6139/0.6083|baglam goruldu: CE=5.3424 top1=0.1686 (n=3392); yalniz bigram: CE=5.1734 top1=0.1713 (n=1588)|cozum suresi=24.0s
+LINREAD|C2_F+w_kimligi+sik_cift(P=4001)|Q|lambda=10|dogrusal okuma (softmax yok): alpha=0.8 eps=1e-05|dogr CE=5.0701|test CE=5.0291 PPL=152.79
+RES|C2_F+w_kimligi+sik_cift(P=4001)|Q|lambda=10|alpha=0.25|T=0.01|egitim CE=5.2901 PPL=198.4 top1=0.1762 top5=0.2863|dogr CE=5.4193 PPL=225.7 top1=0.1498 top5=0.2741|test CE=5.3509 PPL=210.81 top1=0.1556 top5=0.2914|dogr-egitim CE=0.1292|rel_hata e/d/t=0.3442/0.2424/0.2423|KL e/d/t=0.6338/0.6133/0.6027|baglam goruldu: CE=5.4275 top1=0.1515 (n=3392); yalniz bigram: CE=5.1875 top1=0.1644 (n=1588)|cozum suresi=24.0s
+SISTEM|C0_yalniz_kimlik_(F_yok)(P=4001)|mz=1 P=4001 toplam=4002|gram+RHS suresi=0.47s
+DEBUG|C0_yalniz_kimlik_(F_yok)(P=4001)|lam=10|||WY||=10.3427 |||RY||=4126.4525 |||S||=4.049e+04 S[0]=3.984e+04 S[1,1]=1936 S[1,0]=1936
+LINREAD|C0_yalniz_kimlik_(F_yok)(P=4001)|Y|lambda=10|dogrusal okuma (softmax yok): alpha=0.8 eps=0.0001|dogr CE=4.9679|test CE=4.9188 PPL=136.84
+RES|C0_yalniz_kimlik_(F_yok)(P=4001)|Y|lambda=10|alpha=0.2|T=0.01|egitim CE=4.8996 PPL=134.2 top1=0.2352 top5=0.3608|dogr CE=5.3879 PPL=218.7 top1=0.1556 top5=0.2763|test CE=5.3174 PPL=203.86 top1=0.1616 top5=0.2960|dogr-egitim CE=0.4882|rel_hata e/d/t=0.7447/0.7063/0.7343|KL e/d/t=0.6352/0.6005/0.5894|baglam goruldu: CE=5.3796 top1=0.1616 (n=3392); yalniz bigram: CE=5.1847 top1=0.1618 (n=1588)|cozum suresi=11.8s
+LINREAD|C0_yalniz_kimlik_(F_yok)(P=4001)|Q|lambda=10|dogrusal okuma (softmax yok): alpha=1 eps=1e-05|dogr CE=4.9671|test CE=4.9237 PPL=137.51
+RES|C0_yalniz_kimlik_(F_yok)(P=4001)|Q|lambda=10|alpha=0.25|T=0.01|egitim CE=5.2715 PPL=194.7 top1=0.1762 top5=0.2793|dogr CE=5.4236 PPL=226.7 top1=0.1476 top5=0.2713|test CE=5.3576 PPL=212.22 top1=0.1560 top5=0.2873|dogr-egitim CE=0.1522|rel_hata e/d/t=0.4036/0.2820/0.2848|KL e/d/t=0.6336/0.6014/0.5923|baglam goruldu: CE=5.4332 top1=0.1548 (n=3392); yalniz bigram: CE=5.1962 top1=0.1587 (n=1588)|cozum suresi=11.8s
+TOPLAM sure=83.0s tepe_RAM=1312MB

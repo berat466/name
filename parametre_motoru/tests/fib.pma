@@ -1,0 +1,20 @@
+; ozyinelemeli fibonacci
+entry main
+func fib(n) {
+    lt   t, n, 2
+    jz   t, rec
+    ret  n
+rec:
+    sub  a, n, 1
+    call x, fib, a
+    sub  b, n, 2
+    call y, fib, b
+    add  r, x, y
+    ret  r
+}
+func main() {
+    call r, fib, 25
+    host puti, r
+    host putc, 10
+    ret 0
+}

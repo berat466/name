@@ -1,0 +1,2 @@
+// RED: E_TYPE  -- catch turu void olamaz
+int main() { try { throw 1; } catch (void) { return 1; } return 0; }

@@ -1,0 +1,48 @@
+; Ayar paneli: dort cubuk, klavye ile yonetilir
+sahne 160 96
+kare 100
+arkaplan 0x101018
+
+global sec = 0
+global g0 = 0
+global g1 = 0
+global g2 = 0
+global g3 = 0
+
+sablon cubuk adet 4
+  alan v dogrusal 4 4
+  alan y dogrusal 8 22
+  alan w sabit 0
+  alan rk sabit 0x4080C0
+  kural w = v * 7
+  kural rk = 0x4080C0
+  kural rk = 0xFFC040 eger i == sec
+  ciz dikdortgen 8, y, w, 14, rk
+son
+
+girdi 1
+  kural sec = sec + 3
+  kural sec = sec % 4
+son
+girdi 2
+  kural sec = sec + 1
+  kural sec = sec % 4
+son
+girdi 3 cubuk
+  kural v = v + 1 eger i == sec
+  kural v = min v 20
+son
+girdi 4 cubuk
+  kural v = v - 1 eger i == sec
+  kural v = max v 0
+son
+girdi 5 cubuk
+  kural v = 0
+son
+
+topla g0 toplam cubuk v eger i == 0
+topla g1 toplam cubuk v eger i == 1
+topla g2 toplam cubuk v eger i == 2
+topla g3 toplam cubuk v eger i == 3
+
+yazdir sec, g0, g1, g2, g3

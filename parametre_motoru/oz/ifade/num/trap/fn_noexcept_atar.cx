@@ -1,0 +1,2 @@
+// TRAP: OOB
+int g(int x) { if (x > 0) throw x; return 0; } int h(int x) noexcept { return g(x); } int main() { pi(1); pi(h(0)); pi(h(2)); pi(3); return 0; }

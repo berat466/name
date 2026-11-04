@@ -1,0 +1,45 @@
+kare 1
+global g0 = 0
+global g1 = 0
+global g2 = 0
+global g3 = 0
+global g4 = 0
+global g5 = 0
+global g6 = 0
+global g7 = 0
+global gs = 0
+global gmin = 0
+global gmax = 0
+global gp = 0
+sablon okuma adet 4000
+  alan v sabit 0
+  alan t sabit 0
+  alan u sabit 0
+  alan b sabit 0
+  alan p sabit 0
+  alan m sabit 0
+  kural t = i * i
+  kural t = t * 7
+  kural u = i * 13
+  kural v = t + u
+  kural v = v % 1009
+  kural v = v - 500
+  kural b = v + 500
+  kural b = b / 127
+  kural m = i % 3
+  kural p = 0
+  kural p = v eger m == 0 ve v > 0
+son
+topla g0 say okuma eger b == 0
+topla g1 say okuma eger b == 1
+topla g2 say okuma eger b == 2
+topla g3 say okuma eger b == 3
+topla g4 say okuma eger b == 4
+topla g5 say okuma eger b == 5
+topla g6 say okuma eger b == 6
+topla g7 say okuma eger b == 7
+topla gs toplam okuma v
+topla gmin enkucuk okuma v
+topla gmax enbuyuk okuma v
+topla gp toplam okuma p
+yazdir g0, g1, g2, g3, g4, g5, g6, g7, gs, gmin, gmax, gp

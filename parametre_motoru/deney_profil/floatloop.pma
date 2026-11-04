@@ -1,0 +1,18 @@
+func main() {
+    mov k, 0
+    mov sign, 1.0
+    mov sum, 0.0
+pl: lt  c, k, 20000000
+    jz  c, pd
+    mul m, k, 2
+    add m, m, 1
+    i2f den, m
+    fdiv t, sign, den
+    fadd sum, sum, t
+    fneg sign, sign
+    add k, k, 1
+    jmp pl
+pd: fmul pi, sum, 4.0
+    host putf, pi
+    host putc, 10
+}

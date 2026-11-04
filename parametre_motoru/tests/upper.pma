@@ -1,0 +1,20 @@
+; stdin -> buyuk harf, satir sayisi
+func main() {
+    mov lines, 0
+l:  host c, getc
+    lt  isneg, c, 0
+    jnz isneg, d
+    eq  nl, c, 10
+    add lines, lines, nl
+    ge  g1, c, 97
+    le  g2, c, 122
+    and g, g1, g2
+    jz  g, out
+    sub c, c, 32
+out:
+    host putc, c
+    jmp l
+d:  host putc, '#'
+    host puti, lines
+    host putc, 10
+}

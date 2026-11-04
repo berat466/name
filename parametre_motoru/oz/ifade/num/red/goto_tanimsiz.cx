@@ -1,0 +1,2 @@
+// RED: E_LABEL  -- goto etiketi tanimsiz
+int main() { goto yok; return 0; }

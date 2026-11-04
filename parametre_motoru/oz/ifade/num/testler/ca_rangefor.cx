@@ -1,0 +1,29 @@
+// 03.010: range-for -- dizi, 2 boyutlu dizi, sinif (begin/end + yineleyici sinifi), serbest begin/end, referansla degistirme, const&, break/continue, ic ice
+struct Yin { int* p; bool operator!=(const Yin& o) const { return p != o.p; } Yin& operator++() { p = p + 1; return *this; } int& operator*() const { return *p; } };
+struct Vek { int d[6]; int n; Yin begin() { Yin y; y.p = d; return y; } Yin end() { Yin y; y.p = d + n; return y; } };
+struct Aralik { int lo; int hi; };
+struct AYin { int v; bool operator!=(const AYin& o) const { return v != o.v; } AYin& operator++() { v = v + 1; return *this; } int operator*() const { return v * v; } };
+AYin begin(Aralik& a) { AYin y; y.v = a.lo; return y; }
+AYin end(Aralik& a) { AYin y; y.v = a.hi; return y; }
+int main() {
+  int a[5] = {1, 2, 3, 4, 5}; int s = 0;
+  for (int v : a) s = s + v; pi(s);
+  for (int& v : a) v = v * 10; for (int v : a) pi(v);
+  for (const auto& v : a) s = s + v; pi(s);
+  for (auto v : a) { v = 0; } pi(a[0]);
+  int m[3][2] = {{1, 2}, {3, 4}, {5, 6}}; int t = 0;
+  for (auto& row : m) for (int x : row) t = t * 10 + x; pi(t);
+  Vek v; v.n = 4; for (int i = 0; i < 4; i = i + 1) v.d[i] = i + 1;
+  int u = 0; for (int x : v) u = u + x; pi(u);
+  for (int& x : v) x = x * x; for (int x : v) pi(x);
+  Aralik r; r.lo = 3; r.hi = 7; int w = 0; for (int q : r) w = w + q; pi(w);
+  // break / continue
+  int c = 0; for (int x : a) { if (x == 20) continue; if (x == 40) break; c = c + x; } pi(c);
+  // dongu degiskeni golgeleme + ic ice
+  int x = 99; for (int x : a) { for (int y : a) { if (y > x) break; c = c + 1; } } pi(c); pi(x);
+  // gecici aralik (rvalue sinif)
+  Vek mk; mk.n = 2; mk.d[0] = 7; mk.d[1] = 8; int z = 0; for (int e : mk) z = z + e; pi(z);
+  // range-for icinde switch + continue
+  int sw = 0; for (int e : a) { switch (e / 10) { case 1: continue; case 2: sw = sw + 2; break; default: sw = sw + 100; } sw = sw + 1; } pi(sw);
+  return 0;
+}

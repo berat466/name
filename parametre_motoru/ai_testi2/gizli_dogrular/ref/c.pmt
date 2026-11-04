@@ -1,0 +1,27 @@
+kare 230
+global g27 = 0
+global garg = 0
+global gmax = 0
+global gtop = 0
+global gcnt = 0
+sablon collatz adet 3000
+  alan id dogrusal 1 1
+  alan x dogrusal 1 1
+  alan st sabit 0
+  alan par sabit 0
+  alan h sabit 0
+  alan t3 sabit 0
+  kural par = x % 2
+  kural t3 = x * 3
+  kural t3 = t3 + 1
+  kural h = x / 2
+  kural st = st + 1 eger x != 1
+  kural x = h eger par == 0 ve x != 1
+  kural x = t3 eger par == 1 ve x != 1
+son
+topla g27 toplam collatz st eger id == 27
+topla gmax enbuyuk collatz st
+topla garg enkucuk collatz id eger st == gmax
+topla gtop toplam collatz st
+topla gcnt say collatz eger st > 100
+yazdir g27, garg, gmax, gtop, gcnt

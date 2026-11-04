@@ -1,0 +1,22 @@
+; Standart davranis kutuphanesi. Tamamen VERI: kural dilinin parametreli makrolari (kod degil).
+; Bir davranis, secilen alanlara uygulanan kural dizisidir; sablonlarda "davran AD arguman..." ile secilip birlestirilir.
+davranis hareket(konum, hiz)
+  kural konum = konum + hiz
+son
+davranis yercekimi(hiz, g)
+  kural hiz = hiz + g
+son
+davranis sek(konum, hiz, alt, ust)
+  kural hiz = 0 - hiz eger konum < alt
+  kural konum = alt eger konum < alt
+  kural hiz = 0 - hiz eger konum > ust
+  kural konum = ust eger konum > ust
+son
+davranis sekalt(konum, hiz, alt)
+  kural hiz = 0 - hiz eger konum < alt
+  kural konum = alt eger konum < alt
+son
+davranis sinirla(konum, alt, ust)
+  kural konum = max konum alt
+  kural konum = min konum ust
+son

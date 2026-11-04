@@ -1,0 +1,14 @@
+// ic ice korutinler (korutin icinde korutin olusturma/surdurme/yok etme) + istisna: cerceve bellegi geri kazanilir (istisna nesneleri ayri), degerler dogru
+struct T { struct promise_type { int v; T get_return_object() { T t; t.h = std::coroutine_handle<promise_type>::from_promise(*this); return t; } std::suspend_always initial_suspend() { return std::suspend_always(); } std::suspend_always final_suspend() noexcept { return std::suspend_always(); } void return_value(int x) { v = x; } void unhandled_exception() { } }; std::coroutine_handle<promise_type> h; };
+T leaf(int a) { co_return a * a; }
+T mid(int a) { T l = leaf(a); l.h.resume(); int r = l.h.promise().v; l.h.destroy(); co_return r + 1; }
+T thr(int a) { int r = 0; try { throw a; } catch (int e) { r = e + 7; } co_return r; }
+int main() {
+  long long* p0 = (long long*)__alloc(1); long long total = 0;
+  for (int i = 0; i < 3000; i = i + 1) {
+    T m = mid(i % 50); m.h.resume(); total = total + m.h.promise().v; m.h.destroy();
+    T e = thr(i % 9); e.h.resume(); total = total + e.h.promise().v; e.h.destroy();
+  }
+  long long* p1 = (long long*)__alloc(1);
+  pi(total); pi((long long)(p1 - p0) < 3300); return 0;   // buyume yalniz firlatilan istisna nesneleri (3000 sozcuk); 6000 cerceve (>= 20 sozcuk) birikmez
+}

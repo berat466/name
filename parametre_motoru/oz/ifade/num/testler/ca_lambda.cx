@@ -1,0 +1,25 @@
+int apply(int (*f)(int), int v) { return f(v); }
+int main() {
+  int k = 5;
+  auto l = [k](int x) { return x + k; };
+  pi(l(1)); pi(l(10));
+  auto m = [&k](int x) { k += x; return k; };
+  pi(m(2)); pi(k); pi(m(3)); pi(k);
+  auto g = [](auto a, auto b) { return a + b; };
+  pi(g(1, 2)); pd(g(1.5, 2.25)); pl(g(10000000000LL, 1LL));
+  auto cnt = [c = 0]() mutable { c = c + 1; return c; };
+  pi(cnt()); pi(cnt()); pi(cnt());
+  int base = 100;
+  auto all = [=](int x) { return x + base + k; };
+  pi(all(1)); base = 0; pi(all(1));
+  auto allr = [&](int x) { base = base + x; return base; };
+  pi(allr(7)); pi(base);
+  pi([](int x) { return x * 2; }(21));
+  int (*fp)(int) = [](int x) { return x - 1; }; pi(fp(10)); pi(apply([](int x) { return x * x; }, 7)); pi(apply(+[](int x) { return -x; }, 7));
+  auto sq = [](int x) -> double { return x * 0.5; }; pd(sq(5));
+  auto v = [](int x) { if (x > 0) return; };
+  v(1);
+  auto nest = [k](int a) { auto in = [a, k](int b) { return a * b + k; }; return in(3) + in(4); };
+  pi(nest(2));
+  return 0;
+}

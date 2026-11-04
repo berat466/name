@@ -1,0 +1,131 @@
+# bicim tablosu: AD<bosluk>metin. '|' = satir ayirici, satir basi '>' = 4 bosluk girinti, %o d operand, %n d sayi, %A degisken liste, %P parametre listesi (l0, l1...)
+H1 ; PMY1 tablosundan uretildi (yapisal katman) -- elle duzenlenmez
+H2 ; ozet sanal_alan_sozcugu=%n0 kayitli_alan=%n1 kayitli_sozcuk=%n2 cerceve_sozcugu=%n3
+MEM memory %n0
+DATAG data g_%n0 = %n1
+DATAK data g_kare = 0
+SPD space d_%n0 %n1
+SPS space s_%n0_%n1 %n2
+SPFB space fb %n0
+LIBSCREEN func putpx(x, y, col) {|>lt t, x, 0|>jnz t, out|>ge t, x, %n0|>jnz t, out|>lt t, y, 0|>jnz t, out|>ge t, y, %n1|>jnz t, out|>mul k, y, %n0|>add k, k, x|>add p, fb, k|>st col, p, 0|out:|>ret 0|}|func rect(x, y, w, h, col) {|>mov yy, 0|ry:|>lt c, yy, h|>jz c, done|>mov xx, 0|rx:|>lt c, xx, w|>jz c, nexty|>add px, x, xx|>add py, y, yy|>call z, putpx, px, py, col|>add xx, xx, 1|>jmp rx|nexty:|>add yy, yy, 1|>jmp ry|done:|>ret 0|}|func temizle() {|>mov i, 0|l:|>lt c, i, %n2|>jz c, d|>add p, fb, i|>st %n3, p, 0|>add i, i, 1|>jmp l|d:|>ret 0|}
+BASLAT func baslat() {
+STINIT >st %n0, d_%n1, %n2
+LABEL L%n0:
+MOVI0 >mov i, 0
+LTCI >lt c, i, %n0
+JZCL >jz c, L%n0
+JMPL >jmp L%n0
+ADDI1 >add i, i, 1
+RET0 >ret 0
+CLOSE }
+MULVI >mul v%n0, i, %n1
+MODVI >mod v%n0, i, %n1
+DIVVI >div v%n0, i, %n1
+MOVVN >mov v%n0, %n1
+RMUL >mul v%n0, i, 1664525
+RMUL2 >mul v%n0, v%n0, 1664525
+RADD >add v%n0, v%n0, 1013904223
+AND24 >and v%n0, v%n0, 16777215
+RSHR >shr v%n0, v%n0, 4
+MODSELF >mod v%n0, v%n0, %n1
+MULSELF >mul v%n0, v%n0, %n1
+ADDSELF >add v%n0, v%n0, %n1
+ADDSYMV >add v%n0, s_%n1_%n2, i
+STPV >st v%n0, v%n1, 0
+STP >st %o0, v%n1, 0
+ADDSYM >add v%n0, s_%n1_%n2, %o3
+ADDSYMI >add v%n0, s_%n1_%n2, i
+ADDSYMIA >add v%n0, s_%n1_%n2, ia
+ADDSYMIB >add v%n0, s_%n1_%n2, ib
+LDP >ld v%n0, v%n1, 0
+MULI >mul v%n0, %o1, %n2
+MODI >mod v%n0, %o1, %n2
+DIVI >div v%n0, %o1, %n2
+LT0 >lt v%n0, %o1, 0
+JNZBAD >jnz v%n0, bad%n1
+GE0 >ge v%n0, %o1, %n2
+LDG >ld v%n0, g_%n1, 0
+LDKARE >ld v%n0, g_kare, 0
+GETC >host v%n0, getc
+ADDD >add v%n0, d_%n1, %o2
+CALLF >call v%n0, f_%n1%A
+NEG >neg v%n0, %o1
+NOT >not v%n0, %o1
+EQ0 >eq v%n0, %o1, 0
+NE0 >ne v%n0, %o1, 0
+JZL >jz %o0, L%n1
+JZVL >jz v%n0, L%n1
+MOVV >mov v%n0, %o1
+LTMIN >lt v%n0, %o1, v%n2
+GTMAX >gt v%n0, %o1, v%n2
+ANDV >and v%n0, v%n1, v%n2
+ORV >or v%n0, v%n1, v%n2
+BIN1 >add v%n0, %o1, %o2
+BIN2 >sub v%n0, %o1, %o2
+BIN3 >mul v%n0, %o1, %o2
+BIN4 >div v%n0, %o1, %o2
+BIN5 >mod v%n0, %o1, %o2
+BIN6 >and v%n0, %o1, %o2
+BIN7 >or v%n0, %o1, %o2
+BIN8 >xor v%n0, %o1, %o2
+BIN9 >shl v%n0, %o1, %o2
+BIN10 >sar v%n0, %o1, %o2
+BIN11 >eq v%n0, %o1, %o2
+BIN12 >ne v%n0, %o1, %o2
+BIN13 >lt v%n0, %o1, %o2
+BIN14 >le v%n0, %o1, %o2
+BIN15 >gt v%n0, %o1, %o2
+BIN16 >ge v%n0, %o1, %o2
+STG >st %o0, g_%n1, 0
+MOVL >mov l%n0, %o1
+MOVE >mov e%n0, %o1
+LEV >le v%n0, l%n1, e%n2
+ADDL1 >add l%n0, l%n0, 1
+RET >ret %o0
+PUTI >host puti, %o0
+PUTC >host putc, %o0
+PUTC32 >host putc, 32
+PUTC10 >host putc, 10
+BADLAB bad%n0:
+BADMOV >mov zz, -1
+BADLD >ld zz, zz, 0
+PROLOG >mov l%n0, 0
+HF func f_%n0(%P) {
+HR func r_%n0(%P) {
+HE func e_%n0(%P) {
+HGI func gi_%n0(%P) {
+HA func a_%n0(%P) {
+HC func c_%n0(%P) {
+HILK func ilk(%P) {
+HSON func son(%P) {
+MOVIA0 >mov ia, 0
+MOVIB0 >mov ib, 0
+LTCIA >lt c, ia, %n0
+LTCIB >lt c, ib, %n0
+ADDIA1 >add ia, ia, 1
+ADDIB1 >add ib, ib, 1
+MOVACCN >mov acc, %n0
+ADDACC >add acc, acc, %o0
+ADDACC1 >add acc, acc, 1
+GTACC >gt v%n0, %o1, acc
+LTACC >lt v%n0, %o1, acc
+MOVACC >mov acc, %o0
+STACC >st acc, g_%n0, 0
+RECT >call z, rect, %o0, %o1, %o2, %o3, %o4
+PUTPX >call z, putpx, %o0, %o1, %o2
+MAINHEAD func main() {|>call z, baslat|>call z, ilk
+MAINLOOP >mov f, 0|fl:
+FRAMECHK >lt c, f, %n0|>jz c, fin
+EVHEAD ev:|>host e, poll|>jz e, evd|>shl key, e, 32|>shr key, key, 32
+EVCASE >eq t, key, %n0|>jz t, nk%n1|>call z, gi_%n1|nk%n1:
+EVTAIL >jmp ev|evd:
+CALLR >call z, r_%n0
+CALLE >call z, e_%n0
+CALLA >call z, a_%n0
+CALLC >call z, c_%n0
+CALLTEMIZLE >call z, temizle
+BITIS1 >jz %o0, nobit
+BITIS2 >jmp fin|nobit:
+PRESENT >host r, present, fb, %n0, %n1|>jnz r, fin
+FRAMEINC >ld fk, g_kare, 0|>add fk, fk, 1|>st fk, g_kare, 0|>add f, f, 1|>jmp fl|fin:
+MAINTAIL >call z, son|>ret 0|}

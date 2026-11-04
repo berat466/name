@@ -1,0 +1,2 @@
+// RED: E_REINTERP
+int main() { int a = 1; return reinterpret_cast<long long&>(a) != 0; }

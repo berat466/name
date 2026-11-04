@@ -1,0 +1,14 @@
+extern int ex;
+extern "C" int cadd(int a, int b);
+extern "C" { int cmul(int a, int b) { return a * b; } int cneg(int a) { return -a; } }
+static int priv(int a) { return a + 1; }
+static int sctr = 5;
+int ex = 42;
+extern "C" int cadd(int a, int b) { return a + b; }
+inline int ii(int a) { return a + 2; }
+extern int later(int);
+int later(int a) { return a * 100; }
+int main() {
+  pi(ex); pi(cadd(1, 2)); pi(cmul(3, 4)); pi(cneg(5)); pi(priv(1)); pi(sctr); pi(ii(1)); pi(later(2));
+  return 0;
+}

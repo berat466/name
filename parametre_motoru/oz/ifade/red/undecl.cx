@@ -1,0 +1,3 @@
+// RED: E_UNDECL
+// GPP: red
+int main() { return zz; }

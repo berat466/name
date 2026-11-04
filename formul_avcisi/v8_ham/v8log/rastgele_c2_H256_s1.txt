@@ -1,0 +1,21 @@
+V8 mod=rastgele c=2 H=256 tohum=1 V=2001 K=128 egitim=39840 dogrulama=4980 test=4980 (4 cekirdek)
+  gamma=0.5 lambda=1 en_iyi_T=0.02 val_CE=6.4639
+  gamma=0.5 lambda=10 en_iyi_T=0.02 val_CE=6.4196
+  gamma=0.5 lambda=100 en_iyi_T=0.02 val_CE=6.4201
+  gamma=0.5 lambda=1000 en_iyi_T=0.01 val_CE=6.2697
+  gamma=1 lambda=1 en_iyi_T=0.02 val_CE=6.4651
+  gamma=1 lambda=10 en_iyi_T=0.02 val_CE=6.4419
+  gamma=1 lambda=100 en_iyi_T=0.02 val_CE=6.3876
+  gamma=1 lambda=1000 en_iyi_T=0.01 val_CE=6.4684
+  gamma=2 lambda=1 en_iyi_T=0.02 val_CE=6.4707
+  gamma=2 lambda=10 en_iyi_T=0.02 val_CE=6.4372
+  gamma=2 lambda=100 en_iyi_T=0.02 val_CE=6.3909
+  gamma=2 lambda=1000 en_iyi_T=0.02 val_CE=6.4572
+  gamma=4 lambda=1 en_iyi_T=0.02 val_CE=6.4256
+  gamma=4 lambda=10 en_iyi_T=0.02 val_CE=6.4103
+  gamma=4 lambda=100 en_iyi_T=0.02 val_CE=6.3971
+  gamma=4 lambda=1000 en_iyi_T=0.02 val_CE=6.4409
+SECILEN gamma=0.5 lambda=1000 T=0.01 val_CE=6.2697
+TEST mse_ham=0.000487 mse_olasilik=0.000516 CE=6.2204 PPL=502.93 top1=0.1229 top5=0.2908
+SURE W1_uretim=0.001s tek_model_egitim(W1+istatistik(egitim+dogrulama)+1 Cholesky/cozum)=0.26s ayar_aramasi_dahil_toplam=20.92s
+OZET|rastgele|c=2|H=256|tohum=1|gam=0.5|lam=1000|T=0.01|valCE=6.2697|mse_ham=0.000487|mse_olas=0.000516|CE=6.2204|PPL=502.93|top1=0.1229|top5=0.2908|egitim_sn=0.26|toplam_sn=20.92|RAM_MB=140

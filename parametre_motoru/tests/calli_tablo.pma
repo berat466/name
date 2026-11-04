@@ -1,0 +1,51 @@
+; 04.010/04.011: islev isaretcisi tablosu (bellekte islev indeksleri), dolayli cagri ile hesap makinesi; cagrilan islevler baska islevleri (dogrudan/dolayli) cagirir
+space TAB 4
+func proto2(a, b) {
+  ret a
+}
+func add(a, b) {
+  add r, a, b
+  ret r
+}
+func sub(a, b) {
+  sub r, a, b
+  ret r
+}
+func mul(a, b) {
+  mul r, a, b
+  ret r
+}
+func ikikat(a, b) {
+  ; ikisini de ekle sonra mul'u dolayli cagir
+  call s, add, a, b
+  ldi m, 2
+  ldi t, TAB
+  ld fp, t, 2
+  calli r, proto2, fp, s, m
+  ret r
+}
+func main() {
+  ldi t, TAB
+  ldi v, 1
+  st v, t, 0
+  ldi v, 2
+  st v, t, 1
+  ldi v, 3
+  st v, t, 2
+  ldi v, 4
+  st v, t, 3
+  ldi i, 0
+L: ldi t, TAB
+  add t, t, i
+  ld fp, t, 0
+  ldi x, 20
+  ldi y, 6
+  calli r, proto2, fp, x, y
+  host puti, r
+  host putc, 32
+  addi i, i, 1
+  lti c, i, 4
+  jnz c, L
+  host putc, 10
+  halt
+}

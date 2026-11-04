@@ -1,0 +1,8 @@
+tohum 2 A (V50, B-satiri) -> alpha=0.2 val CE=4.8345 test PPL=119.84 | alpha=0 val CE=4.8686
+tohum 2 B gF=0.15 +son -> alpha=0.2 val CE=4.8344 test PPL=119.89 | alpha=0 val CE=4.8564
+tohum 2 E tum asamalar g=0.15 (C-satiri) -> alpha=0.05 val CE=4.8298 test PPL=119.54 | alpha=0 val CE=4.8318
+tohum 2 V49 A ref (rho=-0.25 alpha=0) -> alpha=0 val CE=4.8427 test PPL=120.94 | alpha=0 val CE=4.8427
+tohum 3 A (V50, B-satiri) -> alpha=0.2 val CE=4.8302 test PPL=119.68 | alpha=0 val CE=4.8636
+tohum 3 B gF=0.15 +son -> alpha=0.2 val CE=4.8363 test PPL=119.96 | alpha=0 val CE=4.8584
+tohum 3 E tum asamalar g=0.15 (C-satiri) -> alpha=0.05 val CE=4.8317 test PPL=119.52 | alpha=0 val CE=4.8334
+tohum 3 V49 A ref (rho=-0.25 alpha=0) -> alpha=0 val CE=4.8380 test PPL=120.87 | alpha=0 val CE=4.8380

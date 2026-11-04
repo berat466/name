@@ -1,0 +1,13 @@
+./tek_hamle_v10 cift 2 256 1 taban	/tmp/v10log/cift_taban_c2_H256_s1.txt	rc=0	wall_s=20.50	user_cpu_s=66.30	sys_cpu_s=3.13	maxrss_MB=199
+./tek_hamle_v10 cift 2 512 1 taban	/tmp/v10log/cift_taban_c2_H512_s1.txt	rc=0	wall_s=30.40	user_cpu_s=103.56	sys_cpu_s=3.71	maxrss_MB=303
+./tek_hamle_v10 cift 2 256 1 fark	/tmp/v10log/cift_fark_c2_H256_s1.txt	rc=0	wall_s=20.67	user_cpu_s=66.05	sys_cpu_s=3.47	maxrss_MB=213
+./tek_hamle_v10 cift 2 512 1 fark	/tmp/v10log/cift_fark_c2_H512_s1.txt	rc=0	wall_s=31.88	user_cpu_s=108.80	sys_cpu_s=3.84	maxrss_MB=317
+./tek_hamle_v10 cift 2 256 1 fark_etk	/tmp/v10log/cift_fark_etk_c2_H256_s1.txt	rc=0	wall_s=20.24	user_cpu_s=65.13	sys_cpu_s=3.36	maxrss_MB=226
+./tek_hamle_v10 cift 2 512 1 fark_etk	/tmp/v10log/cift_fark_etk_c2_H512_s1.txt	rc=0	wall_s=32.21	user_cpu_s=110.06	sys_cpu_s=3.81	maxrss_MB=329
+./tek_hamle_v10 cift 4 512 1 fark_etk	/tmp/v10log/cift_fark_etk_c4_H512_s1.txt	rc=0	wall_s=34.84	user_cpu_s=112.43	sys_cpu_s=4.45	maxrss_MB=400
+./tek_hamle_v10 cift 2 512 2 fark	/tmp/v10log/cift_fark_c2_H512_s2.txt	rc=0	wall_s=30.38	user_cpu_s=103.58	sys_cpu_s=3.60	maxrss_MB=317
+./tek_hamle_v10 cift 2 512 3 fark	/tmp/v10log/cift_fark_c2_H512_s3.txt	rc=0	wall_s=29.46	user_cpu_s=101.20	sys_cpu_s=3.53	maxrss_MB=317
+./tek_hamle_v10 cift 2 512 2 taban	/tmp/v10log/cift_taban_c2_H512_s2.txt	rc=0	wall_s=28.74	user_cpu_s=99.10	sys_cpu_s=3.43	maxrss_MB=303
+./tek_hamle_v10 cift 2 512 3 taban	/tmp/v10log/cift_taban_c2_H512_s3.txt	rc=0	wall_s=29.37	user_cpu_s=100.77	sys_cpu_s=3.50	maxrss_MB=303
+./tek_hamle_v10 cift 2 512 2 fark_etk	/tmp/v10log/cift_fark_etk_c2_H512_s2.txt	rc=0	wall_s=30.15	user_cpu_s=103.48	sys_cpu_s=3.61	maxrss_MB=330
+./tek_hamle_v10 cift 2 512 3 fark_etk	/tmp/v10log/cift_fark_etk_c2_H512_s3.txt	rc=0	wall_s=32.09	user_cpu_s=110.11	sys_cpu_s=3.73	maxrss_MB=329

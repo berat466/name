@@ -1,0 +1,25 @@
+struct A { int a; };
+struct B { int a, b; };
+struct C { long a; double b; };
+struct D { double a, b; };
+struct E { float a, b; };
+struct F { float a; int b; };
+struct G { long a, b, c; };
+struct H { char c; double d; };
+struct I { long double x; };
+struct J { double a; float b; };
+struct K { float f[3]; };
+struct L { int a[4]; };
+struct M { A a; B b; };
+struct V1 { virtual int f() { return 1; } int x; };
+struct N { double d[2]; };
+struct O { char c[17]; };
+struct Q { A a; float f; };
+struct R { float a, b, c, d; };
+int main() {
+  pi(__abi_class(int)); pi(__abi_class(char)); pi(__abi_class(bool)); pi(__abi_class(long)); pi(__abi_class(float)); pi(__abi_class(double)); pi(__abi_class(long double)); pi(__abi_class(void*));
+  pi(__abi_class(A)); pi(__abi_class(B)); pi(__abi_class(C)); pi(__abi_class(D)); pi(__abi_class(E)); pi(__abi_class(F)); pi(__abi_class(G));
+  pi(__abi_class(H)); pi(__abi_class(I)); pi(__abi_class(J)); pi(__abi_class(K)); pi(__abi_class(L)); pi(__abi_class(M)); pi(__abi_class(V1)); pi(__abi_class(N)); pi(__abi_class(O)); pi(__abi_class(Q)); pi(__abi_class(R));
+  double dd = 1.5; pi(__abi_class(dd));
+  return 0;
+}

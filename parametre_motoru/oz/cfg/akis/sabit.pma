@@ -1,0 +1,62 @@
+; 03.001 / 03.019: sabit kosullu dallar (blok ici sabit yayilimi katlamasi), yazmac kopyasi yoluyla sabit, yazilinca sabit bozulur, etiket sabiti bozar
+memory 4096
+data g = 5
+func main() {
+  ldi c, 0
+  jz c, A1
+  ldi v, 1
+  jmp B1
+A1: ldi v, 2
+B1: host puti, v
+  host putc, 32
+  ldi c, 7
+  jnz c, A2
+  ldi v, 3
+  jmp B2
+A2: ldi v, 4
+B2: host puti, v
+  host putc, 32
+  ldi a, 0
+  mov b, a
+  jz b, A3
+  ldi v, 5
+  jmp B3
+A3: ldi v, 6
+B3: host puti, v
+  host putc, 32
+  ldi c, 0
+  addi c, c, 1
+  jz c, A4
+  ldi v, 7
+  jmp B4
+A4: ldi v, 8
+B4: host puti, v
+  host putc, 32
+  ldi k, 3
+  ldi c, 0
+M: addi c, c, 1
+  jz c, M2
+  ldi v, 9
+  jmp M3
+M2: ldi v, 10
+M3: host puti, v
+  host putc, 32
+  addi k, k, -1
+  jnz k, M
+  mov p, g
+  ld x, p, 0
+  ldi c, 0
+  mov c, x
+  jz c, A6
+  ldi v, 12
+  jmp B6
+A6: ldi v, 13
+B6: host puti, v
+  host putc, 32
+  ldi c, 1
+  jz c, A5
+  ldi v, 11
+A5: host puti, v
+  host putc, 10
+  halt
+}

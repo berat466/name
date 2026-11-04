@@ -1,0 +1,24 @@
+; cok sayida kucuk kare; her 100. karede frame() yaz
+memory 1000
+func main() {
+    mov i, 0
+lp: andi v, i, 255
+    shli c, v, 8
+    or v, v, c
+    muli v, v, 77
+    mov a, 3
+    st v, a, 0
+    host r, present, 3, 2, 2
+    host f, frame
+    modi m, f, 100
+    jnz m, nx
+    host puti, f
+    host putc, 32
+nx: addi i, i, 1
+    lti z, i, 2500
+    jnz z, lp
+    host f, frame
+    host puti, f
+    ret f
+}
+entry main

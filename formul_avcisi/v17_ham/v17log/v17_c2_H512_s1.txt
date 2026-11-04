@@ -1,0 +1,22 @@
+V17 c=2 H=512 tohum=1 V=2001 K=192 egitim=39840 dogrulama=4980 test=4980 (4 cekirdek)
+TUM KONFIGURASYONLAR (dogrulama): gamma lambda | ham CE (V8 T izgarasi, a=1) | kalibre CE (V9 izgarasi) | (alpha, T)
+  0.5 1 | 6.4762 | 5.4832 | a=0.2 T=0.01
+  0.5 10 | 6.4256 | 5.5011 | a=0.2 T=0.01
+  0.5 100 | 6.3862 | 5.5198 | a=0.2 T=0.01
+  0.5 1000 | 6.5303 | 5.5773 | a=0.15 T=0.005
+  1 1 | 6.4764 | 5.4459 | a=0.2 T=0.01
+  1 10 | 6.4676 | 5.4648 | a=0.2 T=0.01
+  1 100 | 6.3935 | 5.4948 | a=0.2 T=0.01
+  1 1000 | 6.4279 | 5.5424 | a=0.2 T=0.01
+  2 1 | 6.4667 | 5.4464 | a=0.2 T=0.01
+  2 10 | 6.4728 | 5.4468 | a=0.2 T=0.01
+  2 100 | 6.4180 | 5.4574 | a=0.2 T=0.01
+  2 1000 | 6.3757 | 5.5008 | a=0.25 T=0.01
+  4 1 | 6.4697 | 5.4471 | a=0.2 T=0.01
+  4 10 | 6.4645 | 5.4471 | a=0.2 T=0.01
+  4 100 | 6.4287 | 5.4479 | a=0.2 T=0.01
+  4 1000 | 6.3596 | 5.4671 | a=0.25 T=0.01
+OZET|ESKI_V12_secim|c=2|H=512|tohum=1|gam=4|lam=1000|alpha=0.25|T=0.01|val_CE_kalibre=5.4671|val_CE_ham=6.3596|test_CE=5.3791|PPL=216.82|top1=0.1492|top5=0.2900|agirlik_uretim_sn=0.52
+OZET|YENI_V17_secim|c=2|H=512|tohum=1|gam=1|lam=1|alpha=0.2|T=0.01|val_CE_kalibre=5.4459|val_CE_ham=6.4764|test_CE=5.3618|PPL=213.10|top1=0.1504|top5=0.2952|agirlik_uretim_sn=0.37
+UNIGRAM test_CE=5.6389 PPL=281.15 top1=0.0904 top5=0.2255
+TOPLAM sure=14.0s arama=13.1s tepe_RAM=230MB

@@ -1,0 +1,2 @@
+// RED: E_REINTERP  -- bayt gorunumu: adres alma desteklenmiyor
+int main() { int a = 1; unsigned char* b = reinterpret_cast<unsigned char*>(&a); unsigned char* c = &b[1]; return c != 0; }

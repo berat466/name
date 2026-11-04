@@ -1,0 +1,2 @@
+// RED: E_CONSTEXPR  -- sabit ifadede sifira bolme
+constexpr int f(int x){ return 10 / x; } constexpr int g = f(0); int main(){ return g; }

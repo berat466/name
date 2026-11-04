@@ -1,0 +1,31 @@
+// bilesik uygulama: sanal dagitim, ozyineleme, dynamic_cast, typeid, operator asiri yukleme
+struct Node { virtual int eval() const { return 0; } virtual int prec() const { return 9; } virtual ~Node() {} };
+struct Num : Node { int v; int eval() const override { return v; } };
+struct Bin : Node { const Node* l; const Node* r; char op;
+  int eval() const override { int a = l->eval(), b = r->eval(); if (op == '+') return a + b; if (op == '-') return a - b; if (op == '*') return a * b; if (op == '/') return b ? a / b : 0; return 0; }
+  int prec() const override { return (op == '+' || op == '-') ? 1 : 2; } };
+struct Neg : Node { const Node* e; int eval() const override { return -e->eval(); } int prec() const override { return 3; } };
+Num num(int v) { Num n; n.v = v; return n; }
+int depth(const Node* n) {
+  if (const Bin* b = dynamic_cast<const Bin*>(n)) { int a = depth(b->l), c = depth(b->r); return 1 + (a > c ? a : c); }
+  if (const Neg* g = dynamic_cast<const Neg*>(n)) return 1 + depth(g->e);
+  return 1;
+}
+int count(const Node* n, int kind) {
+  if (typeid(*n) == typeid(Num)) return kind == 0 ? 1 : 0;
+  if (typeid(*n) == typeid(Neg)) return (kind == 2 ? 1 : 0) + count(static_cast<const Neg*>(n)->e, kind);
+  const Bin* b = static_cast<const Bin*>(n); return (kind == 1 ? 1 : 0) + count(b->l, kind) + count(b->r, kind);
+}
+int main() {
+  Num a = num(6), b = num(3), c = num(4);
+  Bin add; add.l = &a; add.r = &b; add.op = '+';
+  Bin mul; mul.l = &add; mul.r = &c; mul.op = '*';
+  Neg ng; ng.e = &mul;
+  Bin sub; sub.l = &ng; sub.r = &a; sub.op = '-';
+  const Node* nodes[5] = {&a, &add, &mul, &ng, &sub};
+  for (int i = 0; i < 5; i++) { pi(nodes[i]->eval()); pi(nodes[i]->prec()); pi(depth(nodes[i])); }
+  pi(count(&sub, 0)); pi(count(&sub, 1)); pi(count(&sub, 2));
+  Node base; pi(base.eval() + base.prec());
+  const Node& r = sub; pi(r.eval());
+  return 0;
+}

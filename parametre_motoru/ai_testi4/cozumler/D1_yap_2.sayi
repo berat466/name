@@ -1,0 +1,46 @@
+# D1: 400 degerlik listenin istatistikleri (histogram yontemi), ekransiz
+80 77 89 49
+0 0 0 0                       # sahne yok, kare dongusu yok
+0                             # global yok
+1                             # 1 dizi (indeks 0): sayac[k], k = deger+50, 101 eleman
+  101 0
+1                             # 1 islev (indeks 0): v(i) -> k = RND(i,2) % 101   (deger = k-50)
+  1 2                         #   1 parametre (yerel0 = i), 2 yerel (yerel1 = h)
+  3                           #   3 komut
+    1  4 1  15 6  15 1  15 3 4 0 1 z1664525  1 z2027820791  1 z16777215   # h = (i*1664525 + 2*1013904223 + 12345) & 0xFFFFFF
+    1  4 1  15 6  15 1  15 3 4 1 1 z1664525  1 z1013904223  1 z16777215  # h = (h*1664525 + 1013904223) & 0xFFFFFF
+    7  15 5  15 4 4 1 1 z16  1 z101                                       # don (h/16) % 101
+0                             # davranis yok
+0                             # sablon yok
+0                             # etkilesim yok
+0                             # girdi yok
+0                             # toplama yok
+0                             # bitis yok
+# ILK blok: 5 komut.  yerel: 0=k/i 1=c 2=kum 3=min 4=max 5=ikinci 6=ortanca 7=toplam 8=tepe 9=tepesay 10=farkli 11=mutlak toplam 13=ortanca+50
+5
+  # 1) sayim: i = 0..399
+  4 0  1 z0  1 z399  2
+    1  4 1  13 0 1 4 0                                  # k = v(i)
+    1  12 0 4 1  15 1  12 0 4 1  1 z1                   # sayac[k] = sayac[k] + 1
+  # 2) tarama: k = 0..100
+  4 0  1 z0  1 z100  4
+    1  4 1  12 0 4 0                                    # c = sayac[k]
+    2  15 15 4 1 1 z0                                   # eger c > 0
+      6
+        2  15 11 4 10 1 z0  1  1 4 3 15 2 4 0 1 z50  0  #   farkli==0 ise min = k-50
+        1  4 5 4 4                                      #   ikinci = max
+        1  4 4 15 2 4 0 1 z50                           #   max = k-50
+        1  4 10 15 1 4 10 1 z1                          #   farkli++
+        1  4 7 15 1 4 7 15 3 4 1 15 2 4 0 1 z50         #   toplam += c*(k-50)
+        2  15 15 4 1 4 9  2  1 4 9 4 1  1 4 8 15 2 4 0 1 z50  0   # c > tepesay ise tepesay=c, tepe=k-50
+      0                                                 # yoksa bos
+    1  4 2 15 1 4 2 4 1                                 # kum += c
+    2  15 19  15 16 4 2 1 z201  15 14 15 2 4 2 4 1 1 z200  1  1 4 6 15 2 4 0 1 z50  0   # kum>=201 ve kum-c<=200 ise ortanca = k-50
+  # 3) ortanca + 50
+  1  4 13  15 1 4 6 1 z50
+  # 4) mutlak sapma toplami
+  4 0  1 z0  1 z100  1
+    1  4 11  15 1  4 11  15 3  12 0 4 0  15 18  15 2 4 0 4 13  15 2 4 13 4 0   # top += sayac[k]*max(k-m, m-k)
+  # 5) yazdir: min max ortanca ortalama tepe tepesay farkli mutlak ikinci
+  12 9  4 3  4 4  4 6  15 4 4 7 1 z400  4 8  4 9  4 10  4 11  4 5
+0                             # SON bos

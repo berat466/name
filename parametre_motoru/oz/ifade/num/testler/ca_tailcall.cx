@@ -1,0 +1,14 @@
+int sum(int n, int acc) { if (n == 0) return acc; return sum(n - 1, acc + n); }
+int ev(int n); 
+int od(int n) { if (n == 0) return 0; return ev(n - 1); }
+int ev(int n) { if (n == 0) return 1; return od(n - 1); }
+void cnt(int n, int* p) { if (n == 0) return; *p = *p + 1; cnt(n - 1, p); }
+double dsum(int n, double a) { if (n <= 0) return a; return dsum(n - 1, a + 0.5); }
+long long collatz(long long n, int steps) { if (n == 1) return steps; if (n % 2 == 0) return collatz(n / 2, steps + 1); return collatz(3 * n + 1, steps + 1); }
+int g(int x) { return x + 1; }
+int f(int x) { return g(x) * 2; }
+int h(int x) { return g(x); }
+int main() {
+  pi(sum(100000, 0)); pi(ev(100001)); pi(od(100001)); int c = 0; cnt(1000, &c); pi(c); pd(dsum(50000, 0.0)); pl(collatz(27, 0)); pi(f(3)); pi(h(3));
+  return 0;
+}

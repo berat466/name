@@ -1,0 +1,8 @@
+V13 c=2 H=512 tohum=1 gamma=4 lambda=1000 V=2001 K=192 egitim=39840 dogrulama=4980 test=4980 (4 cekirdek)
+ilk hesap (F+W2) = 0.551s ; geri yanki = 2.673s ; ||G1||=79.04 ||W1_yogun||=22.63
+ADAY e0 goreli_adim=0.00 eta=0 dW1_goreli(gercek)=0.0000 ikinci_egitim_W2(train)=1.116s son_model(train+val)=0.250s
+ADAY e1 goreli_adim=0.01 eta=0.002863 dW1_goreli(gercek)=0.0100 ikinci_egitim_W2(train)=0.595s son_model(train+val)=0.139s
+ADAY e2 goreli_adim=0.03 eta=0.008588 dW1_goreli(gercek)=0.0300 ikinci_egitim_W2(train)=0.857s son_model(train+val)=0.295s
+ADAY e3 goreli_adim=0.10 eta=0.02863 dW1_goreli(gercek)=0.1000 ikinci_egitim_W2(train)=0.737s son_model(train+val)=0.100s
+AGIRLIK_URETIM (W1 + ilk W2 + geri yanki + ikinci W2, egitim-yalniz, tek aday): W1=0.001s ilk=0.551s geri=2.673s ikinci~0.551s
+TOPLAM sure=9.2s tepe_RAM=380MB

@@ -1,0 +1,7 @@
+s5k_76: WALL 13.154 USER 27.228 SYS 14.934 MAXRSS_KB 3231796  hazir=9.756 V53H_SONUC|TEST CE=5.158058 PPL=173.827 VAL CE=5.079437
+s5k_77: WALL 12.022 USER 25.967 SYS 13.082 MAXRSS_KB 3172508  hazir=9.177 V53H_SONUC|TEST CE=5.158058 PPL=173.827 VAL CE=5.079437
+--- s5k: lin hari? her sey ---
+BIT-OZDES
+V77_SECIM|en iyi (alfa,eps) ile ikinci arasindaki CE boslugu=1.033e-03 (toplama sirasi farki ~1e-14 mertebesinde; bosluk >> 1e-9 ise secim ayni)
+V77_SPEK|blok=7 yeniden_hesaplanan_blok=4 (7680/36852 ornek) (kismi yeniden hesap)|secilen okuma alpha=0.85 eps=1e-05
+V77_MADD|eval-gemm madd: val_asama1=9.4544e+10 val_yeniden=1.9703e+10 test=9.4544e+10 toplam=2.0879e+11

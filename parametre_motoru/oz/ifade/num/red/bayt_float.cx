@@ -1,0 +1,2 @@
+// RED: E_REINTERP  -- float bit gosterimi: bayt gorunumu yok
+int main() { float f = 1.5f; unsigned char* p = reinterpret_cast<unsigned char*>(&f); return p[0]; }

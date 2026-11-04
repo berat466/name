@@ -1,0 +1,2 @@
+// RED: E_CONSTINIT  -- constinit ilklendirici sabit ifade olmali
+int f(int x){ return x; } constinit int g = f(2); int main(){ return g; }

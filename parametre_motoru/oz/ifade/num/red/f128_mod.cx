@@ -1,0 +1,2 @@
+// RED: E_TYPE  -- % __float128 uzerinde tanimli degil
+int main() { __float128 a = 5; __float128 b = a % 2; return 0; }

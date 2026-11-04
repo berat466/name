@@ -1,0 +1,24 @@
+; alloc ile bagli liste: toplam ve uzunluk
+func main() {
+    mov head, 0
+    mov i, 10
+b:  jz  i, t
+    alloc node, 2
+    st  i, node, 0
+    st  head, node, 1
+    mov head, node
+    sub i, i, 1
+    jmp b
+t:  mov s, 0
+    mov n, 0
+w:  jz  head, d
+    ld  v, head, 0
+    add s, s, v
+    add n, n, 1
+    ld  head, head, 1
+    jmp w
+d:  host puti, s
+    host putc, 10
+    host puti, n
+    host putc, 10
+}

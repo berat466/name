@@ -1,0 +1,6 @@
+; jtab tablo uzunlugu negatif olamaz
+func main() {
+  ldi i, 0
+  jtab i, -1
+  halt
+}

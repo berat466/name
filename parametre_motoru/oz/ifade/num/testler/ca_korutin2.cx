@@ -1,0 +1,68 @@
+// 03 (kapanis duzeltmesi): korutin + denetim akisi BIRLIKTE -- goto/etiket, __match, kisa devre yan etkisi, ic ice dongu+break/continue+switch dusmesi, try/catch'te yield,
+// istisnanin tuketiciye yayilmasi, ayni korutinin iki ornegi (durum yalitimi), korutinden korutin tuketimi (break/continue), resume()/value() ile elle surdurme, yerel dizi/yapi askida korunur
+struct P { int a; int b; };
+std::generator<int> g_goto(int n) { int i = 0; ust: if (i >= n) goto son; if (i % 2 == 0) { co_yield i; } i = i + 1; goto ust; son: co_yield -1; }
+std::generator<int> g_match(int n) {
+  for (int i = 0; i < n; i = i + 1) {
+    int r = 0;
+    __match (i) { case 0: r = 100; case 1 | 2: r = 200; case 3 ... 5: r = 300 + i; case _: r = 900; }
+    co_yield r;
+  }
+}
+std::generator<int> g_kisa(int n) {
+  int say = 0;
+  for (int i = 0; i < n; i = i + 1) { if (i % 2 == 0 && (say = say + 1) > 0 || i == 3) co_yield i * 10 + say; }
+  co_yield say;
+}
+std::generator<int> g_ic(int n) {
+  for (int i = 0; i < n; i = i + 1) {
+    for (int j = 0; j < n; j = j + 1) {
+      if (j > i) break;
+      if ((i + j) % 2) continue;
+      switch (j) { case 0: co_yield i * 100; break; case 1 ... 2: co_yield i * 100 + j; default: co_yield -j; }
+    }
+  }
+}
+std::generator<int> g_try(int n) {
+  for (int i = 0; i < n; i = i + 1) {
+    try { if (i % 3 == 2) throw i; co_yield i; } catch (int e) { co_yield 1000 + e; }
+  }
+  co_yield 7777;
+}
+std::generator<int> g_at(int n) { for (int i = 0; i < n; i = i + 1) { co_yield i; if (i == 2) throw 500 + i; } }
+std::generator<int> g_say(int base, int step) { int v = base; while (true) { co_yield v; v = v + step; if (v > base + 5 * step) co_return; } }
+std::generator<int> g_sar(int n) { int c = 0; for (int v : g_say(1, 1)) { if (v % 2 == 0) continue; if (c++ >= n) break; co_yield v * 10; } co_yield 55; }
+std::generator<int> g_yerel(int n) {
+  int arr[4]; P p; p.a = 3; p.b = 4;
+  for (int i = 0; i < 4; i = i + 1) arr[i] = i * n;
+  for (int i = 0; i < 4; i = i + 1) { co_yield arr[i] + p.a; p.a = p.a + p.b; }
+  int s = 0; for (int i = 0; i < 4; i = i + 1) s = s + arr[i];
+  co_yield s + p.a;
+}
+std::generator<int> g_aw() { co_await 1; co_yield 5; co_await 2; co_yield 6; }
+int main() {
+  for (int v : g_goto(6)) pi(v);
+  pi(-999);
+  for (int v : g_match(8)) pi(v);
+  pi(-999);
+  for (int v : g_kisa(6)) pi(v);
+  pi(-999);
+  for (int v : g_ic(4)) pi(v);
+  pi(-999);
+  for (int v : g_try(6)) pi(v);
+  pi(-999);
+  std::generator<int> h = g_at(5);
+  try { while (h.next()) pi(h.value()); } catch (int e) { pi(e); }
+  pi(h.done()); pi(h.next()); pi(h.next());
+  pi(-999);
+  std::generator<int> a = g_say(0, 2); std::generator<int> b = g_say(100, 3);
+  while (true) { bool x = a.next(); bool y = b.next(); if (!x && !y) break; if (x) pi(a.value()); if (y) pi(b.value()); }
+  pi(-999);
+  for (int v : g_sar(2)) pi(v);
+  pi(-999);
+  for (int v : g_yerel(3)) pi(v);
+  pi(-999);
+  std::generator<int> w = g_aw();
+  for (int k = 0; k < 6; k = k + 1) { int r = w.resume(); pi(r); if (r) pi(w.value()); }
+  return 0;
+}

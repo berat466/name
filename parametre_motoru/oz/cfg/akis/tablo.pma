@@ -1,0 +1,25 @@
+; 03.009 atlama tablosu (jtab): dizin araligi, aralik disi (negatif / buyuk) dizin merdivenin ardina duser
+func main() {
+  ldi i, -2
+L: jtab i, 4
+  jmp C0
+  jmp C1
+  jmp C2
+  jmp C3
+  ldi o, 99
+  jmp E
+C0: ldi o, 10
+  jmp E
+C1: ldi o, 11
+  jmp E
+C2: ldi o, 12
+  jmp E
+C3: ldi o, 13
+E: host puti, o
+  host putc, 32
+  addi i, i, 1
+  lti c, i, 7
+  jnz c, L
+  host putc, 10
+  halt
+}

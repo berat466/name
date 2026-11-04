@@ -1,0 +1,4 @@
+./tek_hamle_v25 2 1024 1 4 10 ABCDE	/tmp/v25log/v25_c2_H1024_s1_ABCDE.txt	rc=0	wall_s=171.15	user_cpu_s=485.00	sys_cpu_s=18.33	maxrss_MB=1313
+./tek_hamle_v25 2 512 1 1 1 BCD	/tmp/v25log/v25_c2_H512_s1_ABCD.txt	rc=0	wall_s=72.82	user_cpu_s=241.99	sys_cpu_s=6.96	maxrss_MB=1109
+./tek_hamle_v25r 2 1024 1 4 10 BDE	/tmp/v25log/v25r_c2_H1024_s1_BDE_linread.txt	rc=0	wall_s=83.10	user_cpu_s=281.74	sys_cpu_s=8.51	maxrss_MB=1312
+./tek_hamle_v25r 2 512 1 1 1 BCD	/tmp/v25log/v25r_c2_H512_s1_BCD_linread.txt	rc=0	wall_s=67.01	user_cpu_s=230.11	sys_cpu_s=5.59	maxrss_MB=1109

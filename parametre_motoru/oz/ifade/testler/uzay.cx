@@ -1,0 +1,30 @@
+// 02.031: <=> yerlesik ve kullanici tanimli, iliski operatorleri yeniden yazimi
+struct Ver { int major; int minor;
+  std::strong_ordering operator<=>(const Ver& o) const { if (major != o.major) return major <=> o.major; return minor <=> o.minor; }
+  bool operator==(const Ver& o) const { return major == o.major && minor == o.minor; } };
+struct Fl { double v; std::partial_ordering operator<=>(const Fl& o) const { return v <=> o.v; } bool operator==(const Fl& o) const { return v == o.v; } };
+struct Rev { int k; bool operator<(const Rev& o) const { return k > o.k; } };
+int cls(std::strong_ordering o) { if (o < 0) return -1; if (o > 0) return 1; return 0; }
+int main() {
+  pi(cls(1 <=> 2)); pi(cls(5 <=> 5)); pi(cls(9 <=> 2));
+  pi((3 <=> 4) < 0); pi((3 <=> 4) > 0); pi((4 <=> 4) == 0); pi((4 <=> 4) <= 0); pi((4 <=> 4) >= 0); pi((5 <=> 4) != 0); pi(0 < (4 <=> 5)); pi(0 == (4 <=> 4));
+  pi((1.0 <=> 2.0) < 0); pi((2.0 <=> 1.0) > 0);
+  double nan = 0.0 / 0.0 * 0 ; double zero = 0; nan = zero / zero;
+  pi((nan <=> 1.0) < 0); pi((nan <=> 1.0) > 0); pi((nan <=> 1.0) == 0); pi((nan <=> 1.0) != 0); pi((nan <=> nan) >= 0);
+  std::partial_ordering po = 1.0 <=> 2.0; pi(po == std::partial_ordering::less); pi(po == std::partial_ordering::greater);
+  pi((nan <=> 1.0) == std::partial_ordering::unordered);
+  std::strong_ordering so = 7 <=> 7; pi(so == std::strong_ordering::equal); pi(so == std::strong_ordering::less); pi(so != std::strong_ordering::greater);
+  std::weak_ordering wo = so; pi(wo == std::weak_ordering::equivalent);
+  std::partial_ordering pw = so; pi(pw == std::partial_ordering::equivalent);
+  pi((-1 <=> 0u) > 0);                       // isaretsize donusum
+  pi((-1 <=> 0) < 0);
+  pi(('a' <=> 'b') < 0); pi((true <=> false) > 0); pi((1L <=> 1u) == 0); pi((1 <=> 1.5) < 0); pi((2LL <=> 1.5f) > 0);
+  int arr[3] = {1, 2, 3}; int* p = arr; int* q = arr + 2; pi((p <=> q) < 0); pi((q <=> p) > 0); pi((p <=> p) == 0);
+  Ver a = {1, 2}, b = {1, 3}, c = {2, 0}, d = {1, 2};
+  pi(a < b); pi(b < a); pi(a <= d); pi(a >= d); pi(c > b); pi(a == d); pi(a != b); pi(a != d); pi(b > a); pi(c >= a);
+  pi(cls(a <=> b)); pi(cls(c <=> a)); pi(cls(a <=> d)); pi((a <=> b) < 0);
+  Fl x = {1.5}, y = {2.5}, z = {nan};
+  pi(x < y); pi(x > y); pi(x <= y); pi(z < x); pi(z > x); pi(z == z); pi(z != z); pi(x == x); pi((x <=> z) == std::partial_ordering::unordered);
+  Rev r1 = {5}, r2 = {3}; pi(r1 < r2); pi(r2 < r1);
+  return 0;
+}

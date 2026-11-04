@@ -1,0 +1,39 @@
+// 03.002 / 03.003 / 03.004 / 03.005 / 03.011 / 03.012: while, do-while, for, ic ice donguler, break/continue, goto, etiket, return
+int bul(int* a, int n, int v) { for (int i = 0; i < n; i = i + 1) { if (a[i] == v) return i; } return -1; }
+int topla_cift(int n) { int s = 0; for (int i = 0; i < n; i = i + 1) { if (i % 2) continue; s = s + i; } return s; }
+int ilk_bolen(int n) { int d = 2; while (d * d <= n) { if (n % d == 0) return d; d = d + 1; } return n; }
+int carpim(int n, int m) { int c = 0; for (int i = 1; i <= n; i = i + 1) for (int j = 1; j <= m; j = j + 1) { if (j > i) break; c = c + i * j; } return c; }
+int etiketli(int n) { int c = 0; for (int i = 0; i < n; i = i + 1) { for (int j = 0; j < n; j = j + 1) { if (i * j == 6) goto cik; c = c + 1; } } cik: return c; }
+int geri_goto(int n) { int i = 0; int s = 0; basla: if (i >= n) goto son; s = s + i; i = i + 1; goto basla; son: return s; }
+int dowhile_en_az_bir(int x) { int c = 0; do { c = c + 1; } while (c < x); return c; }
+int dowhile_continue(int n) { int i = 0; int s = 0; do { i = i + 1; if (i % 3 == 0) continue; s = s + i; } while (i < n); return s; }
+int sonsuz_break() { int i = 0; for (;;) { i = i + 7; if (i > 40) break; } return i; }
+int sonsuz_while() { int n = 0; while (true) { n = n + 1; if (n == 13) return n * 2; } }
+int main() {
+  int a[6] = {4, 8, 15, 16, 23, 42};
+  pi(bul(a, 6, 23)); pi(bul(a, 6, 99)); pi(topla_cift(10)); pi(ilk_bolen(91)); pi(ilk_bolen(97)); pi(carpim(5, 5));
+  pi(etiketli(5)); pi(geri_goto(10)); pi(dowhile_en_az_bir(-1)); pi(dowhile_en_az_bir(3)); pi(dowhile_continue(10)); pi(sonsuz_break()); pi(sonsuz_while());
+  // uc seviyeli ic ice; her seviyede continue / break
+  int t = 0;
+  for (int i = 0; i < 4; i = i + 1) {
+    if (i == 1) continue;
+    int j = 0;
+    while (j < 4) {
+      j = j + 1;
+      if (j == 2) continue;
+      if (j == 4) break;
+      int k = 0;
+      do { k = k + 1; if (k == 2) break; t = t + 1; } while (k < 5);
+      t = t + 100 * i + 10 * j;
+    }
+  }
+  pi(t);
+  // dongu degiskeni kapsami + golgeleme
+  int x = 5; for (int x = 0; x < 3; x = x + 1) { t = t + x; } pi(x); pi(t);
+  // bos govde ve virgul
+  int u = 0; for (int i = 0, j = 10; i < j; i = i + 1, j = j - 1) u = u + 1; pi(u);
+  int w = 0; while (w++ < 5); pi(w);
+  // buyuk sayac
+  long long big = 0; for (int i = 0; i < 100000; i = i + 1) big = big + i; pi(big);
+  return 0;
+}

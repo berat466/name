@@ -1,0 +1,32 @@
+// 02.024: kullanici tanimli donusum operatorleri
+struct Meters { double v; operator double() const { return v; } };
+struct Flag { int on; explicit operator bool() const { return on != 0; } };
+struct Idx { int i; operator int() const { return i; } };
+struct Both { int i; operator int() const { return i; } operator const char*() const { return "both"; } };
+struct Ptr { int* p; operator int*() const { return p; } };
+struct Wrap { Meters m; operator Meters() const { return m; } };
+struct Num { long long n; operator long long() const { return n; } };
+double half(double x) { return x / 2; }
+int add1(int x) { return x + 1; }
+long long twice(long long x) { return x * 2; }
+void pb(bool b) { pi(b ? 111 : 222); }
+int main() {
+  Meters m = {2.5}; double d = m; pd(d); pd(m + 1); pd(half(m)); pd(m * m);
+  pi(m > 2); pi(m < 2.5); pi(!m); pi(m == 2.5);
+  Flag f1 = {1}, f0 = {0};
+  pi(f1 ? 1 : 0); pi(f0 ? 1 : 0); pi(!f0); pi(f1 && f0); pi(f1 || f0);
+  if (f1) pi(10); if (!f0) pi(11);
+  pi(static_cast<bool>(f1)); pb(static_cast<bool>(f0));
+  bool b = bool(f1); pi(b);
+  Idx ix = {3}; int arr[5] = {10, 20, 30, 40, 50}; pi(arr[ix]); pi(ix + 4); pi(add1(ix)); pi(ix * ix); pi(-ix); pi(ix << 2); pi(ix % 2); pi(ix == 3);
+  char ch = 'a'; int sum = ix + ch; pi(sum);
+  Ptr pp = {arr + 2}; int* q = pp; pi(*q); pi(*pp); pi(pp[1]);
+  Num nn = {5000000000LL}; pi(nn); pi(twice(nn)); pi(nn / 3);
+  Wrap w = {{7.0}}; Meters mm = w; pd(mm.v);
+  Idx a2 = {5}, b2 = {5}; pi(a2 == b2); pi(a2 + b2);
+  long long ll = Idx{7}; pi(ll);
+  double dd = Idx{8}; pd(dd);
+  int cnt = 0; for (Idx k = {0}; k < 3; k.i++) cnt += k; pi(cnt);
+  pi((Idx{4}) > 3);
+  return 0;
+}

@@ -1,0 +1,26 @@
+sahne 160 120
+kare 60
+arkaplan 0
+
+sablon karo adet 192
+  alan x mod 16 0 10
+  alan y bol 16 0 10
+  alan hiz bol 16 1 1
+  alan p1 mod 16 0 16
+  alan p2 bol 16 0 8
+  alan ph sabit 0
+  alan r sabit 0
+  alan g sabit 0
+  alan renk sabit 0
+  kural ph = p1 + p2 eger kare == 0
+  kural ph = ph % 256 eger kare == 0
+  kural ph = ph + hiz
+  kural ph = ph % 256
+  kural r = ph * 65536
+  kural g = 255 - ph
+  kural g = g * 256
+  kural renk = r + g
+  kural renk = renk + 64
+  kural renk = 16777215 eger ph >= 224
+  ciz dikdortgen x, y, 10, 10, renk
+son

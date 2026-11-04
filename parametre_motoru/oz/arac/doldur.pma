@@ -1,0 +1,253 @@
+; doldur.pma -- yer tutucu doldurucu (awk/sed yerine). stdin: SOZLUK satirlari ("ANAHTAR deger..."), "@@SABLON" satiri, sablon metni.
+; stdout: sablon, her @ANAHTAR@ sozluk degeriyle degistirilmis. Bilinmeyen anahtar -> HATA + DIV0 tuzagi. @ ve anahtar disinda her sey aynen.
+; Sozlukte ayni anahtar tekrarlanirsa ILK tanim gecerli.
+memory 8388608
+entry main
+space IB 1100000
+space KO 8192
+space KL 8192
+space VO 8192
+space VL 8192
+space OB 2200000
+space G 16
+
+func err(code) {
+    host putc, 72
+    host putc, 65
+    host putc, 84
+    host putc, 65
+    host putc, 58
+    host putc, 32
+    host puti, code
+    host putc, 10
+    mov z, 0
+    div x, 1, z
+    ret 0
+}
+
+func isk(c) {            ; anahtar karakteri: harf, rakam, _
+    lti z, c, 48
+    jnz z, no
+    lei z, c, 57
+    jnz z, yes
+    lti z, c, 65
+    jnz z, no
+    lei z, c, 90
+    jnz z, yes
+    eqi z, c, 95
+    jnz z, yes
+    lti z, c, 97
+    jnz z, no
+    lei z, c, 122
+    jnz z, yes
+no: ret 0
+yes: ret 1
+}
+
+func emit(c) {
+    ld n, G, 5
+    gei z, n, 2200000
+    jz z, e1
+    call x, err, 2
+e1: add a, n, OB
+    st c, a, 0
+    addi n, n, 1
+    st n, G, 5
+    ret 0
+}
+
+func lookup(o, l) {      ; indeks ya da -1
+    ld n, G, 2
+    mov i, 0
+l1: ge z, i, n
+    jnz z, no
+    add a, i, KL
+    ld kl, a, 0
+    eq z, kl, l
+    jz z, l3
+    add a, i, KO
+    ld ko, a, 0
+    mov j, 0
+l2: ge z, j, l
+    jnz z, yes
+    add a, o, j
+    add a, a, IB
+    ld c1, a, 0
+    add a, ko, j
+    add a, a, IB
+    ld c2, a, 0
+    ne z, c1, c2
+    jnz z, l3
+    addi j, j, 1
+    jmp l2
+l3: addi i, i, 1
+    jmp l1
+yes: ret i
+no: ret -1
+}
+
+func main() {
+    mov n, 0
+r1: host ch, getc
+    lti z, ch, 0
+    jnz z, r2
+    gei z, n, 1048576
+    jz z, r1a
+    call x, err, 1
+r1a: add a, n, IB
+    st ch, a, 0
+    addi n, n, 1
+    jmp r1
+r2: st n, G, 0
+    ; sozluk: "@@SABLON" satirina kadar
+    mov p, 0
+    mov nk, 0
+d1: ge z, p, n
+    jnz z, nosep
+    ; satir sonu bul
+    mov e, p
+d2: ge z, e, n
+    jnz z, d3
+    add a, e, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, d3
+    addi e, e, 1
+    jmp d2
+d3: ; satir [p,e)
+    sub len, e, p
+    eqi z, len, 8
+    jz z, d4
+    ; "@@SABLON" mi?
+    add a, p, IB
+    ld c0, a, 0
+    eqi z, c0, 64
+    jz z, d4
+    add a, p, 1
+    add a, a, IB
+    ld c1, a, 0
+    eqi z, c1, 64
+    jz z, d4
+    add a, p, 2
+    add a, a, IB
+    ld c2, a, 0
+    eqi z, c2, 83
+    jz z, d4
+    addi p, e, 1
+    jmp tmpl
+d4: add a, p, IB
+    ld c, a, 0
+    eqi z, c, 35
+    jnz z, dnext
+    mov k, p
+    mov k, p
+d5: ge z, k, e
+    jnz z, d6
+    add a, k, IB
+    ld c, a, 0
+    eqi z, c, 32
+    jnz z, d6
+    eqi z, c, 9
+    jnz z, d6
+    addi k, k, 1
+    jmp d5
+d6: sub kl, k, p
+    jz kl, dnext
+    ; deger: bosluklari atla, satir sonuna (CR haric) kadar
+d7: ge z, k, e
+    jnz z, d8
+    add a, k, IB
+    ld c, a, 0
+    eqi z, c, 32
+    jnz z, d7a
+    eqi z, c, 9
+    jz z, d8
+d7a: addi k, k, 1
+    jmp d7
+d8: mov ve, e
+d9: le z, ve, k
+    jnz z, d10
+    sub t, ve, 1
+    add a, t, IB
+    ld c, a, 0
+    eqi z, c, 13
+    jz z, d10
+    mov ve, t
+    jmp d9
+d10: sub vl, ve, k
+    ; ilk tanim gecerli
+    call ex, lookup, p, kl
+    gei z, ex, 0
+    jnz z, dnext
+    gei z, nk, 8192
+    jz z, d11
+    call x, err, 3
+d11: add a, nk, KO
+    st p, a, 0
+    add a, nk, KL
+    st kl, a, 0
+    add a, nk, VO
+    st k, a, 0
+    add a, nk, VL
+    st vl, a, 0
+    addi nk, nk, 1
+    st nk, G, 2
+dnext: addi p, e, 1
+    jmp d1
+nosep: call x, err, 4
+tmpl: ; sablon metni [p, n)
+    mov i, p
+t1: ge z, i, n
+    jnz z, tend
+    add a, i, IB
+    ld c, a, 0
+    eqi z, c, 64
+    jnz z, t2
+t0: call x, emit, c
+    addi i, i, 1
+    jmp t1
+t2: ; @ANAHTAR@ ?
+    addi j, i, 1
+t3: ge z, j, n
+    jnz z, t0
+    add a, j, IB
+    ld cj, a, 0
+    call kk, isk, cj
+    jz kk, t4
+    addi j, j, 1
+    jmp t3
+t4: eqi z, cj, 64
+    jz z, t0
+    addi ko_, i, 1
+    sub kl_, j, ko_
+    jz kl_, t0
+    call ix, lookup, ko_, kl_
+    gei z, ix, 0
+    jnz z, t5
+    call x, err, 5
+t5: add a, ix, VO
+    ld vo, a, 0
+    add a, ix, VL
+    ld vl2, a, 0
+    mov q, 0
+t6: ge z, q, vl2
+    jnz z, t7
+    add a, vo, q
+    add a, a, IB
+    ld c, a, 0
+    call x, emit, c
+    addi q, q, 1
+    jmp t6
+t7: addi i, j, 1
+    jmp t1
+tend: ld no, G, 5
+    mov i, 0
+o1: ge z, i, no
+    jnz z, o9
+    add a, i, OB
+    ld c, a, 0
+    host putc, c
+    addi i, i, 1
+    jmp o1
+o9: ret 0
+}

@@ -1,0 +1,2 @@
+// RED: E_COROUTINE  -- korutinde return
+std::generator<int> g() { co_yield 1; return; } int main() { return 0; }

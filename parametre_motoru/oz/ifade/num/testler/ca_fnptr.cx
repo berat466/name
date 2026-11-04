@@ -1,0 +1,11 @@
+int add(int a, int b) { return a + b; }
+int mul(int a, int b) { return a * b; }
+int apply(int (*f)(int, int), int x, int y) { return f(x, y); }
+int main() {
+  int (*p)(int, int) = add;
+  pi(p(2, 3)); pi(apply(mul, 4, 5));
+  int (*tab[2])(int, int) = { add, mul };
+  pi(tab[1](6, 7)); pi(tab[0](6, 7));
+  pi((*p)(10, 20)); p = &mul; pi(p(3, 3)); pi(p == mul); pi(p != nullptr); p = nullptr; pi(p == nullptr);
+  return 0;
+}

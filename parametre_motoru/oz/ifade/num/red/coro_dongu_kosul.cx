@@ -1,0 +1,2 @@
+// RED: E_COROUTINE  -- co_await yalniz ifade deyimi ya da bildirim ilklendiricisi icinde
+struct T { struct promise_type { T get_return_object() { return T(); } std::suspend_always initial_suspend() { return std::suspend_always(); } std::suspend_always final_suspend() noexcept { return std::suspend_always(); } void return_void() { } void unhandled_exception() { } }; }; T f() { while (co_await std::suspend_never()) { } } int main() { return 0; }

@@ -1,0 +1,3 @@
+// TRAP: OOB
+struct T { int id; ~T() { pi(id); throw 3; } };
+int main() { try { T t{1}; pi(0); } catch (int e) { pi(9); } pi(8); return 0; }

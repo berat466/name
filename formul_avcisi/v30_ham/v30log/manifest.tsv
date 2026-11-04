@@ -1,0 +1,13 @@
+./tek_hamle_v30 2 512 1 1 0.1,1,10,30,100,300 0.5 BK 1 Y	/tmp/v30log/v30_A_lamsweep_H512_s1.txt	rc=0	wall_s=26.00	user_cpu_s=45.96	sys_cpu_s=13.59	maxrss_MB=870
+./tek_hamle_v30 2 512 1 1 3,5,15,20 0.5 BK 1 Y	/tmp/v30log/v30_A2_lamnarrow_sID1_H512_s1.txt	rc=0	wall_s=21.31	user_cpu_s=32.64	sys_cpu_s=12.42	maxrss_MB=870
+./tek_hamle_v30 2 512 1 1 5,10,20 0.5 BK 0.5 Y	/tmp/v30log/v30_B_sID0.5_H512_s1.txt	rc=0	wall_s=13.40	user_cpu_s=24.22	sys_cpu_s=6.78	maxrss_MB=870
+./tek_hamle_v30 2 512 1 1 5,10,20 0.5 BK 2 Y	/tmp/v30log/v30_B_sID2_H512_s1.txt	rc=0	wall_s=14.48	user_cpu_s=25.09	sys_cpu_s=7.61	maxrss_MB=870
+./tek_hamle_v30 2 512 1 1 5,10,20 0.5 BK 4 Y	/tmp/v30log/v30_B_sID4_H512_s1.txt	rc=0	wall_s=14.19	user_cpu_s=25.26	sys_cpu_s=7.28	maxrss_MB=870
+./tek_hamle_v30 2 512 1 1 10,20,40 0.5 BK 8 Y	/tmp/v30log/v30_B_sID8_H512_s1.txt	rc=0	wall_s=18.86	user_cpu_s=25.87	sys_cpu_s=11.78	maxrss_MB=870
+./tek_hamle_v30 2 512 1 1 10,20,40 0.5 BK 16 Y	/tmp/v30log/v30_B_sID16_H512_s1.txt	rc=0	wall_s=13.83	user_cpu_s=25.98	sys_cpu_s=6.71	maxrss_MB=870
+./tek_hamle_v26c 2 512 1 1 1 E	/tmp/v30log/v30_C_idonly_ref_H512_s1.txt	rc=0	wall_s=21.17	user_cpu_s=64.45	sys_cpu_s=3.92	maxrss_MB=1011
+./tek_hamle_v30 2 512 1 1 20 0.5 BK 8 YQ	/tmp/v30log/v30_FINAL_sID8_lam20_H512_s1.txt	rc=0	wall_s=14.17	user_cpu_s=25.61	sys_cpu_s=7.17	maxrss_MB=870
+./tek_hamle_v30 2 512 2 2 20 0.5 BK 8 YQ	/tmp/v30log/v30_FINAL_sID8_lam20_H512_s2.txt	rc=0	wall_s=13.86	user_cpu_s=26.05	sys_cpu_s=6.78	maxrss_MB=870
+./tek_hamle_v30 2 512 3 1 20 0.5 BK 8 YQ	/tmp/v30log/v30_FINAL_sID8_lam20_H512_s3.txt	rc=0	wall_s=14.03	user_cpu_s=26.78	sys_cpu_s=6.83	maxrss_MB=870
+./tek_hamle_v30 2 512 1 1 1 0.5 ABK 1 YQ	/tmp/v30log/v30_REF_V29ayar_sID1_lam1_H512_s1.txt	rc=0	wall_s=27.91	user_cpu_s=53.03	sys_cpu_s=13.55	maxrss_MB=904
+./tek_hamle_v30 2 1024 1 4 20 0.5 BK 8 YQ	/tmp/v30log/v30_FINAL_sID8_lam20_H1024_s1.txt	rc=0	wall_s=20.81	user_cpu_s=51.23	sys_cpu_s=7.17	maxrss_MB=1022

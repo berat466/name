@@ -1,0 +1,24 @@
+; Collatz: 27 icin adim sayisi ve en buyuk deger
+func main() {
+    mov n, 27
+    mov steps, 0
+    mov mx, n
+l:  eq  c, n, 1
+    jnz c, d
+    mod r, n, 2
+    jz  r, even
+    mul n, n, 3
+    add n, n, 1
+    jmp up
+even:
+    div n, n, 2
+up: add steps, steps, 1
+    gt  g, n, mx
+    jz  g, l
+    mov mx, n
+    jmp l
+d:  host puti, steps
+    host putc, 10
+    host puti, mx
+    host putc, 10
+}

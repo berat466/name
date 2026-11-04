@@ -1,0 +1,49 @@
+// promise_type + awaiter + resume/destroy
+struct Gen {
+  struct promise_type {
+    int cur; int total;
+    Gen get_return_object() { Gen g; g.h = std::coroutine_handle<promise_type>::from_promise(*this); return g; }
+    std::suspend_always initial_suspend() { return std::suspend_always(); }
+    std::suspend_always final_suspend() noexcept { return std::suspend_always(); }
+    std::suspend_always yield_value(int v) { cur = v; total = total + v; return std::suspend_always(); }
+    void return_void() { }
+    void unhandled_exception() { }
+  };
+  std::coroutine_handle<promise_type> h;
+  bool next() { h.resume(); return !h.done(); }
+  int value() { return h.promise().cur; }
+};
+Gen count(int n) { for (int i = 1; i <= n; i++) co_yield i * i; }
+Gen empty_gen() { co_return; }
+
+struct Counter { int hits; bool await_ready() { return false; } void await_suspend(std::coroutine_handle<> h) { hits = hits + 1; h.resume(); } int await_resume() { return hits * 10; } };
+struct Task2 {
+  struct promise_type {
+    int result;
+    Task2 get_return_object() { Task2 t; t.h = std::coroutine_handle<promise_type>::from_promise(*this); return t; }
+    std::suspend_never initial_suspend() { return std::suspend_never(); }
+    std::suspend_always final_suspend() noexcept { return std::suspend_always(); }
+    void return_value(int v) { result = v; }
+    void unhandled_exception() { }
+  };
+  std::coroutine_handle<promise_type> h;
+};
+Task2 worker(int base) {
+  Counter c; c.hits = 0;
+  int a = co_await c;
+  int b = co_await c;
+  co_return base + a + b;
+}
+struct Ready { int v; bool await_ready() { return true; } void await_suspend(std::coroutine_handle<>) { } int await_resume() { return v; } };
+Task2 fast(int x) { int r = co_await Ready{x}; co_return r + 1; }
+int main() {
+  Gen g = count(4);
+  int sum = 0;
+  while (g.next()) { pi(g.value()); sum = sum + g.value(); }
+  pi(sum); pi(g.h.promise().total); pi(g.h.done());
+  g.h.destroy();
+  Gen e = empty_gen(); pi(e.next()); pi(e.h.done()); e.h.destroy();
+  Task2 w = worker(100); pi(w.h.done()); pi(w.h.promise().result); w.h.destroy();
+  Task2 f = fast(41); pi(f.h.promise().result); pi(f.h.done()); f.h.destroy();
+  return 0;
+}

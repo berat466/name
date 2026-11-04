@@ -1,0 +1,11 @@
+memory 1000
+func main() {
+    mov v, 99
+    st v, v, 0
+    host r, present, 90, 3, 3
+    mov z, 0
+    div x, v, z
+    host puti, x
+    ret 0
+}
+entry main

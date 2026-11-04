@@ -1,0 +1,4 @@
+// RED: E_TYPE
+struct P { int a; int b; };
+P arr[4611686018427387904ULL];
+int main() { return 0; }

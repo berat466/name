@@ -1,0 +1,26 @@
+// 02.012 / 02.013: . ve -> , ic ice, dizi uye, tabanli sinif
+struct In { int a; char b; double c; };
+struct Out { In in; In arr[2]; int n; In* pin; };
+struct Base { int x; int get() const { return x; } void set(int v) { x = v; } };
+struct Der : Base { int y; int sum() const { return x + y; } };
+int main() {
+  Out o;
+  o.in.a = 3; o.in.b = 'q'; o.in.c = 2.5; o.n = 9;
+  o.arr[0].a = 10; o.arr[1].a = 20; o.arr[1].c = 0.5;
+  o.pin = &o.arr[1];
+  pi(o.in.a); pi(o.in.b); pd(o.in.c); pi(o.n);
+  pi(o.arr[0].a + o.arr[1].a);
+  pi(o.pin->a); pd(o.pin->c);
+  Out* p = &o;
+  pi(p->in.a); pi(p->arr[1].a); pi(p->pin->a); pd(p->pin->c + p->in.c);
+  p->pin->a = 77; pi(o.arr[1].a);
+  (*p).n += 1; pi(o.n);
+  In* q = &(p->arr[0]); pi(q->a);
+  Der d; d.x = 4; d.y = 5; pi(d.sum()); pi(d.get());
+  d.set(40); pi(d.x); pi(d.sum());
+  Base* bp = &d; pi(bp->get()); bp->x = 1; pi(d.sum());
+  Der* dp = &d; pi(dp->get() + dp->y); pi((&d)->y);
+  const Der cd = d; pi(cd.sum());
+  pi(sizeof(o.in)); pi(sizeof(p->arr));
+  return 0;
+}

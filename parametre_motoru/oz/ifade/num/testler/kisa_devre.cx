@@ -1,0 +1,30 @@
+// 02.006: && / || kisa devre, ?: , yan etkiler
+int log_ = 0;
+int t(int v) { pi(100 + v); return v; }
+int f(int v) { pi(200 + v); return v; }
+int main() {
+  pi(t(1) && f(0) && t(2));
+  pi(t(0) && t(3));
+  pi(f(1) || t(4));
+  pi(f(0) || f(0) || t(5));
+  int x = 0, y = 5;
+  pi(x && y++);
+  pi(y);
+  pi(x || y++);
+  pi(y);
+  pi(y || y++);
+  pi(y);
+  int *p = 0;
+  pi(p && *p);
+  pi(p == 0 || *p == 3);
+  pi((t(1) && f(1)) + (f(0) || t(0)));
+  int z = 3;
+  pi(z > 2 ? t(7) : f(7));
+  pi(z < 2 ? t(8) : f(8));
+  bool b = t(1) && f(1);
+  pi(b);
+  if (t(0) || f(2)) pi(11);
+  while (x < 3 && t(x) > -1) x++;
+  pi(x);
+  return 0;
+}

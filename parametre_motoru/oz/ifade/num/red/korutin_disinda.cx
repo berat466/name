@@ -1,0 +1,2 @@
+// RED: E_COROUTINE  -- co_yield generator disinda
+int f() { co_yield 1; return 0; } int main() { return 0; }

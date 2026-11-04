@@ -1,0 +1,20 @@
+; faktoriyel; 21! int64 tasmasi sarar (iki tamamlayici)
+func fact(n) {
+    mov r, 1
+l:  jz  n, d
+    mul r, r, n
+    sub n, n, 1
+    jmp l
+d:  ret r
+}
+func main() {
+    call a, fact, 10
+    host puti, a
+    host putc, 10
+    call b, fact, 20
+    host puti, b
+    host putc, 10
+    call c, fact, 21
+    host puti, c
+    host putc, 10
+}

@@ -1,0 +1,16 @@
+./tek_hamle_v8 cift 2 256 1	/tmp/v8log/cift_c2_H256_s1.txt	rc=0	wall_s=20.64	user_cpu_s=69.38	sys_cpu_s=2.87	maxrss_MB=140
+./tek_hamle_v8 rastgele 2 256 1	/tmp/v8log/rastgele_c2_H256_s1.txt	rc=0	wall_s=20.94	user_cpu_s=70.42	sys_cpu_s=2.85	maxrss_MB=140
+./tek_hamle_v8 cift 2 512 1	/tmp/v8log/cift_c2_H512_s1.txt	rc=0	wall_s=32.08	user_cpu_s=113.76	sys_cpu_s=2.93	maxrss_MB=217
+./tek_hamle_v8 rastgele 2 512 1	/tmp/v8log/rastgele_c2_H512_s1.txt	rc=0	wall_s=31.60	user_cpu_s=112.18	sys_cpu_s=2.96	maxrss_MB=217
+./tek_hamle_v8 cift 4 256 1	/tmp/v8log/cift_c4_H256_s1.txt	rc=0	wall_s=19.84	user_cpu_s=67.98	sys_cpu_s=2.71	maxrss_MB=164
+./tek_hamle_v8 rastgele 4 256 1	/tmp/v8log/rastgele_c4_H256_s1.txt	rc=0	wall_s=20.57	user_cpu_s=69.63	sys_cpu_s=2.77	maxrss_MB=163
+./tek_hamle_v8 cift 4 512 1	/tmp/v8log/cift_c4_H512_s1.txt	rc=0	wall_s=33.27	user_cpu_s=117.22	sys_cpu_s=3.01	maxrss_MB=241
+./tek_hamle_v8 rastgele 4 512 1	/tmp/v8log/rastgele_c4_H512_s1.txt	rc=0	wall_s=32.77	user_cpu_s=116.01	sys_cpu_s=2.97	maxrss_MB=241
+./tek_hamle_v8 cift 2 256 2	/tmp/v8log/cift_c2_H256_s2.txt	rc=0	wall_s=20.80	user_cpu_s=70.17	sys_cpu_s=2.80	maxrss_MB=140
+./tek_hamle_v8 rastgele 2 256 2	/tmp/v8log/rastgele_c2_H256_s2.txt	rc=0	wall_s=20.44	user_cpu_s=69.22	sys_cpu_s=2.86	maxrss_MB=140
+./tek_hamle_v8 cift 2 512 2	/tmp/v8log/cift_c2_H512_s2.txt	rc=0	wall_s=32.37	user_cpu_s=115.14	sys_cpu_s=2.89	maxrss_MB=217
+./tek_hamle_v8 rastgele 2 512 2	/tmp/v8log/rastgele_c2_H512_s2.txt	rc=0	wall_s=32.65	user_cpu_s=116.13	sys_cpu_s=2.83	maxrss_MB=217
+./tek_hamle_v8 cift 2 256 3	/tmp/v8log/cift_c2_H256_s3.txt	rc=0	wall_s=21.13	user_cpu_s=71.23	sys_cpu_s=2.94	maxrss_MB=140
+./tek_hamle_v8 rastgele 2 256 3	/tmp/v8log/rastgele_c2_H256_s3.txt	rc=0	wall_s=20.14	user_cpu_s=68.75	sys_cpu_s=2.78	maxrss_MB=140
+./tek_hamle_v8 cift 2 512 3	/tmp/v8log/cift_c2_H512_s3.txt	rc=0	wall_s=31.42	user_cpu_s=112.32	sys_cpu_s=2.72	maxrss_MB=217
+./tek_hamle_v8 rastgele 2 512 3	/tmp/v8log/rastgele_c2_H512_s3.txt	rc=0	wall_s=32.85	user_cpu_s=116.11	sys_cpu_s=3.08	maxrss_MB=217

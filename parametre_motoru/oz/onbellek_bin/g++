@@ -1,0 +1,28 @@
+#!/bin/bash
+# DERLEME ONBELLEGI (seffaf g++ sarmalayicisi): ayni derleyici surumu + ayni bayraklar + ayni kaynak/baslik ICERIGI icin onceki derlemenin ciktisini kopyalar.
+# Anahtar = sha256(g++ --version, tum arguman metni [-o hedefi haric], her kaynak dosyanin icerigi, kaynak dizinlerindeki ve -I dizinlerindeki *.h/*.hpp icerikleri). Icerik degisirse anahtar degisir (eski sonuc kullanilmaz).
+# Yalniz TEK '-o' ve en az bir kaynak dosyasi olan, '-c'/'-E'/'-S' icermeyen cagrilar onbelleklenir; digerleri dogrudan gercek g++'a gider. Onbellek: $HIZLI_ONBELLEK (varsayilan /tmp/hizli_onbellek).
+GERCEK=$(PATH=$(echo "$PATH" | tr ':' '\n' | grep -v 'onbellek_bin' | paste -sd:) command -v g++)
+out=""; srcs=(); inc=(); n_o=0; i=0; args=("$@"); skip=0; cache=1
+while [ $i -lt $# ]; do
+  a="${args[$i]}"
+  case "$a" in
+    -o) out="${args[$((i+1))]}"; n_o=$((n_o+1)); i=$((i+1));;
+    -c|-E|-S|-M|-MM|-MD) cache=0;;
+    -I) inc+=("${args[$((i+1))]}"); i=$((i+1));;
+    -I*) inc+=("${a#-I}");;
+    *.cpp|*.cc|*.cxx|*.c) srcs+=("$a");;
+  esac
+  i=$((i+1))
+done
+if [ $cache = 0 ] || [ $n_o != 1 ] || [ ${#srcs[@]} = 0 ] || [ -z "$out" ]; then exec "$GERCEK" "$@"; fi
+K=$( { "$GERCEK" --version | head -1
+       for a in "${args[@]}"; do [ "$a" = "$out" ] || echo "ARG:$a"; done
+       for f in "${srcs[@]}"; do [ -f "$f" ] && sha256sum < "$f"; d=$(dirname "$f"); for h in "$d"/*.h "$d"/*.hpp; do [ -f "$h" ] && { echo "$h"; sha256sum < "$h"; }; done; done
+       for d in "${inc[@]}"; do for h in "$d"/*.h "$d"/*.hpp; do [ -f "$h" ] && { echo "$h"; sha256sum < "$h"; }; done; done
+     } | sha256sum | cut -c1-40)
+OB=${HIZLI_ONBELLEK:-/tmp/hizli_onbellek}; mkdir -p "$OB"
+if [ -x "$OB/$K" ]; then cp "$OB/$K" "$out" && exit 0; fi
+"$GERCEK" "$@"; rc=$?
+if [ $rc = 0 ] && [ -x "$out" ]; then cp "$out" "$OB/$K.$$" && mv -f "$OB/$K.$$" "$OB/$K"; fi
+exit $rc

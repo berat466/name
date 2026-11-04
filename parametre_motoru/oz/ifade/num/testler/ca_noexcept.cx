@@ -1,0 +1,15 @@
+int plain(int x) { return x + 1; }
+int safe(int x) noexcept { return x * 2; }
+struct S { int v; int get() const noexcept { return v; } int set(int x) { v = x; return v; } };
+int thrower(int x) { if (x > 5) throw x; return x; }
+int main() {
+  pi(noexcept(plain(1))); pi(noexcept(safe(1))); pi(noexcept(1 + 2));
+  S s; s.v = 3; pi(noexcept(s.get())); pi(noexcept(s.set(1)));
+  int (*pf)(int) noexcept = safe; pi(pf(21)); int (*pg)(int) = pf; pi(pg(4));
+  pi(noexcept(pf(1))); pi(noexcept(pg(1)));
+  auto lam = [](int x) noexcept { return x - 1; }; pi(noexcept(lam(3)));
+  auto lam2 = [](int x) { return x - 1; }; pi(noexcept(lam2(3)));
+  try { pi(thrower(2)); pi(thrower(9)); } catch (int e) { pi(e * 100); }
+  pi(safe(plain(2)));
+  return 0;
+}

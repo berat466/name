@@ -1,0 +1,16 @@
+; okunmadan once yazilmayan yazmac: kesin atama ispati BASARISIZ olmali, sifirlama korunmali
+func f(c) {
+    jz c, skip
+    mov v, 5
+skip:
+    add r, v, 1
+    ret r
+}
+func main() {
+    call a, f, 1
+    call b, f, 0
+    host puti, a
+    host putc, 10
+    host puti, b
+    host putc, 10
+}

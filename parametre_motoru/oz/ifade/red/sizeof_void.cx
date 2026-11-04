@@ -1,0 +1,2 @@
+// RED: E_SIZEOF
+int main() { return sizeof(void); }

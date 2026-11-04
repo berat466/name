@@ -1,0 +1,35 @@
+# ORNEK: 1'den 10'a kadar toplam, "55" ve satir sonu yazar.
+80 77 66 49      # "PMB1"
+0                # bayrak: 0 = ad bolumu yok
+16               # bellek: 16 sozcuk
+0                # giris fonksiyonu: 0
+0                # sabit havuzu: 0 sabit
+0                # veri: 0 sozcuk
+0                # bss: 0
+1                # fonksiyon sayisi: 1
+# --- fonksiyon 0 ---
+0 6 12           # parametre=0, yazmac=6, komut=12
+# komut 0:  ldi r0, 0        (r0 = toplam)
+1 0 z0
+# komut 1:  ldi r1, 1        (r1 = sayac)
+1 1 z1
+# komut 2:  ldi r2, 10       (r2 = sinir)
+1 2 z10
+# komut 3:  add r0, r0, r1
+3 0 0 1
+# komut 4:  addi r1, r1, 1
+41 1 1 z1
+# komut 5:  le r3, r1, r2    (r3 = r1 <= r2)
+17 3 1 2
+# komut 6:  jnz r3, -> komut 3   (goreli: hedef - simdiki = 3 - 6 = -3)
+33 3 z-3
+# komut 7:  mov r5, r0       (host penceresi r5'ten baslar; argumani r5'e koy)
+0 5 0
+# komut 8:  host puti, pencere r5   (host kimligi 1 = puti, taban yazmac 5)
+40 1 5
+# komut 9:  ldi r5, 10       (satir sonu karakteri)
+1 5 z10
+# komut 10: host putc, pencere r5   (host kimligi 0 = putc)
+40 0 5
+# komut 11: halt
+36

@@ -1,0 +1,109 @@
+V24 c=2 H=1024 tohum=1 gamma=4 lambda_V17=10 (4 cekirdek); TUM ogrenciler egitim-yalniz; n-gram sayimlari egitim (test_tv: egitim+dogrulama yalniz 137 yeniden uretimi icin)
+NG_AGIRLIK (EM, dogrulama, egitim sayimlari) bigram: a2=0.530 a1=0.465 a0=0.0050 ; trigram: a3=0.046 a2=0.483 a1=0.466 a0=0.0047
+NG|unigram|egitim(sayim kendini icerir)|CE=5.8496|PPL=347.11|top1=0.0485|top5=0.1755
+NG|unigram|egitim(LOO)|CE=5.8945|PPL=363.05|top1=0.0485|top5=0.1755
+NG|unigram|dogrulama|CE=5.6949|PPL=297.34|top1=0.0809|top5=0.2151
+NG|unigram|test(egitim sayimlari)|CE=5.6451|PPL=282.91|top1=0.0904|top5=0.2255
+NG|unigram|test(egitim+dogrulama sayimlari; V8 protokolu)|CE=5.6388|PPL=281.12|top1=0.0904|top5=0.2255
+NG|bigram|egitim(sayim kendini icerir)|CE=3.8238|PPL=45.78|top1=0.1895|top5=0.4662
+NG|bigram|egitim(LOO)|CE=5.1688|PPL=175.70|top1=0.1394|top5=0.3252
+NG|bigram|dogrulama|CE=5.0139|PPL=150.49|top1=0.1424|top5=0.3357
+NG|bigram|test(egitim sayimlari)|CE=4.9758|PPL=144.86|top1=0.1548|top5=0.3450
+NG|bigram|test(egitim+dogrulama sayimlari; V8 protokolu)|CE=4.9514|PPL=141.37|top1=0.1564|top5=0.3482
+NG|trigram|egitim(sayim kendini icerir)|CE=3.1046|PPL=22.30|top1=0.3231|top5=0.7160
+NG|trigram|egitim(LOO)|CE=5.1258|PPL=168.31|top1=0.1448|top5=0.3382
+NG|trigram|dogrulama|CE=4.9805|PPL=145.55|top1=0.1490|top5=0.3452
+NG|trigram|test(egitim sayimlari)|CE=4.9336|PPL=138.87|top1=0.1598|top5=0.3582
+NG|trigram|test(egitim+dogrulama sayimlari; V8 protokolu)|CE=4.9083|PPL=135.41|top1=0.1594|top5=0.3622
+KAPSAMA|dogrulama|n=4980|bigram baglami goruldu=1.0000|trigram baglami goruldu=0.6669|bigram (baglam,hedef) goruldu=0.6663|trigram (baglam,hedef) goruldu=0.2225
+KAPSAMA|test|n=4980|bigram baglami goruldu=1.0000|trigram baglami goruldu=0.6811|bigram (baglam,hedef) goruldu=0.6803|trigram (baglam,hedef) goruldu=0.2361
+GRUP|unigram|sik|n=2693|CE=4.1335|top1=0.1671|top5=0.4170
+GRUP|unigram|orta|n=1397|CE=6.6267|top1=0.0000|top5=0.0000
+GRUP|unigram|nadir|n=890|CE=8.6783|top1=0.0000|top5=0.0000
+BAGLAM|unigram|trigram baglami ikisi de gorulmedi|n=0|CE=0.0000|top1=0.0000
+BAGLAM|unigram|trigram baglami yalniz bigram goruldu|n=1588|CE=5.4888|top1=0.0743
+BAGLAM|unigram|trigram baglami GORULDU|n=3392|CE=5.7183|top1=0.0979
+GRUP|bigram|sik|n=2693|CE=3.5442|top1=0.2603|top5=0.5611
+GRUP|bigram|orta|n=1397|CE=5.6125|top1=0.0487|top5=0.1410
+GRUP|bigram|nadir|n=890|CE=8.3081|top1=0.0022|top5=0.0112
+BAGLAM|bigram|trigram baglami ikisi de gorulmedi|n=0|CE=0.0000|top1=0.0000
+BAGLAM|bigram|trigram baglami yalniz bigram goruldu|n=1588|CE=4.9508|top1=0.1574
+BAGLAM|bigram|trigram baglami GORULDU|n=3392|CE=4.9875|top1=0.1536
+GRUP|trigram|sik|n=2693|CE=3.5190|top1=0.2648|top5=0.5696
+GRUP|trigram|orta|n=1397|CE=5.5470|top1=0.0573|top5=0.1632
+GRUP|trigram|nadir|n=890|CE=8.2508|top1=0.0034|top5=0.0247
+BAGLAM|trigram|trigram baglami ikisi de gorulmedi|n=0|CE=0.0000|top1=0.0000
+BAGLAM|trigram|trigram baglami yalniz bigram goruldu|n=1588|CE=4.9454|top1=0.1568
+BAGLAM|trigram|trigram baglami GORULDU|n=3392|CE=4.9280|top1=0.1613
+OGRENCI|V17_Ridge_WA|lambda=10|alpha=0.2|T=0.01|egitim CE=5.1176 PPL=166.9 top1=0.2204 top5=0.3279|dogr CE=5.4179 PPL=225.4 top1=0.1492 top5=0.2787|test CE=5.3401 PPL=208.53 top1=0.1572 top5=0.2996|dogr-egitim CE=0.3003
+GRUP|V17_Ridge|sik|n=2693|CE=3.6300|top1=0.2640|top5=0.5176
+GRUP|V17_Ridge|orta|n=1397|CE=6.4528|top1=0.0515|top5=0.0673
+GRUP|V17_Ridge|nadir|n=890|CE=8.7679|top1=0.0000|top5=0.0045
+BAGLAM|V17_Ridge|trigram baglami ikisi de gorulmedi|n=0|CE=0.0000|top1=0.0000
+BAGLAM|V17_Ridge|trigram baglami yalniz bigram goruldu|n=1588|CE=5.2485|top1=0.1474
+BAGLAM|V17_Ridge|trigram baglami GORULDU|n=3392|CE=5.3829|top1=0.1619
+V20_ETA|0|val CE=5.4179
+V20_ETA|0.003|val CE=5.3776
+V20_ETA|0.005|val CE=5.3673
+V20_ETA|0.0075|val CE=5.3664
+V20_ETA|0.01|val CE=5.3705
+V20_secilen_eta=0.0075
+OGRENCI|V20_CE_duzeltme|lambda=10|alpha=0.25|T=0.01|egitim CE=4.6035 PPL=99.8 top1=0.2796 top5=0.4079|dogr CE=5.3664 PPL=214.1 top1=0.1432 top5=0.2890|test CE=5.3151 PPL=203.39 top1=0.1470 top5=0.3040|dogr-egitim CE=0.7629
+GRUP|V20|sik|n=2693|CE=3.6800|top1=0.2332|top5=0.5139
+GRUP|V20|orta|n=1397|CE=6.3409|top1=0.0680|top5=0.0866
+GRUP|V20|nadir|n=890|CE=8.6528|top1=0.0101|top5=0.0101
+BAGLAM|V20|trigram baglami ikisi de gorulmedi|n=0|CE=0.0000|top1=0.0000
+BAGLAM|V20|trigram baglami yalniz bigram goruldu|n=1588|CE=5.2413|top1=0.1348
+BAGLAM|V20|trigram baglami GORULDU|n=3392|CE=5.3497|top1=0.1527
+D_TEMEL ogretici (b=8, LOO) egitim CE=5.5523 (PPL 257.8)
+OGRENCI|V23_hedef_PPL200_kappa=0.000010|lambda=10|alpha=0.25|T=0.01|egitim CE=5.4075 PPL=223.1 top1=0.1646 top5=0.2754|dogr CE=5.4296 PPL=228.1 top1=0.1434 top5=0.2757|test CE=5.3523 PPL=211.08 top1=0.1554 top5=0.3006|dogr-egitim CE=0.0221
+OGRENCI|V23_hedef_PPL150_kappa=0.000080|lambda=10|alpha=0.25|T=0.01|egitim CE=5.4074 PPL=223.1 top1=0.1646 top5=0.2754|dogr CE=5.4296 PPL=228.1 top1=0.1434 top5=0.2757|test CE=5.3523 PPL=211.08 top1=0.1554 top5=0.3006|dogr-egitim CE=0.0222
+OGRENCI|V23_hedef_PPL100_kappa=0.000515|lambda=10|alpha=0.25|T=0.01|egitim CE=5.4072 PPL=223.0 top1=0.1646 top5=0.2754|dogr CE=5.4296 PPL=228.1 top1=0.1434 top5=0.2757|test CE=5.3522 PPL=211.07 top1=0.1554 top5=0.3006|dogr-egitim CE=0.0224
+GRUP|V23|sik|n=2693|CE=3.6415|top1=0.2610|top5=0.5228
+GRUP|V23|orta|n=1397|CE=6.4901|top1=0.0508|top5=0.0616
+GRUP|V23|nadir|n=890|CE=8.7424|top1=0.0000|top5=0.0034
+BAGLAM|V23|trigram baglami ikisi de gorulmedi|n=0|CE=0.0000|top1=0.0000
+BAGLAM|V23|trigram baglami yalniz bigram goruldu|n=1588|CE=5.2507|top1=0.1480
+BAGLAM|V23|trigram baglami GORULDU|n=3392|CE=5.3997|top1=0.1589
+D_FARK|hedef 200 vs 150|kappa 0.000010 vs 0.000080|||dQ||/||Q||=0.00027|||dW||/||W||=0.00022|||F dW||/||dQ||(aktarim)=2.1673|||F dW||/||F W||=0.00028
+D_FARK|hedef 200 vs 100|kappa 0.000010 vs 0.000515|||dQ||/||Q||=0.00191|||dW||/||W||=0.00083|||F dW||/||dQ||(aktarim)=0.9216|||F dW||/||F W||=0.00085
+D_FARK|hedef 150 vs 100|kappa 0.000080 vs 0.000515|||dQ||/||Q||=0.00164|||dW||/||W||=0.00073|||F dW||/||dQ||(aktarim)=0.9311|||F dW||/||F W||=0.00073
+OGRENCI|A_etiket_lam0.3|lambda=0.3|alpha=0.2|T=0.01|egitim CE=5.1108 PPL=165.8 top1=0.2219 top5=0.3290|dogr CE=5.4182 PPL=225.5 top1=0.1488 top5=0.2779|test CE=5.3398 PPL=208.48 top1=0.1566 top5=0.2998|dogr-egitim CE=0.3074
+DISTIL|A_etiket_lam0.3|Q=trigram egitim(kendini icerir)|rel_hata egitim/dogr/test=1.8694/2.2465/2.2397|KL(Q||ogrenci) 0.7732/0.7371/0.7285|Q'nun kendi CE 3.1046/4.9805/4.9336
+OGRENCI|B_Qtam_lam0.3|lambda=0.3|alpha=0.25|T=0.01|egitim CE=5.4714 PPL=237.8 top1=0.1524 top5=0.2591|dogr CE=5.4702 PPL=237.5 top1=0.1382 top5=0.2610|test CE=5.4026 PPL=221.99 top1=0.1448 top5=0.2817|dogr-egitim CE=-0.0012
+DISTIL|B_Qtam_lam0.3|Q=trigram tam|rel_hata egitim/dogr/test=0.5667/0.5853/0.5789|KL(Q||ogrenci) 0.7473/0.7029/0.6929|Q'nun kendi CE 3.1046/4.9805/4.9336
+W_NORM|lam=0.3|Q=tam|||WA||=1.9145|||WB||=0.5774|||WA-WB||/||WA||=0.8242
+OGRENCI|B_QLOO_lam0.3|lambda=0.3|alpha=0.25|T=0.01|egitim CE=5.5058 PPL=246.1 top1=0.1462 top5=0.2520|dogr CE=5.4758 PPL=238.8 top1=0.1394 top5=0.2608|test CE=5.4101 PPL=223.65 top1=0.1438 top5=0.2787|dogr-egitim CE=-0.0300
+DISTIL|B_QLOO_lam0.3|Q=trigram LOO|rel_hata egitim/dogr/test=0.6253/0.5882/0.5814|KL(Q||ogrenci) 0.7385/0.7037/0.6933|Q'nun kendi CE 5.1258/4.9805/4.9336
+W_NORM|lam=0.3|Q=LOO|||WA||=1.9145|||WB||=0.5695|||WA-WB||/||WA||=0.8658
+OGRENCI|A_etiket_lam10|lambda=10|alpha=0.2|T=0.01|egitim CE=5.1176 PPL=166.9 top1=0.2204 top5=0.3279|dogr CE=5.4179 PPL=225.4 top1=0.1492 top5=0.2787|test CE=5.3401 PPL=208.53 top1=0.1572 top5=0.2996|dogr-egitim CE=0.3003
+DISTIL|A_etiket_lam10|Q=trigram egitim(kendini icerir)|rel_hata egitim/dogr/test=1.8215/2.1826/2.1767|KL(Q||ogrenci) 0.7730/0.7366/0.7279|Q'nun kendi CE 3.1046/4.9805/4.9336
+OGRENCI|B_Qtam_lam10|lambda=10|alpha=0.25|T=0.01|egitim CE=5.4740 PPL=238.4 top1=0.1520 top5=0.2585|dogr CE=5.4712 PPL=237.7 top1=0.1380 top5=0.2608|test CE=5.4037 PPL=222.22 top1=0.1448 top5=0.2813|dogr-egitim CE=-0.0028
+DISTIL|B_Qtam_lam10|Q=trigram tam|rel_hata egitim/dogr/test=0.5668/0.5841/0.5777|KL(Q||ogrenci) 0.7480/0.7034/0.6933|Q'nun kendi CE 3.1046/4.9805/4.9336
+W_NORM|lam=10|Q=tam|||WA||=1.8355|||WB||=0.5533|||WA-WB||/||WA||=0.8243
+GRUP|B_Qtam|sik|n=2693|CE=3.7544|top1=0.2525|top5=0.5002
+GRUP|B_Qtam|orta|n=1397|CE=6.5712|top1=0.0293|top5=0.0387
+GRUP|B_Qtam|nadir|n=890|CE=8.5615|top1=0.0000|top5=0.0000
+BAGLAM|B_Qtam|trigram baglami ikisi de gorulmedi|n=0|CE=0.0000|top1=0.0000
+BAGLAM|B_Qtam|trigram baglami yalniz bigram goruldu|n=1588|CE=5.2581|top1=0.1455
+BAGLAM|B_Qtam|trigram baglami GORULDU|n=3392|CE=5.4718|top1=0.1445
+OGRENCI|B_QLOO_lam10|lambda=10|alpha=0.25|T=0.01|egitim CE=5.5077 PPL=246.6 top1=0.1459 top5=0.2517|dogr CE=5.4768 PPL=239.1 top1=0.1394 top5=0.2606|test CE=5.4111 PPL=223.87 top1=0.1438 top5=0.2783|dogr-egitim CE=-0.0310
+DISTIL|B_QLOO_lam10|Q=trigram LOO|rel_hata egitim/dogr/test=0.6254/0.5870/0.5801|KL(Q||ogrenci) 0.7393/0.7042/0.6937|Q'nun kendi CE 5.1258/4.9805/4.9336
+W_NORM|lam=10|Q=LOO|||WA||=1.8355|||WB||=0.5464|||WA-WB||/||WA||=0.8655
+OGRENCI|A_etiket_lam30|lambda=30|alpha=0.2|T=0.01|egitim CE=5.1308 PPL=169.2 top1=0.2185 top5=0.3258|dogr CE=5.4176 PPL=225.3 top1=0.1486 top5=0.2791|test CE=5.3406 PPL=208.64 top1=0.1564 top5=0.2988|dogr-egitim CE=0.2868
+DISTIL|A_etiket_lam30|Q=trigram egitim(kendini icerir)|rel_hata egitim/dogr/test=1.7384/2.0724/2.0681|KL(Q||ogrenci) 0.7728/0.7359/0.7269|Q'nun kendi CE 3.1046/4.9805/4.9336
+OGRENCI|B_Qtam_lam30|lambda=30|alpha=0.25|T=0.01|egitim CE=5.4789 PPL=239.6 top1=0.1513 top5=0.2572|dogr CE=5.4732 PPL=238.2 top1=0.1380 top5=0.2608|test CE=5.4056 PPL=222.65 top1=0.1446 top5=0.2799|dogr-egitim CE=-0.0058
+DISTIL|B_Qtam_lam30|Q=trigram tam|rel_hata egitim/dogr/test=0.5674/0.5825/0.5759|KL(Q||ogrenci) 0.7495/0.7045/0.6942|Q'nun kendi CE 3.1046/4.9805/4.9336
+W_NORM|lam=30|Q=tam|||WA||=1.7148|||WB||=0.5204|||WA-WB||/||WA||=0.8222
+OGRENCI|B_QLOO_lam30|lambda=30|alpha=0.25|T=0.01|egitim CE=5.5115 PPL=247.5 top1=0.1459 top5=0.2509|dogr CE=5.4787 PPL=239.5 top1=0.1392 top5=0.2604|test CE=5.4129 PPL=224.27 top1=0.1440 top5=0.2783|dogr-egitim CE=-0.0328
+DISTIL|B_QLOO_lam30|Q=trigram LOO|rel_hata egitim/dogr/test=0.6260/0.5853/0.5784|KL(Q||ogrenci) 0.7408/0.7053/0.6947|Q'nun kendi CE 5.1258/4.9805/4.9336
+W_NORM|lam=30|Q=LOO|||WA||=1.7148|||WB||=0.5140|||WA-WB||/||WA||=0.8627
+OGRENCI|A_etiket_lam300|lambda=300|alpha=0.2|T=0.01|egitim CE=5.2398 PPL=188.6 top1=0.2009 top5=0.3077|dogr CE=5.4224 PPL=226.4 top1=0.1476 top5=0.2771|test CE=5.3497 PPL=210.54 top1=0.1574 top5=0.2968|dogr-egitim CE=0.1826
+DISTIL|A_etiket_lam300|Q=trigram egitim(kendini icerir)|rel_hata egitim/dogr/test=1.2790/1.4706/1.4715|KL(Q||ogrenci) 0.7740/0.7340/0.7237|Q'nun kendi CE 3.1046/4.9805/4.9336
+OGRENCI|B_Qtam_lam300|lambda=300|alpha=0.25|T=0.01|egitim CE=5.5206 PPL=249.8 top1=0.1441 top5=0.2482|dogr CE=5.4915 PPL=242.6 top1=0.1363 top5=0.2578|test CE=5.4231 PPL=226.59 top1=0.1430 top5=0.2753|dogr-egitim CE=-0.0291
+DISTIL|B_Qtam_lam300|Q=trigram tam|rel_hata egitim/dogr/test=0.5846/0.5867/0.5796|KL(Q||ogrenci) 0.7627/0.7149/0.7034|Q'nun kendi CE 3.1046/4.9805/4.9336
+W_NORM|lam=300|Q=tam|||WA||=1.0533|||WB||=0.3470|||WA-WB||/||WA||=0.7934
+OGRENCI|B_QLOO_lam300|lambda=300|alpha=0.25|T=0.01|egitim CE=5.5447 PPL=255.9 top1=0.1390 top5=0.2440|dogr CE=5.4967 PPL=243.9 top1=0.1341 top5=0.2560|test CE=5.4295 PPL=228.04 top1=0.1416 top5=0.2739|dogr-egitim CE=-0.0480
+DISTIL|B_QLOO_lam300|Q=trigram LOO|rel_hata egitim/dogr/test=0.6410/0.5896/0.5822|KL(Q||ogrenci) 0.7544/0.7157/0.7040|Q'nun kendi CE 5.1258/4.9805/4.9336
+W_NORM|lam=300|Q=LOO|||WA||=1.0533|||WB||=0.3408|||WA-WB||/||WA||=0.8298
+SURE gram=1.66s TOPLAM=128.7s tepe_RAM=791MB

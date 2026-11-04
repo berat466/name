@@ -1,0 +1,2 @@
+// RED: E_UNDEF  -- tanimsiz static islev kullanildi
+static int f(int a); int main(){ return f(1); }

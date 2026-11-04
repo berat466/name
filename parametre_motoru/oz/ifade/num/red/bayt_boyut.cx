@@ -1,0 +1,2 @@
+// RED: E_REINTERP  -- farkli boyutlu tamsayi gorunumu (int* -> short*) yok
+int main() { int a = 1; short* p = reinterpret_cast<short*>(&a); return *p; }

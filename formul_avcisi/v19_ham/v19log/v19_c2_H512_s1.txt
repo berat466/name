@@ -1,0 +1,15 @@
+V19 c=2 H=512 tohum=1 gamma=1 lambda=1 alpha0=0.2 T0=0.01 V=2001 egitim=39840 dogrulama=4980 test=4980 (4 cekirdek)
+RIDGE sure=0.558s ; DUZELTME (gradyan+cozum) sure=3.408s ; ||F^T G||=2.847e+05 ; ||A^-1 F^T G||=344.2 ; ||W0||=10.72 ; egitim CE (ham sabit kalibrasyon a=0.2,T=0.01)=5.3565
+ETA TARAMASI: eta | dW/W0 orani | dogrulama kalibre CE | (alpha,T) | egitim CE (alt orneklem, ayni a,T) | not
+  eta=0 | 0 | 5.4459 | a=0.2 T=0.01 | 5.3543 | spec
+  eta=0.0001 | 0.003211 | 5.4445 | a=0.2 T=0.01 | 5.3505 | GENISLETME
+  eta=0.001 | 0.03211 | 5.4336 | a=0.2 T=0.01 | 5.3165 | GENISLETME
+  eta=0.01 | 0.3211 | 5.4027 | a=0.25 T=0.01 | 5.0782 | spec
+  eta=0.1 | 3.211 | 5.5457 | a=0.15 T=0.02 | 5.3245 | spec
+  eta=0.5 | 16.05 | 5.6060 | a=0.1 T=0.1 | 5.5156 | spec
+  eta=1 | 32.11 | 5.6162 | a=0.05 T=0.1 | 5.5935 | spec
+  eta=2 | 64.21 | 5.6144 | a=0.05 T=0.25 | 5.5876 | spec
+SECILEN eta=0.01 (dogrulama kalibre CE 5.4027; eta=0 referansi 5.4459)
+OZET|RIDGE_eta0|c=2|H=512|tohum=1|gam=1|lam=1|eta=0|alpha=0.2|T=0.01|val_CE_kalibre=5.4459|egitim_CE=5.3543|test_CE=5.3618|PPL=213.10|top1=0.1504|top5=0.2952|ridge_sn=0.131|duzeltme_sn=0.000|W1=0.001
+OZET|V19_duzeltmeli|c=2|H=512|tohum=1|gam=1|lam=1|eta=0.01|alpha=0.25|T=0.01|val_CE_kalibre=5.4027|egitim_CE=5.0782|test_CE=5.3098|PPL=202.31|top1=0.1542|top5=0.3046|ridge_sn=0.112|duzeltme_sn=3.731|W1=0.001
+TOPLAM sure=18.4s tepe_RAM=271MB

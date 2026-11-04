@@ -1,0 +1,6 @@
+alpha=+0.25 (varsayim: sik az buzulsun) lam0=85         fused 4.6342 vs sabit 4.6333 | fark 0.0009 +- 0.0006 (z=1.5)
+alpha=-0.25 lam0=85 (ters yon)                          fused 4.6320 vs sabit 4.6333 | fark -0.0013 +- 0.0008 (z=-1.7)
+alpha=-0.25 lam0=60                                     fused 4.6312 vs sabit 4.6333 | fark -0.0021 +- 0.0007 (z=-2.8)
+df sabit [371.4, 367.9, 1.0] toplam 740.3
+df alpha=+0.25 [390.1, 384.0, 1.0] toplam 775.2
+df alpha=-0.25 [351.4, 351.8, 1.0] toplam 704.2

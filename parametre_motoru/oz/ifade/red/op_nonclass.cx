@@ -1,0 +1,3 @@
+// RED: E_OP
+// GPP: red
+int operator+(int a, int b) { return a; } int main() { return 0; }

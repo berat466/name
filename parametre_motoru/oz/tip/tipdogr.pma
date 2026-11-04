@@ -1,0 +1,1111 @@
+; tipdogr.pma -- PROGRAM DUZEYI SAYISAL TUR DENETLEYICISI. Girdi (stdin, metin ama yalniz SAYILAR):
+;     "@@IMZA"    komut @@imza ciktisi (TYPES bolumunden: komut imzalari, turler, donusumler, host imzalari)
+;     "@@PROGRAM" PMB1 liste (pm liste bicimi)
+;     "@@TIPLER"  PMT1 tur notu: magic 1347441713, surum 1, bayrak, nkayit, kayit* ; kayit = islev_no donus_turu nyazmac tur_yazmac*nyazmac
+;                 tur kimligi: TYPES kimligi | 254 DIN (akis izlemeli: tur komutlar boyunca izlenir) | 255 DEVAM (cok sozcuklu degerin ust sozcugu)
+; cikis: "1"  ya da  "0 KOD islev komut". Tur kurallari TABLODAN gelir (komut imzalari, donusum matrisi, host imzalari); bu aracta komut adi/turu sabit kodlanmamistir.
+; Yazmac turleri: bildirilen tur sabittir; DIN yazmaclar icin her komutta akis duyarli tur izlenir (kosul yollari birlesince farkli tur -> BILINMEYEN, kullanimi reddedilir).
+memory 60000000
+entry main
+space IB 3000000
+space ZA 40000
+space PG 3000000
+space PT 400000
+space XOP 524288
+space XA 524288
+space XB 524288
+space XC 524288
+space FB 65536
+space FP 65536
+space FR 65536
+space FC 65536
+space PE 65536
+space PRT 65536
+space PNR 65536
+space TCL 256
+space TNW 256
+space TBT 256
+space TSG 256
+space ST 12000000
+space RC 524288
+space RT 4096
+space G 64
+
+func pdat(d) {
+    mov i, 0
+p1: add a, d, i
+    ld c, a, 0
+    jz c, p2
+    host putc, c
+    addi i, i, 1
+    jmp p1
+p2: ret 0
+}
+func die(code, f, pc) {
+    host putc, 48
+    host putc, 32
+    host puti, code
+    host putc, 32
+    host puti, f
+    host putc, 32
+    host puti, pc
+    host putc, 10
+    halt
+}
+func readall() {
+    mov n, 0
+r1: host ch, getc
+    lti z, ch, 0
+    jnz z, r2
+    gei z, n, 3000000
+    jz z, r1a
+    call x, die, 90, 0, 0
+r1a: add a, n, IB
+    st ch, a, 0
+    addi n, n, 1
+    jmp r1
+r2: ret n
+}
+func eol(p, n) {
+e1: ge z, p, n
+    jnz z, e2
+    add a, p, IB
+    ld c, a, 0
+    eqi z, c, 10
+    jnz z, e2
+    addi p, p, 1
+    jmp e1
+e2: ret p
+}
+func nums(s0, e0, d, cap) {
+    mov nt, 0
+    mov p, s0
+g1: ge z, p, e0
+    jnz z, g9
+    add a, p, IB
+    ld c, a, 0
+    lei z, c, 32
+    jz z, g2
+    addi p, p, 1
+    jmp g1
+g2: mov ng, 0
+    eqi z, c, 45
+    jz z, g3
+    mov ng, 1
+    addi p, p, 1
+g3: mov v, 0
+    mov nd, 0
+g4: ge z, p, e0
+    jnz z, g6
+    add a, p, IB
+    ld c, a, 0
+    lti z, c, 48
+    jnz z, g5
+    gti z, c, 57
+    jnz z, g5
+    muli v, v, 10
+    addi c, c, -48
+    add v, v, c
+    addi nd, nd, 1
+    addi p, p, 1
+    jmp g4
+g5: gti z, c, 32
+    jz z, g6
+    call x, die, 91, 0, 0
+g6: jnz nd, g7
+    call x, die, 92, 0, 0
+g7: jz ng, g8
+    neg v, v
+g8: ge z, nt, cap
+    jz z, g8a
+    call x, die, 93, 0, 0
+g8a: add a, nt, d
+    st v, a, 0
+    addi nt, nt, 1
+    jmp g1
+g9: ret nt
+}
+
+; ---------------- sozluk (IMZA) ----------------
+; ZA: [0]=nops ; op o: ZA[1+11*o ..] = id nk c0 c1 c2 akis hedef a b c kural ; sonra ntur, tur*5 (id sinif nsoz bit isaret), ndon, don*3 (kaynak hedef komut), nhost, host*5 (id donus a0 a1 a2)
+func opb(o) {
+    muli t, o, 11
+    addi t, t, 1
+    ret t
+}
+func loadimza(nz) {
+    ld nops, ZA, 0
+    st nops, G, 20
+    muli t, nops, 11
+    addi p, t, 1
+    st p, G, 21          ; ntur konumu
+    add a, p, ZA
+    ld nt, a, 0
+    mov i, 0
+l1: ge z, i, nt
+    jnz z, l2
+    muli t, i, 5
+    add t, t, p
+    addi t, t, 1
+    add a, t, ZA
+    ld id, a, 0
+    ld cl, a, 1
+    ld nw, a, 2
+    ld bt, a, 3
+    ld sg, a, 4
+    add b, id, TCL
+    st cl, b, 0
+    add b, id, TNW
+    st nw, b, 0
+    add b, id, TBT
+    st bt, b, 0
+    add b, id, TSG
+    st sg, b, 0
+    addi i, i, 1
+    jmp l1
+l2: muli t, nt, 5
+    add p, p, t
+    addi p, p, 1
+    st p, G, 22          ; ndon konumu
+    add a, p, ZA
+    ld nd, a, 0
+    muli t, nd, 3
+    add p, p, t
+    addi p, p, 1
+    st p, G, 23          ; nhost konumu
+    ret 0
+}
+; sinif/yardimcilar
+func is1w(t) {          ; 1 sozcuklu gecerli tur mu
+    lti z, t, 1
+    jnz z, no
+    gei z, t, 254
+    jnz z, no
+    add a, t, TNW
+    ld nw, a, 0
+    eqi z, nw, 1
+    ret z
+no: ret 0
+}
+; spec ile tur eslesmesi: spec, t, ta, tb, tc (a/b/c yuvalarinin gecerli turleri)
+func match(sp, t, ta, tb, tc) {
+    gti z, sp, 0
+    jz z, m1
+    eq z, t, sp
+    ret z
+m1: eqi z, sp, -4
+    jz z, m2
+    eq z, t, ta
+    ret z
+m2: eqi z, sp, -5
+    jz z, m3
+    eq z, t, tb
+    ret z
+m3: eqi z, sp, -6
+    jz z, m4
+    eq z, t, tc
+    ret z
+m4: eqi z, sp, -11
+    jz z, m4a
+    ; ANY128: 128 bitlik tamsayi (i128 | u128) -- cok sozcuklu, bas turu
+    lti z, t, 1
+    jnz z, mno
+    gei z, t, 254
+    jnz z, mno
+    add a, t, TCL
+    ld cl, a, 0
+    add a, t, TBT
+    ld bt, a, 0
+    eqi z, cl, 1
+    jz z, mno
+    eqi z, bt, 128
+    ret z
+m4a: call ok, is1w, t
+    jz ok, mno
+    add a, t, TCL
+    ld cl, a, 0
+    add a, t, TBT
+    ld bt, a, 0
+    eqi z, sp, -1
+    jz z, m5
+    gei z, cl, 1
+    jz z, mno
+    lei z, cl, 4
+    ret z
+m5: eqi z, sp, -2
+    jz z, m6
+    eqi z, cl, 5
+    ret z
+m6: eqi z, sp, -3
+    jz z, m7
+    ret 1
+m7: eqi z, sp, -8
+    jz z, m8
+    ret 1
+m8: eqi z, sp, -9
+    jz z, m9
+    gei z, cl, 1
+    jz z, mno
+    lei z, cl, 4
+    ret z
+m9: ; -7 ADDR ve -10 INT64: 64 bit tamsayi
+    eqi z, cl, 1
+    jz z, mno
+    eqi z, bt, 64
+    ret z
+mno: ret 0
+}
+; (kaynak tur, hedef tur) icin donusum kaydi komutu; yoksa -2 ; birden cok ise ilk
+func convfind(ft, tt, opid) {
+    ld p, G, 22
+    add a, p, ZA
+    ld nd, a, 0
+    mov i, 0
+c1: ge z, i, nd
+    jnz z, c9
+    muli t, i, 3
+    add t, t, p
+    addi t, t, 1
+    add a, t, ZA
+    ld f, a, 0
+    ld to, a, 1
+    ld o, a, 2
+    ne z, f, ft
+    jnz z, c2
+    ne z, to, tt
+    jnz z, c2
+    eq z, o, opid
+    jz z, c2
+    ret 1
+c2: addi i, i, 1
+    jmp c1
+c9: ret 0
+}
+
+; ---------------- program yukleme ----------------
+func loadprog(np) {
+    mov p, 4
+    ld nc, PG, 3
+    add p, p, nc
+    add a, p, PG
+    ld nd, a, 0
+    addi p, p, 1
+    add p, p, nd
+    addi p, p, 1             ; bss
+    add a, p, PG
+    ld nf, a, 0
+    addi p, p, 1
+    st nf, G, 12
+    mov f, 0
+    mov gi, 0
+f1: ge z, f, nf
+    jnz z, f9
+    add a, p, PG
+    ld npar, a, 0
+    ld nreg, a, 1
+    ld ncode, a, 2
+    addi p, p, 3
+    add b, f, FB
+    st gi, b, 0
+    add b, f, FP
+    st npar, b, 0
+    add b, f, FR
+    st nreg, b, 0
+    add b, f, FC
+    st ncode, b, 0
+    mov pc, 0
+f2: ge z, pc, ncode
+    jnz z, f8
+    add a, p, PG
+    ld op, a, 0
+    addi p, p, 1
+    call ob, opb, op
+    addi t, ob, 1
+    add t, t, ZA
+    ld nk, t, 0
+    add b, gi, XOP
+    st op, b, 0
+    mov va, 0
+    mov vb, 0
+    mov vc, 0
+    jz nk, f3
+    add a, p, PG
+    ld va, a, 0
+    eqi z, nk, 1
+    jnz z, f3
+    ld vb, a, 1
+    eqi z, nk, 2
+    jnz z, f3
+    ld vc, a, 2
+f3: add p, p, nk
+    add b, gi, XA
+    st va, b, 0
+    add b, gi, XB
+    st vb, b, 0
+    add b, gi, XC
+    st vc, b, 0
+    addi gi, gi, 1
+    addi pc, pc, 1
+    jmp f2
+f8: addi f, f, 1
+    jmp f1
+f9: ret 0
+}
+
+; ---------------- PMT1 ----------------
+func loadtip(nt) {
+    ld m, PT, 0
+    eqi z, m, 1347441713
+    jnz z, t0
+    call x, die, 1, 0, 0
+t0: ld v, PT, 1
+    eqi z, v, 1
+    jnz z, t1
+    call x, die, 2, 0, 0
+t1: ld nent, PT, 3
+    ld nf, G, 12
+    eq z, nent, nf
+    jnz z, t2
+    call x, die, 3, 0, 0
+t2: mov p, 4
+    mov k, 0
+t3: ge z, k, nent
+    jnz z, t9
+    add a, p, PT
+    ld fi, a, 0
+    ld rt, a, 1
+    ld nr, a, 2
+    ne z, fi, k
+    jz z, t4
+    call x, die, 4, fi, 0
+t4: add b, fi, FR
+    ld pr, b, 0
+    eq z, pr, nr
+    jnz z, t5
+    call x, die, 5, fi, 0
+t5: addi t, p, 3
+    add b, fi, PE
+    st t, b, 0
+    add b, fi, PRT
+    st rt, b, 0
+    add b, fi, PNR
+    st nr, b, 0
+    addi p, p, 3
+    add p, p, nr
+    addi k, k, 1
+    jmp t3
+t9: ret 0
+}
+; islev f yazmac r bildirilen turu
+func rtype(f, r) {
+    add b, f, PE
+    ld pe, b, 0
+    add pe, pe, r
+    add a, pe, PT
+    ld t, a, 0
+    ret t
+}
+; her islevde bildirilen turleri dogrula: gecerli kimlik, cok sozcuklu deger ve DEVAM tutarliligi, parametre/donus kurallari
+func checkdecl() {
+    ld nf, G, 12
+    mov f, 0
+d1: ge z, f, nf
+    jnz z, d9
+    add b, f, PNR
+    ld nr, b, 0
+    add b, f, FP
+    ld npar, b, 0
+    mov r, 0
+d2: ge z, r, nr
+    jnz z, d6
+    call t, rtype, f, r
+    eqi z, t, 255
+    jnz z, d5
+    eqi z, t, 254
+    jnz z, d3
+    lti z, t, 1
+    jnz z, d2bad
+    gei z, t, 254
+    jnz z, d2bad
+    add a, t, TNW
+    ld nw, a, 0
+    jnz nw, d2ok
+d2bad: call x, die, 6, f, r
+d2ok: mov k, 1
+d2c: ge z, k, nw
+    jnz z, d3
+    add q, r, k
+    ge z, q, nr
+    jz z, d2d
+    call x, die, 7, f, r
+d2d: call t2, rtype, f, q
+    eqi z, t2, 255
+    jnz z, d2e
+    call x, die, 7, f, r
+d2e: addi k, k, 1
+    jmp d2c
+d3: addi r, r, 1
+    jmp d2
+d5: ; DEVAM: oncesi cok sozcuklu bir bas tarafindan kapsanmali
+    jnz r, d5a
+    call x, die, 7, f, r
+d5a: addi q, r, -1
+    mov covered, 0
+d5b: lti z, q, 0
+    jnz z, d5e
+    call t2, rtype, f, q
+    eqi z, t2, 255
+    jz z, d5c
+    addi q, q, -1
+    jmp d5b
+d5c: lti z, t2, 1
+    jnz z, d5e
+    gei z, t2, 254
+    jnz z, d5e
+    add a, t2, TNW
+    ld nw2, a, 0
+    sub dd, r, q
+    lt z, dd, nw2
+    jz z, d5e
+    mov covered, 1
+d5e: jnz covered, d3
+    call x, die, 7, f, r
+d6: add b, f, PRT
+    ld rt, b, 0
+    jz rt, d8
+    lti z, rt, 1
+    jnz z, d6bad
+    gei z, rt, 254
+    jnz z, d6bad
+    add a, rt, TNW
+    ld nw, a, 0
+    jnz nw, d6ok
+d6bad: call x, die, 10, f, 0
+d6ok: ; cok sozcuklu donus: deger cagrilanin 0..nw-1 yazmaclarinda (giris-cikis blogu) birakilir -> bu yazmaclar donus turuyle bildirilmis olmali
+    eqi z, nw, 1
+    jnz z, d8
+    jz npar, d6bad
+    call t0, rtype, f, 0
+    ne z, t0, rt
+    jz z, d8
+    call x, die, 10, f, 0
+d8: addi f, f, 1
+    jmp d1
+d9: ret 0
+}
+
+; ---------------- akis duyarli turler ----------------
+; durum: ST[(pc*nregs)+r] ; 0 = ulasilmadi/atanmadi, 253 = BILINMEYEN
+func stget(pc, nr, r) {
+    mul t, pc, nr
+    add t, t, r
+    add a, t, ST
+    ld v, a, 0
+    ret v
+}
+; hedef komuta durum yay (birlestir); degisti ise G[30]=1
+func prop(src, dst, nr) {
+    mov changed, 0
+    mul sb, src, nr
+    mul db, dst, nr
+    add rc, dst, RC
+    ld rr, rc, 0
+    mov r, 0
+q1: ge z, r, nr
+    jnz z, q9
+    add a, sb, r
+    add a, a, ST
+    ld sv, a, 0
+    add b, db, r
+    add b, b, ST
+    ld dv, b, 0
+    jnz rr, q2
+    ; hedef henuz ulasilmadi: kopyala
+    st sv, b, 0
+    ne z, sv, dv
+    add changed, changed, z
+    jmp q8
+q2: eq z, sv, dv
+    jnz z, q8
+    eqi z, dv, 253
+    jnz z, q8
+    mov nv, 253
+    st nv, b, 0
+    addi changed, changed, 1
+q8: addi r, r, 1
+    jmp q1
+q9: eqi z, rr, 0
+    jz z, q10
+    add rc, dst, RC
+    mov one, 1
+    st one, rc, 0
+    addi changed, changed, 1
+q10: ret changed
+}
+; yazmac turu: bildirilen (DIN degilse) ya da durumdan
+func curtype(f, nr, pc, r) {
+    call t, rtype, f, r
+    eqi z, t, 254
+    jz z, ct1
+    call v, stget, pc, nr, r
+    ret v
+ct1: ret t
+}
+
+; tek komutun gecis ve denetimi. md2 0: yalniz gecis (durum guncelle, denetleme yok) ; md2 1: denetle. donus: yok. Durum ST[(pc+1) ...] degil: ayni satirda yerinde guncellenir; cagiran kopyalar.
+func step(f, nr, pc, gi, md2, nrs0) {
+    add b, gi, XOP
+    ld op, b, 0
+    add b, gi, XA
+    ld o0, b, 0
+    add b, gi, XB
+    ld o1, b, 0
+    add b, gi, XC
+    ld o2, b, 0
+    call ob, opb, op
+    addi t, ob, 2
+    add t, t, ZA
+    ld c0, t, 0
+    ld c1, t, 1
+    ld c2, t, 2
+    ld fl, t, 3
+    ld sa, t, 5
+    ld sb, t, 6
+    ld sc, t, 7
+    ld rk, t, 8
+    eqi z, sa, -99
+    jz z, s0
+    ; imzasiz: ozel komutlar (CALL / RET / HALT / HOST) ya da reddet
+    eqi z, c0, 70
+    jnz z, scall
+    eqi z, c0, 104
+    jnz z, shost
+    eqi z, fl, 1
+    jz z, s0a
+    ; RET / HALT
+    eqi z, c0, 115
+    jz z, sret_done
+    jz md2, sret_done
+    call ty, curtype, f, nr, pc, o0
+    add b, f, PRT
+    ld rt, b, 0
+    jz rt, sret_done
+    eq z, ty, rt
+    jnz z, sret_done
+    call x, die, 26, f, pc
+sret_done: ret 0
+s0a: jz md2, s0b
+    call x, die, 20, f, pc
+s0b: ret 0
+s0: ; operand turleri: yuva basina (a,b,c) ; kaynaklar once
+    mov ta, 0
+    mov tb, 0
+    mov tc, 0
+    ; yuva turleri (kaynak ise mevcut tur; hedef icin 0)
+    call kk, isreg_src, c0
+    jz kk, s1
+    call ta, curtype, f, nr, pc, o0
+s1: call kk, isreg_src, c1
+    jz kk, s2
+    call tb, curtype, f, nr, pc, o1
+s2: call kk, isreg_src, c2
+    jz kk, s3
+    call tc, curtype, f, nr, pc, o2
+s3: ; kaynak denetimi
+    jz md2, s6
+    call kd, isdst, c0
+    jnz kd, s4
+    call kk, isreg_src, c0
+    jz kk, s4
+    call ok, matchslot, sa, ta, ta, tb, tc
+    jnz ok, s4
+    call x, die, 21, f, pc
+s4: call kd, isdst, c1
+    jnz kd, s5
+    call kk, isreg_src, c1
+    jz kk, s5
+    call ok, matchslot, sb, tb, ta, tb, tc
+    jnz ok, s5
+    call x, die, 21, f, pc
+s5: call kk, isreg_src, c2
+    jz kk, s6
+    call ok, matchslot, sc, tc, ta, tb, tc
+    jnz ok, s6
+    call x, die, 21, f, pc
+s6: ; hedef (kind d/Q/O) yuvasi: yalniz 0. yuvada
+    call kd, isdst, c0
+    jz kd, sdone
+    ; hedef turu
+    mov rt, 0
+    gti z, sa, 0
+    jz z, d_a
+    mov rt, sa
+    jmp d_chk
+d_a: eqi z, sa, -4
+    jz z, d_b
+    mov rt, ta
+    jmp d_chk
+d_b: eqi z, sa, -5
+    jz z, d_c
+    mov rt, tb
+    jmp d_chk
+d_c: eqi z, sa, -6
+    jz z, d_d
+    mov rt, tc
+    jmp d_chk
+d_d: eqi z, sa, -9
+    jz z, d_free
+    mov rt, 0           ; INTDST: bildirilen tur tamsayi benzeri olmali; DIN ise i64
+    jmp d_chk
+d_free: mov rt, 0
+d_chk: call dt, rtype, f, o0
+    eqi z, dt, 254
+    jnz z, d_dyn
+    ; bildirilen hedef
+    jz md2, d_rule
+    jz rt, d_cls
+    eq z, rt, dt
+    jnz z, d_rule
+    call x, die, 22, f, pc
+d_cls: ; serbest/sinif hedef: bildirilen tur sinif kuralini saglamali
+    call ok, matchslot, sa, dt, dt, tb, tc
+    jnz ok, d_rule
+    call x, die, 22, f, pc
+d_dyn: ; DIN hedef: durum guncelle
+    jnz rt, d_set
+    eqi z, sa, -9
+    jz z, d_unk
+    call rt, i64id, 0
+    jmp d_set
+d_unk: mov rt, 253
+d_set: mul t, pc, nr
+    add t, t, o0
+    add a, t, ST
+    st rt, a, 0
+    mov dt, rt
+d_rule: ; donusum kurali
+    eqi z, rk, 1
+    jz z, sdone
+    jz md2, sdone
+    mov want, op
+    eqi z, sa, -8
+    jz z, d_r2
+    mov want, -1
+d_r2: call ok, convfind, tb, dt, want
+    jnz ok, sdone
+    call x, die, 23, f, pc
+sdone: ret 0
+scall: ; CALL F, b : kd = islev, blok tabani
+    jz md2, scallg
+    ld ncs, G, 12
+    lti z, o0, 0
+    jnz z, scbad
+    ge z, o0, ncs
+    jnz z, scbad
+    jmp scok
+scbad: call x, die, 28, f, pc
+scok: add b, o0, FP
+    ld cnp, b, 0
+    mov i, 0
+sc1: ge z, i, cnp
+    jnz z, scg
+    add r, o1, i
+    call at, curtype, f, nr, pc, r
+    call ct, rtype, o0, i
+    eq z, at, ct
+    jnz z, sc2
+    call x, die, 24, f, pc
+sc2: addi i, i, 1
+    jmp sc1
+scg: ; calli (3. yuva yazmac): islev indeksi yazmaci tamsayi olmali
+    eqi z, c2, 114
+    jz z, scallg
+    jz md2, scallg
+    call at2, curtype, f, nr, pc, o2
+    mov sp1, -1
+    call ok, matchslot, sp1, at2, 0, 0, 0
+    jnz ok, scallg
+    call x, die, 21, f, pc
+scallg: eqi z, fl, 1
+    jz z, scallr
+    ; tcall (akis durur): hedefin donus turu bu islevin donus turuyle ayni olmali
+    jz md2, sdone
+    add b, o0, PRT
+    ld crt, b, 0
+    add b, f, PRT
+    ld rt, b, 0
+    eq z, crt, rt
+    jnz z, sdone
+    call x, die, 26, f, pc
+scallr: ; sonuc turu
+    add b, o0, PRT
+    ld crt, b, 0
+    jz crt, sdone
+    call dt, rtype, f, o1
+    eqi z, dt, 254
+    jz z, sc3
+    mul t, pc, nr
+    add t, t, o1
+    add a, t, ST
+    st crt, a, 0
+    ; cok sozcuklu donus: DEVAM sozcukleri da (in-out blok)
+    ret 0
+sc3: jz md2, sdone
+    eq z, dt, crt
+    jnz z, sdone
+    call x, die, 25, f, pc
+shost: ; HOST h, b : h host kimligi (sabit), b arguman blogu ; imza TYPES HOSTSIG kayitlarindan
+    call hp, hostfind, o0
+    gei z, hp, 0
+    jnz z, sh1
+    jz md2, sh0
+    call x, die, 27, f, pc
+sh0: ret 0
+sh1: add a, hp, ZA
+    ld ret_s, a, 0
+    mov i, 0
+sh2: gei z, i, 3
+    jnz z, sh4
+    addi t, i, 1
+    add a, hp, t
+    add a, a, ZA
+    ld sp3, a, 0
+    jz sp3, sh3
+    jz md2, sh3
+    add r, o1, i
+    call at, curtype, f, nr, pc, r
+    call ok, matchslot, sp3, at, 0, 0, 0
+    jnz ok, sh3
+    call x, die, 27, f, pc
+sh3: addi i, i, 1
+    jmp sh2
+sh4: jz ret_s, sh0
+    call dt, rtype, f, o1
+    eqi z, dt, 254
+    jz z, sh5
+    mul t, pc, nr
+    add t, t, o1
+    add a, t, ST
+    st ret_s, a, 0
+    ret 0
+sh5: jz md2, sh0
+    gti z, ret_s, 0
+    jz z, sh6
+    eq z, dt, ret_s
+    jnz z, sh0
+    call x, die, 27, f, pc
+sh6: call ok, matchslot, ret_s, dt, 0, 0, 0
+    jnz ok, sh0
+    call x, die, 27, f, pc
+    ret 0
+}
+; host kimligi h icin HOSTSIG kaydi: ZA konumu (ret_s konumu) ya da -1
+func hostfind(h) {
+    ld p, G, 23
+    add a, p, ZA
+    ld nh, a, 0
+    mov i, 0
+hf1: ge z, i, nh
+    jnz z, hf9
+    muli t, i, 5
+    add t, t, p
+    addi t, t, 1
+    add a, t, ZA
+    ld id, a, 0
+    eq z, id, h
+    jz z, hf2
+    addi t, t, 1
+    ret t
+hf2: addi i, i, 1
+    jmp hf1
+hf9: ret -1
+}
+func isdst(c) {
+    eqi z, c, 100
+    jnz z, y
+    eqi z, c, 81
+    jnz z, y
+    eqi z, c, 79
+    jnz z, y
+    ret 0
+y: ret 1
+}
+func isreg_src(c) {
+    eqi z, c, 113
+    jnz z, y
+    eqi z, c, 111
+    jnz z, y
+    eqi z, c, 114
+    jnz z, y
+    eqi z, c, 102
+    jnz z, y
+    eqi z, c, 115
+    jnz z, y
+    ret 0
+y: ret 1
+}
+func matchslot(sp, t, ta, tb, tc) {
+    jnz sp, ms1
+    ret 1
+ms1: eqi z, t, 253
+    jz z, ms2
+    ret 0
+ms2: call v, match, sp, t, ta, tb, tc
+    ret v
+}
+func i64id(x) {
+    mov i, 1
+i1: gei z, i, 254
+    jnz z, i9
+    add a, i, TCL
+    ld c, a, 0
+    eqi z, c, 1
+    jz z, i2
+    add a, i, TBT
+    ld b, a, 0
+    eqi z, b, 64
+    jz z, i2
+    add a, i, TSG
+    ld s, a, 0
+    eqi z, s, 1
+    jz z, i2
+    ret i
+i2: addi i, i, 1
+    jmp i1
+i9: ret 0
+}
+
+func main() {
+    call n, readall
+    mov p, 0
+    mov zs, -1
+    mov ze, n
+    mov ps, -1
+    mov pe, n
+    mov ts, -1
+    mov te, n
+    mov cur, 0
+m1: ge z, p, n
+    jnz z, m9
+    call e, eol, p, n
+    add a, p, IB
+    ld c0, a, 0
+    eqi z, c0, 64
+    jz z, mnx
+    addi a, p, 2
+    add a, a, IB
+    ld c2, a, 0
+    ; bolum bitisi onceki bolumun sonu
+    eqi z, cur, 1
+    jz z, mb1
+    mov ze, p
+mb1: eqi z, cur, 2
+    jz z, mb2
+    mov pe, p
+mb2: eqi z, cur, 3
+    jz z, mb3
+    mov te, p
+mb3: eqi z, c2, 73
+    jz z, mc1
+    addi zs, e, 1
+    mov cur, 1
+    jmp mnx
+mc1: eqi z, c2, 80
+    jz z, mc2
+    addi ps, e, 1
+    mov cur, 2
+    jmp mnx
+mc2: eqi z, c2, 84
+    jz z, mnx
+    addi ts, e, 1
+    mov cur, 3
+mnx: addi p, e, 1
+    jmp m1
+m9: gei z, zs, 0
+    jnz z, ok1
+    call x, die, 95, 0, 0
+ok1: gei z, ps, 0
+    jnz z, ok2
+    call x, die, 96, 0, 0
+ok2: gei z, ts, 0
+    jnz z, ok3
+    call x, die, 97, 0, 0
+ok3: call nz, nums, zs, ze, ZA, 40000
+    call x, loadimza, nz
+    call np, nums, ps, pe, PG, 3000000
+    call x, loadprog, np
+    call nt, nums, ts, te, PT, 400000
+    call x, loadtip, nt
+    call x, checkdecl
+    call x, analyze
+    host putc, 49
+    host putc, 10
+    ret 0
+}
+
+; her islev: akis izle + denetle
+func analyze() {
+    ld nf, G, 12
+    mov f, 0
+a1: ge z, f, nf
+    jnz z, a9
+    add b, f, FB
+    ld base, b, 0
+    add b, f, FR
+    ld nr, b, 0
+    add b, f, FC
+    ld nc, b, 0
+    mul t, nc, nr
+    gti z, t, 12000000
+    jz z, a1a
+    call x, die, 40, f, 0
+a1a: ; durum dizisini temizle
+    mov i, 0
+a2: ge z, i, nc
+    jnz z, a3
+    add a, i, RC
+    mov zr, 0
+    st zr, a, 0
+    addi i, i, 1
+    jmp a2
+a3: mul t, nc, nr
+    mov i, 0
+a3a: ge z, i, t
+    jnz z, a4
+    add a, i, ST
+    mov zr, 0
+    st zr, a, 0
+    addi i, i, 1
+    jmp a3a
+a4: ; giris durumu: pc 0
+    jz nc, a8
+    mov r, 0
+a4a: ge z, r, nr
+    jnz z, a4c
+    call tt, rtype, f, r
+    eqi z, tt, 254
+    jz z, a4b
+    mov tt, 253
+a4b: add a, r, ST
+    st tt, a, 0
+    addi r, r, 1
+    jmp a4a
+a4c: mov one, 1
+    st one, RC, 0
+    ; sabit noktaya kadar yay
+a5: mov chg, 0
+    mov pc, 0
+a6: ge z, pc, nc
+    jnz z, a7
+    add a, pc, RC
+    ld rr, a, 0
+    jz rr, a6n
+    call x, flowstep, f, nr, nc, pc, base, 0
+    add chg, chg, x
+a6n: addi pc, pc, 1
+    jmp a6
+a7: jnz chg, a5
+    ; denetim gecisi
+    mov pc, 0
+a7a: ge z, pc, nc
+    jnz z, a8
+    add a, pc, RC
+    ld rr, a, 0
+    jz rr, a7n
+    call x, flowstep, f, nr, nc, pc, base, 1
+a7n: addi pc, pc, 1
+    jmp a7a
+a8: addi f, f, 1
+    jmp a1
+a9: ret 0
+}
+; pc komutunu isle (md2), durumu ardillara yay; degisim sayisi
+func flowstep(f, nr, nc, pc, base, md2) {
+    ; satirin ust kopyasini calisma satirina al: step durumu yerinde gunceller (hedef yazmac), bu yuzden once kopyala
+    add gi, base, pc
+    mul sb0, pc, nr
+    ; gecici kopya WR'ye
+    mov r, 0
+w1: ge z, r, nr
+    jnz z, w2
+    add a, sb0, r
+    add a, a, ST
+    ld v, a, 0
+    add b, r, RT
+    st v, b, 0
+    addi r, r, 1
+    jmp w1
+w2: call x, step, f, nr, pc, gi, md2, 0
+    ; yerinde guncellenen satiri ardillara yaymak icin: pc satiri guncellendi (hedef). Yayilim sonraki komut/hedefe
+    add b, gi, XOP
+    ld op, b, 0
+    call ob, opb, op
+    addi t, ob, 5
+    add t, t, ZA
+    ld fl, t, 0
+    ld tg, t, 1
+    mov chg, 0
+    ; jtab (akis 4): ardiller ip+1 .. ip+1+n (n = tg yuvasindaki anlik)
+    eqi z, fl, 4
+    jz z, nofl4
+    add b, gi, XA
+    jz tg, j4a
+    add b, gi, XB
+    eqi z, tg, 1
+    jnz z, j4a
+    add b, gi, XC
+j4a: ld nn, b, 0
+    mov ti, 0
+j4l: gt z, ti, nn
+    jnz z, restore
+    add np, pc, 1
+    add np, np, ti
+    ge z, np, nc
+    jnz z, restore
+    call c1, prop, pc, np, nr
+    add chg, chg, c1
+    addi ti, ti, 1
+    jmp j4l
+nofl4: ; ardil: dusme (akis 0 ya da 3) 
+    eqi z, fl, 0
+    jnz z, fall
+    eqi z, fl, 3
+    jnz z, fall
+    jmp jt
+fall: addi np, pc, 1
+    ge z, np, nc
+    jnz z, jt
+    call c1, prop, pc, np, nr
+    add chg, chg, c1
+jt: ; ziplama hedefi
+    eqi z, fl, 2
+    jnz z, dojump
+    eqi z, fl, 3
+    jnz z, dojump
+    jmp restore
+dojump: add b, gi, XA
+    jz tg, dj1
+    add b, gi, XB
+    eqi z, tg, 1
+    jnz z, dj1
+    add b, gi, XC
+dj1: ld tl, b, 0
+    lti z, tl, 0
+    jnz z, restore
+    ge z, tl, nc
+    jnz z, restore
+    call c2, prop, pc, tl, nr
+    add chg, chg, c2
+restore: ; satiri girisine geri yukle (analiz idempotent kalsin)
+    mov r, 0
+w3: ge z, r, nr
+    jnz z, w4
+    add b, r, RT
+    ld v, b, 0
+    add a, sb0, r
+    add a, a, ST
+    st v, a, 0
+    addi r, r, 1
+    jmp w3
+w4: ret chg
+}

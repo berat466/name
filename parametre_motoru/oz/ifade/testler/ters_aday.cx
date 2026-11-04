@@ -1,0 +1,12 @@
+// C++20 yeniden yazim: ters cevrilmis == / != adaylari ve karisik tur karsilastirmasi
+struct Id { int v; bool operator==(int o) const { return v == o; } };
+struct Key { int k; bool operator==(const Key& o) const { return k == o.k; } };
+struct Num { long long n; auto operator<=>(const Num&) const = default; };
+int main() {
+  Id a = {5};
+  pi(a == 5); pi(5 == a); pi(a != 5); pi(5 != a); pi(a == 6); pi(6 == a); pi(a != 6); pi(6 != a);
+  Key k1 = {1}, k2 = {1}, k3 = {2};
+  pi(k1 == k2); pi(k1 != k3); pi(k1 == k3);
+  Num x = {5}, y = {7}; pi(x < y); pi(y < x); pi(x >= y);
+  return 0;
+}

@@ -1,0 +1,51 @@
+== REFERANS (Python kopyasi, ORTAK rho=0, alpha_son=0): val CE 4.8527 (okuma a=0.85 eps=1e-05)
+   train CE(okuma sabit) 3.7918 ; val 4.8527 ; test 4.8104
+
+== 1) BLOK KATKILARI (ayni okuma secimi val ile, her satir kendi okumasini secer)
+   yalniz C (kelime+cift+sabit), F yok train CE 3.8532 | val CE 4.9552 | test CE 4.8971  (okuma a=0.97 eps=0.0001)
+   C + F (lamF=3000)  [model]         train CE 3.7918 | val CE 4.8527 | test CE 4.8104  (okuma a=0.85 eps=1e-05)
+   C + F (lamF=300)                   train CE 3.8380 | val CE 4.8836 | test CE 4.8414  (okuma a=0.8 eps=1e-05)
+   C + F (lamF=1000)                  train CE 3.7889 | val CE 4.8569 | test CE 4.8146  (okuma a=0.85 eps=1e-05)
+   C + F (lamF=10000)                 train CE 3.7611 | val CE 4.8673 | test CE 4.8252  (okuma a=0.9 eps=1e-05)
+   C + F (lamF=30000)                 train CE 3.7752 | val CE 4.8942 | test CE 4.8510  (okuma a=0.9 eps=1e-05)
+   C + F (lamF=1e-3 ~ cezasiz)        train CE 4.0506 | val CE 5.1198 | test CE 5.0716  (okuma a=0.7 eps=0.0001)
+   yalniz F + sabit (C yok), lamF=3000 train CE 4.8085 | val CE 5.0225 | test CE 4.9737  (okuma a=0.93 eps=1e-05)
+   yalniz F + sabit (C yok), lamF=300 train CE 4.5607 | val CE 4.9930 | test CE 4.9455  (okuma a=0.85 eps=1e-05)
+
+== 2) C BLOGU: lam_C=85 ile buzulme faktoru n/(n+85) (kimlik sutunlari)
+   kelime slotu: 2001 slot ; sayim medyan 4 ; buzulme faktoru <0.1: 1479 (73.9%), <0.3: 1847 (92.3%), >0.5: 74 (3.7%) ; etkin df = 205.7 / 2001
+   cift slotu: 2000 slot ; sayim medyan 5 ; buzulme faktoru <0.1: 1540 (77.0%), <0.3: 1942 (97.1%), >0.5: 11 (0.5%) ; etkin df = 173.6 / 2000
+   egitim satirlari: kelime slotu faktoru medyan 0.638 ; satirlarin 30.0%'inde <0.3
+   cift slotu olan satirlar 46.2%; bunlarda cift faktoru medyan 0.133, <0.3 olan 78.1%
+   cift slotlari: sayim dagilimi min 3 medyan 5 maks 184 ; sayim<=3: 347
+
+== 3) F BLOGU (C ve sabit kosullu) SCHUR SPEKTRUMU
+   iz(S)/iz(AFF) = 0.5232 -> F enerjisinin 47.7%'i C+sabit ile ACIKLANIYOR, 52.3% F'e ozgu
+   df(lam=300) = 101.2 / 512 ; ezilen (ev<lam) yon sayisi 441
+   df(lam=3000) = 30.7 / 512 ; ezilen (ev<lam) yon sayisi 496
+   df(lam=30000) = 7.0 / 512 ; ezilen (ev<lam) yon sayisi 509
+   ozdeger: maks 5.925e+04 medyan 25.2 min 0.174 ; rank(>1e-6 maks)=512 ; rank(>1e-3)=174 ; PR=12.17 ; kosul sayisi S+3000I = 20.8 ; S kosul 3.4e+05
+   A_CC+85I kosul sayisi 475
+
+== 4) HEDEF SINYALI (C-sonrasi artik RHS) Schur ana bilesenlerinde
+   ilk 10 PC: OLS sinyal enerjisi payi 0.255
+   ilk 35 PC: OLS sinyal enerjisi payi 0.348
+   ilk 100 PC: OLS sinyal enerjisi payi 0.472
+   ilk 200 PC: OLS sinyal enerjisi payi 0.595
+   ilk 300 PC: OLS sinyal enerjisi payi 0.712
+   egitim ve dogrulama sinyal vektorlerinin kosinus benzerligi (yon grubu icin; 1=ayni yon, 0=iliskisiz):
+     PC   0- 10 : cos = 0.887 ; egitim sinyal enerjisi payi 0.255
+     PC  10- 35 : cos = 0.373 ; egitim sinyal enerjisi payi 0.093
+     PC  35-100 : cos = 0.267 ; egitim sinyal enerjisi payi 0.124
+     PC 100-200 : cos = 0.095 ; egitim sinyal enerjisi payi 0.123
+     PC 200-300 : cos = 0.048 ; egitim sinyal enerjisi payi 0.117
+     PC 300-512 : cos = 0.039 ; egitim sinyal enerjisi payi 0.288
+
+== 5) RIDGE DUYARLILIGI: PC grubu bazinda lambda carpani (val CE, okuma sabit a=0.85 eps=1e-05)
+   taban 4.8527
+   ilk  35 PC lam=3000 sabit, sonrakilerin lam carpani -> x1: 4.8527 | x0.3: 4.8601 | x0.1: 4.8907 | x0.03: 4.9463 | x0.01: 5.0087
+   ilk 100 PC lam=3000 sabit, sonrakilerin lam carpani -> x1: 4.8527 | x0.3: 4.8542 | x0.1: 4.8705 | x0.03: 4.9261 | x0.01: 4.9964
+   ilk 200 PC lam=3000 sabit, sonrakilerin lam carpani -> x1: 4.8527 | x0.3: 4.8535 | x0.1: 4.8579 | x0.03: 4.8821 | x0.01: 4.9405
+   yalniz ilk 35 PC (kuyruk tamamen kapali): val CE 4.8577
+   yalniz ilk 100 PC (kuyruk tamamen kapali): val CE 4.8528
+   yalniz ilk 200 PC (kuyruk tamamen kapali): val CE 4.8525

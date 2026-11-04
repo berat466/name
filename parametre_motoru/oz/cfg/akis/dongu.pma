@@ -1,0 +1,26 @@
+; 03.002 / 03.003 donguler ve ic ice donguler: carpim tablosu toplami, geri dallanma
+func main() {
+  ldi s, 0
+  ldi i, 1
+Lo: lei c, i, 6
+  jz c, Eo
+  ldi j, 1
+Li: le c, j, i
+  jz c, Ei
+  mul t, i, j
+  add s, s, t
+  addi j, j, 1
+  jmp Li
+Ei: addi i, i, 1
+  jmp Lo
+Eo: host puti, s
+  host putc, 10
+  ldi k, 10
+D: host puti, k
+  host putc, 32
+  addi k, k, -3
+  gti c, k, 0
+  jnz c, D
+  host putc, 10
+  halt
+}

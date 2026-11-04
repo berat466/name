@@ -1,0 +1,28 @@
+OZET_V9|unigram|mod=cift_ham|c=2|H=256|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v14.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_ham|c=2|H=256|tohum=1|alpha=1.0|T=0.2|val_CE=13.4057|test_CE=13.3765|PPL=644706.10|top1=0.1054|top5=0.2255|mse_olasilik=0.000673|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_ham|c=2|H=256|tohum=1|alpha=1|T=1|val_CE=5.6428|test_CE=5.5851|PPL=266.43|top1=0.1054|top5=0.2255|mse_olasilik=0.000491|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_ham|c=2|H=256|tohum=1|alpha=1|T=1|val_CE=5.6428|test_CE=5.5851|PPL=266.43|top1=0.1054|top5=0.2255|mse_olasilik=0.000491|olasilik_toplami=1.000000
+CPU_SURE|cift_ham_c2_H256_s1|kalibrasyon_cpu_sn=3.65|duvar_sn=3.55|RAM_MB=341
+OZET_V9|unigram|mod=cift_kal|c=2|H=256|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v14.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_kal|c=2|H=256|tohum=1|alpha=1.0|T=0.2|val_CE=13.4057|test_CE=13.3765|PPL=644706.10|top1=0.1054|top5=0.2255|mse_olasilik=0.000673|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_kal|c=2|H=256|tohum=1|alpha=1|T=1|val_CE=5.6428|test_CE=5.5851|PPL=266.43|top1=0.1054|top5=0.2255|mse_olasilik=0.000491|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_kal|c=2|H=256|tohum=1|alpha=1|T=1|val_CE=5.6428|test_CE=5.5851|PPL=266.43|top1=0.1054|top5=0.2255|mse_olasilik=0.000491|olasilik_toplami=1.000000
+CPU_SURE|cift_kal_c2_H256_s1|kalibrasyon_cpu_sn=3.21|duvar_sn=3.09|RAM_MB=341
+OZET_V9|unigram|mod=cift_ham|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v14.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_ham|c=2|H=512|tohum=1|alpha=1.0|T=0.2|val_CE=13.3740|test_CE=13.3303|PPL=615588.60|top1=0.1088|top5=0.2255|mse_olasilik=0.000670|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_ham|c=2|H=512|tohum=1|alpha=1|T=1|val_CE=5.6319|test_CE=5.5727|PPL=263.13|top1=0.1088|top5=0.2255|mse_olasilik=0.000491|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_ham|c=2|H=512|tohum=1|alpha=1|T=1|val_CE=5.6319|test_CE=5.5727|PPL=263.13|top1=0.1088|top5=0.2255|mse_olasilik=0.000491|olasilik_toplami=1.000000
+CPU_SURE|cift_ham_c2_H512_s1|kalibrasyon_cpu_sn=2.78|duvar_sn=2.58|RAM_MB=341
+OZET_V9|unigram|mod=cift_kal|c=2|H=512|tohum=1|test_CE=5.6389|PPL=281.15|top1=0.0904|top5=0.2255|mse_olasilik=0.000492
+/home/user/name/formul_avcisi/metin_kalibrasyon_v14.py:29: RuntimeWarning: divide by zero encountered in log
+  ce = float(-np.log((1 - a) * uni_val[yv] + a * pv[T]).mean())
+OZET_V9|V8_alpha1_V8_T_izgarasi|mod=cift_kal|c=2|H=512|tohum=1|alpha=1.0|T=0.2|val_CE=13.3740|test_CE=13.3303|PPL=615588.60|top1=0.1088|top5=0.2255|mse_olasilik=0.000670|olasilik_toplami=1.000000
+OZET_V9|V9_sartname_izgarasi|mod=cift_kal|c=2|H=512|tohum=1|alpha=1|T=1|val_CE=5.6319|test_CE=5.5727|PPL=263.13|top1=0.1088|top5=0.2255|mse_olasilik=0.000491|olasilik_toplami=1.000000
+OZET_V9|V9_genisletilmis_izgara|mod=cift_kal|c=2|H=512|tohum=1|alpha=1|T=1|val_CE=5.6319|test_CE=5.5727|PPL=263.13|top1=0.1088|top5=0.2255|mse_olasilik=0.000491|olasilik_toplami=1.000000
+CPU_SURE|cift_kal_c2_H512_s1|kalibrasyon_cpu_sn=2.89|duvar_sn=2.85|RAM_MB=341

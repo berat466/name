@@ -1,0 +1,2 @@
+./tek_hamle_v15 2 512 1 4	/tmp/v15log/v15_c2_H512_s1.txt	rc=0	wall_s=68.11	user_cpu_s=235.08	sys_cpu_s=5.19	maxrss_MB=345
+./tek_hamle_v15 2 256 1 1	/tmp/v15log/v15_c2_H256_s1.txt	rc=0	wall_s=35.60	user_cpu_s=118.37	sys_cpu_s=4.10	maxrss_MB=300

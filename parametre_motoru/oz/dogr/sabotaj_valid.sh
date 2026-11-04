@@ -1,0 +1,44 @@
+#!/bin/bash
+# dogrula_valid.sh'in yakaladigini kanitlar: valid.pma.in'de (komut ozellikleri tablodan, SEM'den turetilmis dizilerle okunan) kosullari tek tek bozar, valid.pmb'yi yeniden uretir (VALID=), denetimin BASARISIZ olmasini bekler.
+# Kullanim: sabotaj_valid.sh [pm]   (SADECE: etiket deseni; NL/NB: dogrula_valid.sh mutant sayilari)
+PM=${1:-../../pm}; D=$(cd "$(dirname "$0")" && pwd); PM=$(realpath "$PM"); R=$D/../..; T=$(mktemp -d); TOP=$T; . $D/../slot.sh; yakalandi=0; kacti=0
+mut_i() {   # etiket ifade
+  [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
+  rm -rf $T/w; mkdir -p $T/w/oz; cp -r $R/oz/nesne $R/oz/komut $R/oz/arac $R/oz/dogr $R/oz/mutasyon.cpp $T/w/oz/ 2>/dev/null
+  (cd $T/w/oz/dogr && perl -0pi -e "$2" valid.pma.in && ! cmp -s valid.pma.in $D/valid.pma.in) || { echo "SABOTAJ HATASI: $1 uygulanamadi"; kacti=$((kacti+1)); return; }
+  (cd $T/w/oz/nesne && TOOLS=valid GORUNUM=0 ./metinden.sh $PM > /dev/null 2>&1) || { echo "mutant $1: derlenemedi"; kacti=$((kacti+1)); return; }
+  if $D/../ilkhata.sh $T/log env VALID=$T/w/oz/dogr/valid.pmb $D/dogrula_valid.sh $PM 5 4 && $D/../ilkhata.sh $T/log env VALID=$T/w/oz/dogr/valid.pmb $D/dogrula_valid.sh $PM ${NL:-25} ${NB:-20}; then echo "KACTI: $1"; kacti=$((kacti+1)); else echo "yakalandi: $1 ($(grep -c HATA $T/log) hata)"; yakalandi=$((yakalandi+1)); fi
+}
+mut() {   # paralel sarmalayici: her mutant KENDI gecici dizininde ($T) ve global yuva havuzunda calisir; sonuc satirlari $TOP/c_ETIKET dosyasina yazilir
+  [ -z "$SADECE" ] || [[ "$1" =~ $SADECE ]] || return
+  ( slot_al; T="$TOP/m_$1"; mkdir -p "$T"; mut_i "$@" > "$TOP/c_$1" 2>&1; slot_birak; rm -rf "$T" ) &
+  [ -n "$HIZLI_SLOT" ] || while [ "$(jobs -rp | wc -l)" -ge "${JOBS:-4}" ]; do wait -n 2>/dev/null || sleep 0.2; done
+}
+mut sonlandirici_atlama 's/eqi z, fw, 2\n    jnz z, lastok\n    call x, rej, 15/call x, rej, 15/'
+mut tur_anlik 's/andi t, kf, 4\n    jnz t, vnext/andi t, kf, 8\n    jnz t, vnext/'
+mut etiket_arali 's/(klab:\n    lt z, v, 0\n    jnz z, vbad\n    )ge z, v, ncode/$1gt z, v, ncode/'
+mut host_arali 's/ge z, v, \@HOSTCOUNT\@/gt z, v, \@HOSTCOUNT\@/'
+mut bolen_sifir 's/jz c3, dmbad/jmp dmbad2/; s/dmbad:\n    call x, rej, 17/dmbad:\n    call x, rej, 17\ndmbad2:/'
+mut bolen_eksi1 's/eq z, c3, -1\n    jz z, vcall/eq z, c3, -2\n    jz z, vcall/'
+mut cagri_pencere 's/wc: add t, fb, need\n    gt z, t, nr/wc: add t, fb, need\n    gt z, t, 99999/'
+mut okuma_bayrak 's/andi t, kf, 1\n    jnz t, srd/andi t, kf, 2\n    jnz t, srd/'
+mut yazma_bayrak 's/andi t, kf, 2\n    jz t, s2n/andi t, kf, 1\n    jz t, s2n/'
+mut kosullu_atlama 's/eqi z, fw, 3\n    jz z, s7/eqi z, fw, 2\n    jz z, s7/'
+mut temizle 's/eqi z, cc, 2\n    jnz z, s4\n    call x, clrfrom, fb/eqi z, cc, 2\n    jz z, s4\n    call x, clrfrom, fb/'
+mut hedef_yuvasi 's/add a, op, OPTGT\n    ld tgs, a, 0/mov tgs, 0/'
+mut arite_host 's/shq:\n    add a, fa, ARITY/shq:\n    add a, fa, FNP/'
+# (jtab 'ip+1+n kod icinde' siniri ayri mutantlanmaz: her girdi ileri jmp ve son komut sonlandirici olmak zorunda oldugundan merdiven islevden tasamaz -> sinir savunma amaclidir, karar degistirmez)
+mut jtab_negatif "s/lti z, nn, 0\n    jnz z, tbad/lti z, nn, -99\n    jnz z, tbad/"
+mut jtab_girdi_jmp "s/nei z, f2, 2\n    jnz z, tbad/eqi z, f2, 99\n    jnz z, tbad/"
+mut jtab_girdi_ileri "s/le z, tg2, q2\n    jnz z, tbad/le z, tg2, -1\n    jnz z, tbad/"
+mut jtab_akis_kenari "s/eqi z, fw, 4\n    jz z, s4x/eqi z, fw, 99\n    jz z, s4x/"
+mut jtab_akis_varsayilan "s/st1: gt z, ti, nn/st1: ge z, ti, nn/"
+mut calli_isaretci_tanimli 's/eqi z, cc, 3\n    jz z, swc2/eqi z, cc, 99\n    jz z, swc2/'
+mut calli_pencere_host 's/eqi z, cc, 2\n    jnz z, vhq/eqi z, cc, 3\n    jnz z, vhq/'
+mut calli_pencere_nregs 's/add a, fa, FNP\n    ld need, a, 0/add a, fa, FNR\n    ld need, a, 0/'
+wait
+cat $TOP/c_* 2>/dev/null
+yakalandi=$(cat $TOP/c_* 2>/dev/null | grep -cE '^yakalandi|dogrulama yakaladi'); kacti=$(cat $TOP/c_* 2>/dev/null | grep -cE '^KACTI|^SABOTAJ HATASI|derlenemedi|uretilemedi')
+echo "sabotaj(dogrulayici): $yakalandi yakalandi, $kacti kacti"
+rm -rf $TOP
+[ $kacti = 0 ]

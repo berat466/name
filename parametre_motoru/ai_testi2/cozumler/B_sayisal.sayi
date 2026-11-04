@@ -1,0 +1,207 @@
+# Ayar paneli. Bellek: adres 1..4 = v[0..3] (veri), adres 5.. = kare tamponu (bss 15360)
+# Yazmaclar: r0=sec r1=poll sonucu r2=tus r3,r4,r5=gecici r6=doldurma sayaci
+# r7=s r8=v[s] r9=y r10=y bitis r11=renk r12,r17=gecici r13=genislik r14=x r15=x bitis r16=adres
+# r18,r19,r20 = present/puti/putc penceresi
+80 77 66 49
+0
+15400            # bellek
+0                # giris fonksiyonu
+0                # sabit yok
+4 z4 z8 z12 z16  # veri: v0..v3
+15360            # bss
+1                # fonksiyon sayisi
+0 21 97          # param=0 yazmac=21 komut=97
+# k0
+1 0 z0           # ldi r0,0 (sec)
+# k1 EVLOOP: poll
+40 5 1           # host poll, taban r1
+# k2
+32 1 z37         # jz r1 -> k39 (DRAW)
+# k3
+44 2 1 z32       # shli r2,r1,32
+# k4
+45 2 2 z32       # shri r2,r2,32  (tus)
+# k5
+49 3 2 z1        # eqi r3,r2,1
+# k6
+32 3 z4          # jz r3 -> k10
+# k7
+41 0 0 z3        # addi r0,r0,3
+# k8
+48 0 0 z4        # modi r0,r0,4
+# k9
+31 z-8           # jmp k1
+# k10 tus 2
+49 3 2 z2
+# k11
+32 3 z4          # jz r3 -> k15
+# k12
+41 0 0 z1
+# k13
+48 0 0 z4
+# k14
+31 z-13          # jmp k1
+# k15 tus 3
+49 3 2 z3
+# k16
+32 3 z7          # jz r3 -> k23
+# k17
+37 4 0 z1        # ld r4,[r0+1]
+# k18
+51 5 4 z20       # lti r5,r4,20
+# k19
+32 5 z-18        # jz r5 -> k1
+# k20
+41 4 4 z1        # addi r4,r4,1
+# k21
+38 4 0 z1        # st r4,[r0+1]
+# k22
+31 z-21          # jmp k1
+# k23 tus 4
+49 3 2 z4
+# k24
+32 3 z7          # jz r3 -> k31
+# k25
+37 4 0 z1
+# k26
+53 5 4 z0        # gti r5,r4,0
+# k27
+32 5 z-26        # jz r5 -> k1
+# k28
+41 4 4 z-1       # addi r4,r4,-1
+# k29
+38 4 0 z1
+# k30
+31 z-29          # jmp k1
+# k31 tus 5
+49 3 2 z5
+# k32
+32 3 z-31        # jz r3 -> k1 (baska tus: yok say)
+# k33
+1 4 z0           # ldi r4,0
+# k34
+38 4 4 z1        # st r4,[r4+1]
+# k35
+38 4 4 z2
+# k36
+38 4 4 z3
+# k37
+38 4 4 z4
+# k38
+31 z-37          # jmp k1
+# k39 DRAW: arka plani doldur
+1 6 z0           # ldi r6,0
+# k40
+1 11 z1052696    # ldi r11,0x101018
+# k41
+38 11 6 z5       # st r11,[r6+5]
+# k42
+41 6 6 z1        # addi r6,r6,1
+# k43
+51 12 6 z15360   # lti r12,r6,15360
+# k44
+33 12 z-3        # jnz r12 -> k41
+# k45
+1 7 z0           # ldi r7,0 (s)
+# k46 BARLOOP
+37 8 7 z1        # ld r8,[r7+1]
+# k47
+14 12 7 0        # eq r12,r7,r0
+# k48
+1 11 z4227264    # ldi r11,0x4080C0
+# k49
+32 12 z2         # jz r12 -> k51
+# k50
+1 11 z16760896   # ldi r11,0xFFC040
+# k51
+42 9 7 z22       # muli r9,r7,22
+# k52
+41 9 9 z8        # addi r9,r9,8
+# k53
+41 10 9 z14      # addi r10,r9,14
+# k54
+42 13 8 z7       # muli r13,r8,7
+# k55
+41 15 13 z8      # addi r15,r13,8
+# k56
+32 8 z11         # jz r8 -> k67 (NEXTBAR)
+# k57 ROW
+1 14 z8          # ldi r14,8
+# k58 PIX
+42 16 9 z160     # muli r16,r9,160
+# k59
+3 16 16 14       # add r16,r16,r14
+# k60
+38 11 16 z5      # st r11,[r16+5]
+# k61
+41 14 14 z1      # addi r14,r14,1
+# k62
+16 17 14 15      # lt r17,r14,r15
+# k63
+33 17 z-5        # jnz r17 -> k58
+# k64
+41 9 9 z1        # addi r9,r9,1
+# k65
+16 17 9 10       # lt r17,r9,r10
+# k66
+33 17 z-9        # jnz r17 -> k57
+# k67 NEXTBAR
+41 7 7 z1        # addi r7,r7,1
+# k68
+51 17 7 z4       # lti r17,r7,4
+# k69
+33 17 z-23       # jnz r17 -> k46
+# k70 PRESENT
+1 18 z5          # ldi r18,5
+# k71
+1 19 z160        # ldi r19,160
+# k72
+1 20 z96         # ldi r20,96
+# k73
+40 4 18          # host present
+# k74
+32 18 z-73       # jz r18 -> k1
+# k75 cikti
+1 4 z0           # ldi r4,0
+# k76
+0 18 0           # mov r18,r0
+# k77
+40 1 18          # puti
+# k78
+1 18 z32
+# k79
+40 0 18          # putc
+# k80
+37 18 4 z1       # ld r18,[r4+1]
+# k81
+40 1 18
+# k82
+1 18 z32
+# k83
+40 0 18
+# k84
+37 18 4 z2
+# k85
+40 1 18
+# k86
+1 18 z32
+# k87
+40 0 18
+# k88
+37 18 4 z3
+# k89
+40 1 18
+# k90
+1 18 z32
+# k91
+40 0 18
+# k92
+37 18 4 z4
+# k93
+40 1 18
+# k94
+1 18 z10
+# k95
+40 0 18
+# k96
+36               # halt

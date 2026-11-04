@@ -1,0 +1,20 @@
+V15 c=2 H=512 tohum=1 gamma=4 V=2001 egitim=39840 dogrulama=4980 test=4980 (4 cekirdek)
+  B=1000 lambda=10 ileri=1.64s geri_duzeltme=4.53s  val_CE(ham a=1,T=0.02)=11.8374  val_CE(mini-kalibre)=5.6448
+  B=1000 lambda=100 ileri=1.71s geri_duzeltme=4.62s  val_CE(ham a=1,T=0.02)=8.0000  val_CE(mini-kalibre)=5.5624
+  B=1000 lambda=1000 ileri=1.67s geri_duzeltme=4.85s  val_CE(ham a=1,T=0.02)=6.7151  val_CE(mini-kalibre)=5.5232
+  B=4000 lambda=10 ileri=1.52s geri_duzeltme=2.63s  val_CE(ham a=1,T=0.02)=7.7669  val_CE(mini-kalibre)=5.5496
+  B=4000 lambda=100 ileri=1.51s geri_duzeltme=2.57s  val_CE(ham a=1,T=0.02)=6.9951  val_CE(mini-kalibre)=5.5127
+  B=4000 lambda=1000 ileri=1.52s geri_duzeltme=2.52s  val_CE(ham a=1,T=0.02)=6.5007  val_CE(mini-kalibre)=5.4943
+  B=8000 lambda=10 ileri=1.72s geri_duzeltme=2.65s  val_CE(ham a=1,T=0.02)=7.0838  val_CE(mini-kalibre)=5.5144
+  B=8000 lambda=100 ileri=1.67s geri_duzeltme=2.34s  val_CE(ham a=1,T=0.02)=6.7850  val_CE(mini-kalibre)=5.4931
+  B=8000 lambda=1000 ileri=1.79s geri_duzeltme=2.58s  val_CE(ham a=1,T=0.02)=6.4690  val_CE(mini-kalibre)=5.4829
+SECILEN B=8000 lambda=1000 val_CE(mini-kalibre)=5.4829
+ADIM_IZLEME (sabit kalibrasyon a=0.25,T=0.01): adim | dogrulama CE | blok-1 (ilk blok) egitim CE
+  adim 1: val_CE=5.5196 blok1_CE=5.2022
+  adim 2: val_CE=5.5106 blok1_CE=5.4779
+  adim 3: val_CE=5.5075 blok1_CE=5.5596
+  adim 4: val_CE=5.4990 blok1_CE=5.5912
+  adim 5: val_CE=5.4829 blok1_CE=5.6067
+UNUTMA blok-1: adim1 sonrasi 5.2022 -> son 5.6067 (fark +0.4045)
+SURE egitim-yalniz: ileri_hesap_toplam=1.729s geri_duzeltme_toplam=2.590s (5 adim, blok basina ileri 0.346s geri 0.518s)
+TOPLAM sure=66.7s tepe_RAM=345MB

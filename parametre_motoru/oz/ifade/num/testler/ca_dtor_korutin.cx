@@ -1,0 +1,25 @@
+// korutin: yerel nesneler normal bitiste, co_return'de ve askidayken destroy() ile (duraklama noktasina gore) ters sirayla yok edilir; promise en son
+struct L { int id; ~L() { pi(700 + id); } };
+struct Task {
+  struct promise_type {
+    int v;
+    Task get_return_object() { Task t; t.h = std::coroutine_handle<promise_type>::from_promise(*this); return t; }
+    std::suspend_always initial_suspend() { return std::suspend_always(); }
+    std::suspend_always final_suspend() noexcept { return std::suspend_always(); }
+    void return_value(int x) { v = x; }
+    void unhandled_exception() { }
+    ~promise_type() { pi(800); }
+  };
+  std::coroutine_handle<promise_type> h;
+};
+Task work(int n) { L a{n}; pi(1); co_await std::suspend_always(); L b{n + 1}; pi(2); co_await std::suspend_always(); { L c{n + 2}; pi(3); } co_return n; }
+Task early(int n) { L a{n}; if (n > 5) { L e{n + 5}; co_return n; } co_await std::suspend_always(); co_return 0; }
+int main() {
+  { Task t = work(10); t.h.resume(); pi(10); t.h.resume(); pi(11); t.h.resume(); pi(12); t.h.destroy(); pi(13); }
+  { Task t = work(20); t.h.resume(); t.h.resume(); t.h.destroy(); pi(14); }
+  { Task t = work(30); t.h.resume(); t.h.destroy(); pi(15); }
+  { Task t = work(40); t.h.destroy(); pi(16); }
+  { Task t = early(7); t.h.resume(); pi(17); t.h.destroy(); pi(18); }
+  { Task t = early(1); t.h.resume(); pi(19); t.h.destroy(); pi(20); }
+  return 0;
+}
