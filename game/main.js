@@ -23,7 +23,7 @@ scene.fog = new THREE.FogExp2(HORIZON, 0.000032);
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 1.5, 160000);
 
-scene.add(new THREE.HemisphereLight(0xcfe3ff, 0x4a4030, 0.9));
+scene.add(new THREE.HemisphereLight(0xcfe3ff, 0x8a7f6c, 1.0));   // yer rengi: açık zeminden yansıyan ışık (dik yüzler kararmasın)
 const sun = new THREE.DirectionalLight(0xfff1dc, 2.6);
 sun.position.set(-0.5, 0.8, 0.35).multiplyScalar(10000);
 scene.add(sun);
@@ -108,8 +108,8 @@ const TERRAIN_SETS = [
   'aerial_rocks_02',   // 4 kaya
   'mossy_rock',        // 5 yosunlu kaya
 ];
-// Yol katmanları: 0-2 asfalt, 3 beton (kaldırım, istinat duvarı, köprü)
-const ROAD_SETS = ['asphalt_02', 'aerial_asphalt_01', 'asphalt_04', 'concrete_pavement_02'];
+// Yol katmanları: 0-2 asfalt, 3 beton (istinat duvarı, köprü), 4 kaldırım plakası, 5 bordür betonu (Poly Haven)
+const ROAD_SETS = ['asphalt_02', 'aerial_asphalt_01', 'asphalt_04', 'concrete_pavement_02', 'concrete_pavement', 'concrete_floor_03'];
 
 const [terrainTex, roadTex] = await Promise.all([TERRAIN_SETS, ROAD_SETS].map(loadPbrArray));
 
@@ -283,19 +283,15 @@ function walkMaterial() {
   });
   patchStandard(mat, { tA: { value: roadTex.alb }, tN: { value: roadTex.nra } }, ROAD_VTX, ROAD_FRAG_DECL, `
     float layer = vInfo.x;  // 0 = kaldırım üstü, 1 = bordür / dik yüz / köprü betonu
+    // Poly Haven: kaldırım üstü 'concrete_pavement' (plakalar, yol yönüne hizalı), bordür 'concrete_floor_03'
     accA = vec3(0.0); accN = vec4(0.0); accW = 0.0;
-    addLayer(tA, tN, vRuv / 2.5, 3.0, 1.0);
+    if (layer < 0.5) addLayer(tA, tN, vRuv / 4.0, 4.0, 1.0);
+    else addLayer(tA, tN, vRuv / 2.0, 5.0, 1.0);
     ${GLSL_RESOLVE}
-    // GTA tarzı düz açık gri beton: dokunun deseni yalnızca parlaklık olarak kalır
+    // dokunun kendi rengi korunur, yalnızca biraz griye ve açığa çekilir (GTA'daki açık beton)
     float Lr = dot(accA, vec3(0.3, 0.55, 0.15));
-    vec3 cc = vec3(0.70, 0.69, 0.66) * (0.75 + 0.5 * Lr) * (0.92 + 0.12 * vnoise(vWP.xz * 0.05));
-    if (layer < 0.5) {                                   // plaka derzleri: yol boyunca 1,5 m'de bir + bordür arkası
-      float a = vRuv.x / 1.5, fw = fwidth(a) + 1e-4;
-      float j = 1.0 - smoothstep(0.0, fw * 1.5, min(fract(a), 1.0 - fract(a)) - 0.012);
-      float b = abs(vRuv.y) - vInfo.z, fb = fwidth(b) + 1e-4;
-      float k = 1.0 - smoothstep(0.0, fb * 1.5, abs(b - 0.3) - 0.012);
-      cc *= 1.0 - 0.32 * max(j, k);
-    } else cc *= 1.2;                                    // dik yüz gölgede kalır: açık tut
+    vec3 cc = mix(accA, Lr * vec3(1.0, 0.99, 0.97), 0.75) * 1.55 * (0.93 + 0.1 * vnoise(vWP.xz * 0.05));
+    if (layer > 0.5) cc *= 1.15;                         // dik yüz gölgede kalır: açık tut
     diffuseColor.rgb *= cc;
     ${GLSL_ROAD_TBN}
   `);
@@ -529,7 +525,7 @@ const TERRAIN_BODY = `
       addG(rA, rN, 1.0 / 5.0, 0.0, wa * (1.0 - wB) * (1.0 - wC));
       addG(rA, rN, 1.0 / 8.0, 1.0, wa * wB * (1.0 - wC));
       addG(rA, rN, 1.0 / 4.0, 2.0, wa * wC);
-      addG(rA, rN, 1.0 / 2.5, 3.0, ws);
+      addG(rA, rN, 1.0 / 4.0, 4.0, ws);
       if (wl > 0.004) {                                                    // duvar: dikey yüzeyde yandan izdüşüm
         vec3 wu = vec3((vWP.x + vWP.z) / 3.0, vWP.y / 3.0, 3.0);
         accA += textureGrad(rA, wu, gDx / 3.0, gDy / 3.0).rgb * wl; accN += textureGrad(rN, wu, gDx / 3.0, gDy / 3.0) * wl; accW += wl;
