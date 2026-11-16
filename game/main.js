@@ -1100,7 +1100,7 @@ function toLatLon(x, z) {
   const mlon = 111320 * Math.cos(((meta.bbox[0] + meta.bbox[2]) / 2) * Math.PI / 180);
   return [latMax - (z + Dm / 2) / 111320, lonMin + (x + Wm / 2) / mlon];
 }
-let [cx, cz] = toWorld(Number(params.get('lat') || 37.5715), Number(params.get('lon') || 126.9768)); // varsayılan: Gwanghwamun
+let [cx, cz] = params.has('lat') ? toWorld(Number(params.get('lat')), Number(params.get('lon'))) : [0, 0]; // varsayılan: harita merkezi
 cx += Number(params.get('ox') || 0); cz += Number(params.get('oz') || 0); // test için kaydırma
 const camDist = Number(params.get('d') || (isTouch ? 700 : 2500));
 controls.target.set(cx, heightAt(cx, cz), cz);
