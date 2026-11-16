@@ -465,7 +465,7 @@ function prepareRoads() {
     const core = R.road.w / 2 + R.road.s + pad;
     const bank = 1.5 * dx;
     for (let i = 0; i < R.N; i++) {
-      const x = R.xs[i], z = R.zs[i], y = R.ys[i] - 0.6;
+      const x = R.xs[i], z = R.zs[i], y = R.ys[i] - 0.25;  // zemin yolun hemen altında
       const c0 = Math.max(0, Math.floor((x - core - bank + Wm / 2) / dx)), c1 = Math.min(cols - 1, Math.ceil((x + core + bank + Wm / 2) / dx));
       const r0 = Math.max(0, Math.floor((z - core - bank + Dm / 2) / dz)), r1 = Math.min(rows - 1, Math.ceil((z + core + bank + Dm / 2) / dz));
       for (let r = r0; r <= r1; r++) {
@@ -521,15 +521,22 @@ class StripBuilder {
   }
 }
 
-// Bir yol parçasının (a..e) asfalt, kaldırım, bordür, bariyer geometrisi
+// Bir yol parçasının (a..e) geometrisi. GTA / BeamNG yaklaşımı:
+//  - zemindeki yol araziye oturur; her yan duvar araziye kadar iner (altı boş kalmaz)
+//  - yükselen yerde beton istinat duvarı, köprüde kalın tabliye + korkuluk + ayaklar
 function emitPiece(rb, wb, { R, a, e }) {
   const { road, xs, zs, ys, dist, jd, dirx, dirz } = R;
-  const n = e - a, half = road.w / 2, up = [0, 1, 0];
+  const n = e - a, half = road.w / 2, up = [0, 1, 0], down = [0, -1, 0];
   const I = (j) => a + j;
-  const at = (i, o, y, nrm, u, v) => [xs[i] + dirz[i] * o, y, zs[i] - dirx[i] * o, nrm[0], nrm[1], nrm[2], u, v];
+  const px = (i, o) => xs[i] + dirz[i] * o, pz = (i, o) => zs[i] - dirx[i] * o;
+  const at = (i, o, y, nrm, u, v) => [px(i, o), y, pz(i, o), nrm[0], nrm[1], nrm[2], u, v];
+  const ground = (i, o) => heightAt(px(i, o), pz(i, o));
+  // duvar alt ucu: araziye kadar (biraz içine), en az 0.5 m
+  const foot = (i, o, y) => Math.min(y - 0.5, ground(i, o) - 0.5);
   const dir = (j) => [dirx[I(j)], dirz[I(j)]];
   const info2 = [road.sl, road.sr, half, R.zebra];
   const C = () => [1, 0, 0, 0], P = () => [0, 0, 0, 0];
+  const bridge = !!road.b, DECK = 1.4;
 
   // asfalt
   rb.strip(n, (j) => { const i = I(j); return [at(i, -half, ys[i], up, dist[i], -half), at(i, half, ys[i], up, dist[i], half)]; },
@@ -539,7 +546,7 @@ function emitPiece(rb, wb, { R, a, e }) {
   const runs = [];
   let cur = [];
   for (let j = 0; j < n; j++) {
-    if (jd[I(j)] > 0) cur.push(j);
+    if (jd[I(j)] > 0 || bridge) cur.push(j);
     else { if (cur.length > 1) runs.push(cur); cur = []; }
   }
   if (cur.length > 1) runs.push(cur);
@@ -547,30 +554,107 @@ function emitPiece(rb, wb, { R, a, e }) {
 
   for (const run of runs) {
     const rn = run.length, RI = (k) => I(run[k]), rdir = (k) => [dirx[RI(k)], dirz[RI(k)]];
+    const W = (f, info = C) => wb.strip(rn, (k) => f(RI(k)), rdir, info, info2);
+    let outerL = -half, outerR = half;   // tabliye / dolgu dış kenarı
+    let topAt = (i) => ys[i];            // dış kenardaki üst yükseklik
+
     for (const side of [-1, 1]) {
       const out = (i) => [dirz[i] * side, 0, -dirx[i] * side];
       const inw = (i) => [-dirz[i] * side, 0, dirx[i] * side];
       const eo = half * side;
+      let o = eo, yTop = (i) => ys[i];
       if (road.s > 0) {
-        // bordür yüzü, kaldırım (parke), dış yan
-        const o = (half + road.s) * side, yt = (i) => ys[i] + CURB_H;
-        wb.strip(rn, (k) => { const i = RI(k); return [at(i, eo, ys[i] - 0.05, inw(i), dist[i], 0), at(i, eo, yt(i), inw(i), dist[i], CURB_H)]; }, rdir, C, info2);
-        wb.strip(rn, (k) => { const i = RI(k); return [at(i, eo, yt(i), up, dist[i], eo), at(i, o, yt(i), up, dist[i], o)]; }, rdir, P, info2);
-        wb.strip(rn, (k) => { const i = RI(k); return [at(i, o, yt(i), out(i), dist[i], 0), at(i, o, ys[i] - SKIRT, out(i), dist[i], -SKIRT)]; }, rdir, C, info2);
-      } else if (highway && side < 0 && road.o) {
+        // bordür yüzü + kaldırım (parke)
+        o = (half + road.s) * side; yTop = (i) => ys[i] + CURB_H;
+        W((i) => [at(i, eo, ys[i] - 0.05, inw(i), dist[i], 0), at(i, eo, yTop(i), inw(i), dist[i], CURB_H)]);
+        W((i) => [at(i, eo, yTop(i), up, dist[i], eo), at(i, o, yTop(i), up, dist[i], o)], P);
+      } else if (highway && side < 0 && road.o && !bridge) {
         // otoban orta bariyeri (New Jersey tipi beton, 0.9 m)
-        const b0 = eo - 0.0, b1 = eo - 0.6, bh = 0.9;
-        wb.strip(rn, (k) => { const i = RI(k); return [at(i, b0, ys[i] - 0.05, inw(i), dist[i], 0), at(i, b0 - 0.15, ys[i] + bh, inw(i), dist[i], bh)]; }, rdir, C, info2);
-        wb.strip(rn, (k) => { const i = RI(k); return [at(i, b0 - 0.15, ys[i] + bh, up, dist[i], 0), at(i, b1 + 0.15, ys[i] + bh, up, dist[i], 0.3)]; }, rdir, C, info2);
-        wb.strip(rn, (k) => { const i = RI(k); return [at(i, b1 + 0.15, ys[i] + bh, out(i), dist[i], bh), at(i, b1, ys[i] - SKIRT, out(i), dist[i], -SKIRT)]; }, rdir, C, info2);
+        const b1 = eo - 0.6, bh = 0.9;
+        W((i) => [at(i, eo, ys[i] - 0.05, inw(i), dist[i], 0), at(i, eo - 0.15, ys[i] + bh, inw(i), dist[i], bh)]);
+        W((i) => [at(i, eo - 0.15, ys[i] + bh, up, dist[i], 0), at(i, b1 + 0.15, ys[i] + bh, up, dist[i], 0.3)]);
+        W((i) => [at(i, b1 + 0.15, ys[i] + bh, out(i), dist[i], bh), at(i, b1, foot(i, b1, ys[i]), out(i), dist[i], -2)]);
+        o = b1;
       } else {
-        // beton omuz + şev
-        const o = (half + 0.5) * side;
-        wb.strip(rn, (k) => { const i = RI(k); return [at(i, eo, ys[i] - 0.02, up, dist[i], eo), at(i, o, ys[i] - 0.02, up, dist[i], o)]; }, rdir, C, info2);
-        wb.strip(rn, (k) => { const i = RI(k); return [at(i, o, ys[i] - 0.02, out(i), dist[i], 0), at(i, o, ys[i] - SKIRT, out(i), dist[i], -SKIRT)]; }, rdir, C, info2);
+        // beton omuz
+        o = (half + 0.5) * side;
+        W((i) => [at(i, eo, ys[i] - 0.02, up, dist[i], eo), at(i, o, ys[i] - 0.02, up, dist[i], o)]);
+        yTop = (i) => ys[i] - 0.02;
+      }
+      if (side < 0) outerL = o; else outerR = o;
+      topAt = yTop;
+
+      if (bridge) {
+        // köprü korkuluğu (beton parapet 1.0 m) + tabliye dış yüzü (kalınlık DECK)
+        const ph = 1.0, o2 = o + 0.35 * side;
+        W((i) => [at(i, o, yTop(i), inw(i), dist[i], 0), at(i, o, yTop(i) + ph, inw(i), dist[i], ph)]);
+        W((i) => [at(i, o, yTop(i) + ph, up, dist[i], 0), at(i, o2, yTop(i) + ph, up, dist[i], 0.35)]);
+        W((i) => [at(i, o2, yTop(i) + ph, out(i), dist[i], ph), at(i, o2, ys[i] - DECK, out(i), dist[i], -DECK)]);
+        if (side < 0) outerL = o2; else outerR = o2;
+      } else if (!(highway && side < 0 && road.o && road.s === 0)) {
+        // dış yan duvar: araziye kadar iner (dolguda istinat duvarı olur, altı asla boş kalmaz)
+        W((i) => [at(i, o, yTop(i), out(i), dist[i], 0), at(i, o, foot(i, o, yTop(i)), out(i), dist[i], -2)]);
+      }
+    }
+
+    if (bridge) {
+      // tabliye alt yüzü
+      W((i) => [at(i, outerL, ys[i] - DECK, down, dist[i], outerL), at(i, outerR, ys[i] - DECK, down, dist[i], outerR)]);
+      // ayaklar: her ~30 m'de, yerden 2 m'den yüksekse; geniş tabliyede iki ayak
+      const width = outerR - outerL;
+      const cols2 = width > 14 ? [outerL + width * 0.25, outerR - width * 0.25] : [(outerL + outerR) / 2];
+      let last = -1e9;
+      for (let k = 0; k < rn; k++) {
+        const i = RI(k);
+        if (dist[i] - last < 30 || jd[i] < 5) continue;
+        const yb = ys[i] - DECK;
+        for (const oc of cols2) {
+          const g = ground(i, oc);
+          if (yb - g < 2) continue;
+          pillar(wb, px(i, oc), pz(i, oc), dirx[i], dirz[i], yb, g - 1, info2);
+        }
+        // ayak başlığı (enine kiriş)
+        if (yb - ground(i, (outerL + outerR) / 2) >= 2) {
+          beam(wb, i, outerL + 0.5, outerR - 0.5, yb, yb - 1.2, px, pz, dirx, dirz, info2);
+        }
+        last = dist[i];
       }
     }
   }
+}
+
+// kare kesitli beton ayak (1.6 m): 4 yan yüz
+function pillar(wb, x, z, tx, tz, yTop, yBot, info2) {
+  const s = 0.8, rx = tz, rz = -tx;    // sağ vektör
+  const c = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => [x + (rx * u + tx * v) * s, z + (rz * u + tz * v) * s]);
+  for (let f = 0; f < 4; f++) {
+    const p0 = c[f], p1 = c[(f + 1) % 4];
+    let nx = (p0[0] + p1[0]) / 2 - x, nz = (p0[1] + p1[1]) / 2 - z;
+    const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
+    const d = [p1[0] - p0[0], p1[1] - p0[1]], dl = Math.hypot(d[0], d[1]);
+    wb.strip(2, (j) => {
+      const p = j ? p1 : p0;
+      return [[p[0], yTop, p[1], nx, 0, nz, j * dl, 0], [p[0], yBot, p[1], nx, 0, nz, j * dl, yBot - yTop]];
+    }, () => [d[0] / dl, d[1] / dl], () => [1, 0, 0, 0], info2);
+  }
+}
+
+// ayak başlığı: tabliye altında enine beton kiriş (ön/arka yüz + alt yüz)
+function beam(wb, i, o0, o1, yTop, yBot, px, pz, dirx, dirz, info2) {
+  const t = 0.8;
+  for (const f of [-1, 1]) {
+    const ox = dirx[i] * t * f, oz = dirz[i] * t * f;
+    wb.strip(2, (j) => {
+      const o = j ? o1 : o0;
+      return [[px(i, o) + ox, yTop, pz(i, o) + oz, dirx[i] * f, 0, dirz[i] * f, o, 0],
+              [px(i, o) + ox, yBot, pz(i, o) + oz, dirx[i] * f, 0, dirz[i] * f, o, yBot - yTop]];
+    }, () => [dirz[i], -dirx[i]], () => [1, 0, 0, 0], info2);
+  }
+  wb.strip(2, (j) => {
+    const o = j ? o1 : o0;
+    return [[px(i, o) - dirx[i] * t, yBot, pz(i, o) - dirz[i] * t, 0, -1, 0, o, 0],
+            [px(i, o) + dirx[i] * t, yBot, pz(i, o) + dirz[i] * t, 0, -1, 0, o, 2 * t]];
+  }, () => [dirz[i], -dirx[i]], () => [1, 0, 0, 0], info2);
 }
 
 let roadMat, walkMat;
@@ -664,7 +748,7 @@ let [cx, cz] = toWorld(Number(params.get('lat') || 37.5715), Number(params.get('
 cx += Number(params.get('ox') || 0); cz += Number(params.get('oz') || 0); // test için kaydırma
 const camDist = Number(params.get('d') || 2500);
 controls.target.set(cx, heightAt(cx, cz), cz);
-camera.position.set(cx - camDist * 0.5, heightAt(cx, cz) + camDist * 0.55, cz + camDist * 0.8);
+camera.position.set(cx - camDist * 0.5, heightAt(cx, cz) + camDist * Number(params.get('hy') || 0.55), cz + camDist * 0.8);
 controls.update();
 
 document.getElementById('info').textContent =
