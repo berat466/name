@@ -94,8 +94,8 @@ const TERRAIN_SETS = [
   'mossy_rock',        // 5 yosunlu kaya
 ];
 // Yol katmanları
-// 0-2 asfalt, 3 parke taşı kaldırım, 4 beton
-const ROAD_SETS = ['asphalt_02', 'aerial_asphalt_01', 'asphalt_04', 'herringbone_pavement_04', 'concrete_pavement_02'];
+// 0-2 asfalt, 3-4 toprak (yol kenarı ve boşluklar)
+const ROAD_SETS = ['asphalt_02', 'aerial_asphalt_01', 'asphalt_04', 'dirt_floor', 'brown_mud'];
 
 const [terrainTex, roadTex] = await Promise.all([TERRAIN_SETS, ROAD_SETS].map(loadPbrArray));
 
@@ -417,7 +417,7 @@ function prepareRoads() {
   for (let ri = 0; ri < roads.length; ri++) {
     const road = roads[ri], p = road.p;
 
-    if (!road.b) {
+    if (true) {   // köprüler dahil tüm yollar arazinin üstüne düz çizilir (3B geometri yok)
       // --- zemin yolu: dokuya basılacak. Değdiği karoları kaydet.
       const pad = road.w / 2 + road.s + 3;
       const seen = new Set();
@@ -542,8 +542,8 @@ function bakeMasks(t) {
   };
 
   // 1) kaldırımlar (asfaltın altında kalır) 2) asfalt
-  for (const r of roads) if (r.s > 0) line(g1, r.p, 0, '#0f0', r.w + 2 * r.s);
-  for (const r of roads) line(g1, r.p, 0, '#f00', r.w);
+  for (const r of roads) if (r.s > 0) line(g1, r.p, 0, '#0f0', r.w + 2 * r.s + 0.04);   // yol kenarı: toprak şerit
+  for (const r of roads) line(g1, r.p, 0, '#f00', r.w + 0.04);   // her kenar +2 cm: komşu parçalar birbirine biner
 
   // 3) boya: sarı orta çizgi, beyaz şerit ayırıcı, kenar çizgisi, lastik izi (yerel sokaklarda yok)
   for (const r of roads) {
@@ -574,7 +574,7 @@ function bakeMasks(t) {
     g2.fillStyle = '#000';                       // doku 2: sarı çizgi ve lastik izi sil
     g2.beginPath(); g2.arc(X(e.x), Z(e.z), rad, 0, Math.PI * 2); g2.fill();
     for (const a of e.arms) {
-      if (a.c === 'motorway' || a.c === 'trunk' || !(a.s > 0) || a.w > 30) continue;
+      continue;  // sadeleştirme: yaya geçidi yok
       const usable = a.w - a.sl - a.sr, d0 = e.hw + 1.2, nx = a.dz, nz = -a.dx;   // nx,nz: yolun sağı
       g1.strokeStyle = '#f0f'; g1.lineWidth = 0.5 * BK; g1.setLineDash([]);
       for (let j = 0; j < Math.floor(usable); j++) {
@@ -674,11 +674,11 @@ function roadPatchMaterial(t1, t2) {
     addLayer(tA, tN, vWP.xz / 5.0, 0.0, wa * (1.0 - wB) * (1.0 - wC));
     addLayer(tA, tN, vWP.xz / 8.0, 1.0, wa * wB * (1.0 - wC));
     addLayer(tA, tN, vWP.xz / 4.0, 2.0, wa * wC);
-    addLayer(tA, tN, vWP.xz / 3.0, 3.0, ws * (1.0 - cw));
-    addLayer(tA, tN, vWP.xz / 2.0, 4.0, ws * cw);
+    addLayer(tA, tN, vWP.xz / 4.0, 3.0, ws * (1.0 - cw));
+    addLayer(tA, tN, vWP.xz / 4.0, 4.0, ws * cw);
     ${GLSL_RESOLVE}
-    vec3 col = accA * mix(vec3(0.92), vec3(0.62, 0.63, 0.66), wa);
-    col *= 1.0 - 0.45 * (4.0 * m1.r * m1.g);        // bordür çizgisi: asfalt ile kaldırım sınırı
+    vec3 col = accA * mix(vec3(0.52, 0.47, 0.42), vec3(0.62, 0.63, 0.66), wa);   // toprak koyu kahve, asfalt koyu gri
+    col *= 1.0 - 0.2 * (4.0 * m1.r * m1.g);         // asfalt / toprak sınırında hafif koyulaşma
     col *= 1.0 - 0.4 * m2.g * wa;                   // lastik izleri
     float wear = mix(0.65, 1.0, vnoise(vWP.xz * 0.35));
     float white = smoothstep(0.3, 0.7, m1.b) * wear * wa;
@@ -708,7 +708,7 @@ function buildOverview() {
       g.beginPath();
       let w = 0, any = false;
       for (const r of roadData.roads) {
-        if (r.c !== cls || r.b) continue;
+        if (r.c !== cls) continue;
         any = true; w = Math.max(w, r.w + 2 * r.s);
         for (let i = 0; i < r.p.length; i += 2) {
           const x = (r.p[i] + Wm / 2) * sx, z = (r.p[i + 1] + Dm / 2) * sz;
