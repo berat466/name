@@ -358,7 +358,7 @@ const PROFILE = {
 };
 const PIECE = 48;          // parça başına en fazla nokta
 const TILE = 1500;         // akış karosu (m)
-const CURB_H = 0.15, SKIRT = 2.0;
+const CURB_H = 0.15, SKIRT = 2.0, LIFT = 0.12;   // yol, arazinin 12 cm üstünde (z-çakışması olmasın)
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
 const preparedRoads = [];
@@ -380,7 +380,7 @@ function prepareRoads() {
   }
 
   for (const road of roadData.roads) {
-    const [STEP, WIN, GRADE] = PROFILE[road.c];
+    const [STEP] = PROFILE[road.c];
     const p = road.p;
     const xs = [], zs = [], junctions = [];
     for (let i = 0; i < p.length; i += 2) {
@@ -396,29 +396,11 @@ function prepareRoads() {
     const dist = new Float32Array(N);
     for (let i = 1; i < N; i++) dist[i] = dist[i - 1] + Math.hypot(xs[i] - xs[i - 1], zs[i] - zs[i - 1]);
 
-    // araziye göre profil: hareketli ortalama + eğim sınırı (ileri ve geri geçiş)
+    // Arazi olduğu gibi kalır: yol arazinin yüksekliğini izler (yarma/dolgu/düzleme yok).
+    // Aynı noktada buluşan yollar aynı arazi yüksekliğini okuduğu için kavşakta zaten eşit olur.
     const raw = xs.map((x, i) => heightAt(x, zs[i]));
-    let ys = raw.map((_, i) => {
-      let s = 0, k = 0;
-      for (let j = Math.max(0, i - WIN); j <= Math.min(N - 1, i + WIN); j++) { s += raw[j]; k++; }
-      return s / k;
-    });
-    const f = ys.slice(), b = ys.slice();
-    for (let i = 1; i < N; i++) { const g = GRADE * (dist[i] - dist[i - 1]); f[i] = Math.min(f[i - 1] + g, Math.max(f[i - 1] - g, f[i])); }
-    for (let i = N - 2; i >= 0; i--) { const g = GRADE * (dist[i + 1] - dist[i]); b[i] = Math.min(b[i + 1] + g, Math.max(b[i + 1] - g, b[i])); }
-    ys = ys.map((_, i) => (f[i] + b[i]) / 2 + 0.25);
-
-    // kavşakta tüm yollar aynı yükseklikte buluşsun
-    if (!road.b) {
-      for (const [si, r, e] of junctions) {
-        const target = e.h + 0.25 + (ROAD_ORDER[road.c] === e.o ? 0.02 : 0);
-        const d0 = dist[Math.min(si, N - 1)];
-        for (let i = 0; i < N; i++) {
-          const w = 1 - smooth(r, r + 40, Math.abs(dist[i] - d0));
-          if (w > 0) ys[i] += (target - ys[i]) * w;
-        }
-      }
-    } else {
+    let ys = raw.map((y) => y + LIFT);
+    if (road.b) {
       // köprü: uçlar arasında düz tabliye, altındaki araziden en az 1 m yukarıda
       const y0 = ys[0], y1 = ys[N - 1];
       ys = ys.map((y, i) => Math.max(raw[i] + 1, y0 + (y1 - y0) * i / (N - 1)));
@@ -450,39 +432,6 @@ function prepareRoads() {
         roadTileMap.set(key, (t = { pieces: [], built: {}, cx: (tx + 0.5) * TILE, cz: (tz + 0.5) * TILE }));
       }
       t.pieces.push({ R, a, e });
-    }
-  }
-
-  // Araziyi yola oturt: yol + kaldırım şeridinde zemin = yolun hemen altı (yarma ve dolgu),
-  // dışında 1.5 hücrelik şevle doğal araziye geçiş. Ana yollar baskın; aynı sınıfta en yakın nokta kazanır.
-  const bestD = new Float32Array(H.length).fill(Infinity);
-  const bestO = new Int8Array(H.length).fill(-1);
-  const orig = H.slice();
-  const pad = 0.55 * Math.hypot(dx, dz);
-  const sorted = preparedRoads.filter((R) => !R.road.b).sort((a, b) => ROAD_ORDER[a.road.c] - ROAD_ORDER[b.road.c]);
-  for (const R of sorted) {
-    const ord = ROAD_ORDER[R.road.c];
-    const core = R.road.w / 2 + R.road.s + pad;
-    const bank = 1.5 * dx;
-    for (let i = 0; i < R.N; i++) {
-      const x = R.xs[i], z = R.zs[i], y = R.ys[i] - 0.25;  // zemin yolun hemen altında
-      const c0 = Math.max(0, Math.floor((x - core - bank + Wm / 2) / dx)), c1 = Math.min(cols - 1, Math.ceil((x + core + bank + Wm / 2) / dx));
-      const r0 = Math.max(0, Math.floor((z - core - bank + Dm / 2) / dz)), r1 = Math.min(rows - 1, Math.ceil((z + core + bank + Dm / 2) / dz));
-      for (let r = r0; r <= r1; r++) {
-        for (let c = c0; c <= c1; c++) {
-          const d = Math.hypot(c * dx - Wm / 2 - x, r * dz - Dm / 2 - z);
-          const k = r * cols + c;
-          if (d < core) {
-            if (ord > bestO[k] || (ord === bestO[k] && d < bestD[k])) { H[k] = y; bestD[k] = d; bestO[k] = ord; }
-          } else if (d < core + bank && bestO[k] < 0) {
-            const t = smooth(0, 1, (d - core) / bank);
-            const v = y + (orig[k] - y) * t;
-            // birden çok yolun şevi çakışırsa yola en yakın olanı tut
-            if (bestD[k] === Infinity || Math.abs(v - orig[k]) > Math.abs(H[k] - orig[k])) H[k] = v;
-            bestD[k] = Math.min(bestD[k], 1e5 + d);
-          }
-        }
-      }
     }
   }
 }
@@ -537,6 +486,8 @@ function emitPiece(rb, wb, { R, a, e }) {
   const info2 = [road.sl, road.sr, half, R.zebra];
   const C = () => [1, 0, 0, 0], P = () => [0, 0, 0, 0];
   const bridge = !!road.b, DECK = 1.4;
+  // her enine noktada arazi yüksekliği (köprüde tabliye düz)
+  const gy = (i, o) => (bridge ? ys[i] : ground(i, o) + LIFT);
   // şev: kenardan (o, yTop) araziye doğru iner; arazi yukarıdaysa (yarma) yukarı çıkar
   const graded = (Wf, o, side, yTop) => {
     const outv = (i) => [dirz[i] * side, 0, -dirx[i] * side];
@@ -556,8 +507,12 @@ function emitPiece(rb, wb, { R, a, e }) {
   };
 
   // asfalt
-  rb.strip(n, (j) => { const i = I(j); return [at(i, -half, ys[i], up, dist[i], -half), at(i, half, ys[i], up, dist[i], half)]; },
-    dir, (j) => [road.n, road.o, road.lw, jd[I(j)]], info2);
+  const offs = [-half, -half / 3, half / 3, half];
+  for (let k = 0; k < 3; k++) {
+    const o0 = offs[k], o1 = offs[k + 1];
+    rb.strip(n, (j) => { const i = I(j); return [at(i, o0, gy(i, o0), up, dist[i], o0), at(i, o1, gy(i, o1), up, dist[i], o1)]; },
+      dir, (j) => [road.n, road.o, road.lw, jd[I(j)]], info2);
+  }
 
   // kavşak dışındaki ardışık gruplar (kaldırım ve bariyer kavşakta kesilir)
   const runs = [];
@@ -579,24 +534,25 @@ function emitPiece(rb, wb, { R, a, e }) {
       const out = (i) => [dirz[i] * side, 0, -dirx[i] * side];
       const inw = (i) => [-dirz[i] * side, 0, dirx[i] * side];
       const eo = half * side;
-      let o = eo, yTop = (i) => ys[i];
+      let o = eo, yTop = (i) => gy(i, eo);
       if (road.s > 0) {
-        // bordür yüzü + kaldırım (parke)
-        o = (half + road.s) * side; yTop = (i) => ys[i] + CURB_H;
-        W((i) => [at(i, eo, ys[i] - 0.05, inw(i), dist[i], 0), at(i, eo, yTop(i), inw(i), dist[i], CURB_H)]);
-        W((i) => [at(i, eo, yTop(i), up, dist[i], eo), at(i, o, yTop(i), up, dist[i], o)], P);
+        // bordür yüzü + kaldırım (parke): kaldırım da arazi yüzeyini izler
+        const oo = (half + road.s) * side; o = oo;
+        yTop = (i) => gy(i, oo) + CURB_H;
+        W((i) => [at(i, eo, gy(i, eo) - 0.05, inw(i), dist[i], 0), at(i, eo, gy(i, eo) + CURB_H, inw(i), dist[i], CURB_H)]);
+        W((i) => [at(i, eo, gy(i, eo) + CURB_H, up, dist[i], eo), at(i, oo, yTop(i), up, dist[i], oo)], P);
       } else if (highway && side < 0 && road.o && !bridge) {
         // otoban orta bariyeri (New Jersey tipi beton, 0.9 m)
-        const b1 = eo - 0.6, bh = 0.9;
-        W((i) => [at(i, eo, ys[i] - 0.05, inw(i), dist[i], 0), at(i, eo - 0.15, ys[i] + bh, inw(i), dist[i], bh)]);
-        W((i) => [at(i, eo - 0.15, ys[i] + bh, up, dist[i], 0), at(i, b1 + 0.15, ys[i] + bh, up, dist[i], 0.3)]);
-        W((i) => [at(i, b1 + 0.15, ys[i] + bh, out(i), dist[i], bh), at(i, b1, foot(i, b1, ys[i]), out(i), dist[i], -2)]);
+        const b1 = eo - 0.6, bh = 0.9, yb = (i) => gy(i, eo);
+        W((i) => [at(i, eo, yb(i) - 0.05, inw(i), dist[i], 0), at(i, eo - 0.15, yb(i) + bh, inw(i), dist[i], bh)]);
+        W((i) => [at(i, eo - 0.15, yb(i) + bh, up, dist[i], 0), at(i, b1 + 0.15, yb(i) + bh, up, dist[i], 0.3)]);
+        W((i) => [at(i, b1 + 0.15, yb(i) + bh, out(i), dist[i], bh), at(i, b1, foot(i, b1, yb(i)), out(i), dist[i], -2)]);
         o = b1;
       } else {
         // beton omuz
-        o = (half + 0.5) * side;
-        W((i) => [at(i, eo, ys[i] - 0.02, up, dist[i], eo), at(i, o, ys[i] - 0.02, up, dist[i], o)]);
-        yTop = (i) => ys[i] - 0.02;
+        const oo = (half + 0.5) * side; o = oo;
+        W((i) => [at(i, eo, gy(i, eo) - 0.02, up, dist[i], eo), at(i, oo, gy(i, oo) - 0.02, up, dist[i], oo)]);
+        yTop = (i) => gy(i, oo) - 0.02;
       }
       if (side < 0) outerL = o; else outerR = o;
       topAt = yTop;
