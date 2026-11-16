@@ -282,11 +282,21 @@ function walkMaterial() {
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4,
   });
   patchStandard(mat, { tA: { value: roadTex.alb }, tN: { value: roadTex.nra } }, ROAD_VTX, ROAD_FRAG_DECL, `
-    float layer = vInfo.x;  // 0 = parke, 1 = beton
+    float layer = vInfo.x;  // 0 = kaldırım üstü, 1 = bordür / dik yüz / köprü betonu
     accA = vec3(0.0); accN = vec4(0.0); accW = 0.0;
     addLayer(tA, tN, vRuv / 2.5, 3.0, 1.0);
     ${GLSL_RESOLVE}
-    diffuseColor.rgb *= accA * (0.85 + 0.25 * vnoise(vWP.xz * 0.05));
+    // GTA tarzı düz açık gri beton: dokunun deseni yalnızca parlaklık olarak kalır
+    float Lr = dot(accA, vec3(0.3, 0.55, 0.15));
+    vec3 cc = vec3(0.70, 0.69, 0.66) * (0.75 + 0.5 * Lr) * (0.92 + 0.12 * vnoise(vWP.xz * 0.05));
+    if (layer < 0.5) {                                   // plaka derzleri: yol boyunca 1,5 m'de bir + bordür arkası
+      float a = vRuv.x / 1.5, fw = fwidth(a) + 1e-4;
+      float j = 1.0 - smoothstep(0.0, fw * 1.5, min(fract(a), 1.0 - fract(a)) - 0.012);
+      float b = abs(vRuv.y) - vInfo.z, fb = fwidth(b) + 1e-4;
+      float k = 1.0 - smoothstep(0.0, fb * 1.5, abs(b - 0.3) - 0.012);
+      cc *= 1.0 - 0.32 * max(j, k);
+    } else cc *= 1.2;                                    // dik yüz gölgede kalır: açık tut
+    diffuseColor.rgb *= cc;
     ${GLSL_ROAD_TBN}
   `);
   return mat;
@@ -493,7 +503,7 @@ const TERRAIN_BODY = `
     // yukarıdan aşağı yürütülür; ışın kaldırım sütununa yandan çarparsa bordürün dik yüzü görünür.
     vec2 rp = vWP.xz; float curbFace = 0.0;
     vec3 Vv = normalize(cameraPosition - vWP);
-    if (distance(cameraPosition, vWP) < 110.0 && Vv.y > 0.02) {
+    if (false) {   // eski boyalı bordür (paralaks) kapalı: kaldırım ve bordür artık gerçek 3B geometri
       const float HC = 0.16;
       vec2 sh = Vv.xz / Vv.y * HC;                          // tam yükseklikteki yatay kayma
       float lim = min(1.0, 1.6 / (length(sh) + 1e-4));      // kayma en çok 1,6 m
@@ -530,7 +540,6 @@ const TERRAIN_BODY = `
       float Lr = dot(ra, vec3(0.3, 0.55, 0.15));
       vec3 sCol = vec3(0.72, 0.71, 0.68) * (0.72 + 0.55 * Lr);
       ra = (wa * ra * vec3(0.60, 0.61, 0.64) + ws * sCol + wl * ra * vec3(0.78, 0.78, 0.76)) / max(wa + ws + wl, 1e-3);
-      ra *= 1.0 - 0.3 * smoothstep(0.35, 0.7, m1.b) * ws * (1.0 - wa);   // plaka derzleri
 
       // --- asfalt ayrıntıları ---
       // lastik izleri + oluk kiri (maskenin G kanalı asfalt içinde aşınmayı taşır)
@@ -819,28 +828,6 @@ function bakeMasks(t, res) {
     g1.stroke();
   };
   for (const r of list) if (r.s > 0) body(r, '#0f0', r.w + 2 * r.s);
-  // kaldırım derzleri: beton plaka sınırı her 1,5 m'de bir (B kanalı, kaldırım içinde G=1 korunur)
-  for (const r of list) {
-    if (!(r.s > 0)) continue;
-    const half = r.w / 2;
-    g1.beginPath();
-    let acc = 0;
-    for (let p = r.off; p < r.off + r.len - 1; p++) {
-      const ax = RX[p], az = RZ[p], sx = RX[p + 1] - ax, sz = RZ[p + 1] - az, L = Math.hypot(sx, sz);
-      if (L < 1e-3) continue;
-      const nx = sz / L, nz = -sx / L;
-      for (let d = (1.5 - acc % 1.5) % 1.5; d < L; d += 1.5) {
-        const cx = ax + sx * d / L, cz = az + sz * d / L;
-        for (const sg of [-1, 1]) {
-          g1.moveTo(X(cx + nx * sg * half), Z(cz + nz * sg * half));
-          g1.lineTo(X(cx + nx * sg * (half + r.s)), Z(cz + nz * sg * (half + r.s)));
-        }
-      }
-      acc += L;
-    }
-    g1.strokeStyle = 'rgb(0,255,255)'; g1.lineWidth = Math.max(0.05 * BK, 1.2); g1.lineCap = 'butt';
-    g1.globalAlpha = Math.min(1, 0.4 + 0.05 * BK); g1.stroke(); g1.globalAlpha = 1;
-  }
   for (const r of list) body(r, '#f00', r.w);
   // lastik izleri: her şeridin iki tekerlek yolu, asfalt içinde G kanalına (kaldırımla karışmaz: R=1 kalır)
   for (const r of list) {
@@ -931,11 +918,108 @@ function buildPatch(t, lod) {
   scene.add(mesh);
   if (t.patch) disposePatch(t);
   t.patch = { mesh, lod, cell, n, h: hh, tex };
+  if (lod <= 1) buildWalk(t);
   coverData[t.tz * NT + t.tx] = 255; coverTex.needsUpdate = true;
+}
+// ---------------------------------------------------------------------------
+// Gerçek kaldırım (3B): bordür dik yüzü 16 cm, düz beton üst yüzey, arkada zemine inen kenar.
+// Yol boyunca 1 m aralıkla örneklenir; kavşak ağzında kesilir (kaldırım yola taşmaz).
+// ---------------------------------------------------------------------------
+const CURB = 0.16;
+const juncGrid = new Map();   // 64 m hücre -> kavşak indeksleri
+for (let i = 0; i < rd.junc.length; i += 3) {
+  const k = `${Math.floor(rd.junc[i] / 64)},${Math.floor(rd.junc[i + 1] / 64)}`;
+  if (!juncGrid.has(k)) juncGrid.set(k, []);
+  juncGrid.get(k).push(i);
+}
+// bu noktada kaldırım var mı: kavşak merkezine yakınsa (kesişen yolun yarı genişliği + kaldırım) yok
+function walkCut(x, z, extra) {
+  const cx = Math.floor(x / 64), cz = Math.floor(z / 64);
+  for (let a = cx - 1; a <= cx + 1; a++) for (let b = cz - 1; b <= cz + 1; b++) {
+    const l = juncGrid.get(`${a},${b}`);
+    if (l) for (const i of l) if (Math.hypot(x - rd.junc[i], z - rd.junc[i + 1]) < rd.junc[i + 2] + extra) return true;
+  }
+  return false;
+}
+function buildWalk(t) {
+  if (t.walk) { scene.remove(t.walk); t.walk.geometry.dispose(); t.walk = null; }
+  walkMat ||= walkMaterial();
+  const sb = new StripBuilder();
+  const x0 = t.tx * BT - Wm / 2, z0 = t.tz * BT - Dm / 2;
+  const inTile = (x, z) => x >= x0 && x < x0 + BT && z >= z0 && z < z0 + BT;
+  for (const ri of t.roads) {
+    const r = roads[ri];
+    if (!(r.s > 0) || r.bridge || r.tunnel) continue;
+    const half = r.w / 2, info2 = [r.sl, r.sr, half, 0];
+    // yolu 1 m aralıkla örnekle (karonun içindeki kısmı), yol boyunca mesafe derz için
+    const P = [];
+    let acc = 0;
+    for (let p = r.off; p < r.off + r.len - 1; p++) {
+      const ax = RX[p], az = RZ[p], dxs = RX[p + 1] - ax, dzs = RZ[p + 1] - az, L = Math.hypot(dxs, dzs);
+      if (L < 1e-3) continue;
+      const n = Math.max(1, Math.ceil(L));
+      for (let k = 0; k < n; k++) {
+        const x = ax + dxs * k / n, z = az + dzs * k / n;
+        P.push([x, z, dxs / L, dzs / L, acc + L * k / n]);
+      }
+      acc += L;
+    }
+    const e = r.off + r.len - 1;
+    if (P.length) { const q = P[P.length - 1]; P.push([RX[e], RZ[e], q[2], q[3], acc]); }
+    // yön: komşu örneklerin ortalaması (köşelerde yumuşak dönüş)
+    for (let i = 0; i < P.length; i++) {
+      const a = P[Math.max(0, i - 2)], b = P[Math.min(P.length - 1, i + 2)];
+      const dx2 = b[0] - a[0], dz2 = b[1] - a[1], l = Math.hypot(dx2, dz2) || 1;
+      P[i][2] = dx2 / l; P[i][3] = dz2 / l;
+    }
+    for (const side of [-1, 1]) {
+      // ardışık, kesilmemiş ve karoya ait örnek grupları
+      let run = [];
+      const flush = () => {
+        if (run.length > 1) {
+          const n = run.length, at = (q, o) => [q[0] + q[3] * o * side, q[1] - q[2] * o * side];
+          const pt = (q, o, dy, nrm, v) => { const [x, z] = at(q, o); return [x, groundAt(x, z) + dy, z, nrm[0], nrm[1], nrm[2], q[4], v]; };
+          const dir = (k) => [run[k][2], run[k][3]];
+          const inw = (q) => [-q[3] * side, 0, q[2] * side], out = (q) => [q[3] * side, 0, -q[2] * side];
+          const yTop = (q) => {   // üst yüzey: kaldırımın iç ve dış kenarından yüksek olanı + 16 cm (düz plaka)
+            const [xi, zi] = at(q, half), [xo, zo] = at(q, half + r.s);
+            return Math.max(groundAt(xi, zi), groundAt(xo, zo)) + CURB;
+          };
+          const top = run.map(yTop);
+          const C = () => [1, 0, 0, 0], T = () => [0, 0, half, 0];
+          // bordür dik yüzü (yola bakar)
+          sb.strip(n, (k) => { const q = run[k]; const [x, z] = at(q, half);
+            return [[x, groundAt(x, z) - 0.05, z, ...inw(q), q[4], 0], [x, top[k], z, ...inw(q), q[4], CURB]]; }, dir, C, info2);
+          // üst yüzey (beton plaka)
+          sb.strip(n, (k) => { const q = run[k]; const [xi, zi] = at(q, half), [xo, zo] = at(q, half + r.s);
+            return [[xi, top[k], zi, 0, 1, 0, q[4], half * side], [xo, top[k], zo, 0, 1, 0, q[4], (half + r.s) * side]]; }, dir, T, info2);
+          // arka kenar: zemine iner
+          sb.strip(n, (k) => { const q = run[k]; const [x, z] = at(q, half + r.s);
+            return [[x, top[k], z, ...out(q), q[4], 0], [x, groundAt(x, z) - 0.1, z, ...out(q), q[4], -0.2]]; }, dir, C, info2);
+          // uç kapakları
+          for (const k of [0, n - 1]) {
+            const q = run[k], f = k === 0 ? -1 : 1, nn = [q[2] * f, 0, q[3] * f];
+            sb.strip(2, (j) => { const o = j ? half + r.s : half; const [x, z] = at(q, o);
+              return [[x, top[k], z, ...nn, o, 0], [x, groundAt(x, z) - 0.05, z, ...nn, o, -CURB]]; }, () => [q[3], -q[2]], C, info2);
+          }
+        }
+        run = [];
+      };
+      for (let i = 0; i < P.length; i++) {
+        const q = P[i], [xm, zm] = [q[0] + q[3] * (half + r.s / 2) * side, q[1] - q[2] * (half + r.s / 2) * side];
+        const ok = inTile(q[0], q[1]) || (run.length && inTile(P[i - 1][0], P[i - 1][1]));
+        if (ok && !walkCut(xm, zm, r.s + 0.5)) run.push(q); else flush();
+      }
+      flush();
+    }
+  }
+  const m = sb.mesh(walkMat);
+  if (m) { scene.add(m); t.walk = m; }
 }
 function disposePatch(t) {
   const p = t.patch;
   if (!p) return;
+  if (t.walk) { scene.remove(t.walk); t.walk.geometry.dispose(); t.walk = null; }
   scene.remove(p.mesh);
   p.mesh.geometry.dispose(); p.mesh.material.dispose();
   if (p.tex) { p.tex[0].dispose(); p.tex[1].dispose(); }
