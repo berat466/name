@@ -94,8 +94,8 @@ const TERRAIN_SETS = [
   'mossy_rock',        // 5 yosunlu kaya
 ];
 // Yol katmanları
-// 0-2 asfalt, 3-4 toprak (yol kenarı ve boşluklar)
-const ROAD_SETS = ['asphalt_02', 'aerial_asphalt_01', 'asphalt_04', 'dirt_floor', 'brown_mud'];
+// 0-2 asfalt, 3-4 toprak (yol kenarı ve boşluklar), 5 beton (köprü)
+const ROAD_SETS = ['asphalt_02', 'aerial_asphalt_01', 'asphalt_04', 'dirt_floor', 'brown_mud', 'concrete_pavement_02'];
 
 const [terrainTex, roadTex] = await Promise.all([TERRAIN_SETS, ROAD_SETS].map(loadPbrArray));
 
@@ -329,7 +329,7 @@ function walkMaterial() {
   patchStandard(mat, { tA: { value: roadTex.alb }, tN: { value: roadTex.nra } }, ROAD_VTX, ROAD_FRAG_DECL, `
     float layer = vInfo.x;  // 0 = parke, 1 = beton
     accA = vec3(0.0); accN = vec4(0.0); accW = 0.0;
-    addLayer(tA, tN, vRuv / (layer < 0.5 ? 3.0 : 2.0), layer < 0.5 ? 3.0 : 4.0, 1.0);
+    addLayer(tA, tN, vRuv / 2.5, 5.0, 1.0);
     ${GLSL_RESOLVE}
     diffuseColor.rgb *= accA * (0.85 + 0.25 * vnoise(vWP.xz * 0.05));
     ${GLSL_ROAD_TBN}
@@ -417,7 +417,7 @@ function prepareRoads() {
   for (let ri = 0; ri < roads.length; ri++) {
     const road = roads[ri], p = road.p;
 
-    if (true) {   // köprüler dahil tüm yollar arazinin üstüne düz çizilir (3B geometri yok)
+    if (!road.b) {   // zemin yolları arazinin üstüne basılır; köprüler ayrı 3B model (aşağıda)
       // --- zemin yolu: dokuya basılacak. Değdiği karoları kaydet.
       const pad = road.w / 2 + road.s + 3;
       const seen = new Set();
@@ -467,7 +467,9 @@ function prepareRoads() {
     let ys = raw.map((y) => y + LIFT);
     // köprü: uçlar arasında düz tabliye, altındaki araziden en az 1 m yukarıda
     const y0 = ys[0], y1 = ys[N - 1];
-    ys = ys.map((y, i) => Math.max(raw[i] + 1, y0 + (y1 - y0) * i / (N - 1)));
+    const total = dist[N - 1];
+    ys = ys.map((y, i) => Math.max(raw[i] + LIFT + Math.min(1.5, 0.075 * Math.min(dist[i], total - dist[i])),
+      y0 + (y1 - y0) * i / (N - 1)));
     const dirx = new Float32Array(N), dirz = new Float32Array(N);
     for (let i = 0; i < N; i++) {
       const a = Math.max(0, i - 1), c = Math.min(N - 1, i + 1);
