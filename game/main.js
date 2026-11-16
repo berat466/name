@@ -163,8 +163,8 @@ function terrainMaterial() {
   const mat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0,
     polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 4 });  // arazi yolun gerisinde: taşma olmaz
   patchStandard(mat, { tA: { value: terrainTex.alb }, tN: { value: terrainTex.nra },
-    tRoad: { value: overviewTex }, uWorld: { value: new THREE.Vector2(Wm, Dm) },
-    uNear: { value: new THREE.Vector2(PATCH_RADIUS * 0.82, PATCH_RADIUS * 1.0) } }, {}, 'uniform sampler2D tRoad; uniform vec2 uWorld, uNear;', `
+    tRoad: { value: overviewTex }, tWater: { value: waterTex }, uWorld: { value: new THREE.Vector2(Wm, Dm) },
+    uNear: { value: new THREE.Vector2(PATCH_RADIUS * 0.82, PATCH_RADIUS * 1.0) } }, {}, 'uniform sampler2D tRoad, tWater; uniform vec2 uWorld, uNear;', `
     vec3 N0 = normalize(vWN);
     float slope = 1.0 - N0.y;
     float n1 = vnoise(vWP.xz * 0.004) * 0.6 + vnoise(vWP.xz * 0.02) * 0.4;
@@ -207,11 +207,19 @@ function terrainMaterial() {
     float rmask = texture2D(tRoad, (vWP.xz + uWorld * 0.5) / uWorld).r;
     float farF = smoothstep(uNear.x, uNear.y, length(vWP.xz - cameraPosition.xz));
     col = mix(col, vec3(0.2, 0.2, 0.22), rmask * farF * 0.9);
+    // su: kıyıda sığ yeşilimsi, ortada derin mavi
+    float wsoft = texture2D(tWater, (vWP.xz + uWorld * 0.5) / uWorld).r;
+    float wm = smoothstep(0.4, 0.6, wsoft);
+    float shore = smoothstep(0.4, 0.95, wsoft);
+    vec3 waterCol = mix(vec3(0.16, 0.26, 0.22), vec3(0.04, 0.13, 0.2), shore);
+    col = mix(col, waterCol, wm);
+    blendR = mix(blendR, 0.06, wm);
     diffuseColor.rgb *= col;
 
     vec3 Tg = normalize(vec3(1.0, 0.0, 0.0) - N0 * N0.x);
     vec3 Bt = normalize(cross(Tg, N0));
     blendN = normalize(Tg * tn.x + Bt * tn.y + N0 * tn.z);
+    blendN = normalize(mix(blendN, N0, wm));   // su düz
   `);
   return mat;
 }
@@ -361,6 +369,7 @@ export function heightAt(x, z) {
 //   4) görüntüyü kameranın çevresinde akış halinde üret (GTA tarzı streaming)
 // ---------------------------------------------------------------------------
 const roadData = await fetch('./data/roads.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+const waterData = await fetch('./data/water.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
 const ROAD_ORDER = { residential: 0, unclassified: 0, tertiary: 1, secondary: 2, primary: 3, trunk: 4, motorway: 5 };
 const MINOR = new Set(['residential', 'unclassified', 'tertiary']);
 // sınıf -> [örnekleme aralığı m, profil yumuşatma (örnek), en fazla eğim]
@@ -697,6 +706,34 @@ function roadPatchMaterial(t1, t2) {
   return mat;
 }
 
+// Su maskesi (Han Nehri, göller): tüm şehir tek doku, arazi shader'ı suyu boyar
+function buildWaterTex() {
+  const OW = 4096, OH = Math.round(OW * Dm / Wm), sx = OW / Wm, sz = OH / Dm;
+  const c = document.createElement('canvas');
+  c.width = OW; c.height = OH;
+  const g = c.getContext('2d', { alpha: false });
+  g.fillStyle = '#000'; g.fillRect(0, 0, OW, OH);
+  g.fillStyle = '#fff';
+  if (waterData) {
+    for (const rings of waterData.polys) {
+      g.beginPath();
+      for (const r of rings) {
+        for (let i = 0; i < r.length; i += 2) {
+          const x = (r[i] + Wm / 2) * sx, z = (r[i + 1] + Dm / 2) * sz;
+          if (i) g.lineTo(x, z); else g.moveTo(x, z);
+        }
+        g.closePath();
+      }
+      g.fill('evenodd');   // dış halka dolu, iç halkalar (adalar) boş
+    }
+  }
+  const tx = new THREE.CanvasTexture(c);
+  tx.flipY = false;
+  tx.wrapS = tx.wrapT = THREE.ClampToEdgeWrapping;
+  tx.anisotropy = maxAniso;
+  return tx;
+}
+
 // Uzaktaki yollar: tüm şehrin tek bir düşük çözünürlüklü maskesi (arazi shader'ı okur)
 function buildOverview() {
   const OW = 4096, OH = Math.round(OW * Dm / Wm), sx = OW / Wm, sz = OH / Dm;
@@ -1002,6 +1039,7 @@ export function heightMesh(x, z) {
 
 // Araziyi 128x128 hücrelik parçalara böl (görüş dışındakiler çizilmez)
 const overviewTex = buildOverview();
+const waterTex = buildWaterTex();
 const terrainMat = terrainMaterial();
 const CH = 128;
 const terrain = new THREE.Group();

@@ -16,6 +16,7 @@ Sonra tarayıcıda http://localhost:8000 adresini aç.
 - Yollar arazinin üstüne düz çizilir (3B geometri yok), kenarları toprakla doldurulur.
   ana cadde şeridi 3,5 m + 4 m kaldırım, mahalle sokağı 2 × 3 m + 2,5 m kaldırım.
 - `textures/`: Poly Haven PBR dokuları (CC0), 2K.
+- `data/water.json`: Han Nehri, göller ve büyük dereler (OSM), `tools/build_water.py` ile üretildi.
 
 ## Kontroller
 - **Telefon:** uçuş modu. Sol yarıya bas ve sürükle → ilerle (joystick); sağ yarıyı sürükle → etrafına bak;
