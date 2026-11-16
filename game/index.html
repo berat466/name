@@ -14,7 +14,7 @@
          background: rgba(15,20,28,.62); color: #e8eef5; font-size: 12px; line-height: 1.45; border-radius: 8px;
          max-width: calc(100vw - 90px); pointer-events: none; }
   #hud b { color: #fff; }
-  #hud small { opacity: .65; font-size: 10px; }
+  #hud small { opacity: .65; font-size: 10px; display: block; max-width: 300px; }
   #load { position: fixed; inset: 0; display: grid; place-items: center; color: #fff; font-size: 18px;
           background: #1b2430; transition: opacity .4s; z-index: 10; }
   #ui { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
@@ -42,10 +42,10 @@
 <body>
 <div id="load">Harita yükleniyor…</div>
 <div id="hud">
-  <b>Harita</b> · <span id="info"></span><br>
+  <b id="name">Harita</b> · <span id="info"></span><br>
   <span id="pos"></span>
   <div id="help"><small>Sol tık: kaydır · Sağ tık: döndür · Tekerlek: yakınlaş · WASD hareket<br>✈ düğmesi: uçuş modu (WASD + fare, Q/E alçal-yüksel, Shift hızlı)</small></div>
-  <small>Yol verisi © OpenStreetMap katkıda bulunanlar (ODbL)</small>
+  <small id="attr"></small>
 </div>
 <script type="module" src="./main.js"></script>
 </body>
