@@ -537,6 +537,23 @@ function emitPiece(rb, wb, { R, a, e }) {
   const info2 = [road.sl, road.sr, half, R.zebra];
   const C = () => [1, 0, 0, 0], P = () => [0, 0, 0, 0];
   const bridge = !!road.b, DECK = 1.4;
+  // şev: kenardan (o, yTop) araziye doğru iner; arazi yukarıdaysa (yarma) yukarı çıkar
+  const graded = (Wf, o, side, yTop) => {
+    const outv = (i) => [dirz[i] * side, 0, -dirx[i] * side];
+    const L = (i) => Math.min(14, Math.max(0.4, Math.abs(yTop(i) - ground(i, o + side * 3)) * 2));
+    const STEPS = 3;
+    for (let k = 0; k < STEPS; k++) {
+      const t0 = k / STEPS, t1 = (k + 1) / STEPS;
+      const yAt = (i, t) => {
+        const l = L(i), g = ground(i, o + side * l * t);
+        return yTop(i) + (g - 0.05 - yTop(i)) * (t * t * (3 - 2 * t));
+      };
+      Wf((i) => [
+        at(i, o + side * L(i) * t0, yAt(i, t0), outv(i), dist[i], L(i) * t0),
+        at(i, o + side * L(i) * t1, yAt(i, t1), outv(i), dist[i], L(i) * t1),
+      ]);
+    }
+  };
 
   // asfalt
   rb.strip(n, (j) => { const i = I(j); return [at(i, -half, ys[i], up, dist[i], -half), at(i, half, ys[i], up, dist[i], half)]; },
@@ -593,7 +610,8 @@ function emitPiece(rb, wb, { R, a, e }) {
         if (side < 0) outerL = o2; else outerR = o2;
       } else if (!(highway && side < 0 && road.o && road.s === 0)) {
         // dış yan duvar: araziye kadar iner (dolguda istinat duvarı olur, altı asla boş kalmaz)
-        W((i) => [at(i, o, yTop(i), out(i), dist[i], 0), at(i, o, foot(i, o, yTop(i)), out(i), dist[i], -2)]);
+        // dış kenardan araziye eğimli şev (1:2): yol araziye karışır, dik duvar yok
+        graded(W, o, side, yTop, i0 => i0);
       }
     }
 
