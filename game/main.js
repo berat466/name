@@ -4,8 +4,12 @@ import { MapControls } from 'three/addons/controls/MapControls.js';
 // ---------------------------------------------------------------------------
 // Sahne
 // ---------------------------------------------------------------------------
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const params = new URLSearchParams(location.search);
+// dokunmatik cihaz (telefon/tablet): uçuş kamerası, düşük bellek ve hafif çizim
+const isTouch = params.get('touch') === '1' || (params.get('touch') !== '0' &&
+  (matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window));
+const renderer = new THREE.WebGLRenderer({ antialias: !isTouch });
+renderer.setPixelRatio(Math.min(devicePixelRatio, isTouch ? 1.5 : 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
@@ -36,7 +40,8 @@ controls.zoomToCursor = true;
 // Dokular (Poly Haven, CC0, 2K) — birden çok PBR seti doku dizisi (texture array) olarak
 // ---------------------------------------------------------------------------
 const maxAniso = renderer.capabilities.getMaxAnisotropy();
-const TEX = 2048;
+// Telefonda 1K (4 kat az bellek); ?q=2k ile 2K zorlanabilir
+const TEX = (isTouch && params.get('q') !== '2k') ? 1024 : 2048;
 
 async function loadImg(url) {
   const img = new Image();
@@ -364,6 +369,12 @@ const CURB_H = 0.15, SKIRT = 2.0, LIFT = 0.12;   // yol, arazinin 12 cm üstünd
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
 const preparedRoads = [];
+function tileAt(x, z) {
+  const tx = Math.floor(x / TILE), tz = Math.floor(z / TILE), key = `${tx},${tz}`;
+  let t = roadTileMap.get(key);
+  if (!t) roadTileMap.set(key, (t = { pieces: [], junctions: [], built: {}, cx: (tx + 0.5) * TILE, cz: (tz + 0.5) * TILE }));
+  return t;
+}
 const roadTileMap = new Map();   // "tx,tz" -> { pieces: [], built: { major, minor } }
 
 function prepareRoads() {
@@ -376,8 +387,9 @@ function prepareRoads() {
     for (let i = 0; i < road.p.length; i += 2) {
       const k = jkey(road.p[i], road.p[i + 1]);
       let e = jmap.get(k);
-      if (!e) jmap.set(k, (e = { n: 0, mid: 0, r: 0, o: 0, h: heightAt(road.p[i], road.p[i + 1]) }));
+      if (!e) jmap.set(k, (e = { n: 0, mid: 0, r: 0, o: 0, hw: 0, x: road.p[i], z: road.p[i + 1], h: 0 }));
       e.n++; e.r = Math.max(e.r, reach); e.o = Math.max(e.o, ROAD_ORDER[road.c]);
+      e.hw = Math.max(e.hw, road.w / 2);
       if (i > 0 && i < road.p.length - 2) e.mid++;   // yolun ortasından geçiyor
     }
   }
@@ -430,14 +442,14 @@ function prepareRoads() {
 
     for (let a = 0; a < N - 1; a += PIECE - 1) {
       const e = Math.min(N, a + PIECE), m = (a + e) >> 1;
-      const key = `${Math.floor(R.xs[m] / TILE)},${Math.floor(R.zs[m] / TILE)}`;
-      let t = roadTileMap.get(key);
-      if (!t) {
-        const [tx, tz] = key.split(',').map(Number);
-        roadTileMap.set(key, (t = { pieces: [], built: {}, cx: (tx + 0.5) * TILE, cz: (tz + 0.5) * TILE }));
-      }
+      const t = tileAt(R.xs[m], R.zs[m]);
       t.pieces.push({ R, a, e });
     }
+  }
+
+  // gerçek kavşaklar: kendi şekli (daire) çizilir
+  for (const e of jmap.values()) {
+    if (e.n > 2 || (e.n === 2 && e.mid > 0)) tileAt(e.x, e.z).junctions.push(e);
   }
 }
 
@@ -457,6 +469,17 @@ class StripBuilder {
         this.idx.push(q, q + 2, q + 1, q + 1, q + 2, q + 3);
       }
     }
+  }
+  // kavşak diski: merkez + halka, şerit çizgisi / yaya geçidi / lastik izi olmayan düz asfalt
+  fan(cx, cz, r, yAt) {
+    const SEG = 24, base = this.pos.length / 3;
+    const push = (x, z) => {
+      this.pos.push(x, yAt(x, z), z); this.nor.push(0, 1, 0); this.ruv.push(x, z); this.rdir.push(1, 0);
+      this.rinfo.push(1, 1, 1e9, 1e6); this.rinfo2.push(0, 0, 1e7, 0);
+    };
+    push(cx, cz);
+    for (let k = 0; k < SEG; k++) { const t = (k / SEG) * Math.PI * 2; push(cx + Math.cos(t) * r, cz + Math.sin(t) * r); }
+    for (let k = 0; k < SEG; k++) this.idx.push(base, base + 1 + k, base + 1 + ((k + 1) % SEG));
   }
   mesh(mat) {
     if (!this.idx.length) return null;
@@ -494,7 +517,7 @@ function emitPiece(rb, wb, { R, a, e }) {
   // her enine noktada arazi yüksekliği (köprüde tabliye düz)
   // yol sınıfına göre 1,5 cm yükseklik farkı: kavşakta üst üste binen yollarda ana yol üstte kalır,
   // aynı düzlemde titreme (z-çakışması) olmaz
-  const bias = ROAD_ORDER[road.c] * 0.015;
+  const bias = ROAD_ORDER[road.c] * 0.03;
   const gy = (i, o) => (bridge ? ys[i] : ground(i, o) + LIFT + bias);
   // şev: kenardan (o, yTop) araziye doğru iner; arazi yukarıdaysa (yarma) yukarı çıkar
   const graded = (Wf, o, side, yTop) => {
@@ -666,6 +689,10 @@ function buildTilePart(t, part) {
   roadMat ||= roadMaterial(); walkMat ||= walkMaterial();
   const rb = new StripBuilder(), wb = new StripBuilder();
   for (const pc of t.pieces) if (MINOR.has(pc.R.road.c) === (part === 'minor')) emitPiece(rb, wb, pc);
+  // kavşak diski: sınıf yüksekliklerinin (en çok 0.15) üstünde, böylece üst üste binen yollar temiz kapanır
+  for (const e of t.junctions) {
+    if ((e.o <= 1) === (part === 'minor')) rb.fan(e.x, e.z, e.hw, (x, z) => heightMesh(x, z) + LIFT + 0.2);
+  }
   const g = new THREE.Group();
   const a = rb.mesh(roadMat), b = wb.mesh(walkMat);
   if (a) g.add(a);
@@ -747,57 +774,188 @@ scene.add(terrain);
 const roadCount = preparedRoads.length;
 
 // ---------------------------------------------------------------------------
-// Başlangıç kamerası: Seul merkezi (Jongno), güneybatıdan bakış
+// Başlangıç kamerası ve kamera modları
+//   uçuş (fly): telefonda varsayılan; sol baş parmak hareket, sağ baş parmak bakış
+//   harita (orbit): masaüstünde varsayılan; fare ile kaydır / döndür / yakınlaş
 // ---------------------------------------------------------------------------
 function toWorld(lat, lon) {
-  const [latMin, lonMin, latMax] = meta.bbox;
+  const [, lonMin, latMax] = meta.bbox;
   const mlon = 111320 * Math.cos(((meta.bbox[0] + meta.bbox[2]) / 2) * Math.PI / 180);
   return [(lon - lonMin) * mlon - Wm / 2, (latMax - lat) * 111320 - Dm / 2];
 }
-const params = new URLSearchParams(location.search);
+function toLatLon(x, z) {
+  const [, lonMin, latMax] = meta.bbox;
+  const mlon = 111320 * Math.cos(((meta.bbox[0] + meta.bbox[2]) / 2) * Math.PI / 180);
+  return [latMax - (z + Dm / 2) / 111320, lonMin + (x + Wm / 2) / mlon];
+}
 let [cx, cz] = toWorld(Number(params.get('lat') || 37.5715), Number(params.get('lon') || 126.9768)); // varsayılan: Gwanghwamun
 cx += Number(params.get('ox') || 0); cz += Number(params.get('oz') || 0); // test için kaydırma
-const camDist = Number(params.get('d') || 2500);
+const camDist = Number(params.get('d') || (isTouch ? 700 : 2500));
 controls.target.set(cx, heightAt(cx, cz), cz);
 camera.position.set(cx - camDist * 0.5, heightAt(cx, cz) + camDist * Number(params.get('hy') || 0.55), cz + camDist * 0.8);
 controls.update();
 
+camera.rotation.order = 'YXZ';
+let mode = params.get('mode') || (isTouch ? 'fly' : 'orbit');
+let yaw = 0, pitch = 0;
+const tmpV = new THREE.Vector3();
+function anglesFromCamera() {
+  camera.getWorldDirection(tmpV);
+  yaw = Math.atan2(-tmpV.x, -tmpV.z);
+  pitch = Math.asin(THREE.MathUtils.clamp(tmpV.y, -1, 1));
+}
+// ---- arayüz ----
+const ui = document.createElement('div');
+ui.id = 'ui';
+ui.innerHTML = `
+  <div id="joy"><div id="knob"></div></div>
+  <div class="btn" id="bMode" title="Kamera modu">🗺</div>
+  <div class="btn" id="bUp">▲</div>
+  <div class="btn" id="bDown">▼</div>
+  <div class="btn" id="bSpeed"></div>
+  <div id="hint">Sol baş parmak: ekrana bas ve sürükle → ilerle<br>Sağ baş parmak: sürükle → etrafına bak<br>▲ ▼: yüksel / alçal</div>`;
+document.body.appendChild(ui);
+const $ = (id) => document.getElementById(id);
+const SPEEDS = [15, 60, 200, 600];            // m/s
+let speedIdx = params.has('speed') ? Number(params.get('speed')) : 1;
+const joy = { x: 0, y: 0 }, hold = { up: false, down: false };
+const refreshUi = () => {
+  const fly = mode === 'fly';
+  for (const id of ['bUp', 'bDown', 'bSpeed']) $(id).style.display = fly ? 'grid' : 'none';
+  $('bSpeed').textContent = `${SPEEDS[speedIdx]}\nm/s`;
+  $('bMode').textContent = fly ? '🗺' : '✈';
+  $('hint').style.display = fly && isTouch ? 'block' : 'none';
+};
+function setMode(m) {
+  mode = m;
+  controls.enabled = m === 'orbit';
+  if (m === 'fly') anglesFromCamera();
+  else {
+    // bakılan yeri hedef yap (en çok 3 km ileri)
+    camera.getWorldDirection(tmpV);
+    const agl = Math.max(30, camera.position.y - heightAt(camera.position.x, camera.position.z));
+    const dist = Math.min(3000, agl / Math.max(0.15, -tmpV.y));
+    controls.target.copy(camera.position).addScaledVector(tmpV, dist);
+    controls.target.y = heightAt(controls.target.x, controls.target.z);
+  }
+  refreshUi();
+}
+controls.enabled = mode === 'orbit';
+if (mode === 'fly') anglesFromCamera();
+refreshUi();
+setTimeout(() => { $('hint').style.opacity = 0; }, 9000);
+
+$('bMode').addEventListener('click', () => setMode(mode === 'fly' ? 'orbit' : 'fly'));
+$('bSpeed').addEventListener('click', () => { speedIdx = (speedIdx + 1) % SPEEDS.length; refreshUi(); });
+for (const [id, key] of [['bUp', 'up'], ['bDown', 'down']]) {
+  const el = $(id);
+  el.addEventListener('pointerdown', (e) => { hold[key] = true; try { el.setPointerCapture(e.pointerId); } catch {} e.preventDefault(); });
+  const off = () => { hold[key] = false; };
+  el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off);
+}
+
+// ---- dokunma / fare: sol bölge = joystick, diğer her yer = bakış ----
+const cv = renderer.domElement;
+cv.style.touchAction = 'none';
+const ptrs = new Map();
+const JR = 56; // joystick yarıçapı (px)
+cv.addEventListener('pointerdown', (e) => {
+  if (mode !== 'fly') return;
+  try { cv.setPointerCapture(e.pointerId); } catch {}
+  const joyFree = ![...ptrs.values()].some((p) => p.role === 'joy');
+  const role = e.pointerType === 'touch' && joyFree && e.clientX < innerWidth * 0.5 && e.clientY > innerHeight * 0.3 ? 'joy' : 'look';
+  ptrs.set(e.pointerId, { role, sx: e.clientX, sy: e.clientY, lx: e.clientX, ly: e.clientY });
+  if (role === 'joy') {
+    $('joy').style.display = 'block'; $('joy').style.left = e.clientX + 'px'; $('joy').style.top = e.clientY + 'px';
+    $('knob').style.transform = 'translate(0,0)';
+  }
+});
+cv.addEventListener('pointermove', (e) => {
+  const p = ptrs.get(e.pointerId);
+  if (!p || mode !== 'fly') return;
+  if (p.role === 'joy') {
+    let dx = e.clientX - p.sx, dy = e.clientY - p.sy;
+    const l = Math.hypot(dx, dy);
+    if (l > JR) { dx *= JR / l; dy *= JR / l; }
+    joy.x = dx / JR; joy.y = -dy / JR;
+    $('knob').style.transform = `translate(${dx}px,${dy}px)`;
+  } else {
+    yaw -= (e.clientX - p.lx) * 0.0045;
+    pitch = THREE.MathUtils.clamp(pitch - (e.clientY - p.ly) * 0.0045, -1.5, 1.5);
+    p.lx = e.clientX; p.ly = e.clientY;
+  }
+});
+const endPtr = (e) => {
+  const p = ptrs.get(e.pointerId);
+  if (!p) return;
+  if (p.role === 'joy') { joy.x = joy.y = 0; $('joy').style.display = 'none'; }
+  ptrs.delete(e.pointerId);
+};
+cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
+
 document.getElementById('info').textContent =
-  `Alan: ${(Wm / 1000).toFixed(1)} × ${(Dm / 1000).toFixed(1)} km · ${roadCount ? roadCount + ' yol' : 'yol verisi yok'}`;
+  `${(Wm / 1000).toFixed(1)} × ${(Dm / 1000).toFixed(1)} km · ${roadCount ? roadCount + ' yol' : 'yol yok'}`;
+const hudHelp = document.getElementById('help');
+if (hudHelp) hudHelp.style.display = isTouch ? 'none' : 'block';
 
 // ---------------------------------------------------------------------------
-// Klavye ile hareket
+// Hareket döngüsü
 // ---------------------------------------------------------------------------
 const keys = new Set();
 addEventListener('keydown', (e) => keys.add(e.code));
 addEventListener('keyup', (e) => keys.delete(e.code));
 const clock = new THREE.Clock();
-const fwd = new THREE.Vector3(), right = new THREE.Vector3();
+const fwd = new THREE.Vector3(), right = new THREE.Vector3(), move = new THREE.Vector3();
+let frame = 0;
 
 function tick() {
   const dt = Math.min(clock.getDelta(), 0.1);
-  const dist = camera.position.distanceTo(controls.target);
-  const speed = dist * 0.8 * dt;
-  camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
-  right.crossVectors(fwd, camera.up).normalize();
-  const move = new THREE.Vector3();
-  if (keys.has('KeyW') || keys.has('ArrowUp')) move.add(fwd);
-  if (keys.has('KeyS') || keys.has('ArrowDown')) move.sub(fwd);
-  if (keys.has('KeyD') || keys.has('ArrowRight')) move.add(right);
-  if (keys.has('KeyA') || keys.has('ArrowLeft')) move.sub(right);
-  if (move.lengthSq()) {
-    move.normalize().multiplyScalar(speed);
-    camera.position.add(move); controls.target.add(move);
+  let sx, sz;
+  if (mode === 'fly') {
+    const boost = keys.has('ShiftLeft') || keys.has('ShiftRight') ? 3 : 1;
+    const f = THREE.MathUtils.clamp(joy.y + (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0), -1, 1);
+    const r = THREE.MathUtils.clamp(joy.x + (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0), -1, 1);
+    const v = (hold.up || keys.has('Space') || keys.has('KeyE') ? 1 : 0) - (hold.down || keys.has('KeyQ') ? 1 : 0);
+    camera.rotation.set(pitch, yaw, 0);
+    camera.getWorldDirection(fwd);
+    right.crossVectors(fwd, camera.up).normalize();
+    const sp = SPEEDS[speedIdx] * boost;
+    move.set(0, 0, 0).addScaledVector(fwd, f).addScaledVector(right, r);
+    if (move.lengthSq() > 1) move.normalize();
+    camera.position.addScaledVector(move, sp * dt);
+    camera.position.y += v * sp * 0.6 * dt;
+    sx = camera.position.x; sz = camera.position.z;
+  } else {
+    const dist = camera.position.distanceTo(controls.target);
+    const speed = dist * 0.8 * dt;
+    camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
+    right.crossVectors(fwd, camera.up).normalize();
+    move.set(0, 0, 0);
+    if (keys.has('KeyW') || keys.has('ArrowUp')) move.add(fwd);
+    if (keys.has('KeyS') || keys.has('ArrowDown')) move.sub(fwd);
+    if (keys.has('KeyD') || keys.has('ArrowRight')) move.add(right);
+    if (keys.has('KeyA') || keys.has('ArrowLeft')) move.sub(right);
+    if (move.lengthSq()) {
+      move.normalize().multiplyScalar(speed);
+      camera.position.add(move); controls.target.add(move);
+    }
+    sx = controls.target.x; sz = controls.target.z;
   }
-  // kamera arazinin altına girmesin
+  // kamera arazinin altına girmesin; harita sınırları içinde kalsın
+  camera.position.x = THREE.MathUtils.clamp(camera.position.x, -Wm / 2, Wm / 2);
+  camera.position.z = THREE.MathUtils.clamp(camera.position.z, -Dm / 2, Dm / 2);
   const gy = heightAt(camera.position.x, camera.position.z) + 3;
   if (camera.position.y < gy) camera.position.y = gy;
 
-  // yolları kameranın (yere düşen) hedef noktası çevresinde akış halinde üret
-  streamRoads(controls.target.x, controls.target.z, params.has('still') ? 1e9 : 6);
+  // yolları kameranın çevresinde akış halinde üret
+  streamRoads(sx, sz, params.has('still') ? 1e9 : 6);
 
-  controls.update();
+  if (mode === 'orbit') controls.update();
   renderer.render(scene, camera);
+  if (++frame % 20 === 1) {
+    const [la, lo] = toLatLon(camera.position.x, camera.position.z);
+    $('pos').textContent = `${la.toFixed(4)}, ${lo.toFixed(4)} · yük. ${Math.round(camera.position.y - heightAt(camera.position.x, camera.position.z))} m`;
+  }
   if (!params.has('still')) requestAnimationFrame(tick); // ?still: tek kare (test için)
 }
 
@@ -810,5 +968,6 @@ addEventListener('resize', () => {
 const load = document.getElementById('load');
 load.style.opacity = 0;
 setTimeout(() => load.remove(), 500);
+window.__cam = camera; // test için
 window.__ready = true;
 tick();

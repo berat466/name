@@ -16,3 +16,9 @@ Sonra tarayıcıda http://localhost:8000 adresini aç.
 - Yol genişlikleri Avrupa / GTA 5 ölçeğinde: otoban şeridi 3,75 m + 3 m emniyet şeridi,
   ana cadde şeridi 3,5 m + 4 m kaldırım, mahalle sokağı 2 × 3 m + 2,5 m kaldırım.
 - `textures/`: Poly Haven PBR dokuları (CC0), 2K.
+
+## Kontroller
+- **Telefon:** uçuş modu. Sol yarıya bas ve sürükle → ilerle (joystick); sağ yarıyı sürükle → etrafına bak;
+  ▲ ▼ → yüksel / alçal; yuvarlak hız düğmesi → 15 / 60 / 200 / 600 m/s; sağ üstteki düğme → harita moduna geç.
+  Telefonda doku boyutu 1K ve kenar yumuşatma kapalı (bellek ve hız için). 2K için adrese `?q=2k` ekle.
+- **Bilgisayar:** harita modu (fare). Sağ üstteki ✈ düğmesi uçuş moduna geçirir (WASD + fare sürükle, Q/E alçal-yüksel, Shift hızlı).
