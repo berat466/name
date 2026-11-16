@@ -55,9 +55,10 @@ async function loadPbrArray(names) {
   const ctx = cv.getContext('2d', { willReadFrequently: true });
   const read = (img) => { ctx.drawImage(img, 0, 0, TEX, TEX); return ctx.getImageData(0, 0, TEX, TEX).data; };
 
+  // tüm görselleri aynı anda indir ve çöz (sırayla beklemek açılışı uzatıyordu)
+  const loading = names.map((nm0) => Promise.all(['diff', 'nor_gl', 'arm'].map((m) => loadImg(`./textures/${nm0}/${m}.jpg`))));
   for (let i = 0; i < n; i++) {
-    const base = `./textures/${names[i]}/`;
-    const [d, nm, arm] = await Promise.all(['diff', 'nor_gl', 'arm'].map((m) => loadImg(base + m + '.jpg')));
+    const [d, nm, arm] = await loading[i];
     alb.set(read(d), layer * i);
     const N = read(nm), A = read(arm), o = layer * i;
     for (let p = 0; p < layer; p += 4) {
@@ -375,8 +376,9 @@ function prepareRoads() {
     for (let i = 0; i < road.p.length; i += 2) {
       const k = jkey(road.p[i], road.p[i + 1]);
       let e = jmap.get(k);
-      if (!e) jmap.set(k, (e = { n: 0, r: 0, o: 0, h: heightAt(road.p[i], road.p[i + 1]) }));
+      if (!e) jmap.set(k, (e = { n: 0, mid: 0, r: 0, o: 0, h: heightAt(road.p[i], road.p[i + 1]) }));
       e.n++; e.r = Math.max(e.r, reach); e.o = Math.max(e.o, ROAD_ORDER[road.c]);
+      if (i > 0 && i < road.p.length - 2) e.mid++;   // yolun ortasından geçiyor
     }
   }
 
@@ -386,7 +388,9 @@ function prepareRoads() {
     const xs = [], zs = [], junctions = [];
     for (let i = 0; i < p.length; i += 2) {
       const e = jmap.get(jkey(p[i], p[i + 1]));
-      if (e && e.n > 1) junctions.push([xs.length, e.r + 1, e]);
+      // gerçek kavşak: 3+ yol uçu ya da bir yol başka yolun ortasından geçiyor.
+      // İki yolun yalnızca uç uca eklendiği nokta (OSM'in yolu bölmesi) kavşak değildir.
+      if (e && (e.n > 2 || (e.n === 2 && e.mid > 0))) junctions.push([xs.length, e.r + 1, e]);
       if (i >= p.length - 2) { xs.push(p[i]); zs.push(p[i + 1]); break; }
       const ax = p[i], az = p[i + 1], bx = p[i + 2], bz = p[i + 3];
       const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / STEP));
