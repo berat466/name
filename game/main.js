@@ -155,7 +155,8 @@ function patchStandard(mat, uniforms, vtxExtra, fragDecl, fragBody) {
 // Arazi malzemesi: eğim, yükseklik ve gürültüye göre 6 PBR setinin karışımı
 // ---------------------------------------------------------------------------
 function terrainMaterial() {
-  const mat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 });
+  const mat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0,
+    polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 4 });  // arazi yolun gerisinde: taşma olmaz
   patchStandard(mat, { tA: { value: terrainTex.alb }, tN: { value: terrainTex.nra } }, {}, '', `
     vec3 N0 = normalize(vWN);
     float slope = 1.0 - N0.y;
@@ -353,8 +354,8 @@ const ROAD_ORDER = { residential: 0, unclassified: 0, tertiary: 1, secondary: 2,
 const MINOR = new Set(['residential', 'unclassified', 'tertiary']);
 // sınıf -> [örnekleme aralığı m, profil yumuşatma (örnek), en fazla eğim]
 const PROFILE = {
-  motorway: [12, 7, 0.05], trunk: [12, 6, 0.06], primary: [12, 4, 0.08], secondary: [14, 3, 0.10],
-  tertiary: [16, 2, 0.12], unclassified: [20, 2, 0.16], residential: [20, 2, 0.16],
+  motorway: [6], trunk: [6], primary: [6], secondary: [8],
+  tertiary: [10], unclassified: [10], residential: [10],
 };
 const PIECE = 48;          // parça başına en fazla nokta
 const TILE = 1500;         // akış karosu (m)
@@ -398,7 +399,7 @@ function prepareRoads() {
 
     // Arazi olduğu gibi kalır: yol arazinin yüksekliğini izler (yarma/dolgu/düzleme yok).
     // Aynı noktada buluşan yollar aynı arazi yüksekliğini okuduğu için kavşakta zaten eşit olur.
-    const raw = xs.map((x, i) => heightAt(x, zs[i]));
+    const raw = xs.map((x, i) => heightMesh(x, zs[i]));
     let ys = raw.map((y) => y + LIFT);
     if (road.b) {
       // köprü: uçlar arasında düz tabliye, altındaki araziden en az 1 m yukarıda
@@ -479,7 +480,7 @@ function emitPiece(rb, wb, { R, a, e }) {
   const I = (j) => a + j;
   const px = (i, o) => xs[i] + dirz[i] * o, pz = (i, o) => zs[i] - dirx[i] * o;
   const at = (i, o, y, nrm, u, v) => [px(i, o), y, pz(i, o), nrm[0], nrm[1], nrm[2], u, v];
-  const ground = (i, o) => heightAt(px(i, o), pz(i, o));
+  const ground = (i, o) => heightMesh(px(i, o), pz(i, o));
   // duvar alt ucu: araziye kadar (biraz içine), en az 0.5 m
   const foot = (i, o, y) => Math.min(y - 0.5, ground(i, o) - 0.5);
   const dir = (j) => [dirx[I(j)], dirz[I(j)]];
@@ -524,6 +525,26 @@ function emitPiece(rb, wb, { R, a, e }) {
   if (cur.length > 1) runs.push(cur);
   const highway = road.c === 'motorway' || road.c === 'trunk';
 
+  // kavşak içinde (kaldırım yok) asfalt kenarı da araziye kadar kapatılır
+  if (!bridge) {
+    const jruns = [];
+    let jc = [];
+    for (let j = 0; j < n; j++) {
+      if (jd[I(j)] <= 0) jc.push(j);
+      else { if (jc.length > 1) jruns.push(jc); jc = []; }
+    }
+    if (jc.length > 1) jruns.push(jc);
+    for (const run of jruns) {
+      const rn = run.length, RI = (k) => I(run[k]), rdir = (k) => [dirx[RI(k)], dirz[RI(k)]];
+      for (const side of [-1, 1]) {
+        const eo = half * side, nrm = (i) => [dirz[i] * side, 0, -dirx[i] * side];
+        wb.strip(rn, (k) => { const i = RI(k);
+          return [at(i, eo, gy(i, eo) - 0.02, nrm(i), dist[i], 0), at(i, eo, ground(i, eo) - 0.4, nrm(i), dist[i], -0.4)]; },
+          rdir, C, info2);
+      }
+    }
+  }
+
   for (const run of runs) {
     const rn = run.length, RI = (k) => I(run[k]), rdir = (k) => [dirx[RI(k)], dirz[RI(k)]];
     const W = (f, info = C) => wb.strip(rn, (k) => f(RI(k)), rdir, info, info2);
@@ -539,7 +560,7 @@ function emitPiece(rb, wb, { R, a, e }) {
         // bordür yüzü + kaldırım (parke): kaldırım da arazi yüzeyini izler
         const oo = (half + road.s) * side; o = oo;
         yTop = (i) => gy(i, oo) + CURB_H;
-        W((i) => [at(i, eo, gy(i, eo) - 0.05, inw(i), dist[i], 0), at(i, eo, gy(i, eo) + CURB_H, inw(i), dist[i], CURB_H)]);
+        W((i) => [at(i, eo, ground(i, eo) - 0.4, inw(i), dist[i], -0.4), at(i, eo, gy(i, eo) + CURB_H, inw(i), dist[i], CURB_H)]);
         W((i) => [at(i, eo, gy(i, eo) + CURB_H, up, dist[i], eo), at(i, oo, yTop(i), up, dist[i], oo)], P);
       } else if (highway && side < 0 && road.o && !bridge) {
         // otoban orta bariyeri (New Jersey tipi beton, 0.9 m)
@@ -674,6 +695,15 @@ function streamRoads(px, pz, budgetMs = 6) {
 }
 
 prepareRoads();
+
+// Arazi mesh'inin gerçek yüzeyi: her hücre (a,d,b) ve (b,d,e) üçgenlerine bölünür (köşegen b-d).
+// Yolların arazinin altında kalmaması için çift doğrusal değil, bu üçgen yüzey okunur.
+export function heightMesh(x, z) {
+  const fc = (x + Wm / 2) / dx, fr = (z + Dm / 2) / dz;
+  const c = Math.floor(fc), r = Math.floor(fr), u = fc - c, v = fr - r;
+  const ha = hAt(c, r), hb = hAt(c + 1, r), hd = hAt(c, r + 1), he = hAt(c + 1, r + 1);
+  return u + v <= 1 ? ha + u * (hb - ha) + v * (hd - ha) : he + (1 - u) * (hd - he) + (1 - v) * (hb - he);
+}
 
 // Araziyi 128x128 hücrelik parçalara böl (görüş dışındakiler çizilmez)
 const terrainMat = terrainMaterial();
