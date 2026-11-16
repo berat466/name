@@ -488,7 +488,10 @@ function emitPiece(rb, wb, { R, a, e }) {
   const C = () => [1, 0, 0, 0], P = () => [0, 0, 0, 0];
   const bridge = !!road.b, DECK = 1.4;
   // her enine noktada arazi yüksekliği (köprüde tabliye düz)
-  const gy = (i, o) => (bridge ? ys[i] : ground(i, o) + LIFT);
+  // yol sınıfına göre 1,5 cm yükseklik farkı: kavşakta üst üste binen yollarda ana yol üstte kalır,
+  // aynı düzlemde titreme (z-çakışması) olmaz
+  const bias = ROAD_ORDER[road.c] * 0.015;
+  const gy = (i, o) => (bridge ? ys[i] : ground(i, o) + LIFT + bias);
   // şev: kenardan (o, yTop) araziye doğru iner; arazi yukarıdaysa (yarma) yukarı çıkar
   const graded = (Wf, o, side, yTop) => {
     const outv = (i) => [dirz[i] * side, 0, -dirx[i] * side];
