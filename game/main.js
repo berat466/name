@@ -205,16 +205,18 @@ function terrainMaterial() {
 }
 
 // ---------------------------------------------------------------------------
-// Yol malzemesi: 3 asfalt PBR setinin karışımı + şerit çizgileri
-//   ruv   = (yol boyunca metre, enine metre)
-//   rdir  = yol yönü (x, z)
-//   rinfo = (şerit sayısı, tek yön mü, yarı genişlik, yol uzunluğu)
+// Yol malzemesi: 3 asfalt PBR seti + lastik izi, yağ lekesi, kenar kiri + şerit çizgileri + yaya geçidi
+//   ruv    = (yol boyunca metre, enine metre; sol kenar = -yarı genişlik)
+//   rdir   = yol yönü (x, z)
+//   rinfo  = (şerit sayısı, tek yön mü, şerit genişliği, kavşağa uzaklık)
+//   rinfo2 = (sol omuz, sağ omuz, yarı genişlik, yaya geçidi var mı)
 // ---------------------------------------------------------------------------
 const ROAD_VTX = {
-  decl: 'attribute vec2 ruv;\nattribute vec2 rdir;\nattribute vec4 rinfo;\nvarying vec2 vRuv;\nvarying vec2 vRdir;\nvarying vec4 vInfo;',
-  body: 'vRuv = ruv; vRdir = rdir; vInfo = rinfo;',
+  decl: `attribute vec2 ruv; attribute vec2 rdir; attribute vec4 rinfo; attribute vec4 rinfo2;
+    varying vec2 vRuv; varying vec2 vRdir; varying vec4 vInfo; varying vec4 vInfo2;`,
+  body: 'vRuv = ruv; vRdir = rdir; vInfo = rinfo; vInfo2 = rinfo2;',
 };
-const ROAD_FRAG_DECL = 'varying vec2 vRuv;\nvarying vec2 vRdir;\nvarying vec4 vInfo;';
+const ROAD_FRAG_DECL = 'varying vec2 vRuv; varying vec2 vRdir; varying vec4 vInfo; varying vec4 vInfo2;';
 // yol boyunca teğet uzay (Tg = boyuna, Bt = enine)
 const GLSL_ROAD_TBN = `
   vec3 N0 = normalize(vWN);
@@ -234,7 +236,14 @@ function roadMaterial() {
       float cov = clamp(w / AA, 0.0, 1.0);  // piksel altı çizgiyi soldur, titremesin
       return (1.0 - smoothstep(max(0.0, w - AA), w + AA, abs(d))) * cov;
     }
+    float band(float d, float w, float soft){ return 1.0 - smoothstep(w, w + soft, abs(d)); }
   `, `
+    float along = vRuv.x, u = vRuv.y;
+    float lanes = vInfo.x, oneway = vInfo.y, lw = vInfo.z, jd = vInfo.w;
+    float shL = vInfo2.x, shR = vInfo2.y, halfW = vInfo2.z, zebra = vInfo2.w;
+    AA = fwidth(u) + 0.005;
+
+    // --- 3 asfalt PBR seti ---
     float n1 = vnoise(vWP.xz * 0.02);
     float n2 = vnoise(vWP.xz * 0.07 + 33.0);
     float wB = smoothstep(0.4, 0.8, n1) * 0.6;     // farklı asfalt yüzeyi
@@ -244,45 +253,62 @@ function roadMaterial() {
     addLayer(tA, tN, vRuv / 8.0, 1.0, wB * (1.0 - wC));
     addLayer(tA, tN, vRuv / 4.0, 2.0, wC);
     ${GLSL_RESOLVE}
+    vec3 col = accA * vec3(0.62, 0.63, 0.66);      // koyu, hafif mavimsi şehir asfaltı
 
-    // --- şerit çizgileri (Kore standardı: orta sarı çift çizgi, beyaz kesikli şerit, beyaz kenar) ---
-    float along = vRuv.x, u = vRuv.y;
-    float lanes = vInfo.x, oneway = vInfo.y, halfW = vInfo.z, jd = vInfo.w;
-    AA = fwidth(u) + 0.005;
-    float inner = halfW - 0.5;                       // kenar çizgisi konumu
+    // carriageway (omuzlar hariç) ve şerit merkezleri
+    float cL = -halfW + shL, cR = halfW - shR;
+    float laneF = (u - cL) / lw;                    // soldan kaçıncı şerit (kesirli)
+    float inLane = fract(laneF) - 0.5;              // şerit içi konum (-0.5..0.5)
+    float onCarriage = step(cL, u) * step(u, cR);
+
+    // lastik izleri: her şeritte iki tekerlek yolu, daha koyu ve daha az pürüzlü
+    float tire = (band(inLane * lw - 0.85, 0.25, 0.35) + band(inLane * lw + 0.85, 0.25, 0.35)) * onCarriage;
+    tire *= 0.6 + 0.4 * vnoise(vec2(along * 0.05, laneF * 3.0));
+    // yağ lekesi: şerit ortasında, kesik kesik
+    float oil = band(inLane * lw, 0.35, 0.4) * smoothstep(0.55, 0.8, vnoise(vec2(along * 0.12, floor(laneF) * 7.0))) * onCarriage;
+    // kenar kiri: bordüre yakın birikmiş kir
+    float edge = 1.0 - smoothstep(0.0, 0.9, min(u + halfW, halfW - u));
+    col *= 1.0 - 0.18 * tire - 0.25 * oil;
+    col = mix(col, col * vec3(0.85, 0.8, 0.72), edge * 0.6);
+    blendR = clamp(blendR - 0.12 * tire - 0.25 * oil, 0.2, 1.0);
+
+    // --- şerit çizgileri (orta sarı çift çizgi, beyaz kesikli şerit, beyaz kenar çizgisi) ---
     float dash = step(fract(along / 15.0), 0.4);     // 6 m çizgi, 9 m boşluk
-    float white = aaLine(abs(u) - inner, 0.10);
+    float white = max(aaLine(u - cL, 0.10), aaLine(u - cR, 0.10)) * step(0.2, min(shL, shR) + 0.2);
     float yellow = 0.0;
     if (oneway < 0.5) {
-      yellow = max(aaLine(u - 0.15, 0.08), aaLine(u + 0.15, 0.08));
+      float mid = (cL + cR) * 0.5;
+      yellow = max(aaLine(u - mid - 0.15, 0.08), aaLine(u - mid + 0.15, 0.08));
       float side = max(1.0, floor(lanes / 2.0));
-      float lw = inner / side;
+      float slw = (cR - cL) * 0.5 / side;
       for (int k = 1; k < 5; k++) {
         if (float(k) >= side) break;
-        white = max(white, max(aaLine(u - lw * float(k), 0.09), aaLine(u + lw * float(k), 0.09)) * dash);
+        white = max(white, max(aaLine(u - mid - slw * float(k), 0.08), aaLine(u - mid + slw * float(k), 0.08)) * dash);
       }
     } else {
-      float lw = 2.0 * inner / lanes;
       for (int k = 1; k < 10; k++) {
         if (float(k) >= lanes) break;
-        white = max(white, aaLine(u + inner - lw * float(k), 0.09) * dash);
+        white = max(white, aaLine(u - cL - lw * float(k), 0.08) * dash);
       }
     }
-    // kavşak içinde çizgi yok; çizgiler hafif aşınmış
-    float fade = smoothstep(0.0, 4.0, jd);
-    float wear = mix(0.7, 1.0, vnoise(vec2(along * 0.25, 7.0)));
+    float wear = mix(0.65, 1.0, vnoise(vec2(along * 0.25, 7.0)));
+    float fade = smoothstep(0.0, 4.0, jd);           // kavşak içinde çizgi yok
     white *= fade * wear; yellow *= fade * wear;
-    vec3 col = accA;
-    col = mix(col, vec3(0.82), white);
-    col = mix(col, vec3(0.85, 0.62, 0.08), yellow);
-    blendR = mix(blendR, 0.55, max(white, yellow));
+
+    // yaya geçidi (zebra): kavşağa 1-5 m uzaklıkta, 0.5 m beyaz / 0.5 m boşluk
+    float zb = zebra * step(1.0, jd) * step(jd, 5.0) * step(0.5, fract(u / 1.0)) * onCarriage;
+    white = max(white, zb * wear);
+
+    col = mix(col, vec3(0.8), white);
+    col = mix(col, vec3(0.85, 0.6, 0.07), yellow);
+    blendR = mix(blendR, 0.5, max(white, yellow));
     diffuseColor.rgb *= col;
     ${GLSL_ROAD_TBN}
   `);
   return mat;
 }
 
-// Kaldırım / bordür malzemesi: 2 PBR seti (parke taşı üst yüzey, beton bordür ve yan duvar)
+// Kaldırım / bordür / bariyer malzemesi: 2 PBR seti (parke taşı, beton)
 function walkMaterial() {
   const mat = new THREE.MeshStandardMaterial({
     roughness: 1, metalness: 0, side: THREE.DoubleSide,
@@ -293,7 +319,7 @@ function walkMaterial() {
     accA = vec3(0.0); accN = vec4(0.0); accW = 0.0;
     addLayer(tA, tN, vRuv / (layer < 0.5 ? 3.0 : 2.0), layer < 0.5 ? 0.0 : 1.0, 1.0);
     ${GLSL_RESOLVE}
-    diffuseColor.rgb *= accA * (0.9 + 0.2 * vnoise(vWP.xz * 0.05));
+    diffuseColor.rgb *= accA * (0.85 + 0.25 * vnoise(vWP.xz * 0.05));
     ${GLSL_ROAD_TBN}
   `);
   return mat;
@@ -316,111 +342,145 @@ export function heightAt(x, z) {
 }
 
 // ---------------------------------------------------------------------------
-// Yollar (OpenStreetMap): profil, arazi oyma, asfalt + kaldırım + bordür
+// Yollar (OpenStreetMap, gerçek Seul yol ağı)
+//   1) her yolu örnekle, araziye göre eğim sınırlı profil çıkar
+//   2) kavşakları bul, yolları kavşakta aynı yükseklikte buluştur
+//   3) araziyi yola oturt (yarma / dolgu + şev)
+//   4) görüntüyü kameranın çevresinde akış halinde üret (GTA tarzı streaming)
 // ---------------------------------------------------------------------------
 const roadData = await fetch('./data/roads.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
 const ROAD_ORDER = { residential: 0, unclassified: 0, tertiary: 1, secondary: 2, primary: 3, trunk: 4, motorway: 5 };
 const MINOR = new Set(['residential', 'unclassified', 'tertiary']);
-const STEP = 12;        // yeniden örnekleme aralığı (m)
-const PIECE = 64;       // parça başına en fazla nokta (görüş kesimi için)
-const WALK_W = 2.5, CURB_H = 0.15, SKIRT = 3.0;
+// sınıf -> [örnekleme aralığı m, profil yumuşatma (örnek), en fazla eğim]
+const PROFILE = {
+  motorway: [12, 7, 0.05], trunk: [12, 6, 0.06], primary: [12, 4, 0.08], secondary: [14, 3, 0.10],
+  tertiary: [16, 2, 0.12], unclassified: [20, 2, 0.16], residential: [20, 2, 0.16],
+};
+const PIECE = 48;          // parça başına en fazla nokta
+const TILE = 1500;         // akış karosu (m)
+const CURB_H = 0.15, SKIRT = 2.0;
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-// Her yolu sık örnekle, yüksekliğini yumuşat, parçalara ayır
-const roadPieces = [];
-if (roadData) {
+const preparedRoads = [];
+const roadTileMap = new Map();   // "tx,tz" -> { pieces: [], built: { major, minor } }
+
+function prepareRoads() {
+  if (!roadData) return;
   // Kavşaklar: birden fazla yolun paylaştığı OSM noktaları
   const jkey = (x, z) => `${Math.round(x * 2)},${Math.round(z * 2)}`;
   const jmap = new Map();
   for (const road of roadData.roads) {
-    const reach = road.w / 2 + (road.s ? WALK_W : 0.6);
+    const reach = road.w / 2 + road.s;
     for (let i = 0; i < road.p.length; i += 2) {
       const k = jkey(road.p[i], road.p[i + 1]);
-      const e = jmap.get(k) || { n: 0, r: 0, o: 0, h: heightAt(road.p[i], road.p[i + 1]) };
+      let e = jmap.get(k);
+      if (!e) jmap.set(k, (e = { n: 0, r: 0, o: 0, h: heightAt(road.p[i], road.p[i + 1]) }));
       e.n++; e.r = Math.max(e.r, reach); e.o = Math.max(e.o, ROAD_ORDER[road.c]);
-      jmap.set(k, e);
     }
   }
 
   for (const road of roadData.roads) {
+    const [STEP, WIN, GRADE] = PROFILE[road.c];
     const p = road.p;
-    const pts = [];
-    const junctions = []; // [örnek indeksi, yarıçap]
+    const xs = [], zs = [], junctions = [];
     for (let i = 0; i < p.length; i += 2) {
       const e = jmap.get(jkey(p[i], p[i + 1]));
-      if (e && e.n > 1) junctions.push([pts.length, e.r + 1, e]); // bu noktanın örnek indeksi
-      if (i >= p.length - 2) break;
+      if (e && e.n > 1) junctions.push([xs.length, e.r + 1, e]);
+      if (i >= p.length - 2) { xs.push(p[i]); zs.push(p[i + 1]); break; }
       const ax = p[i], az = p[i + 1], bx = p[i + 2], bz = p[i + 3];
       const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / STEP));
-      for (let s = 0; s < n; s++) pts.push([ax + (bx - ax) * s / n, az + (bz - az) * s / n]);
+      for (let s = 0; s < n; s++) { xs.push(ax + (bx - ax) * s / n); zs.push(az + (bz - az) * s / n); }
     }
-    pts.push([p[p.length - 2], p[p.length - 1]]);
-    if (pts.length < 2) continue;
+    const N = xs.length;
+    if (N < 2) continue;
+    const dist = new Float32Array(N);
+    for (let i = 1; i < N; i++) dist[i] = dist[i - 1] + Math.hypot(xs[i] - xs[i - 1], zs[i] - zs[i - 1]);
 
-    const lift = 0.25 + ROAD_ORDER[road.c] * 0.04 + Math.max(0, road.l) * 7;
-    const raw = pts.map(([x, z]) => heightAt(x, z));
-    // ±3 örneklik hareketli ortalama: tümsekleri düzelt
+    // araziye göre profil: hareketli ortalama + eğim sınırı (ileri ve geri geçiş)
+    const raw = xs.map((x, i) => heightAt(x, zs[i]));
     let ys = raw.map((_, i) => {
       let s = 0, k = 0;
-      for (let j = Math.max(0, i - 3); j <= Math.min(raw.length - 1, i + 3); j++) { s += raw[j]; k++; }
-      return s / k + lift;
+      for (let j = Math.max(0, i - WIN); j <= Math.min(N - 1, i + WIN); j++) { s += raw[j]; k++; }
+      return s / k;
     });
-    const dist = [0];
-    for (let i = 1; i < pts.length; i++) dist.push(dist[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
-    // kavşakta tüm yollar aynı yükseklikte buluşsun (30 m içinde yumuşak geçiş)
-    if (!road.b && road.l <= 0) {
+    const f = ys.slice(), b = ys.slice();
+    for (let i = 1; i < N; i++) { const g = GRADE * (dist[i] - dist[i - 1]); f[i] = Math.min(f[i - 1] + g, Math.max(f[i - 1] - g, f[i])); }
+    for (let i = N - 2; i >= 0; i--) { const g = GRADE * (dist[i + 1] - dist[i]); b[i] = Math.min(b[i + 1] + g, Math.max(b[i + 1] - g, b[i])); }
+    ys = ys.map((_, i) => (f[i] + b[i]) / 2 + 0.25);
+
+    // kavşakta tüm yollar aynı yükseklikte buluşsun
+    if (!road.b) {
       for (const [si, r, e] of junctions) {
         const target = e.h + 0.25 + (ROAD_ORDER[road.c] === e.o ? 0.02 : 0);
-        const d0 = dist[Math.min(si, dist.length - 1)];
-        for (let i = 0; i < ys.length; i++) {
-          const w = 1 - smooth(r, r + 30, Math.abs(dist[i] - d0));
+        const d0 = dist[Math.min(si, N - 1)];
+        for (let i = 0; i < N; i++) {
+          const w = 1 - smooth(r, r + 40, Math.abs(dist[i] - d0));
           if (w > 0) ys[i] += (target - ys[i]) * w;
         }
       }
+    } else {
+      // köprü: uçlar arasında düz tabliye, altındaki araziden en az 1 m yukarıda
+      const y0 = ys[0], y1 = ys[N - 1];
+      ys = ys.map((y, i) => Math.max(raw[i] + 1, y0 + (y1 - y0) * i / (N - 1)));
     }
-    if (road.b) {
-      const y0 = ys[0], y1 = ys[ys.length - 1];
-      ys = ys.map((y, i) => Math.max(y, y0 + (y1 - y0) * i / (ys.length - 1)));
+    // kavşağa uzaklık (kavşak yarıçapı çıkarılmış); < 0 = kavşak içinde
+    const jd = new Float32Array(N).fill(1e6);
+    for (const [si, r] of junctions) {
+      const d0 = dist[Math.min(si, N - 1)];
+      for (let i = 0; i < N; i++) jd[i] = Math.min(jd[i], Math.abs(dist[i] - d0) - r);
     }
-    const len = dist[dist.length - 1];
-    // her örneğin en yakın kavşağa uzaklığı (kavşak yarıçapı çıkarılmış); <0 = kavşak içinde
-    const jd = dist.map((d) => {
-      let m = 1e6;
-      for (const [si, r] of junctions) m = Math.min(m, Math.abs(d - dist[Math.min(si, dist.length - 1)]) - r);
-      return m;
-    });
+    // yön ve sağ vektör
+    const dirx = new Float32Array(N), dirz = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const a = Math.max(0, i - 1), c = Math.min(N - 1, i + 1);
+      let tx = xs[c] - xs[a], tz = zs[c] - zs[a];
+      const l = Math.hypot(tx, tz) || 1;
+      dirx[i] = tx / l; dirz[i] = tz / l;
+    }
+    const R = { road, N, xs: Float32Array.from(xs), zs: Float32Array.from(zs), ys: Float32Array.from(ys), dist, jd, dirx, dirz,
+      zebra: !['motorway', 'trunk'].includes(road.c) && road.s > 0 ? 1 : 0 };
+    preparedRoads.push(R);
 
-    for (let a = 0; a < pts.length - 1; a += PIECE - 1) {
-      const b = Math.min(pts.length, a + PIECE);
-      roadPieces.push({ road, len, pts: pts.slice(a, b), ys: ys.slice(a, b), dist: dist.slice(a, b), jd: jd.slice(a, b), all: pts, off: a });
+    for (let a = 0; a < N - 1; a += PIECE - 1) {
+      const e = Math.min(N, a + PIECE), m = (a + e) >> 1;
+      const key = `${Math.floor(R.xs[m] / TILE)},${Math.floor(R.zs[m] / TILE)}`;
+      let t = roadTileMap.get(key);
+      if (!t) {
+        const [tx, tz] = key.split(',').map(Number);
+        roadTileMap.set(key, (t = { pieces: [], built: {}, cx: (tx + 0.5) * TILE, cz: (tz + 0.5) * TILE }));
+      }
+      t.pieces.push({ R, a, e });
     }
   }
 
-  // Araziyi yola oturt: yol şeridinde zemin = yol yüksekliğinin hemen altı (hem oyar hem doldurur),
-  // kenarda doğal araziye yumuşak geçiş. Önce ara yollar, sonra ana yollar (ana yol baskın).
-  const locked = new Uint8Array(H.length);
-  const bestD = new Float32Array(H.length).fill(Infinity);   // en yakın yol noktasına uzaklık
-  const bestO = new Int8Array(H.length).fill(-1);            // o noktayı yazan yolun sınıfı
-  const sorted = roadPieces.filter((pc) => !pc.road.b && pc.road.l <= 0)
-    .sort((a, b) => ROAD_ORDER[a.road.c] - ROAD_ORDER[b.road.c]);
+  // Araziyi yola oturt: yol + kaldırım şeridinde zemin = yolun hemen altı (yarma ve dolgu),
+  // dışında 1.5 hücrelik şevle doğal araziye geçiş. Ana yollar baskın; aynı sınıfta en yakın nokta kazanır.
+  const bestD = new Float32Array(H.length).fill(Infinity);
+  const bestO = new Int8Array(H.length).fill(-1);
   const orig = H.slice();
-  for (const pc of sorted) {
-    const { road } = pc;
-    // ızgara hücresi 25-30 m: yolun iki yanındaki en yakın noktaların kesin kilitlenmesi için yarım köşegen payı
-    const R = road.w / 2 + (road.s ? WALK_W : 0.6) + 0.55 * Math.hypot(dx, dz) + STEP / 2;
-    for (let i = 0; i < pc.pts.length; i++) {
-      const [x, z] = pc.pts[i], y = pc.ys[i] - 0.6, ord = ROAD_ORDER[road.c];
-      const c0 = Math.floor((x - R - 2 * dx + Wm / 2) / dx), c1 = Math.ceil((x + R + 2 * dx + Wm / 2) / dx);
-      const r0 = Math.floor((z - R - 2 * dz + Dm / 2) / dz), r1 = Math.ceil((z + R + 2 * dz + Dm / 2) / dz);
-      for (let r = Math.max(0, r0); r <= Math.min(rows - 1, r1); r++) {
-        for (let c = Math.max(0, c0); c <= Math.min(cols - 1, c1); c++) {
+  const pad = 0.55 * Math.hypot(dx, dz);
+  const sorted = preparedRoads.filter((R) => !R.road.b).sort((a, b) => ROAD_ORDER[a.road.c] - ROAD_ORDER[b.road.c]);
+  for (const R of sorted) {
+    const ord = ROAD_ORDER[R.road.c];
+    const core = R.road.w / 2 + R.road.s + pad;
+    const bank = 1.5 * dx;
+    for (let i = 0; i < R.N; i++) {
+      const x = R.xs[i], z = R.zs[i], y = R.ys[i] - 0.6;
+      const c0 = Math.max(0, Math.floor((x - core - bank + Wm / 2) / dx)), c1 = Math.min(cols - 1, Math.ceil((x + core + bank + Wm / 2) / dx));
+      const r0 = Math.max(0, Math.floor((z - core - bank + Dm / 2) / dz)), r1 = Math.min(rows - 1, Math.ceil((z + core + bank + Dm / 2) / dz));
+      for (let r = r0; r <= r1; r++) {
+        for (let c = c0; c <= c1; c++) {
           const d = Math.hypot(c * dx - Wm / 2 - x, r * dz - Dm / 2 - z);
           const k = r * cols + c;
-          // ana yol baskın; aynı sınıfta en yakın yol noktası kazanır
-          if (d < R && (ord > bestO[k] || (ord === bestO[k] && d < bestD[k]))) {
-            H[k] = y; locked[k] = 1; bestD[k] = d; bestO[k] = ord;
+          if (d < core) {
+            if (ord > bestO[k] || (ord === bestO[k] && d < bestD[k])) { H[k] = y; bestD[k] = d; bestO[k] = ord; }
+          } else if (d < core + bank && bestO[k] < 0) {
+            const t = smooth(0, 1, (d - core) / bank);
+            const v = y + (orig[k] - y) * t;
+            // birden çok yolun şevi çakışırsa yola en yakın olanı tut
+            if (bestD[k] === Infinity || Math.abs(v - orig[k]) > Math.abs(H[k] - orig[k])) H[k] = v;
+            bestD[k] = Math.min(bestD[k], 1e5 + d);
           }
-          else if (d < R + 1.5 * dx && !locked[k]) H[k] = y + (orig[k] - y) * smooth(0, 1, (d - R) / (1.5 * dx));
         }
       }
     }
@@ -428,20 +488,21 @@ if (roadData) {
 }
 
 class StripBuilder {
-  constructor() { this.pos = []; this.nor = []; this.ruv = []; this.rdir = []; this.rinfo = []; this.idx = []; }
-  // rows[i] = [vertexA, vertexB]; her vertex: {p:[x,y,z], n:[x,y,z], uv:[a,b]}
-  strip(rowsList, dir, info) {
+  constructor() { this.pos = []; this.nor = []; this.ruv = []; this.rdir = []; this.rinfo = []; this.rinfo2 = []; this.idx = []; }
+  // n satır; row(j) -> [vA, vB], vertex = [x,y,z, nx,ny,nz, u,v]
+  strip(n, row, dir, info, info2) {
     const base = this.pos.length / 3;
-    rowsList.forEach((pair, i) => {
+    for (let j = 0; j < n; j++) {
+      const pair = row(j), d = dir(j), i1 = info(j);
       for (const v of pair) {
-        this.pos.push(...v.p); this.nor.push(...v.n); this.ruv.push(...v.uv);
-        this.rdir.push(...dir[i]); this.rinfo.push(...(typeof info === 'function' ? info(i) : info)); // i: şerit içi sıra
+        this.pos.push(v[0], v[1], v[2]); this.nor.push(v[3], v[4], v[5]); this.ruv.push(v[6], v[7]);
+        this.rdir.push(d[0], d[1]); this.rinfo.push(...i1); this.rinfo2.push(...info2);
       }
-      if (i > 0) {
-        const q = base + (i - 1) * 2;
+      if (j > 0) {
+        const q = base + (j - 1) * 2;
         this.idx.push(q, q + 2, q + 1, q + 1, q + 2, q + 3);
       }
-    });
+    }
   }
   mesh(mat) {
     if (!this.idx.length) return null;
@@ -451,7 +512,8 @@ class StripBuilder {
     g.setAttribute('ruv', new THREE.Float32BufferAttribute(this.ruv, 2));
     g.setAttribute('rdir', new THREE.Float32BufferAttribute(this.rdir, 2));
     g.setAttribute('rinfo', new THREE.Float32BufferAttribute(this.rinfo, 4));
-    g.setIndex(this.idx.length > 65535 ? new THREE.Uint32BufferAttribute(this.idx, 1) : new THREE.Uint16BufferAttribute(this.idx, 1));
+    g.setAttribute('rinfo2', new THREE.Float32BufferAttribute(this.rinfo2, 4));
+    g.setIndex(this.pos.length / 3 > 65535 ? new THREE.Uint32BufferAttribute(this.idx, 1) : new THREE.Uint16BufferAttribute(this.idx, 1));
     g.computeBoundingSphere();
     const m = new THREE.Mesh(g, mat);
     m.renderOrder = 1;
@@ -459,80 +521,101 @@ class StripBuilder {
   }
 }
 
-const roadTiles = [];   // { group, center, minor }
-function buildRoadMeshes() {
-  if (!roadPieces.length) return;
-  const TILE = 2000;
-  const tiles = new Map();
-  const up = [0, 1, 0];
-  for (const pc of roadPieces) {
-    const m = pc.pts[pc.pts.length >> 1];
-    const minor = MINOR.has(pc.road.c);
-    const key = `${Math.floor(m[0] / TILE)},${Math.floor(m[1] / TILE)},${minor ? 1 : 0}`;
-    if (!tiles.has(key)) tiles.set(key, { road: new StripBuilder(), walk: new StripBuilder(), minor });
-    const t = tiles.get(key);
-    const { road, pts, ys, dist, jd, all, off } = pc;
-    const half = road.w / 2;
+// Bir yol parçasının (a..e) asfalt, kaldırım, bordür, bariyer geometrisi
+function emitPiece(rb, wb, { R, a, e }) {
+  const { road, xs, zs, ys, dist, jd, dirx, dirz } = R;
+  const n = e - a, half = road.w / 2, up = [0, 1, 0];
+  const I = (j) => a + j;
+  const at = (i, o, y, nrm, u, v) => [xs[i] + dirz[i] * o, y, zs[i] - dirx[i] * o, nrm[0], nrm[1], nrm[2], u, v];
+  const dir = (j) => [dirx[I(j)], dirz[I(j)]];
+  const info2 = [road.sl, road.sr, half, R.zebra];
+  const C = () => [1, 0, 0, 0], P = () => [0, 0, 0, 0];
 
-    // yön ve sağ vektörü (komşu noktalardan, parça sınırında da süreklilik için tüm yoldan)
-    const dirs = [], rights = [];
-    for (let i = 0; i < pts.length; i++) {
-      const gi = off + i;
-      const a = all[Math.max(0, gi - 1)], b = all[Math.min(all.length - 1, gi + 1)];
-      let tx = b[0] - a[0], tz = b[1] - a[1];
-      const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l;
-      dirs.push([tx, tz]);
-      rights.push([tz, -tx]);
-    }
-    const at = (i, o, y, n, uv) => ({ p: [pts[i][0] + rights[i][0] * o, y, pts[i][1] + rights[i][1] * o], n, uv });
-    // indeks listesi üzerinden şerit ekle
-    const strip = (b, idx, f, info) => b.strip(idx.map(f), idx.map((i) => dirs[i]), info);
-    const allIdx = pts.map((_, i) => i);
+  // asfalt
+  rb.strip(n, (j) => { const i = I(j); return [at(i, -half, ys[i], up, dist[i], -half), at(i, half, ys[i], up, dist[i], half)]; },
+    dir, (j) => [road.n, road.o, road.lw, jd[I(j)]], info2);
 
-    // asfalt (rinfo.w = kavşağa uzaklık → kavşakta şerit çizgisi yok)
-    strip(t.road, allIdx, (i) => [at(i, -half, ys[i], up, [dist[i], -half]), at(i, half, ys[i], up, [dist[i], half])],
-      (j) => [road.n, road.o, half, jd[allIdx[j]]]);
+  // kavşak dışındaki ardışık gruplar (kaldırım ve bariyer kavşakta kesilir)
+  const runs = [];
+  let cur = [];
+  for (let j = 0; j < n; j++) {
+    if (jd[I(j)] > 0) cur.push(j);
+    else { if (cur.length > 1) runs.push(cur); cur = []; }
+  }
+  if (cur.length > 1) runs.push(cur);
+  const highway = road.c === 'motorway' || road.c === 'trunk';
 
-    // kaldırım / omuz: kavşak içinde kesilir
-    const runs = [];
-    let cur = [];
-    for (let i = 0; i < pts.length; i++) {
-      if (jd[i] > 0) cur.push(i);
-      else { if (cur.length > 1) runs.push(cur); cur = []; }
-    }
-    if (cur.length > 1) runs.push(cur);
-
-    for (const run of runs) {
-      for (const side of [-1, 1]) {
-        const out = (i) => [rights[i][0] * side, 0, rights[i][1] * side];
-        const inw = (i) => [-rights[i][0] * side, 0, -rights[i][1] * side];
-        const e = half * side;
-        if (road.s) {
-          const o = (half + WALK_W) * side, yt = (i) => ys[i] + CURB_H;
-          // bordür yüzü (yola bakan), kaldırım üstü (parke), dış yan duvar
-          strip(t.walk, run, (i) => [at(i, e, ys[i] - 0.05, inw(i), [dist[i], 0]), at(i, e, yt(i), inw(i), [dist[i], CURB_H])], [1, 0, 0, 0]);
-          strip(t.walk, run, (i) => [at(i, e, yt(i), up, [dist[i], e]), at(i, o, yt(i), up, [dist[i], o])], [0, 0, 0, 0]);
-          strip(t.walk, run, (i) => [at(i, o, yt(i), out(i), [dist[i], 0]), at(i, o, ys[i] - SKIRT, out(i), [dist[i], -SKIRT])], [1, 0, 0, 0]);
-        } else {
-          const o = (half + 0.6) * side;
-          strip(t.walk, run, (i) => [at(i, e, ys[i] - 0.02, up, [dist[i], e]), at(i, o, ys[i] - 0.02, up, [dist[i], o])], [1, 0, 0, 0]);
-          strip(t.walk, run, (i) => [at(i, o, ys[i] - 0.02, out(i), [dist[i], 0]), at(i, o, ys[i] - SKIRT, out(i), [dist[i], -SKIRT])], [1, 0, 0, 0]);
-        }
+  for (const run of runs) {
+    const rn = run.length, RI = (k) => I(run[k]), rdir = (k) => [dirx[RI(k)], dirz[RI(k)]];
+    for (const side of [-1, 1]) {
+      const out = (i) => [dirz[i] * side, 0, -dirx[i] * side];
+      const inw = (i) => [-dirz[i] * side, 0, dirx[i] * side];
+      const eo = half * side;
+      if (road.s > 0) {
+        // bordür yüzü, kaldırım (parke), dış yan
+        const o = (half + road.s) * side, yt = (i) => ys[i] + CURB_H;
+        wb.strip(rn, (k) => { const i = RI(k); return [at(i, eo, ys[i] - 0.05, inw(i), dist[i], 0), at(i, eo, yt(i), inw(i), dist[i], CURB_H)]; }, rdir, C, info2);
+        wb.strip(rn, (k) => { const i = RI(k); return [at(i, eo, yt(i), up, dist[i], eo), at(i, o, yt(i), up, dist[i], o)]; }, rdir, P, info2);
+        wb.strip(rn, (k) => { const i = RI(k); return [at(i, o, yt(i), out(i), dist[i], 0), at(i, o, ys[i] - SKIRT, out(i), dist[i], -SKIRT)]; }, rdir, C, info2);
+      } else if (highway && side < 0 && road.o) {
+        // otoban orta bariyeri (New Jersey tipi beton, 0.9 m)
+        const b0 = eo - 0.0, b1 = eo - 0.6, bh = 0.9;
+        wb.strip(rn, (k) => { const i = RI(k); return [at(i, b0, ys[i] - 0.05, inw(i), dist[i], 0), at(i, b0 - 0.15, ys[i] + bh, inw(i), dist[i], bh)]; }, rdir, C, info2);
+        wb.strip(rn, (k) => { const i = RI(k); return [at(i, b0 - 0.15, ys[i] + bh, up, dist[i], 0), at(i, b1 + 0.15, ys[i] + bh, up, dist[i], 0.3)]; }, rdir, C, info2);
+        wb.strip(rn, (k) => { const i = RI(k); return [at(i, b1 + 0.15, ys[i] + bh, out(i), dist[i], bh), at(i, b1, ys[i] - SKIRT, out(i), dist[i], -SKIRT)]; }, rdir, C, info2);
+      } else {
+        // beton omuz + şev
+        const o = (half + 0.5) * side;
+        wb.strip(rn, (k) => { const i = RI(k); return [at(i, eo, ys[i] - 0.02, up, dist[i], eo), at(i, o, ys[i] - 0.02, up, dist[i], o)]; }, rdir, C, info2);
+        wb.strip(rn, (k) => { const i = RI(k); return [at(i, o, ys[i] - 0.02, out(i), dist[i], 0), at(i, o, ys[i] - SKIRT, out(i), dist[i], -SKIRT)]; }, rdir, C, info2);
       }
     }
   }
+}
 
-  const rMat = roadMaterial(), wMat = walkMaterial();
-  for (const t of tiles.values()) {
-    const group = new THREE.Group();
-    const a = t.road.mesh(rMat), b = t.walk.mesh(wMat);
-    if (a) group.add(a);
-    if (b) group.add(b);
-    const box = new THREE.Box3().setFromObject(group);
-    roadTiles.push({ group, center: box.getCenter(new THREE.Vector3()), minor: t.minor });
-    scene.add(group);
+let roadMat, walkMat;
+const builtTiles = new Set();
+// part: 'major' (ana yollar) veya 'minor' (ara sokaklar)
+function buildTilePart(t, part) {
+  roadMat ||= roadMaterial(); walkMat ||= walkMaterial();
+  const rb = new StripBuilder(), wb = new StripBuilder();
+  for (const pc of t.pieces) if (MINOR.has(pc.R.road.c) === (part === 'minor')) emitPiece(rb, wb, pc);
+  const g = new THREE.Group();
+  const a = rb.mesh(roadMat), b = wb.mesh(walkMat);
+  if (a) g.add(a);
+  if (b) g.add(b);
+  scene.add(g);
+  t.built[part] = g;
+  builtTiles.add(t);
+}
+function disposeTilePart(t, part) {
+  const g = t.built[part];
+  if (!g) return;
+  scene.remove(g);
+  g.traverse((o) => o.geometry && o.geometry.dispose());
+  delete t.built[part];
+  if (!t.built.major && !t.built.minor) builtTiles.delete(t);
+}
+// Kameranın çevresindeki karoları üret, uzaktakileri sil. budgetMs: kare başına süre sınırı
+const STREAM = { major: 4500, minor: 2200 };
+function streamRoads(px, pz, budgetMs = 6) {
+  const t0 = performance.now();
+  const want = [];
+  for (const t of roadTileMap.values()) {
+    const d = Math.hypot(t.cx - px, t.cz - pz) - TILE * 0.7;
+    for (const part of ['major', 'minor']) {
+      if (d < STREAM[part] && !t.built[part]) want.push([d, t, part]);
+      else if (d > STREAM[part] + 800 && t.built[part]) disposeTilePart(t, part);
+    }
+  }
+  want.sort((a, b) => a[0] - b[0]);
+  for (const [, t, part] of want) {
+    buildTilePart(t, part);
+    if (performance.now() - t0 > budgetMs) break;
   }
 }
+
+prepareRoads();
 
 // Araziyi 128x128 hücrelik parçalara böl (görüş dışındakiler çizilmez)
 const terrainMat = terrainMaterial();
@@ -566,8 +649,7 @@ for (let r0 = 0; r0 < rows - 1; r0 += CH) {
 }
 scene.add(terrain);
 
-buildRoadMeshes();
-const roadCount = roadData ? roadData.roads.length : 0;
+const roadCount = preparedRoads.length;
 
 // ---------------------------------------------------------------------------
 // Başlangıç kamerası: Seul merkezi (Jongno), güneybatıdan bakış
@@ -578,7 +660,7 @@ function toWorld(lat, lon) {
   return [(lon - lonMin) * mlon - Wm / 2, (latMax - lat) * 111320 - Dm / 2];
 }
 const params = new URLSearchParams(location.search);
-let [cx, cz] = toWorld(37.556, 126.985);
+let [cx, cz] = toWorld(Number(params.get('lat') || 37.5715), Number(params.get('lon') || 126.9768)); // varsayılan: Gwanghwamun
 cx += Number(params.get('ox') || 0); cz += Number(params.get('oz') || 0); // test için kaydırma
 const camDist = Number(params.get('d') || 2500);
 controls.target.set(cx, heightAt(cx, cz), cz);
@@ -616,8 +698,8 @@ function tick() {
   const gy = heightAt(camera.position.x, camera.position.z) + 3;
   if (camera.position.y < gy) camera.position.y = gy;
 
-  // uzak ara sokakları gizle
-  for (const t of roadTiles) t.group.visible = camera.position.distanceTo(t.center) < (t.minor ? 5000 : 16000);
+  // yolları kameranın (yere düşen) hedef noktası çevresinde akış halinde üret
+  streamRoads(controls.target.x, controls.target.z, params.has('still') ? 1e9 : 6);
 
   controls.update();
   renderer.render(scene, camera);

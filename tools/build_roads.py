@@ -13,14 +13,17 @@ mlat = 111320.0
 mlon = 111320.0 * math.cos(math.radians(lat_c))
 W, D = meta["width"], meta["depth"]
 
-# sınıf -> (varsayılan şerit sayısı, kaldırım var mı)
+# Avrupa / GTA 5 ölçeği:
+# sınıf -> (varsayılan şerit, şerit genişliği m, kaldırım genişliği m (0 = yok), sol omuz, sağ omuz)
 CLASS = {
-    "motorway": (6, False), "trunk": (6, False), "primary": (4, True),
-    "secondary": (4, True), "tertiary": (2, True), "unclassified": (2, True),
-    "residential": (2, True),
+    "motorway":     (3, 3.75, 0.0, 1.0, 3.0),   # otoban: tek yön 3 şerit + 3 m emniyet şeridi
+    "trunk":        (3, 3.50, 0.0, 0.75, 2.0),  # şehir otoyolu
+    "primary":      (4, 3.50, 4.0, 0.5, 0.5),   # ana cadde
+    "secondary":    (4, 3.25, 3.5, 0.5, 0.5),
+    "tertiary":     (2, 3.25, 3.0, 0.4, 0.4),
+    "unclassified": (2, 3.00, 2.5, 0.3, 0.3),
+    "residential":  (2, 3.00, 2.5, 0.3, 0.3),   # mahalle sokağı
 }
-LANE_W = 3.3
-
 
 def ways_from_overpass(path):
     for el in json.load(open(path))["elements"]:
@@ -58,11 +61,18 @@ for tags, geom in reader(src):
         continue
     if tags.get("tunnel") in ("yes", "building_passage"):
         continue  # tüneller arazi altında; şimdilik çizilmez
-    default_lanes, sidewalk = CLASS[base]
+    default_lanes, lane_w, walk_w, sh_l, sh_r = CLASS[base]
     link = hw.endswith("_link")
     oneway = tags.get("oneway") in ("yes", "1", "-1") or base == "motorway" or link
-    lanes = to_int(tags.get("lanes"), (1 if link else default_lanes // (2 if oneway and base == "motorway" else 1)))
+    # OSM'de şerit sayısı varsa onu kullan; yoksa sınıf varsayılanı (tek yönlü yolda yarısı)
+    lanes = to_int(tags.get("lanes"), 1 if link else
+                   (default_lanes if base in ("motorway", "trunk") else
+                    max(1, default_lanes // 2) if oneway else default_lanes))
     lanes = max(1, min(lanes, 10))
+    if link:
+        sh_l, sh_r = min(sh_l, 0.5), min(sh_r, 1.5)
+    if tags.get("sidewalk") == "no":
+        walk_w = 0.0
     pts = []
     for la, lo in geom:
         x = (lo - lon_min) * mlon - W / 2
@@ -72,8 +82,9 @@ for tags, geom in reader(src):
         continue
     roads.append({
         "c": base, "n": lanes, "o": 1 if oneway else 0,
-        "w": round(lanes * LANE_W + 1.0, 1),
-        "s": 1 if sidewalk and tags.get("sidewalk") != "no" else 0,
+        "lw": lane_w, "sl": sh_l, "sr": sh_r,
+        "w": round(lanes * lane_w + sh_l + sh_r, 2),   # toplam asfalt genişliği
+        "s": walk_w,
         "b": 1 if tags.get("bridge") in ("yes", "viaduct") else 0,
         "l": to_int(tags.get("layer"), 0),
         "p": pts,
