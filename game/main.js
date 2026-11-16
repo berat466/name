@@ -526,7 +526,11 @@ const TERRAIN_BODY = `
       }
       vec3 ra, rtn; float rr, rao;
       resolveAcc(ra, rtn, rr, rao);
-      ra *= (wa * vec3(0.60, 0.61, 0.64) + ws * vec3(0.74, 0.73, 0.71) + wl * vec3(0.78, 0.78, 0.76)) / max(wa + ws + wl, 1e-3);
+      // kaldırım: GTA'daki gibi düz, açık gri beton (dokunun deseni yalnızca parlaklık olarak kalır)
+      float Lr = dot(ra, vec3(0.3, 0.55, 0.15));
+      vec3 sCol = vec3(0.72, 0.71, 0.68) * (0.72 + 0.55 * Lr);
+      ra = (wa * ra * vec3(0.60, 0.61, 0.64) + ws * sCol + wl * ra * vec3(0.78, 0.78, 0.76)) / max(wa + ws + wl, 1e-3);
+      ra *= 1.0 - 0.3 * smoothstep(0.35, 0.7, m1.b) * ws * (1.0 - wa);   // plaka derzleri
 
       // --- asfalt ayrıntıları ---
       // lastik izleri + oluk kiri (maskenin G kanalı asfalt içinde aşınmayı taşır)
@@ -556,8 +560,8 @@ const TERRAIN_BODY = `
         rr = mix(rr, 0.42, disc);
       }
 
-      ra = mix(ra, vec3(0.6, 0.6, 0.58), clamp(4.0 * wa * ws, 0.0, 1.0) * 0.8);   // bordür taşı üst kenarı
-      if (curbFace > 0.5) ra = vec3(0.47, 0.47, 0.45) * (0.75 + 0.25 * vnoise(rp * 3.0));   // bordürün dik yüzü
+      ra = mix(ra, vec3(0.84, 0.83, 0.80), clamp(4.0 * wa * ws, 0.0, 1.0) * 0.85);   // bordür taşı üst kenarı (açık beton)
+      if (curbFace > 0.5) ra = vec3(0.66, 0.65, 0.62) * (0.8 + 0.2 * vnoise(rp * 3.0));   // bordürün dik yüzü
       float wear = mix(0.6, 1.0, vnoise(rp * 0.35));
       float white = smoothstep(0.3, 0.6, m1.b) * wear * wa, yellow = smoothstep(0.3, 0.6, my) * wear * wa;
       ra = mix(ra, vec3(0.82), white);
@@ -815,6 +819,28 @@ function bakeMasks(t, res) {
     g1.stroke();
   };
   for (const r of list) if (r.s > 0) body(r, '#0f0', r.w + 2 * r.s);
+  // kaldırım derzleri: beton plaka sınırı her 1,5 m'de bir (B kanalı, kaldırım içinde G=1 korunur)
+  for (const r of list) {
+    if (!(r.s > 0)) continue;
+    const half = r.w / 2;
+    g1.beginPath();
+    let acc = 0;
+    for (let p = r.off; p < r.off + r.len - 1; p++) {
+      const ax = RX[p], az = RZ[p], sx = RX[p + 1] - ax, sz = RZ[p + 1] - az, L = Math.hypot(sx, sz);
+      if (L < 1e-3) continue;
+      const nx = sz / L, nz = -sx / L;
+      for (let d = (1.5 - acc % 1.5) % 1.5; d < L; d += 1.5) {
+        const cx = ax + sx * d / L, cz = az + sz * d / L;
+        for (const sg of [-1, 1]) {
+          g1.moveTo(X(cx + nx * sg * half), Z(cz + nz * sg * half));
+          g1.lineTo(X(cx + nx * sg * (half + r.s)), Z(cz + nz * sg * (half + r.s)));
+        }
+      }
+      acc += L;
+    }
+    g1.strokeStyle = 'rgb(0,255,255)'; g1.lineWidth = Math.max(0.05 * BK, 1.2); g1.lineCap = 'butt';
+    g1.globalAlpha = Math.min(1, 0.4 + 0.05 * BK); g1.stroke(); g1.globalAlpha = 1;
+  }
   for (const r of list) body(r, '#f00', r.w);
   // lastik izleri: her şeridin iki tekerlek yolu, asfalt içinde G kanalına (kaldırımla karışmaz: R=1 kalır)
   for (const r of list) {
