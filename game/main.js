@@ -552,6 +552,8 @@ function bakeMasks(t) {
     g.stroke();
   };
 
+  // 0) toprak şerit (doku 2, B): kaldırımın 1,2 m ötesine kadar. Boya ve lastik izi bunun üstüne çizilir.
+  for (const r of roads) line(g2, r.p, 0, '#00f', r.w + 2 * (r.s + 1.2));
   // 1) kaldırımlar (asfaltın altında kalır) 2) asfalt
   for (const r of roads) if (r.s > 0) line(g1, r.p, 0, '#0f0', r.w + 2 * r.s + 0.04);   // yol kenarı: toprak şerit
   for (const r of roads) line(g1, r.p, 0, '#f00', r.w + 0.04);   // her kenar +2 cm: komşu parçalar birbirine biner
@@ -582,10 +584,12 @@ function bakeMasks(t) {
     g1.fillStyle = 'rgb(255,255,0)';
     g1.beginPath(); g1.arc(X(e.x), Z(e.z), rad, 0, Math.PI * 2); g1.fill();
     g1.globalCompositeOperation = 'source-over';
-    g2.fillStyle = '#000';                       // doku 2: sarı çizgi ve lastik izi sil
+    g2.globalCompositeOperation = 'multiply';    // doku 2: sarı çizgi ve lastik izi sil, toprak şerit (B) kalsın
+    g2.fillStyle = 'rgb(0,0,255)';
     g2.beginPath(); g2.arc(X(e.x), Z(e.z), rad, 0, Math.PI * 2); g2.fill();
+    g2.globalCompositeOperation = 'source-over';
     for (const a of e.arms) {
-      continue;  // sadeleştirme: yaya geçidi yok
+      if (a.c === 'motorway' || a.c === 'trunk' || !(a.s > 0) || a.w > 30) continue;
       const usable = a.w - a.sl - a.sr, d0 = e.hw + 1.2, nx = a.dz, nz = -a.dx;   // nx,nz: yolun sağı
       g1.strokeStyle = '#f0f'; g1.lineWidth = 0.5 * BK; g1.setLineDash([]);
       for (let j = 0; j < Math.floor(usable); j++) {
@@ -676,20 +680,28 @@ function roadPatchMaterial(t1, t2) {
     { decl: 'varying vec2 vMask;', body: 'vMask = uv;' },
     'varying vec2 vMask; uniform sampler2D tM1, tM2;', `
     vec4 m1 = texture2D(tM1, vMask), m2 = texture2D(tM2, vMask);
-    float cov = m1.r + m1.g;
-    if (cov < 0.5) discard;                         // yol/kaldırım değil: arazi görünsün
-    float wa = m1.r / cov, ws = 1.0 - wa;           // asfalt / kaldırım ağırlığı
+    // öncelik: asfalt > kaldırım > toprak şerit
+    float wa0 = m1.r;
+    float wp0 = min(m1.g, 1.0 - m1.r);
+    float wv0 = clamp(m2.b, 0.0, 1.0) * clamp(1.0 - m1.r - m1.g, 0.0, 1.0);
+    float cov = wa0 + wp0 + wv0;
+    if (cov < 0.5) discard;                         // yol değil: arazi görünsün
+    float wa = wa0 / cov, wp = wp0 / cov, wv = wv0 / cov;
     float n1 = vnoise(vWP.xz * 0.02), n2 = vnoise(vWP.xz * 0.07 + 33.0), n3 = vnoise(vWP.xz * 0.05 + 7.0);
     float wB = smoothstep(0.4, 0.8, n1) * 0.6, wC = smoothstep(0.55, 0.85, n2) * 0.5, cw = smoothstep(0.45, 0.75, n3);
     accA = vec3(0.0); accN = vec4(0.0); accW = 0.0;
     addLayer(tA, tN, vWP.xz / 5.0, 0.0, wa * (1.0 - wB) * (1.0 - wC));
     addLayer(tA, tN, vWP.xz / 8.0, 1.0, wa * wB * (1.0 - wC));
     addLayer(tA, tN, vWP.xz / 4.0, 2.0, wa * wC);
-    addLayer(tA, tN, vWP.xz / 4.0, 3.0, ws * (1.0 - cw));
-    addLayer(tA, tN, vWP.xz / 4.0, 4.0, ws * cw);
+    addLayer(tA, tN, vWP.xz / 4.0, 3.0, wv * (1.0 - cw));
+    addLayer(tA, tN, vWP.xz / 4.0, 4.0, wv * cw);
+    addLayer(tA, tN, vWP.xz / 3.0, 5.0, wp);
     ${GLSL_RESOLVE}
-    vec3 col = accA * mix(vec3(0.52, 0.47, 0.42), vec3(0.62, 0.63, 0.66), wa);   // toprak koyu kahve, asfalt koyu gri
-    col *= 1.0 - 0.2 * (4.0 * m1.r * m1.g);         // asfalt / toprak sınırında hafif koyulaşma
+    vec3 col = accA * (wa * vec3(0.62, 0.63, 0.66) + wp * vec3(1.05, 1.05, 1.02) + wv * vec3(0.52, 0.47, 0.42));
+    // bordür taşı: asfalt ile kaldırım sınırında açık gri çizgi, hemen dışında hafif gölge
+    float curb = 4.0 * wa0 * wp0;
+    col = mix(col, vec3(0.66, 0.66, 0.64), clamp(curb, 0.0, 1.0) * 0.75);
+    col *= 1.0 - 0.25 * (4.0 * wp * wv);            // kaldırım / toprak sınırında hafif koyulaşma
     col *= 1.0 - 0.4 * m2.g * wa;                   // lastik izleri
     float wear = mix(0.65, 1.0, vnoise(vWP.xz * 0.35));
     float white = smoothstep(0.3, 0.7, m1.b) * wear * wa;
