@@ -1,19 +1,28 @@
-"""SRTM .hgt dosyalarından Seul arazisini kesip oyun için ikili yükseklik verisi üretir.
-Kullanım: python3 tools/build_terrain.py <hgt_klasoru> <cikis_klasoru>
+"""SRTM .hgt dosyalarından istenen bölgeyi kesip oyun için ikili yükseklik verisi üretir.
+Kullanım: python3 tools/build_terrain.py <hgt_klasoru> <cikis_klasoru> <lat_min> <lon_min> <lat_max> <lon_max>
+Bölgeyi kaplayan tüm karolar (örn. N35E128.hgt) klasörde bulunmalı.
 """
-import sys, json, numpy as np
+import sys, json, math, numpy as np
 
-LAT_MIN, LAT_MAX = 37.42, 37.72
-LON_MIN, LON_MAX = 126.76, 127.19
 N = 3601  # SRTM1: 1 yay saniyesi
-
 src, out = sys.argv[1], sys.argv[2]
-w = np.fromfile(f"{src}/N37E126.hgt", dtype=">i2").reshape(N, N).astype(np.float32)
-e = np.fromfile(f"{src}/N37E127.hgt", dtype=">i2").reshape(N, N).astype(np.float32)
-full = np.concatenate([w, e[:, 1:]], axis=1)  # ortak kenar sütunu bir kez
+LAT_MIN, LON_MIN, LAT_MAX, LON_MAX = map(float, sys.argv[3:7])
 
-r0 = round((38 - LAT_MAX) * 3600); r1 = round((38 - LAT_MIN) * 3600)
-c0 = round((LON_MIN - 126) * 3600); c1 = round((LON_MAX - 126) * 3600)
+la0, la1 = math.floor(LAT_MIN), math.floor(LAT_MAX - 1e-9)
+lo0, lo1 = math.floor(LON_MIN), math.floor(LON_MAX - 1e-9)
+tile = lambda la, lo: f"{'N' if la >= 0 else 'S'}{abs(la):02d}{'E' if lo >= 0 else 'W'}{abs(lo):03d}.hgt"
+rows_ = []
+for la in range(la1, la0 - 1, -1):                # kuzeyden güneye
+    cols_ = []
+    for lo in range(lo0, lo1 + 1):                # batıdan doğuya
+        t = np.fromfile(f"{src}/{tile(la, lo)}", dtype=">i2").reshape(N, N).astype(np.float32)
+        cols_.append(t if not cols_ else t[:, 1:])  # ortak kenar sütunu bir kez
+    row = np.concatenate(cols_, axis=1)
+    rows_.append(row if not rows_ else row[1:, :])  # ortak kenar satırı bir kez
+full = np.concatenate(rows_, axis=0)
+
+r0 = round((la1 + 1 - LAT_MAX) * 3600); r1 = round((la1 + 1 - LAT_MIN) * 3600)
+c0 = round((LON_MIN - lo0) * 3600); c1 = round((LON_MAX - lo0) * 3600)
 h = full[r0:r1 + 1, c0:c1 + 1]
 
 # Su yüzeyindeki SRTM gürültüsünü (negatif değerler) bastır

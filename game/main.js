@@ -362,7 +362,7 @@ export function heightAt(x, z) {
 }
 
 // ---------------------------------------------------------------------------
-// Yollar (OpenStreetMap, gerçek Seul yol ağı)
+// Yollar (OpenStreetMap yol ağı)
 //   1) her yolu örnekle, araziye göre eğim sınırlı profil çıkar
 //   2) kavşakları bul, yolları kavşakta aynı yükseklikte buluştur
 //   3) araziyi yola oturt (yarma / dolgu + şev)
