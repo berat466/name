@@ -33,101 +33,197 @@ controls.screenSpacePanning = false;
 controls.zoomToCursor = true;
 
 // ---------------------------------------------------------------------------
-// Dokular (Poly Haven, CC0)
+// Dokular (Poly Haven, CC0, 2K) — birden çok PBR seti doku dizisi (texture array) olarak
 // ---------------------------------------------------------------------------
-const texLoader = new THREE.TextureLoader();
 const maxAniso = renderer.capabilities.getMaxAnisotropy();
-const texPending = [];
-function tex(path, srgb) {
-  let done;
-  texPending.push(new Promise((r) => (done = r)));
-  const t = texLoader.load(path, done, undefined, done);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.anisotropy = maxAniso;
-  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-function pbr(name) {
-  const base = `./textures/${name}/`;
-  return { d: tex(base + 'diff.jpg', true), n: tex(base + 'nor_gl.jpg'), a: tex(base + 'arm.jpg') };
-}
-const T = {
-  grass: pbr('forrest_ground_01'),
-  forest: pbr('aerial_grass_rock'),
-  rock: pbr('aerial_rocks_02'),
-  asphalt: pbr('asphalt_02'),
-};
+const TEX = 2048;
 
-// ---------------------------------------------------------------------------
-// Arazi malzemesi: eğim ve yüksekliğe göre çim / orman / kaya karışımı
-// ---------------------------------------------------------------------------
-function terrainMaterial() {
-  const mat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 });
+async function loadImg(url) {
+  const img = new Image();
+  img.src = url;
+  await img.decode();
+  return img;
+}
+// Her set için iki katman üretir:
+//   albedo  : diff.jpg (sRGB)
+//   nra     : R,G = normal.xy · B = pürüzlülük · A = ortam kapatma (AO)
+async function loadPbrArray(names) {
+  const n = names.length, layer = TEX * TEX * 4;
+  const alb = new Uint8Array(layer * n), nra = new Uint8Array(layer * n);
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = TEX;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  const read = (img) => { ctx.drawImage(img, 0, 0, TEX, TEX); return ctx.getImageData(0, 0, TEX, TEX).data; };
+
+  for (let i = 0; i < n; i++) {
+    const base = `./textures/${names[i]}/`;
+    const [d, nm, arm] = await Promise.all(['diff', 'nor_gl', 'arm'].map((m) => loadImg(base + m + '.jpg')));
+    alb.set(read(d), layer * i);
+    const N = read(nm), A = read(arm), o = layer * i;
+    for (let p = 0; p < layer; p += 4) {
+      nra[o + p] = N[p]; nra[o + p + 1] = N[p + 1]; nra[o + p + 2] = A[p + 1]; nra[o + p + 3] = A[p];
+    }
+  }
+  const mk = (data, srgb) => {
+    const t = new THREE.DataArrayTexture(data, TEX, TEX, n);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.magFilter = THREE.LinearFilter;
+    t.generateMipmaps = true;
+    t.anisotropy = maxAniso;
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+    t.needsUpdate = true;
+    return t;
+  };
+  return { alb: mk(alb, true), nra: mk(nra, false) };
+}
+
+// Arazi katmanları (sıra shader ile aynı olmalı)
+const TERRAIN_SETS = [
+  'forrest_ground_01', // 0 çim
+  'aerial_grass_rock', // 1 çim + taş
+  'dirt_floor',        // 2 toprak lekeleri
+  'forest_leaves_02',  // 3 orman zemini
+  'aerial_rocks_02',   // 4 kaya
+  'mossy_rock',        // 5 yosunlu kaya
+];
+// Yol katmanları
+const ROAD_SETS = ['asphalt_02', 'aerial_asphalt_01', 'asphalt_04'];
+
+const [terrainTex, roadTex] = await Promise.all([loadPbrArray(TERRAIN_SETS), loadPbrArray(ROAD_SETS)]);
+
+// Ortak GLSL: gürültü, iki ölçekli örnekleme, nra çözme
+const GLSL_COMMON = `
+  float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+  float vnoise(vec2 p){
+    vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+    return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y);
+  }
+  // Tekrar desenini kırmak için aynı katmanı iki ölçekte örnekle
+  vec4 smp(highp sampler2DArray t, vec2 uv, float l){
+    return mix(texture(t, vec3(uv, l)), texture(t, vec3(uv * 0.137 + 0.31, l)), 0.35);
+  }
+  vec3 accA; vec4 accN; float accW;
+  void addLayer(highp sampler2DArray A, highp sampler2DArray N, vec2 uv, float l, float w){
+    if (w < 0.004) return;
+    accA += smp(A, uv, l).rgb * w;
+    accN += smp(N, uv, l) * w;
+    accW += w;
+  }
+`;
+// Ortak parça: birikmiş katmanlardan normal / pürüzlülük / AO çıkar (dünya uzayı)
+const GLSL_RESOLVE = `
+  accA /= accW; accN /= accW;
+  vec2 nxy = accN.xy * 2.0 - 1.0;
+  nxy.y = -nxy.y; // doku dizisi Y çevrilmeden yüklendi
+  vec3 tn = vec3(nxy, sqrt(max(0.0, 1.0 - dot(nxy, nxy))));
+  blendR = accN.z; blendAO = accN.w;
+`;
+
+function patchStandard(mat, uniforms, vtxExtra, fragDecl, fragBody) {
   mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, {
-      gD: { value: T.grass.d }, gN: { value: T.grass.n }, gA: { value: T.grass.a },
-      fD: { value: T.forest.d }, fN: { value: T.forest.n }, fA: { value: T.forest.a },
-      rD: { value: T.rock.d }, rN: { value: T.rock.n }, rA: { value: T.rock.a },
-    });
+    Object.assign(sh.uniforms, uniforms);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vWP;\nvarying vec3 vWN;')
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWP;\nvarying vec3 vWN;\n' + (vtxExtra.decl || ''))
       .replace('#include <project_vertex>', `#include <project_vertex>
         vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;
-        vWN = normalize(mat3(modelMatrix) * objectNormal);`);
-
+        vWN = normalize(mat3(modelMatrix) * objectNormal);
+        ${vtxExtra.body || ''}`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         varying vec3 vWP;
         varying vec3 vWN;
-        uniform sampler2D gD, gN, gA, fD, fN, fA, rD, rN, rA;
-        vec3 W;            // karışım ağırlıkları: çim, orman, kaya
-        vec3 blendN;       // dünya uzayı normal
-        float blendR, blendAO;
-
-        float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-        float vnoise(vec2 p){
-          vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
-          return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y);
-        }
-        // Tekrar desenini kırmak için iki ölçekte örnekle
-        vec4 tri(sampler2D t, vec2 uv){
-          return mix(texture2D(t, uv), texture2D(t, uv * 0.137 + 0.31), 0.35);
-        }`)
-      .replace('#include <map_fragment>', `
-        vec3 N0 = normalize(vWN);
-        float slope = 1.0 - N0.y;
-        float n1 = vnoise(vWP.xz * 0.004) * 0.6 + vnoise(vWP.xz * 0.02) * 0.4;
-        float rock = smoothstep(0.30, 0.50, slope + (n1 - 0.5) * 0.15);
-        float forest = smoothstep(55.0, 110.0, vWP.y + (n1 - 0.5) * 70.0) * (1.0 - rock);
-        forest = max(forest, smoothstep(0.10, 0.22, slope) * (1.0 - rock) * 0.9);
-        float grass = max(0.0, 1.0 - rock - forest);
-        W = vec3(grass, forest, rock) / (grass + forest + rock + 1e-4);
-
-        vec2 uvG = vWP.xz / 5.0, uvF = vWP.xz / 18.0, uvR = vWP.xz / 14.0;
-        vec3 gC = tri(gD, uvG).rgb * vec3(0.85, 1.0, 0.7);
-        // dağlar: yukarıdan bakınca ağaç örtüsü -> koyu yeşile çek
-        vec3 fC = mix(tri(fD, uvF).rgb, vec3(0.10, 0.16, 0.06), 0.45);
-        vec3 col = gC * W.x + fC * W.y + tri(rD, uvR).rgb * W.z;
-        // uzakta renk değişimi (makro varyasyon)
-        col *= 0.85 + 0.3 * vnoise(vWP.xz * 0.0015);
-        diffuseColor.rgb *= col;
-
-        vec3 arm = tri(gA, uvG).rgb * W.x + tri(fA, uvF).rgb * W.y + tri(rA, uvR).rgb * W.z;
-        blendAO = arm.r; blendR = arm.g;
-
-        vec3 tn = (tri(gN, uvG).xyz * W.x + tri(fN, uvF).xyz * W.y + tri(rN, uvR).xyz * W.z) * 2.0 - 1.0;
-        vec3 Tg = normalize(vec3(1.0, 0.0, 0.0) - N0 * N0.x);
-        vec3 Bt = normalize(cross(Tg, N0));
-        blendN = normalize(Tg * tn.x + Bt * tn.y + N0 * tn.z);
-      `)
+        uniform highp sampler2DArray tA, tN;
+        vec3 blendN; float blendR, blendAO;
+        ${GLSL_COMMON}
+        ${fragDecl}`)
+      .replace('#include <map_fragment>', fragBody)
       .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = roughness * blendR;')
-      .replace('#include <normal_fragment_maps>', `
-        normal = normalize((viewMatrix * vec4(blendN, 0.0)).xyz);
-      `)
-      .replace('#include <aomap_fragment>', `
-        reflectedLight.indirectDiffuse *= mix(1.0, blendAO, 0.8);
-      `);
+      .replace('#include <normal_fragment_maps>', 'normal = normalize((viewMatrix * vec4(blendN, 0.0)).xyz);')
+      .replace('#include <aomap_fragment>', 'reflectedLight.indirectDiffuse *= mix(1.0, blendAO, 0.8);');
   };
+}
+
+// ---------------------------------------------------------------------------
+// Arazi malzemesi: eğim, yükseklik ve gürültüye göre 6 PBR setinin karışımı
+// ---------------------------------------------------------------------------
+function terrainMaterial() {
+  const mat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 });
+  patchStandard(mat, { tA: { value: terrainTex.alb }, tN: { value: terrainTex.nra } }, {}, '', `
+    vec3 N0 = normalize(vWN);
+    float slope = 1.0 - N0.y;
+    float n1 = vnoise(vWP.xz * 0.004) * 0.6 + vnoise(vWP.xz * 0.02) * 0.4;
+    float n2 = vnoise(vWP.xz * 0.011 + 17.0);
+    float n3 = vnoise(vWP.xz * 0.012 + 91.0) * 0.7 + vnoise(vWP.xz * 0.06 + 5.0) * 0.3;
+
+    // bölgeler
+    float rock = smoothstep(0.30, 0.50, slope + (n1 - 0.5) * 0.15);
+    float forest = smoothstep(55.0, 110.0, vWP.y + (n1 - 0.5) * 70.0) * (1.0 - rock);
+    forest = max(forest, smoothstep(0.10, 0.22, slope) * (1.0 - rock) * 0.9);
+    float grass = max(0.0, 1.0 - rock - forest);
+
+    // bölge içi set karışımı
+    float gB = smoothstep(0.35, 0.65, n2);            // çim A <-> çim+taş
+    float dirt = smoothstep(0.58, 0.85, n3) * 0.55;   // toprak lekeleri (yumuşak geçiş)
+    float rB = smoothstep(0.4, 0.6, n2);              // kaya <-> yosunlu kaya
+    float fB = smoothstep(0.45, 0.75, n3) * 0.5;      // orman zemininde çimli açıklıklar
+
+    float w0 = grass * (1.0 - gB) * (1.0 - dirt);
+    float w1 = grass * gB * (1.0 - dirt) + forest * fB;
+    float w2 = grass * dirt;
+    float w3 = forest * (1.0 - fB);
+    float w4 = rock * (1.0 - rB);
+    float w5 = rock * rB;
+
+    accA = vec3(0.0); accN = vec4(0.0); accW = 0.0;
+    addLayer(tA, tN, vWP.xz / 5.0, 0.0, w0);
+    addLayer(tA, tN, vWP.xz / 16.0, 1.0, w1);
+    addLayer(tA, tN, vWP.xz / 4.0, 2.0, w2);
+    addLayer(tA, tN, vWP.xz / 3.0, 3.0, w3);
+    addLayer(tA, tN, vWP.xz / 14.0, 4.0, w4);
+    addLayer(tA, tN, vWP.xz / 6.0, 5.0, w5);
+    ${GLSL_RESOLVE}
+
+    vec3 col = accA;
+    col *= mix(vec3(1.0), vec3(0.85, 1.0, 0.7), grass);                // çimi biraz canlandır
+    col = mix(col, vec3(0.10, 0.16, 0.06), forest * 0.45);              // yukarıdan ağaç örtüsü
+    col *= 0.85 + 0.3 * vnoise(vWP.xz * 0.0015);                        // makro varyasyon
+    diffuseColor.rgb *= col;
+
+    vec3 Tg = normalize(vec3(1.0, 0.0, 0.0) - N0 * N0.x);
+    vec3 Bt = normalize(cross(Tg, N0));
+    blendN = normalize(Tg * tn.x + Bt * tn.y + N0 * tn.z);
+  `);
+  return mat;
+}
+
+// ---------------------------------------------------------------------------
+// Yol malzemesi: 3 asfalt PBR setinin karışımı (yıpranma, yama, çatlak)
+// ---------------------------------------------------------------------------
+function roadMaterial() {
+  const mat = new THREE.MeshStandardMaterial({
+    roughness: 1, metalness: 0, side: THREE.DoubleSide,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4,
+  });
+  patchStandard(mat, { tA: { value: roadTex.alb }, tN: { value: roadTex.nra } },
+    { decl: 'attribute vec2 ruv;\nattribute vec2 rdir;\nvarying vec2 vRuv;\nvarying vec2 vRdir;', body: 'vRuv = ruv; vRdir = rdir;' },
+    'varying vec2 vRuv;\nvarying vec2 vRdir;', `
+    float n1 = vnoise(vWP.xz * 0.02);
+    float n2 = vnoise(vWP.xz * 0.07 + 33.0);
+    float wB = smoothstep(0.4, 0.8, n1) * 0.6;     // farklı asfalt yüzeyi
+    float wC = smoothstep(0.55, 0.85, n2) * 0.5;   // çatlak / yama
+    accA = vec3(0.0); accN = vec4(0.0); accW = 0.0;
+    addLayer(tA, tN, vRuv / 5.0, 0.0, (1.0 - wB) * (1.0 - wC));
+    addLayer(tA, tN, vRuv / 8.0, 1.0, wB * (1.0 - wC));
+    addLayer(tA, tN, vRuv / 4.0, 2.0, wC);
+    ${GLSL_RESOLVE}
+    diffuseColor.rgb *= accA;
+
+    vec3 N0 = vec3(0.0, 1.0, 0.0);
+    vec3 Tg = normalize(vec3(vRdir.y, 0.0, -vRdir.x)); // yolun enine yön
+    vec3 Bt = normalize(vec3(vRdir.x, 0.0, vRdir.y));  // yol boyunca
+    blendN = normalize(Tg * tn.x + Bt * tn.y + N0 * tn.z);
+  `);
   return mat;
 }
 
@@ -191,7 +287,7 @@ async function buildRoads() {
   } catch { return 0; }
 
   const STEP = 10; // metre: araziye oturması için yolu bu aralıkla böl
-  const pos = [], nor = [], uv = [], idx = [];
+  const pos = [], nor = [], uv = [], dir = [], idx = [];
   const ORDER = { tertiary: 0, secondary: 1, primary: 2, trunk: 3, motorway: 4 };
 
   for (const road of data.roads) {
@@ -224,8 +320,9 @@ async function buildRoads() {
       if (i > 0) dist += Math.hypot(x - pts[i - 1][0], z - pts[i - 1][1]);
       pos.push(x - tz * half, y, z + tx * half, x + tz * half, y, z - tx * half);
       nor.push(0, 1, 0, 0, 1, 0);
-      const v = dist / 6;
-      uv.push(0, v, road.w / 6, v);
+      // metre cinsinden: enine (-w/2..w/2), boyuna mesafe
+      uv.push(-half, dist, half, dist);
+      dir.push(tx, tz, tx, tz);
       if (i > 0) {
         const q = base + (i - 1) * 2;
         idx.push(q, q + 2, q + 1, q + 1, q + 2, q + 3);
@@ -236,16 +333,11 @@ async function buildRoads() {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('ruv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('rdir', new THREE.Float32BufferAttribute(dir, 2));
   g.setIndex(idx);
   g.computeBoundingSphere();
-  const mat = new THREE.MeshStandardMaterial({
-    map: T.asphalt.d, normalMap: T.asphalt.n, roughnessMap: T.asphalt.a, aoMap: T.asphalt.a,
-    roughness: 1, metalness: 0, side: THREE.DoubleSide,
-    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4,
-  });
-  g.setAttribute('uv1', g.getAttribute('uv'));
-  const mesh = new THREE.Mesh(g, mat);
+  const mesh = new THREE.Mesh(g, roadMaterial());
   mesh.renderOrder = 1;
   scene.add(mesh);
   return data.roads.length;
@@ -309,8 +401,6 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
-// tüm dokular yüklenene kadar bekle
-await Promise.race([Promise.all(texPending), new Promise((r) => setTimeout(r, 20000))]);
 const load = document.getElementById('load');
 load.style.opacity = 0;
 setTimeout(() => load.remove(), 500);
