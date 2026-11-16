@@ -413,14 +413,14 @@ const TERRAIN_DECL = `
   #endif
   // Doku türevleri dallanmadan önce bir kez hesaplanır: koşullu örneklemede mip seçimi bozulmaz
   // (aksi halde karışım sınırlarında siyah noktalar oluşur).
-  vec2 gDx, gDy;
+  vec2 gDx, gDy, gP;
   vec4 smpG(highp sampler2DArray t, vec2 uv, float sc, float l){
     return mix(textureGrad(t, vec3(uv, l), gDx * sc, gDy * sc),
                textureGrad(t, vec3(uv * 0.137 + 0.31, l), gDx * sc * 0.137, gDy * sc * 0.137), 0.35);
   }
   void addG(highp sampler2DArray A, highp sampler2DArray N, float sc, float l, float w){
     if (w < 0.004) return;
-    vec2 uv = vWP.xz * sc;
+    vec2 uv = gP * sc;
     accA += smpG(A, uv, sc, l).rgb * w; accN += smpG(N, uv, sc, l) * w; accW += w;
   }
   void resolveAcc(out vec3 alb, out vec3 tn, out float r, out float ao){
@@ -431,7 +431,7 @@ const TERRAIN_DECL = `
 `;
 const TERRAIN_BODY = `
   vec3 N0 = normalize(vWN);
-  gDx = dFdx(vWP.xz); gDy = dFdy(vWP.xz);
+  gDx = dFdx(vWP.xz); gDy = dFdy(vWP.xz); gP = vWP.xz;
   vec2 wuv = (vWP.xz + uWorld * 0.5) / uWorld;
   #ifndef PATCH
     if (texture2D(tCover, (vWP.xz + uWorld * 0.5) * uCoverInv).r > 0.5) discard;   // burada yakın karo var
@@ -489,13 +489,31 @@ const TERRAIN_BODY = `
 
   #ifdef PATCH
   {
-    vec2 muv = (vWP.xz - uTile.xy) * uTile.z;
-    vec4 m1 = texture2D(tM1, muv); float my = texture2D(tM2, muv).r;
+    // --- yükseltili bordür (paralaks): kaldırım yoldan 16 cm yüksek. Bakış ışını maske üzerinde
+    // yukarıdan aşağı yürütülür; ışın kaldırım sütununa yandan çarparsa bordürün dik yüzü görünür.
+    vec2 rp = vWP.xz; float curbFace = 0.0;
+    vec3 Vv = normalize(cameraPosition - vWP);
+    if (distance(cameraPosition, vWP) < 110.0 && Vv.y > 0.02) {
+      const float HC = 0.16;
+      vec2 sh = Vv.xz / Vv.y * HC;                          // tam yükseklikteki yatay kayma
+      float lim = min(1.0, 1.6 / (length(sh) + 1e-4));      // kayma en çok 1,6 m
+      for (int i = 0; i < 14; i++) {
+        float f = (1.0 - float(i) / 14.0) * lim;
+        vec2 q = vWP.xz + sh * f;
+        vec4 mm = textureLod(tM1, (q - uTile.xy) * uTile.z, 0.0);
+        if (min(mm.g, 1.0 - mm.r) > 0.5) { rp = q; curbFace = i == 0 ? 0.0 : 1.0; break; }
+      }
+    }
+    vec2 muv = (rp - uTile.xy) * uTile.z;
+    vec4 m1 = textureGrad(tM1, muv, gDx * uTile.z, gDy * uTile.z);
+    float my = textureGrad(tM2, muv, gDx * uTile.z, gDy * uTile.z).r;
     float wa = m1.r, ws = min(m1.g, 1.0 - m1.r);
+    if (curbFace > 0.5) { ws = 1.0; wa = 0.0; }
     float wl = vMod.y * max(0.0, 1.0 - wa - ws);                          // istinat duvarı
     float cov = clamp(wa + ws + wl, 0.0, 1.0);
     if (cov > 0.004) {
-      float q1 = vnoise(vWP.xz * 0.02), q2 = vnoise(vWP.xz * 0.07 + 33.0);
+      gP = rp;
+      float q1 = vnoise(rp * 0.02), q2 = vnoise(rp * 0.07 + 33.0);
       float wB = smoothstep(0.4, 0.8, q1) * 0.6, wC = smoothstep(0.55, 0.85, q2) * 0.5;
       accA = vec3(0.0); accN = vec4(0.0); accW = 0.0;
       addG(rA, rN, 1.0 / 5.0, 0.0, wa * (1.0 - wB) * (1.0 - wC));
@@ -509,13 +527,44 @@ const TERRAIN_BODY = `
       vec3 ra, rtn; float rr, rao;
       resolveAcc(ra, rtn, rr, rao);
       ra *= (wa * vec3(0.60, 0.61, 0.64) + ws * vec3(0.74, 0.73, 0.71) + wl * vec3(0.78, 0.78, 0.76)) / max(wa + ws + wl, 1e-3);
-      ra = mix(ra, vec3(0.6, 0.6, 0.58), clamp(4.0 * wa * ws, 0.0, 1.0) * 0.8);   // bordür taşı
-      float wear = mix(0.6, 1.0, vnoise(vWP.xz * 0.35));
+
+      // --- asfalt ayrıntıları ---
+      // lastik izleri + oluk kiri (maskenin G kanalı asfalt içinde aşınmayı taşır)
+      float track = m1.g * m1.r;
+      ra *= 1.0 - wa * track * (0.30 + 0.25 * vnoise(rp * 0.15));
+      rr = mix(rr, rr * 0.8, wa * track);
+      // tamir yamaları: 34 m'lik hücrelerde rastgele dikdörtgen, kenarında koyu zift çizgisi
+      vec2 pc = floor(rp / 34.0);
+      if (hash(pc + 2.7) > 0.5) {
+        vec2 ctr = (pc + 0.25 + 0.5 * vec2(hash(pc), hash(pc + 9.1))) * 34.0;
+        vec2 hs = vec2(1.2 + 2.5 * hash(pc + 4.4), 0.9 + 1.6 * hash(pc + 6.2));
+        vec2 dq = abs(rp - ctr) - hs;
+        float dbox = max(dq.x, dq.y);
+        float inside = 1.0 - smoothstep(-0.03, 0.03, dbox), seam = 1.0 - smoothstep(0.0, 0.07, abs(dbox));
+        ra = mix(ra, ra * (hash(pc + 1.3) > 0.5 ? 0.78 : 1.16), inside * wa);
+        ra *= 1.0 - 0.55 * seam * wa;
+      }
+      // rögar kapakları: 26 m'lik hücrelerde, dökme demir
+      vec2 mc = floor(rp / 26.0);
+      if (hash(mc + 5.5) > 0.4) {
+        vec2 ctr = (mc + 0.2 + 0.6 * vec2(hash(mc + 1.1), hash(mc + 8.3))) * 26.0;
+        float dm = length(rp - ctr);
+        float disc = (1.0 - smoothstep(0.33, 0.35, dm)) * step(0.97, wa);
+        float rib = 0.75 + 0.25 * step(0.5, fract(dm * 11.0));
+        ra = mix(ra, vec3(0.11, 0.105, 0.10) * rib, disc);
+        ra *= 1.0 - 0.5 * (1.0 - smoothstep(0.0, 0.03, abs(dm - 0.36))) * step(0.97, wa);
+        rr = mix(rr, 0.42, disc);
+      }
+
+      ra = mix(ra, vec3(0.6, 0.6, 0.58), clamp(4.0 * wa * ws, 0.0, 1.0) * 0.8);   // bordür taşı üst kenarı
+      if (curbFace > 0.5) ra = vec3(0.47, 0.47, 0.45) * (0.75 + 0.25 * vnoise(rp * 3.0));   // bordürün dik yüzü
+      float wear = mix(0.6, 1.0, vnoise(rp * 0.35));
       float white = smoothstep(0.3, 0.6, m1.b) * wear * wa, yellow = smoothstep(0.3, 0.6, my) * wear * wa;
       ra = mix(ra, vec3(0.82), white);
       ra = mix(ra, vec3(0.85, 0.6, 0.07), yellow);
       rr = mix(rr, 0.5, max(white, yellow));
       col = mix(col, ra, cov); tnv = normalize(mix(tnv, rtn, cov)); R_ = mix(R_, rr, cov); AO_ = mix(AO_, rao, cov);
+      gP = vWP.xz;
     }
   }
   #endif
@@ -767,6 +816,15 @@ function bakeMasks(t, res) {
   };
   for (const r of list) if (r.s > 0) body(r, '#0f0', r.w + 2 * r.s);
   for (const r of list) body(r, '#f00', r.w);
+  // lastik izleri: her şeridin iki tekerlek yolu, asfalt içinde G kanalına (kaldırımla karışmaz: R=1 kalır)
+  for (const r of list) {
+    const cL = -r.w / 2 + r.sl, cR = r.w / 2 - r.sr, lw = (cR - cL) / r.n;
+    for (let k = 0; k < r.n; k++) for (const o of [-0.8, 0.8]) {
+      trace(g1, r, cL + lw * (k + 0.5) + o);
+      g1.strokeStyle = 'rgb(255,105,0)'; g1.lineWidth = Math.max(0.6 * BK, 1.3); g1.lineCap = 'butt'; g1.globalAlpha = 0.85;
+      g1.stroke(); g1.globalAlpha = 1;
+    }
+  }
   // boya: ana yollarda orta sarı çift çizgi, şerit çizgileri, kenar çizgisi
   for (const r of list) {
     if (r.order < 2) continue;
@@ -982,6 +1040,8 @@ function structTile(x, z) {
       for (const [p, q] of [[r.off, r.off + 1], [r.off + r.len - 1, r.off + r.len - 2]]) {
         if (tunnelEnds.get(ek(p)) !== 1) continue;
         const l = Math.hypot(RX[q] - RX[p], RZ[q] - RZ[p]) || 1;
+        // yalnızca gerçekten tepeye giren tünelde alın duvarı: 14 m içeride arazi açıklıktan yüksek olmalı
+        if (heightAt(RX[p] + (RX[q] - RX[p]) / l * 14, RZ[p] + (RZ[q] - RZ[p]) / l * 14) < RY[p] + 5.5) continue;
         structTile(RX[p], RZ[p]).portals.push({ x: RX[p], z: RZ[p], y: RY[p], dx: (RX[q] - RX[p]) / l, dz: (RZ[q] - RZ[p]) / l, w: r.w });
       }
       continue;
@@ -1108,10 +1168,10 @@ function streamStructs(px, pz, budgetMs) {
 //   harita (orbit): masaüstünde varsayılan; fare ile kaydır / döndür / yakınlaş
 // ---------------------------------------------------------------------------
 let [cx, cz] = toWorld(Number(params.get('lat') || meta.start[0]), Number(params.get('lon') || meta.start[1]));
-const camDist = Number(params.get('d') || (isTouch ? 500 : 1800));
+const camDist = Number(params.get('d') || 90);   // sokağa yakın başla: ölçü hissi buradan gelir
 const az = Number(params.get('az') || 215) * Math.PI / 180;       // kameranın hedefe göre yönü (derece, kuzeyden saat yönü)
 controls.target.set(cx, heightAt(cx, cz), cz);
-camera.position.set(cx + Math.sin(az) * camDist * 0.85, heightAt(cx, cz) + camDist * Number(params.get('hy') || 0.5), cz - Math.cos(az) * camDist * 0.85);
+camera.position.set(cx + Math.sin(az) * camDist * 0.85, heightAt(cx, cz) + camDist * Number(params.get('hy') || 0.28), cz - Math.cos(az) * camDist * 0.85);
 controls.update();
 
 camera.rotation.order = 'YXZ';
