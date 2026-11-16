@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seul Arazisi</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #9fb7cc; font-family: system-ui, sans-serif; }
+  canvas { display: block; }
+  #hud { position: fixed; left: 12px; top: 12px; padding: 10px 12px; background: rgba(15,20,28,.72);
+         color: #e8eef5; font-size: 13px; line-height: 1.5; border-radius: 8px; max-width: 320px; }
+  #hud b { color: #fff; }
+  #load { position: fixed; inset: 0; display: grid; place-items: center; color: #fff; font-size: 18px;
+          background: #1b2430; transition: opacity .4s; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/addons/" } }
+</script>
+</head>
+<body>
+<div id="load">Arazi yükleniyor…</div>
+<div id="hud">
+  <b>Seul — arazi</b><br>
+  Sol tık + sürükle: kaydır · Sağ tık: döndür · Tekerlek: yakınlaş<br>
+  WASD / ok tuşları: hareket<br>
+  <span id="info"></span>
+</div>
+<script type="module" src="./main.js"></script>
+</body>
+</html>
