@@ -94,12 +94,10 @@ const TERRAIN_SETS = [
   'mossy_rock',        // 5 yosunlu kaya
 ];
 // Yol katmanları
-const ROAD_SETS = ['asphalt_02', 'aerial_asphalt_01', 'asphalt_04'];
-// Kaldırım katmanları
-const WALK_SETS = ['herringbone_pavement_04', 'concrete_pavement_02'];
+// 0-2 asfalt, 3 parke taşı kaldırım, 4 beton
+const ROAD_SETS = ['asphalt_02', 'aerial_asphalt_01', 'asphalt_04', 'herringbone_pavement_04', 'concrete_pavement_02'];
 
-const [terrainTex, roadTex, walkTex] = await Promise.all(
-  [TERRAIN_SETS, ROAD_SETS, WALK_SETS].map(loadPbrArray));
+const [terrainTex, roadTex] = await Promise.all([TERRAIN_SETS, ROAD_SETS].map(loadPbrArray));
 
 // Ortak GLSL: gürültü, iki ölçekli örnekleme, nra çözme
 const GLSL_COMMON = `
@@ -130,9 +128,10 @@ const GLSL_RESOLVE = `
 `;
 
 let shaderId = 0;
-function patchStandard(mat, uniforms, vtxExtra, fragDecl, fragBody) {
-  // her malzeme kendi shader'ını derlesin (aksi halde three.js aynı programı paylaştırır)
-  const key = 'patched-' + (shaderId++);
+function patchStandard(mat, uniforms, vtxExtra, fragDecl, fragBody, fixedKey) {
+  // her malzeme türü kendi shader'ını derlesin (aksi halde three.js aynı programı paylaştırır);
+  // fixedKey verilirse aynı türden malzemeler (ör. her yol karosu) tek programı paylaşır
+  const key = fixedKey || 'patched-' + (shaderId++);
   mat.customProgramCacheKey = () => key;
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, uniforms);
@@ -163,7 +162,9 @@ function patchStandard(mat, uniforms, vtxExtra, fragDecl, fragBody) {
 function terrainMaterial() {
   const mat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0,
     polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 4 });  // arazi yolun gerisinde: taşma olmaz
-  patchStandard(mat, { tA: { value: terrainTex.alb }, tN: { value: terrainTex.nra } }, {}, '', `
+  patchStandard(mat, { tA: { value: terrainTex.alb }, tN: { value: terrainTex.nra },
+    tRoad: { value: overviewTex }, uWorld: { value: new THREE.Vector2(Wm, Dm) },
+    uNear: { value: new THREE.Vector2(PATCH_RADIUS * 0.82, PATCH_RADIUS * 1.0) } }, {}, 'uniform sampler2D tRoad; uniform vec2 uWorld, uNear;', `
     vec3 N0 = normalize(vWN);
     float slope = 1.0 - N0.y;
     float n1 = vnoise(vWP.xz * 0.004) * 0.6 + vnoise(vWP.xz * 0.02) * 0.4;
@@ -202,6 +203,10 @@ function terrainMaterial() {
     col *= mix(vec3(1.0), vec3(0.85, 1.0, 0.7), grass);                // çimi biraz canlandır
     col = mix(col, vec3(0.10, 0.16, 0.06), forest * 0.45);              // yukarıdan ağaç örtüsü
     col *= 0.85 + 0.3 * vnoise(vWP.xz * 0.0015);                        // makro varyasyon
+    // uzaktaki yollar: tüm şehrin düşük çözünürlüklü yol maskesi (yakında basılı karolar çizer)
+    float rmask = texture2D(tRoad, (vWP.xz + uWorld * 0.5) / uWorld).r;
+    float farF = smoothstep(uNear.x, uNear.y, length(vWP.xz - cameraPosition.xz));
+    col = mix(col, vec3(0.2, 0.2, 0.22), rmask * farF * 0.9);
     diffuseColor.rgb *= col;
 
     vec3 Tg = normalize(vec3(1.0, 0.0, 0.0) - N0 * N0.x);
@@ -321,10 +326,10 @@ function walkMaterial() {
     roughness: 1, metalness: 0, side: THREE.DoubleSide,
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4,
   });
-  patchStandard(mat, { tA: { value: walkTex.alb }, tN: { value: walkTex.nra } }, ROAD_VTX, ROAD_FRAG_DECL, `
+  patchStandard(mat, { tA: { value: roadTex.alb }, tN: { value: roadTex.nra } }, ROAD_VTX, ROAD_FRAG_DECL, `
     float layer = vInfo.x;  // 0 = parke, 1 = beton
     accA = vec3(0.0); accN = vec4(0.0); accW = 0.0;
-    addLayer(tA, tN, vRuv / (layer < 0.5 ? 3.0 : 2.0), layer < 0.5 ? 0.0 : 1.0, 1.0);
+    addLayer(tA, tN, vRuv / (layer < 0.5 ? 3.0 : 2.0), layer < 0.5 ? 3.0 : 4.0, 1.0);
     ${GLSL_RESOLVE}
     diffuseColor.rgb *= accA * (0.85 + 0.25 * vnoise(vWP.xz * 0.05));
     ${GLSL_ROAD_TBN}
@@ -372,10 +377,22 @@ const preparedRoads = [];
 function tileAt(x, z) {
   const tx = Math.floor(x / TILE), tz = Math.floor(z / TILE), key = `${tx},${tz}`;
   let t = roadTileMap.get(key);
-  if (!t) roadTileMap.set(key, (t = { pieces: [], junctions: [], built: {}, cx: (tx + 0.5) * TILE, cz: (tz + 0.5) * TILE }));
+  if (!t) roadTileMap.set(key, (t = { pieces: [], built: {}, cx: (tx + 0.5) * TILE, cz: (tz + 0.5) * TILE }));
   return t;
 }
-const roadTileMap = new Map();   // "tx,tz" -> { pieces: [], built: { major, minor } }
+const roadTileMap = new Map();   // "tx,tz" -> köprü parçaları (vektör geometri)
+
+// Zemindeki yollar "basılı doku" olarak çizilir (aşağıda). Her 256 m'lik karo için hangi yolların ve
+// kavşakların o karoya değdiğini tutarız.
+const BT = 256;                                  // basılı yol karosu (m)
+const bakeTiles = new Map();                     // sayısal anahtar -> { tx, tz, roads: [], junc: [] }
+const bkey = (tx, tz) => (tx + 512) * 1024 + (tz + 512);
+function bakeTile(tx, tz) {
+  const k = bkey(tx, tz);
+  let t = bakeTiles.get(k);
+  if (!t) bakeTiles.set(k, (t = { tx, tz, roads: [], junc: [], patch: null }));
+  return t;
+}
 
 function prepareRoads() {
   if (!roadData) return;
@@ -383,26 +400,60 @@ function prepareRoads() {
   const jkey = (x, z) => `${Math.round(x * 2)},${Math.round(z * 2)}`;
   const jmap = new Map();
   for (const road of roadData.roads) {
-    const reach = road.w / 2 + road.s;
     for (let i = 0; i < road.p.length; i += 2) {
       const k = jkey(road.p[i], road.p[i + 1]);
       let e = jmap.get(k);
-      if (!e) jmap.set(k, (e = { n: 0, mid: 0, r: 0, o: 0, hw: 0, x: road.p[i], z: road.p[i + 1], h: 0 }));
-      e.n++; e.r = Math.max(e.r, reach); e.o = Math.max(e.o, ROAD_ORDER[road.c]);
+      if (!e) jmap.set(k, (e = { n: 0, mid: 0, hw: 0, x: road.p[i], z: road.p[i + 1], arms: null }));
+      e.n++;
       e.hw = Math.max(e.hw, road.w / 2);
       if (i > 0 && i < road.p.length - 2) e.mid++;   // yolun ortasından geçiyor
     }
   }
+  // gerçek kavşak: 3+ yol uçu ya da bir yol başka yolun ortasından geçiyor.
+  // İki yolun yalnızca uç uca eklendiği nokta (OSM'in yolu bölmesi) kavşak değildir.
+  const isJ = (e) => e && (e.n > 2 || (e.n === 2 && e.mid > 0));
 
-  for (const road of roadData.roads) {
+  const roads = roadData.roads;
+  for (let ri = 0; ri < roads.length; ri++) {
+    const road = roads[ri], p = road.p;
+
+    if (!road.b) {
+      // --- zemin yolu: dokuya basılacak. Değdiği karoları kaydet.
+      const pad = road.w / 2 + road.s + 3;
+      const seen = new Set();
+      const add = (x, z) => {
+        const x0 = Math.floor((x - pad) / BT), x1 = Math.floor((x + pad) / BT);
+        const z0 = Math.floor((z - pad) / BT), z1 = Math.floor((z + pad) / BT);
+        for (let a = x0; a <= x1; a++) for (let b = z0; b <= z1; b++) seen.add(bkey(a, b));
+      };
+      for (let i = 0; i < p.length - 2; i += 2) {
+        const ax = p[i], az = p[i + 1], bx = p[i + 2], bz = p[i + 3];
+        const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 16));
+        for (let s = 0; s < n; s++) add(ax + (bx - ax) * s / n, az + (bz - az) * s / n);
+      }
+      add(p[p.length - 2], p[p.length - 1]);
+      for (const k of seen) bakeTile((k >> 10) - 512, (k & 1023) - 512).roads.push(ri);
+
+      // kavşak kolları: her kavşak noktasında bu yolun düğümden uzağa giden yönleri
+      for (let i = 0; i < p.length; i += 2) {
+        const e = jmap.get(jkey(p[i], p[i + 1]));
+        if (!isJ(e)) continue;
+        e.arms ||= [];
+        for (const j of [i - 2, i + 2]) {
+          if (j < 0 || j >= p.length) continue;
+          let dx = p[j] - p[i], dz = p[j + 1] - p[i + 1];
+          const l = Math.hypot(dx, dz);
+          if (l < 0.5) continue;
+          e.arms.push({ dx: dx / l, dz: dz / l, w: road.w, sl: road.sl, sr: road.sr, s: road.s, c: road.c });
+        }
+      }
+      continue;
+    }
+
+    // --- köprü: vektör geometri (tabliye, korkuluk, ayaklar)
     const [STEP] = PROFILE[road.c];
-    const p = road.p;
-    const xs = [], zs = [], junctions = [];
+    const xs = [], zs = [];
     for (let i = 0; i < p.length; i += 2) {
-      const e = jmap.get(jkey(p[i], p[i + 1]));
-      // gerçek kavşak: 3+ yol uçu ya da bir yol başka yolun ortasından geçiyor.
-      // İki yolun yalnızca uç uca eklendiği nokta (OSM'in yolu bölmesi) kavşak değildir.
-      if (e && (e.n > 2 || (e.n === 2 && e.mid > 0))) junctions.push([xs.length, e.r + 1, e]);
       if (i >= p.length - 2) { xs.push(p[i]); zs.push(p[i + 1]); break; }
       const ax = p[i], az = p[i + 1], bx = p[i + 2], bz = p[i + 3];
       const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / STEP));
@@ -412,45 +463,268 @@ function prepareRoads() {
     if (N < 2) continue;
     const dist = new Float32Array(N);
     for (let i = 1; i < N; i++) dist[i] = dist[i - 1] + Math.hypot(xs[i] - xs[i - 1], zs[i] - zs[i - 1]);
-
-    // Arazi olduğu gibi kalır: yol arazinin yüksekliğini izler (yarma/dolgu/düzleme yok).
-    // Aynı noktada buluşan yollar aynı arazi yüksekliğini okuduğu için kavşakta zaten eşit olur.
     const raw = xs.map((x, i) => heightMesh(x, zs[i]));
     let ys = raw.map((y) => y + LIFT);
-    if (road.b) {
-      // köprü: uçlar arasında düz tabliye, altındaki araziden en az 1 m yukarıda
-      const y0 = ys[0], y1 = ys[N - 1];
-      ys = ys.map((y, i) => Math.max(raw[i] + 1, y0 + (y1 - y0) * i / (N - 1)));
-    }
-    // kavşağa uzaklık (kavşak yarıçapı çıkarılmış); < 0 = kavşak içinde
-    const jd = new Float32Array(N).fill(1e6);
-    for (const [si, r] of junctions) {
-      const d0 = dist[Math.min(si, N - 1)];
-      for (let i = 0; i < N; i++) jd[i] = Math.min(jd[i], Math.abs(dist[i] - d0) - r);
-    }
-    // yön ve sağ vektör
+    // köprü: uçlar arasında düz tabliye, altındaki araziden en az 1 m yukarıda
+    const y0 = ys[0], y1 = ys[N - 1];
+    ys = ys.map((y, i) => Math.max(raw[i] + 1, y0 + (y1 - y0) * i / (N - 1)));
     const dirx = new Float32Array(N), dirz = new Float32Array(N);
     for (let i = 0; i < N; i++) {
       const a = Math.max(0, i - 1), c = Math.min(N - 1, i + 1);
-      let tx = xs[c] - xs[a], tz = zs[c] - zs[a];
-      const l = Math.hypot(tx, tz) || 1;
+      const tx = xs[c] - xs[a], tz = zs[c] - zs[a], l = Math.hypot(tx, tz) || 1;
       dirx[i] = tx / l; dirz[i] = tz / l;
     }
-    const R = { road, N, xs: Float32Array.from(xs), zs: Float32Array.from(zs), ys: Float32Array.from(ys), dist, jd, dirx, dirz,
-      zebra: !['motorway', 'trunk'].includes(road.c) && road.s > 0 ? 1 : 0 };
+    const R = { road, N, xs: Float32Array.from(xs), zs: Float32Array.from(zs), ys: Float32Array.from(ys), dist,
+      jd: new Float32Array(N).fill(1e6), dirx, dirz, zebra: 0 };
     preparedRoads.push(R);
-
     for (let a = 0; a < N - 1; a += PIECE - 1) {
       const e = Math.min(N, a + PIECE), m = (a + e) >> 1;
-      const t = tileAt(R.xs[m], R.zs[m]);
-      t.pieces.push({ R, a, e });
+      tileAt(R.xs[m], R.zs[m]).pieces.push({ R, a, e });
     }
   }
 
-  // gerçek kavşaklar: kendi şekli (daire) çizilir
+  // kavşakları, yarıçaplarının değdiği karolara kaydet
   for (const e of jmap.values()) {
-    if (e.n > 2 || (e.n === 2 && e.mid > 0)) tileAt(e.x, e.z).junctions.push(e);
+    if (!isJ(e) || !e.arms) continue;
+    const m = e.hw + 8;
+    for (let a = Math.floor((e.x - m) / BT); a <= Math.floor((e.x + m) / BT); a++)
+      for (let b = Math.floor((e.z - m) / BT); b <= Math.floor((e.z + m) / BT); b++) bakeTile(a, b).junc.push(e);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Basılı yollar (oyunlardaki yöntem): yol, kaldırım, şerit çizgisi, yaya geçidi ve kavşaklar
+// 256 m'lik karo başına iki maske dokusuna çizilir; doku, arazinin yüzeyine oturan ince bir
+// ağın üstüne basılır. Yol bu yüzden arazinin parçasıdır, kavşaklar tek parçadır.
+//   doku 1:  R = asfalt, G = kaldırım, B = beyaz boya (asfalt üstünde R=B=1)
+//   doku 2:  R = sarı boya, G = lastik izi
+// ---------------------------------------------------------------------------
+const BRES = isTouch ? 512 : 1024;     // karo doku çözünürlüğü (piksel); 0.25 m/px (telefonda 0.5 m/px)
+const BPAD = 2;                         // karo kenar payı (m): komşu karolar arasında dikiş olmasın
+const BEXT = BT + 2 * BPAD, BK = BRES / BEXT;   // px / m
+const PATCH_RADIUS = isTouch ? 900 : 1300;       // bu yarıçapta basılı yollar çizilir
+const GROUND_LIFT = 0.1;                         // yol arazinin 10 cm üstünde (z-çakışması olmasın)
+
+function bakeMasks(t) {
+  const x0 = t.tx * BT - BPAD, z0 = t.tz * BT - BPAD;
+  const mk = () => {
+    const c = document.createElement('canvas');
+    c.width = c.height = BRES;
+    const g = c.getContext('2d', { alpha: false });
+    g.fillStyle = '#000'; g.fillRect(0, 0, BRES, BRES);
+    g.lineJoin = 'round'; g.lineCap = 'butt';
+    return [c, g];
+  };
+  const [c1, g1] = mk(), [c2, g2] = mk();
+  const X = (x) => (x - x0) * BK, Z = (z) => (z - z0) * BK;
+  const roads = t.roads.map((i) => roadData.roads[i]).sort((a, b) => ROAD_ORDER[a.c] - ROAD_ORDER[b.c]);
+
+  // polilinyi çiz; off (m): yolun sağına doğru kaydırma
+  const trace = (g, p, off) => {
+    const n = p.length / 2;
+    g.beginPath();
+    for (let i = 0; i < n; i++) {
+      let x = X(p[2 * i]), z = Z(p[2 * i + 1]);
+      if (off) {
+        const a = Math.max(0, i - 1), b = Math.min(n - 1, i + 1);
+        let tx = p[2 * b] - p[2 * a], tz = p[2 * b + 1] - p[2 * a + 1];
+        const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l;
+        x += tz * off * BK; z -= tx * off * BK;
+      }
+      if (i) g.lineTo(x, z); else g.moveTo(x, z);
+    }
+  };
+  const line = (g, p, off, color, widthM, dash) => {
+    trace(g, p, off);
+    g.strokeStyle = color; g.lineWidth = Math.max(widthM * BK, 0.9);
+    g.setLineDash(dash ? [6 * BK, 9 * BK] : []);
+    g.stroke();
+  };
+
+  // 1) kaldırımlar (asfaltın altında kalır) 2) asfalt
+  for (const r of roads) if (r.s > 0) line(g1, r.p, 0, '#0f0', r.w + 2 * r.s);
+  for (const r of roads) line(g1, r.p, 0, '#f00', r.w);
+
+  // 3) boya: sarı orta çizgi, beyaz şerit ayırıcı, kenar çizgisi, lastik izi (yerel sokaklarda yok)
+  for (const r of roads) {
+    if (r.c === 'residential' || r.c === 'unclassified') continue;
+    const half = r.w / 2, cL = -half + r.sl, cR = half - r.sr, W = '#f0f';
+    const centers = [];
+    if (!r.o) {
+      const mid = (cL + cR) / 2, side = Math.max(1, Math.floor(r.n / 2)), slw = (cR - cL) / 2 / side;
+      line(g2, r.p, mid - 0.15, '#f00', 0.13); line(g2, r.p, mid + 0.15, '#f00', 0.13);   // sarı çift çizgi
+      for (let k = 1; k < side; k++) { line(g1, r.p, mid - slw * k, W, 0.13, true); line(g1, r.p, mid + slw * k, W, 0.13, true); }
+      for (let k = 1; k <= side; k++) { centers.push(mid - slw * (k - 0.5)); centers.push(mid + slw * (k - 0.5)); }
+    } else {
+      for (let k = 1; k < r.n; k++) line(g1, r.p, cL + r.lw * k, W, 0.13, true);
+      for (let k = 1; k <= r.n; k++) centers.push(cL + r.lw * (k - 0.5));
+    }
+    line(g1, r.p, cL, W, 0.14); line(g1, r.p, cR, W, 0.14);                              // kenar çizgileri
+    if (ROAD_ORDER[r.c] >= 2) for (const c of centers) { line(g2, r.p, c - 0.85, 'rgb(0,110,0)', 0.45); line(g2, r.p, c + 0.85, 'rgb(0,110,0)', 0.45); }
+  }
+
+  // 4) kavşaklar: ortadaki boyayı sil (düz asfalt), kollara yaya geçidi çiz
+  for (const e of t.junc) {
+    const rad = (e.hw + 1.5) * BK;
+    // doku 1: yalnızca beyaz boyayı sil (multiply ile B=0; asfalt ve kaldırım korunur, şişkinlik olmaz)
+    g1.globalCompositeOperation = 'multiply';
+    g1.fillStyle = 'rgb(255,255,0)';
+    g1.beginPath(); g1.arc(X(e.x), Z(e.z), rad, 0, Math.PI * 2); g1.fill();
+    g1.globalCompositeOperation = 'source-over';
+    g2.fillStyle = '#000';                       // doku 2: sarı çizgi ve lastik izi sil
+    g2.beginPath(); g2.arc(X(e.x), Z(e.z), rad, 0, Math.PI * 2); g2.fill();
+    for (const a of e.arms) {
+      if (a.c === 'motorway' || a.c === 'trunk' || !(a.s > 0) || a.w > 30) continue;
+      const usable = a.w - a.sl - a.sr, d0 = e.hw + 1.2, nx = a.dz, nz = -a.dx;   // nx,nz: yolun sağı
+      g1.strokeStyle = '#f0f'; g1.lineWidth = 0.5 * BK; g1.setLineDash([]);
+      for (let j = 0; j < Math.floor(usable); j++) {
+        const o = -usable / 2 + 0.5 + j;
+        g1.beginPath();
+        g1.moveTo(X(e.x + a.dx * d0 + nx * o), Z(e.z + a.dz * d0 + nz * o));
+        g1.lineTo(X(e.x + a.dx * (d0 + 3) + nx * o), Z(e.z + a.dz * (d0 + 3) + nz * o));
+        g1.stroke();
+      }
+    }
+  }
+  return [c1, c2];
+}
+
+// maske dokularını arazi yüzeyine oturan ince bir ağa basar
+function buildPatch(t) {
+  const [c1, c2] = bakeMasks(t);
+  const tex = (c) => {
+    const tx = new THREE.CanvasTexture(c);
+    tx.flipY = false;
+    tx.wrapS = tx.wrapT = THREE.ClampToEdgeWrapping;
+    tx.minFilter = THREE.LinearMipmapLinearFilter; tx.magFilter = THREE.LinearFilter;
+    tx.anisotropy = maxAniso;
+    return tx;
+  };
+  const t1 = tex(c1), t2 = tex(c2);
+  const x0 = t.tx * BT - BPAD, z0 = t.tz * BT - BPAD;
+  const NS = Math.ceil(BEXT / 2), n = NS + 1, step = BEXT / NS;   // ~2 m ızgara
+  const pos = new Float32Array(n * n * 3), nor = new Float32Array(n * n * 3), uv = new Float32Array(n * n * 2);
+  let v = 0;
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++, v++) {
+    const x = x0 + c * step, z = z0 + r * step;
+    pos[3 * v] = x; pos[3 * v + 1] = heightMesh(x, z) + GROUND_LIFT; pos[3 * v + 2] = z;
+    const hx = heightMesh(x + 1.5, z) - heightMesh(x - 1.5, z), hz = heightMesh(x, z + 1.5) - heightMesh(x, z - 1.5);
+    const l = Math.hypot(hx, 3, hz);
+    nor[3 * v] = -hx / l; nor[3 * v + 1] = 3 / l; nor[3 * v + 2] = -hz / l;
+    uv[2 * v] = c / NS; uv[2 * v + 1] = r / NS;
+  }
+  const idx = new Uint16Array(NS * NS * 6);
+  let k = 0;
+  for (let r = 0; r < NS; r++) for (let c = 0; c < NS; c++) {
+    const a = r * n + c, b = a + 1, d = a + n, e = d + 1;
+    idx[k++] = a; idx[k++] = d; idx[k++] = b; idx[k++] = b; idx[k++] = d; idx[k++] = e;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  g.computeBoundingSphere();
+  const mesh = new THREE.Mesh(g, roadPatchMaterial(t1, t2));
+  mesh.renderOrder = 1;
+  mesh.userData = { t1, t2 };
+  scene.add(mesh);
+  t.patch = mesh;
+}
+function disposePatch(t) {
+  const m = t.patch;
+  if (!m) return;
+  scene.remove(m);
+  m.geometry.dispose(); m.material.dispose(); m.userData.t1.dispose(); m.userData.t2.dispose();
+  t.patch = null;
+}
+// kameranın çevresindeki karoları bas, uzaktakileri sil
+function streamPatches(px, pz, maxBuild) {
+  const tx0 = Math.floor(px / BT), tz0 = Math.floor(pz / BT), rng = Math.ceil(PATCH_RADIUS / BT) + 1;
+  const want = [];
+  for (let a = tx0 - rng; a <= tx0 + rng; a++) for (let b = tz0 - rng; b <= tz0 + rng; b++) {
+    const t = bakeTiles.get(bkey(a, b));
+    if (!t || !t.roads.length) continue;
+    const d = Math.hypot((a + 0.5) * BT - px, (b + 0.5) * BT - pz);
+    if (d < PATCH_RADIUS && !t.patch) want.push([d, t]);
+  }
+  want.sort((p, q) => p[0] - q[0]);
+  for (let i = 0; i < Math.min(want.length, maxBuild); i++) buildPatch(want[i][1]);
+  for (const t of bakeTiles.values()) {
+    if (t.patch && Math.hypot((t.tx + 0.5) * BT - px, (t.tz + 0.5) * BT - pz) > PATCH_RADIUS + 400) disposePatch(t);
+  }
+}
+
+// Basılı yol malzemesi: asfalt 3 + kaldırım 2 PBR seti, maskeye göre karışır
+function roadPatchMaterial(t1, t2) {
+  const mat = new THREE.MeshStandardMaterial({
+    roughness: 1, metalness: 0, side: THREE.DoubleSide,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4,
+  });
+  patchStandard(mat, { tA: { value: roadTex.alb }, tN: { value: roadTex.nra }, tM1: { value: t1 }, tM2: { value: t2 } },
+    { decl: 'varying vec2 vMask;', body: 'vMask = uv;' },
+    'varying vec2 vMask; uniform sampler2D tM1, tM2;', `
+    vec4 m1 = texture2D(tM1, vMask), m2 = texture2D(tM2, vMask);
+    float cov = m1.r + m1.g;
+    if (cov < 0.5) discard;                         // yol/kaldırım değil: arazi görünsün
+    float wa = m1.r / cov, ws = 1.0 - wa;           // asfalt / kaldırım ağırlığı
+    float n1 = vnoise(vWP.xz * 0.02), n2 = vnoise(vWP.xz * 0.07 + 33.0), n3 = vnoise(vWP.xz * 0.05 + 7.0);
+    float wB = smoothstep(0.4, 0.8, n1) * 0.6, wC = smoothstep(0.55, 0.85, n2) * 0.5, cw = smoothstep(0.45, 0.75, n3);
+    accA = vec3(0.0); accN = vec4(0.0); accW = 0.0;
+    addLayer(tA, tN, vWP.xz / 5.0, 0.0, wa * (1.0 - wB) * (1.0 - wC));
+    addLayer(tA, tN, vWP.xz / 8.0, 1.0, wa * wB * (1.0 - wC));
+    addLayer(tA, tN, vWP.xz / 4.0, 2.0, wa * wC);
+    addLayer(tA, tN, vWP.xz / 3.0, 3.0, ws * (1.0 - cw));
+    addLayer(tA, tN, vWP.xz / 2.0, 4.0, ws * cw);
+    ${GLSL_RESOLVE}
+    vec3 col = accA * mix(vec3(0.92), vec3(0.62, 0.63, 0.66), wa);
+    col *= 1.0 - 0.45 * (4.0 * m1.r * m1.g);        // bordür çizgisi: asfalt ile kaldırım sınırı
+    col *= 1.0 - 0.4 * m2.g * wa;                   // lastik izleri
+    float wear = mix(0.65, 1.0, vnoise(vWP.xz * 0.35));
+    float white = smoothstep(0.3, 0.7, m1.b) * wear * wa;
+    float yellow = smoothstep(0.3, 0.7, m2.r) * wear * wa;
+    col = mix(col, vec3(0.82), white);
+    col = mix(col, vec3(0.85, 0.6, 0.07), yellow);
+    blendR = mix(blendR, 0.5, max(white, yellow));
+    diffuseColor.rgb *= col;
+    vec3 N0 = normalize(vWN);
+    vec3 Tg = normalize(vec3(1.0, 0.0, 0.0) - N0 * N0.x);
+    vec3 Bt = normalize(cross(Tg, N0));
+    blendN = normalize(Tg * tn.x + Bt * tn.y + N0 * tn.z);
+  `, 'road-patch');
+  return mat;
+}
+
+// Uzaktaki yollar: tüm şehrin tek bir düşük çözünürlüklü maskesi (arazi shader'ı okur)
+function buildOverview() {
+  const OW = 4096, OH = Math.round(OW * Dm / Wm), sx = OW / Wm, sz = OH / Dm;
+  const c = document.createElement('canvas');
+  c.width = OW; c.height = OH;
+  const g = c.getContext('2d', { alpha: false });
+  g.fillStyle = '#000'; g.fillRect(0, 0, OW, OH);
+  g.strokeStyle = '#fff'; g.lineJoin = 'round'; g.lineCap = 'round';
+  if (roadData) {
+    for (const cls of ['residential', 'unclassified', 'tertiary', 'secondary', 'primary', 'trunk', 'motorway']) {
+      g.beginPath();
+      let w = 0, any = false;
+      for (const r of roadData.roads) {
+        if (r.c !== cls || r.b) continue;
+        any = true; w = Math.max(w, r.w + 2 * r.s);
+        for (let i = 0; i < r.p.length; i += 2) {
+          const x = (r.p[i] + Wm / 2) * sx, z = (r.p[i + 1] + Dm / 2) * sz;
+          if (i) g.lineTo(x, z); else g.moveTo(x, z);
+        }
+      }
+      if (!any) continue;
+      g.lineWidth = Math.max(1.3, w * sx * 0.7);   // uzaktan en az ~1,3 px görünsün
+      g.stroke();
+    }
+  }
+  const tx = new THREE.CanvasTexture(c);
+  tx.flipY = false;
+  tx.wrapS = tx.wrapT = THREE.ClampToEdgeWrapping;
+  tx.anisotropy = maxAniso;
+  return tx;
 }
 
 class StripBuilder {
@@ -469,17 +743,6 @@ class StripBuilder {
         this.idx.push(q, q + 2, q + 1, q + 1, q + 2, q + 3);
       }
     }
-  }
-  // kavşak diski: merkez + halka, şerit çizgisi / yaya geçidi / lastik izi olmayan düz asfalt
-  fan(cx, cz, r, yAt) {
-    const SEG = 24, base = this.pos.length / 3;
-    const push = (x, z) => {
-      this.pos.push(x, yAt(x, z), z); this.nor.push(0, 1, 0); this.ruv.push(x, z); this.rdir.push(1, 0);
-      this.rinfo.push(1, 1, 1e9, 1e6); this.rinfo2.push(0, 0, 1e7, 0);
-    };
-    push(cx, cz);
-    for (let k = 0; k < SEG; k++) { const t = (k / SEG) * Math.PI * 2; push(cx + Math.cos(t) * r, cz + Math.sin(t) * r); }
-    for (let k = 0; k < SEG; k++) this.idx.push(base, base + 1 + k, base + 1 + ((k + 1) % SEG));
   }
   mesh(mat) {
     if (!this.idx.length) return null;
@@ -689,10 +952,6 @@ function buildTilePart(t, part) {
   roadMat ||= roadMaterial(); walkMat ||= walkMaterial();
   const rb = new StripBuilder(), wb = new StripBuilder();
   for (const pc of t.pieces) if (MINOR.has(pc.R.road.c) === (part === 'minor')) emitPiece(rb, wb, pc);
-  // kavşak diski: sınıf yüksekliklerinin (en çok 0.15) üstünde, böylece üst üste binen yollar temiz kapanır
-  for (const e of t.junctions) {
-    if ((e.o <= 1) === (part === 'minor')) rb.fan(e.x, e.z, e.hw, (x, z) => heightMesh(x, z) + LIFT + 0.2);
-  }
   const g = new THREE.Group();
   const a = rb.mesh(roadMat), b = wb.mesh(walkMat);
   if (a) g.add(a);
@@ -740,6 +999,7 @@ export function heightMesh(x, z) {
 }
 
 // Araziyi 128x128 hücrelik parçalara böl (görüş dışındakiler çizilmez)
+const overviewTex = buildOverview();
 const terrainMat = terrainMaterial();
 const CH = 128;
 const terrain = new THREE.Group();
@@ -771,7 +1031,7 @@ for (let r0 = 0; r0 < rows - 1; r0 += CH) {
 }
 scene.add(terrain);
 
-const roadCount = preparedRoads.length;
+const roadCount = roadData ? roadData.roads.length : 0;
 
 // ---------------------------------------------------------------------------
 // Başlangıç kamerası ve kamera modları
@@ -949,6 +1209,7 @@ function tick() {
 
   // yolları kameranın çevresinde akış halinde üret
   streamRoads(sx, sz, params.has('still') ? 1e9 : 6);
+  streamPatches(sx, sz, params.has('still') ? 1e6 : 1);
 
   if (mode === 'orbit') controls.update();
   renderer.render(scene, camera);
