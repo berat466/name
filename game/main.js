@@ -589,7 +589,7 @@ function bakeMasks(t) {
     g2.beginPath(); g2.arc(X(e.x), Z(e.z), rad, 0, Math.PI * 2); g2.fill();
     g2.globalCompositeOperation = 'source-over';
     for (const a of e.arms) {
-      if (a.c === 'motorway' || a.c === 'trunk' || !(a.s > 0) || a.w > 30) continue;
+      continue;  // yaya geçidi çizilmez
       const usable = a.w - a.sl - a.sr, d0 = e.hw + 1.2, nx = a.dz, nz = -a.dx;   // nx,nz: yolun sağı
       g1.strokeStyle = '#f0f'; g1.lineWidth = 0.5 * BK; g1.setLineDash([]);
       for (let j = 0; j < Math.floor(usable); j++) {
